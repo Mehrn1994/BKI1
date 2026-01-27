@@ -406,7 +406,11 @@ async function loadBranches() {
 
     branches.forEach(b => {
       const opt = document.createElement('option');
-      opt.value = `${b.name}|${b.province}|${b.lan_ip}`;
+      if (b.x && b.y) {
+        opt.value = `${b.name} - [${b.province || 'نامشخص'}] (10.${b.x}.${b.y}.0)`;
+      } else {
+        opt.value = `${b.name} - [${b.province || 'نامشخص'}]`;
+      }
       datalist.appendChild(opt);
     });
 
@@ -539,36 +543,55 @@ async function autoAssignTunnelPair() {
 document.getElementById('branchName').addEventListener('input', async function() {
   const inputValue = this.value.trim();
 
-  if (inputValue.includes('|')) {
-    const parts = inputValue.split('|');
-    const branchName = parts[0];
-    const province = parts[1];
-    const lanIp = parts[2];
+  // Match pattern: "name - [province] (10.X.Y.0)"
+  const ipMatch = inputValue.match(/\(10\.(\d+)\.(\d+)\.0\)/);
+  const provinceMatch = inputValue.match(/\[([^\]]+)\]/);
+
+  if (ipMatch) {
+    const x = ipMatch[1];
+    const y = ipMatch[2];
+    const lanIp = `10.${x}.${y}.0/24`;
+    const branchName = inputValue.split(' - ')[0].trim();
 
     this.value = branchName;
 
     try {
       const provinceSelect = document.getElementById('lanProvinceFilter');
-      
-      // Check if province exists in options, if not add it
-      let provinceExists = false;
-      for (let i = 0; i < provinceSelect.options.length; i++) {
-        if (provinceSelect.options[i].value === province) {
-          provinceExists = true;
-          break;
-        }
-      }
-      
-      if (!provinceExists && province) {
-        const newOpt = document.createElement('option');
-        newOpt.value = province;
-        newOpt.textContent = province;
-        provinceSelect.appendChild(newOpt);
-      }
-      
-      provinceSelect.value = province;
 
-      await loadFreeLanIps(province);
+      // First try province from the selection text
+      let detectedProvince = provinceMatch ? provinceMatch[1] : '';
+
+      // Look up the correct province from lan_ips via API
+      try {
+        const lookupRes = await fetch(`/api/province-by-octet?octet2=${x}&octet3=${y}`);
+        const lookupData = await lookupRes.json();
+        if (lookupData.province) {
+          detectedProvince = lookupData.province;
+          console.log(`✓ Province from lan_ips lookup: ${detectedProvince}`);
+        }
+      } catch (e) {
+        console.log('Province lookup failed, using datalist value');
+      }
+
+      if (detectedProvince) {
+        // Ensure province option exists
+        let provinceExists = false;
+        for (let i = 0; i < provinceSelect.options.length; i++) {
+          if (provinceSelect.options[i].value === detectedProvince) {
+            provinceExists = true;
+            break;
+          }
+        }
+        if (!provinceExists) {
+          const newOpt = document.createElement('option');
+          newOpt.value = detectedProvince;
+          newOpt.textContent = detectedProvince;
+          provinceSelect.appendChild(newOpt);
+        }
+        provinceSelect.value = detectedProvince;
+      }
+
+      await loadFreeLanIps(detectedProvince);
 
       const lanSelect = document.getElementById('freeLanIp');
 
@@ -591,13 +614,10 @@ document.getElementById('branchName').addEventListener('input', async function()
         lanSelect.value = lanIp;
       }
 
-      const lanParts = lanIp.split('.');
-      if (lanParts.length >= 2) {
-        const ospfArea = lanParts[1];
-        document.getElementById('ospfArea').value = ospfArea;
-      }
-
+      document.getElementById('ospfArea').value = x;
       lanSelect.disabled = false;
+
+      console.log(`✓ Branch auto-fill: ${branchName}, LAN: ${lanIp}, Province: ${detectedProvince}, OSPF Area: ${x}`);
 
     } catch (err) {
       console.error('Error loading branch data:', err);

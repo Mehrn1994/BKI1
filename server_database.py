@@ -264,6 +264,29 @@ def get_provinces():
         print(f"❌ Provinces error: {e}")
         return jsonify([])
 
+# ==================== PROVINCE LOOKUP BY OCTET ====================
+@app.route('/api/province-by-octet', methods=['GET'])
+def get_province_by_octet():
+    """Look up the correct province from lan_ips by octet2 and octet3"""
+    octet2 = request.args.get('octet2')
+    octet3 = request.args.get('octet3')
+    try:
+        conn = get_db()
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT province FROM lan_ips
+            WHERE octet2 = ? AND octet3 = ? AND province IS NOT NULL AND province != ''
+            LIMIT 1
+        """, (octet2, octet3))
+        row = cursor.fetchone()
+        conn.close()
+        if row:
+            return jsonify({'province': row['province']})
+        return jsonify({'province': ''})
+    except Exception as e:
+        print(f"❌ Province lookup error: {e}")
+        return jsonify({'province': ''})
+
 # ==================== BRANCHES ====================
 @app.route('/api/branches', methods=['GET'])
 def get_branches():
