@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ورود به سیستم</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .login-container {
+            background: rgba(255,255,255,0.95);
+            border-radius: 20px;
+            padding: 40px;
+            width: 100%;
+            max-width: 450px;
+            box-shadow: 0 25px 50px rgba(0,0,0,0.3);
+        }
+        .logo { text-align: center; margin-bottom: 30px; }
+        .logo h1 { font-size: 1.8rem; color: #1e293b; margin-top: 10px; }
+        .logo .icon { font-size: 4rem; }
+        .users-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 20px; }
+        .user-btn {
+            padding: 16px;
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            background: white;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .user-btn:hover { border-color: #667eea; background: #f8fafc; }
+        .user-btn .avatar {
+            width: 40px; height: 40px; border-radius: 50%;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            display: flex; align-items: center; justify-content: center;
+            color: white; font-weight: bold;
+        }
+        .user-btn .name { font-weight: 500; color: #1e293b; }
+        .user-btn .status { font-size: 11px; color: #64748b; }
+        .user-btn .status.new { color: #f59e0b; }
+        .password-section { display: none; }
+        .password-section.show { display: block; }
+        .selected-user {
+            display: flex; align-items: center; gap: 12px;
+            padding: 16px; background: #f8fafc; border-radius: 12px; margin-bottom: 20px;
+        }
+        .selected-user .avatar {
+            width: 50px; height: 50px; border-radius: 50%;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            display: flex; align-items: center; justify-content: center;
+            color: white; font-size: 1.2rem; font-weight: bold;
+        }
+        .change-user { margin-right: auto; background: none; border: none; color: #667eea; cursor: pointer; }
+        .form-group { margin-bottom: 16px; }
+        .form-group label { display: block; margin-bottom: 8px; font-weight: 500; color: #475569; }
+        .form-group input {
+            width: 100%; padding: 14px 16px; border: 2px solid #e2e8f0;
+            border-radius: 10px; font-size: 16px;
+        }
+        .form-group input:focus { outline: none; border-color: #667eea; }
+        .btn {
+            width: 100%; padding: 16px; border: none; border-radius: 10px;
+            font-size: 16px; font-weight: 600; cursor: pointer;
+            background: linear-gradient(135deg, #667eea, #764ba2); color: white;
+        }
+        .btn:hover { opacity: 0.9; }
+        .error-msg { background: #fee2e2; color: #dc2626; padding: 12px; border-radius: 8px; margin-bottom: 16px; display: none; }
+        .error-msg.show { display: block; }
+        .info-box { background: #fef3c7; color: #92400e; padding: 12px; border-radius: 8px; margin-bottom: 16px; }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <div class="logo">
+            <span class="icon">🌐</span>
+            <h1>پورتال مدیریت شبکه</h1>
+        </div>
+        <div id="userSelection">
+            <p style="text-align: center; color: #64748b; margin-bottom: 20px;">کاربر خود را انتخاب کنید</p>
+            <div class="users-grid" id="usersGrid"></div>
+        </div>
+        <div id="passwordSection" class="password-section">
+            <div class="selected-user">
+                <div class="avatar" id="selectedAvatar">Y</div>
+                <div class="info">
+                    <h3 id="selectedName">Yarian</h3>
+                    <p id="selectedStatus">ورود</p>
+                </div>
+                <button class="change-user" onclick="changeUser()">تغییر کاربر</button>
+            </div>
+            <div class="error-msg" id="errorMsg"></div>
+            <div id="registerForm" style="display: none;">
+                <div class="info-box">🔐 اولین ورود - رمز عبور تعیین کنید</div>
+                <div class="form-group">
+                    <label>رمز عبور جدید</label>
+                    <input type="password" id="newPassword" placeholder="حداقل 4 کاراکتر">
+                </div>
+                <div class="form-group">
+                    <label>تکرار رمز عبور</label>
+                    <input type="password" id="confirmPassword">
+                </div>
+                <button class="btn" onclick="register()">ثبت رمز و ورود</button>
+            </div>
+            <div id="loginForm" style="display: none;">
+                <div class="form-group">
+                    <label>رمز عبور</label>
+                    <input type="password" id="password" placeholder="رمز عبور">
+                </div>
+                <button class="btn" onclick="login()">ورود</button>
+            </div>
+        </div>
+    </div>
+    <script>
+        let selectedUser = null;
+        document.addEventListener('DOMContentLoaded', loadUsers);
+        async function loadUsers() {
+            const response = await fetch('/api/users');
+            const data = await response.json();
+            document.getElementById('usersGrid').innerHTML = data.users.map(user => 
+                '<div class="user-btn" onclick="selectUser(\'' + user.name + '\', ' + user.registered + ')">' +
+                    '<div class="avatar">' + user.name[0] + '</div>' +
+                    '<div>' +
+                        '<div class="name">' + user.name + '</div>' +
+                        '<div class="status ' + (user.registered ? '' : 'new') + '">' + (user.registered ? '✓ ثبت شده' : '● جدید') + '</div>' +
+                    '</div>' +
+                '</div>'
+            ).join('');
+        }
+        function selectUser(username, hasPassword) {
+            selectedUser = username;
+            document.getElementById('userSelection').style.display = 'none';
+            document.getElementById('passwordSection').classList.add('show');
+            document.getElementById('selectedAvatar').textContent = username[0];
+            document.getElementById('selectedName').textContent = username;
+            if (hasPassword) {
+                document.getElementById('registerForm').style.display = 'none';
+                document.getElementById('loginForm').style.display = 'block';
+                document.getElementById('password').focus();
+            } else {
+                document.getElementById('registerForm').style.display = 'block';
+                document.getElementById('loginForm').style.display = 'none';
+                document.getElementById('newPassword').focus();
+            }
+        }
+        function changeUser() {
+            document.getElementById('userSelection').style.display = 'block';
+            document.getElementById('passwordSection').classList.remove('show');
+            document.getElementById('errorMsg').classList.remove('show');
+        }
+        async function register() {
+            const p1 = document.getElementById('newPassword').value;
+            const p2 = document.getElementById('confirmPassword').value;
+            if (p1.length < 4) { showError('رمز باید حداقل 4 کاراکتر باشد'); return; }
+            if (p1 !== p2) { showError('رمزها مطابقت ندارند'); return; }
+            const response = await fetch('/api/register', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username: selectedUser, password: p1 })
+            });
+            const data = await response.json();
+            if (data.success) { localStorage.setItem('currentUser', selectedUser); location.href = '/'; }
+            else { showError(data.error); }
+        }
+        async function login() {
+            const password = document.getElementById('password').value;
+            if (!password) { showError('رمز را وارد کنید'); return; }
+            const response = await fetch('/api/login', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username: selectedUser, password: password })
+            });
+            const data = await response.json();
+            if (data.success) { localStorage.setItem('currentUser', selectedUser); location.href = '/'; }
+            else { showError(data.message); }
+        }
+        function showError(msg) { const el = document.getElementById('errorMsg'); el.textContent = msg; el.classList.add('show'); }
+        document.addEventListener('keypress', e => { if (e.key === 'Enter') { document.getElementById('loginForm').style.display !== 'none' ? login() : register(); } });
+    </script>
+</body>
+</html>

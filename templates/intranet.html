@@ -1,0 +1,603 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Router Config Generator</title>
+    <style>
+        body {
+            font-family: monospace;
+            background: #f5faff;
+            color: #1e293b;
+            margin: 0;
+        }
+        header {
+            padding: 0;
+            margin: 0;
+        }
+        h1 {
+            margin: 0;
+            font-size: 20px;
+            font-weight: bold;
+            color: #0f172a;
+        }
+        .ascii-banner {
+            text-align: center;
+            font-size: 14px;
+            line-height: 1.2;
+            white-space: pre;
+            color: #0284c7;
+            margin: 12px 0;
+            font-family: monospace;
+        }
+        main {
+            display: grid;
+            grid-template-columns: 340px 1fr;
+            gap: 16px;
+            padding: 16px;
+        }
+        .card {
+            background: #ffffff;
+            border: 1px solid #cbd5e1;
+            border-radius: 10px;
+            padding: 16px;
+        }
+        label {
+            display: block;
+            margin-top: 10px;
+            font-size: 12px;
+            font-weight: bold;
+            color: #334155;
+        }
+        input, select {
+            width: 100%;
+            padding: 8px;
+            margin-top: 4px;
+            border-radius: 6px;
+            border: 1px solid #94a3b8;
+            background: #f1f5f9;
+            color: #0f172a;
+            box-sizing: border-box;
+        }
+        button {
+            margin-top: 12px;
+            padding: 10px;
+            border-radius: 8px;
+            border: none;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        button.primary {
+            background: #0284c7;
+            color: #fff;
+            width: 100%;
+        }
+        button.primary:hover {
+            background: #0369a1;
+        }
+        button.primary:disabled {
+            background: #94a3b8;
+            cursor: not-allowed;
+        }
+        .reload-btn {
+            background: #64748b;
+            color: #fff;
+            padding: 6px 12px;
+            font-size: 11px;
+        }
+        pre, textarea {
+            background: #f8fafc;
+            border: 1px dashed #94a3b8;
+            border-radius: 8px;
+            padding: 14px;
+            white-space: pre;
+            overflow-x: auto;
+            max-height: 60vh;
+            font-size: 12px;
+            color: #1e293b;
+            width: 100%;
+            box-sizing: border-box;
+            font-family: Consolas, monospace;
+        }
+        textarea {
+            resize: vertical;
+            min-height: 160px;
+        }
+        .status-message {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 6px;
+            font-size: 13px;
+        }
+        .status-success {
+            background: #d1fae5;
+            color: #065f46;
+            border: 1px solid #10b981;
+        }
+        .status-error {
+            background: #fee2e2;
+            color: #991b1b;
+            border: 1px solid #ef4444;
+        }
+        .user-info {
+            background: #dbeafe;
+            padding: 8px;
+            border-radius: 6px;
+            margin-bottom: 12px;
+            font-size: 12px;
+            color: #1e40af;
+            font-weight: bold;
+        }
+        .tunnel-info {
+            background: #fef3c7;
+            padding: 8px;
+            border-radius: 6px;
+            margin-top: 8px;
+            font-size: 11px;
+            color: #92400e;
+        }
+        .device-box {
+            margin-bottom: 20px;
+        }
+        .device-box-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 6px;
+        }
+        .device-title {
+            font-size: 13px;
+            font-weight: bold;
+            color: #0f172a;
+        }
+        .copy-btn {
+            background: #10b981;
+            color: #ecfdf5;
+            border-radius: 6px;
+            padding: 4px 10px;
+            font-size: 11px;
+            margin-top: 0;
+        }
+        .copy-btn:hover {
+            background: #059669;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <!-- Top bar with user info and return button -->
+        <div style="
+            max-width:1200px;
+            margin:0 auto;
+            padding:10px 16px;
+            display:flex;
+            justify-content:space-between;
+            align-items:center;
+            background:#e2e8f0;
+            border-bottom:1px solid #cbd5e1;
+        ">
+            <div>
+                <span style="font-size:14px; color:#475569;">👤 User: </span>
+                <span id="currentUser" style="font-size:14px; font-weight:bold; color:#0f172a;">Loading...</span>
+            </div>
+            <a href="/" 
+               style="
+                 padding:6px 14px;
+                 border-radius:6px;
+                 background:#ef4444;
+                 color:#ffffff;
+                 text-decoration:none;
+                 font-size:13px;
+                 font-weight:bold;
+               "
+               onmouseover="this.style.background='#dc2626'"
+               onmouseout="this.style.background='#ef4444'">
+              ⬅️ بازگشت به منو اصلی
+            </a>
+        </div>
+
+        <!-- Title section -->
+        <div style="text-align:center; padding:10px 16px; background:#e2e8f0;">
+            <h1>Intranet Config Generator</h1>
+            <div class="ascii-banner">
+                <pre>Keshavarzi Bank Network - WAN</pre>
+            </div>
+        </div>
+    </header>
+
+    <main>
+        <section class="card">
+            <h2>Inputs</h2>
+
+            <div class="user-info" id="userInfo" style="display:none;">
+                👤 User: <span id="currentUser2">Loading...</span>
+            </div>
+
+            <label>Choose a FREE /31 range</label>
+            <select id="tunnelSelect"></select>
+            <div class="tunnel-info">
+                ✓ First free tunnel auto-selected
+            </div>
+            <button class="reload-btn" onclick="loadTunnels()">🔄 Reload list</button>
+
+            <label>Loopback IP (Branch)</label>
+            <input type="text" id="loopbackip" placeholder="e.g. 10.210.27.24">
+
+            <label>Branch Tunnel Source</label>
+            <input type="text" id="tunnelsourcebranch" placeholder="e.g. 10.126.5.125">
+
+            <label>intnat Subnet</label>
+            <input type="text" id="intnatsubnet" placeholder="e.g. 10.27.24.0">
+
+            <label>Branch OSPF Area</label>
+            <input type="text" id="ospfareabranch" placeholder="e.g. 27">
+
+            <label>WAN-INTR Tunnel Name</label>
+            <input type="text" id="wantunnelname" placeholder="e.g. Tunnel305">
+
+            <label>WAN-INTR Tunnel Description</label>
+            <input type="text" id="wantunneldesc" placeholder="e.g. QZV-ZiaAbad">
+
+            <label>Province</label>
+            <select id="province">
+                <option value="">-- Select Province --</option>
+                <option>Alborz</option>
+                <option>Ardabil</option>
+                <option>Bushehr</option>
+                <option>Chaharmahal and Bakhtiari</option>
+                <option>East Azerbaijan</option>
+                <option>Fars</option>
+                <option>Gilan</option>
+                <option>Golestan</option>
+                <option>Hamadan</option>
+                <option>Hormozgan</option>
+                <option>Ilam</option>
+                <option>Isfahan</option>
+                <option>Kerman</option>
+                <option>Kermanshah</option>
+                <option>Khuzestan</option>
+                <option>Kohgiluyeh and Boyer-Ahmad</option>
+                <option>Kurdistan</option>
+                <option>Lorestan</option>
+                <option>Markazi</option>
+                <option>Mazandaran</option>
+                <option>North Khorasan</option>
+                <option>Qazvin</option>
+                <option>Qom</option>
+                <option>Razavi Khorasan</option>
+                <option>Semnan</option>
+                <option>Sistan and Baluchestan</option>
+                <option>South Khorasan</option>
+                <option>Tehran</option>
+                <option>West Azerbaijan</option>
+                <option>Yazd</option>
+                <option>Zanjan</option>
+            </select>
+
+            <div id="statusMessage"></div>
+
+            <button class="primary" id="generateBtn">Generate Configs</button>
+        </section>
+
+        <section class="card">
+            <h2>Generated Config</h2>
+
+            <div class="device-box">
+                <div class="device-box-header">
+                    <span class="device-title">Branch Router</span>
+                    <button class="copy-btn" onclick="copyConfig('branchConfig')">Copy</button>
+                </div>
+                <textarea id="branchConfig" readonly>Branch configuration will appear here...</textarea>
+            </div>
+
+            <div class="device-box">
+                <div class="device-box-header">
+                    <span class="device-title">WAN-INTR1 Router</span>
+                    <button class="copy-btn" onclick="copyConfig('wan1Config')">Copy</button>
+                </div>
+                <textarea id="wan1Config" readonly>WAN-INTR1 configuration will appear here...</textarea>
+            </div>
+
+            <div class="device-box">
+                <div class="device-box-header">
+                    <span class="device-title">WAN-INTR2 Router</span>
+                    <button class="copy-btn" onclick="copyConfig('wan2Config')">Copy</button>
+                </div>
+                <textarea id="wan2Config" readonly>WAN-INTR2 configuration will appear here...</textarea>
+            </div>
+        </section>
+    </main>
+
+    <script>
+        // Get username from storage
+        let currentUsername = localStorage.getItem('currentUser') ||
+                              localStorage.getItem('username') ||
+                              sessionStorage.getItem('username') ||
+                              'unknown';
+
+        document.getElementById('currentUser').textContent = currentUsername;
+
+        if (currentUsername === 'unknown') {
+            console.warn('No username found in storage. User may need to login again.');
+        }
+
+        function copyConfig(id) {
+            const el = document.getElementById(id);
+            el.select();
+            document.execCommand('copy');
+        }
+
+        // Show status message
+        function showStatus(message, isError = false) {
+            const statusDiv = document.getElementById('statusMessage');
+            statusDiv.className = 'status-message ' + (isError ? 'status-error' : 'status-success');
+            statusDiv.textContent = message;
+            setTimeout(() => {
+                statusDiv.textContent = '';
+                statusDiv.className = '';
+            }, 5000);
+        }
+
+        // Load free tunnels
+        async function loadTunnels() {
+            try {
+                let res = await fetch('/tunnels');
+                let data = await res.json();
+                let sel = document.getElementById('tunnelSelect');
+                sel.innerHTML = '';
+
+                if (data.length === 0) {
+                    sel.innerHTML += '<option value="">⚠ No free tunnels available</option>';
+                    showStatus('No free tunnels available!', true);
+                    return;
+                }
+
+                data.forEach((r, index) => {
+                    let o = document.createElement('option');
+                    o.value = JSON.stringify(r);
+                    o.text = `${r['IP Address']} ${index === 0 ? '← Selected' : ''}`;
+                    sel.add(o);
+                });
+
+                if (data.length > 0) {
+                    sel.selectedIndex = 0;
+                    console.log(`✓ Auto-selected first tunnel: ${data[0]['IP Address']}`);
+                }
+
+                console.log(`✓ Loaded ${data.length} free tunnels`);
+            } catch (err) {
+                console.error('Error loading tunnels:', err);
+                showStatus('Failed to load tunnels: ' + err.message, true);
+            }
+        }
+
+        // Generate config button handler
+        document.getElementById('generateBtn').addEventListener('click', async () => {
+            const generateBtn = document.getElementById('generateBtn');
+
+            const tunnelSelectValue = document.getElementById('tunnelSelect').value;
+            if (!tunnelSelectValue) {
+                showStatus('⚠ Please select a tunnel first!', true);
+                return;
+            }
+
+            let tunnelData;
+            try {
+                tunnelData = JSON.parse(tunnelSelectValue);
+            } catch (e) {
+                showStatus('⚠ Invalid tunnel selection!', true);
+                return;
+            }
+
+            let loopback = document.getElementById('loopbackip').value.trim();
+            let srcBranch = document.getElementById('tunnelsourcebranch').value.trim();
+            let intnat = document.getElementById('intnatsubnet').value.trim();
+            let area = document.getElementById('ospfareabranch').value.trim();
+            let wanName = document.getElementById('wantunnelname').value.trim();
+            let wanDesc = document.getElementById('wantunneldesc').value.trim();
+            let province = document.getElementById('province').value;
+
+            if (!loopback || !srcBranch || !intnat || !area || !wanName || !wanDesc || !province) {
+                showStatus('⚠ Please fill all required fields!', true);
+                return;
+            }
+
+            if (currentUsername === 'unknown') {
+                showStatus('⚠ Please login first!', true);
+                setTimeout(() => {
+                    window.location.href = '/login';
+                }, 2000);
+                return;
+            }
+
+            generateBtn.disabled = true;
+            generateBtn.textContent = '⏳ Reserving tunnel...';
+
+            try {
+                console.log('Reserving tunnel:', tunnelData['IP Address']);
+
+                const response = await fetch('/reserve', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        'IP Address': tunnelData['IP Address'],
+                        'Tunnel Name': wanName,
+                        'IP LAN': intnat,
+                        'IP Intranet': srcBranch,
+                        'Description': wanDesc,
+                        'Province': province,
+                        'by': currentUsername
+                    })
+                });
+
+                const result = await response.json();
+
+                if (result.status === 'ok') {
+                    showStatus(`✅ Tunnel ${tunnelData['IP Address']} reserved successfully by ${currentUsername}!`);
+                    console.log('✓ Tunnel reserved successfully');
+                    await loadTunnels();
+                } else {
+                    showStatus(`❌ Failed to reserve: ${result.error || 'Unknown error'}`, true);
+                    generateBtn.disabled = false;
+                    generateBtn.textContent = 'Generate Configs';
+                    return;
+                }
+
+            } catch (err) {
+                showStatus(`❌ Error: ${err.message}`, true);
+                console.error('Reservation error:', err);
+                generateBtn.disabled = false;
+                generateBtn.textContent = 'Generate Configs';
+                return;
+            }
+
+            let wanIp = tunnelData['IP Address'].split('/')[0];
+            let mask = '255.255.255.254';
+
+            function mirror200to201(ip) {
+                let p = ip.split('.');
+                if (p[0] === '10' && p[1] === '200') p[1] = '201';
+                return p.join('.');
+            }
+
+            let t200wan = wanIp;
+            let t201wan = mirror200to201(wanIp);
+
+            let base = wanIp.split('.');
+            base[3] = (parseInt(base[3]) + 1).toString();
+            let t200br = base.join('.');
+            let t201br = mirror200to201(t200br);
+
+            // Branch Router Config
+            const branchCfg = `
+crypto isakmp policy 102
+ encryption aes
+ hash sha
+ authentication pre-share
+ group 2
+crypto isakmp key N3w1ntr@n3t address 10.30.42.200
+crypto isakmp key N3w1ntr@n3t address 10.30.42.201
+!
+crypto ipsec transform-set BK!-TR esp-aes 256 esp-sha-hmac
+!
+crypto ipsec transform-set INTR1 esp-aes 256 esp-sha-hmac 
+ mode tunnel
+crypto ipsec transform-set INTR2 esp-aes 256 esp-sha-hmac 
+ mode tunnel
+!
+ip access-list extended INTR1ACL
+ permit gre host ${srcBranch} host 10.30.42.200
+ip access-list extended INTR2ACL
+ permit gre host ${srcBranch} host 10.30.42.201
+!
+crypto map BKI-MAP-INT 1 ipsec-isakmp
+ set peer 10.30.42.2
+ set transform-set BK!-TR
+ match address INTRANET-CRYPTO
+!
+crypto map BKI-MAP-INT 2 ipsec-isakmp
+ set peer 10.30.42.200
+ set transform-set INTR1
+ match address INTR1ACL
+crypto map BKI-MAP-INT 3 ipsec-isakmp
+ set peer 10.30.42.201
+ set transform-set INTR2
+ match address INTR2ACL
+!
+interface Loopback2
+ ip address ${loopback} 255.255.255.255
+!
+interface Tunnel200
+ description Intranet - R1
+ bandwidth 2000
+ ip address ${t200br} ${mask}
+ ip mtu 1360
+ ip nat outside
+ ip virtual-reassembly
+ ip tcp adjust-mss 1320
+ ip ospf cost 200
+ keepalive 10 3
+ tunnel source ${srcBranch}
+ tunnel destination 10.30.42.200
+!
+interface Tunnel201
+ description Intranet - R2
+ bandwidth 2000
+ ip address ${t201br} ${mask}
+ ip mtu 1360
+ ip nat outside
+ ip virtual-reassembly
+ ip tcp adjust-mss 1320
+ ip ospf cost 400
+ keepalive 10 3
+ tunnel source ${srcBranch}
+ tunnel destination 10.30.42.201
+!
+router ospf 200
+ router-id ${loopback}
+ network ${t200br} 0.0.0.0 area ${area}
+ network ${t201br} 0.0.0.0 area ${area}
+ network ${loopback} 0.0.0.0 area ${area}
+!
+ip access-list extended intnat
+ permit ip ${intnat} 0.0.0.255 10.0.0.0 0.0.255.255
+!
+ip nat inside source list intnat interface Loopback2 overload
+!
+do wr
+`.trim();
+
+            // WAN-INTR1 Config
+            const wan1Cfg = `
+interface ${wanName}
+ description ${wanDesc}
+ ip address ${t200wan} ${mask}
+ ip mtu 1360
+ ip nat inside
+ ip tcp adjust-mss 1320
+ keepalive 10 3
+ tunnel source 10.30.42.200
+ tunnel destination ${srcBranch}
+!
+router ospf 200
+ network ${t200wan} 0.0.0.0 area ${area}
+!
+do wr
+`.trim();
+
+            // WAN-INTR2 Config
+            const wan2Cfg = `
+interface ${wanName}
+ description ${wanDesc}
+ ip address ${t201wan} ${mask}
+ ip mtu 1360
+ ip nat inside
+ ip tcp adjust-mss 1320
+ keepalive 10 3
+ tunnel source 10.30.42.201
+ tunnel destination ${srcBranch}
+!
+router ospf 200
+ network ${t201wan} 0.0.0.0 area ${area}
+!
+do wr
+`.trim();
+
+            // Put configs into three separate boxes
+            document.getElementById('branchConfig').value = branchCfg;
+            document.getElementById('wan1Config').value   = wan1Cfg;
+            document.getElementById('wan2Config').value   = wan2Cfg;
+
+            generateBtn.disabled = false;
+            generateBtn.textText = 'Generate Configs';
+
+            console.log('✓ Configuration generated successfully');
+        });
+
+        // Load tunnels on page load
+        loadTunnels();
+    </script>
+
+</body>
+</html>

@@ -1,0 +1,742 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>پورتال مدیریت شبکه</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, sans-serif;
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            min-height: 100vh;
+            color: #e2e8f0;
+        }
+        
+        /* Animated Background */
+        .bg-animation {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            overflow: hidden;
+        }
+        
+        .bg-animation::before,
+        .bg-animation::after {
+            content: '';
+            position: absolute;
+            width: 500px;
+            height: 500px;
+            border-radius: 50%;
+            filter: blur(100px);
+            opacity: 0.3;
+            animation: float 25s ease-in-out infinite;
+        }
+        
+        .bg-animation::before {
+            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+            top: -10%;
+            left: 10%;
+        }
+        
+        .bg-animation::after {
+            background: linear-gradient(135deg, #06b6d4, #10b981);
+            bottom: -10%;
+            right: 10%;
+            animation-delay: -12s;
+        }
+        
+        @keyframes float {
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            25% { transform: translate(60px, 60px) scale(1.1); }
+            50% { transform: translate(0, 120px) scale(1); }
+            75% { transform: translate(-60px, 60px) scale(0.9); }
+        }
+        
+        /* Header */
+        .header {
+            background: rgba(30, 41, 59, 0.9);
+            backdrop-filter: blur(10px);
+            padding: 16px 32px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .logo-icon {
+            font-size: 2rem;
+        }
+        
+        .logo h1 {
+            font-size: 1.4rem;
+            font-weight: 600;
+        }
+        
+        .user-section {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+        
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            background: rgba(59, 130, 246, 0.1);
+            border-radius: 20px;
+            border: 1px solid rgba(59, 130, 246, 0.3);
+        }
+        
+        .logout-btn {
+            padding: 8px 16px;
+            background: rgba(239, 68, 68, 0.2);
+            border: 1px solid rgba(239, 68, 68, 0.5);
+            border-radius: 8px;
+            color: #fca5a5;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .logout-btn:hover {
+            background: rgba(239, 68, 68, 0.3);
+        }
+        
+        /* Container */
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 32px;
+        }
+        
+        /* Stats Grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 24px;
+            margin-bottom: 32px;
+        }
+        
+        @media (max-width: 1024px) {
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+        
+        @media (max-width: 640px) {
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .stat-card {
+            background: rgba(30, 41, 59, 0.6);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            padding: 24px;
+            border: 1px solid rgba(255,255,255,0.1);
+            transition: all 0.3s ease;
+            animation: fadeInUp 0.5s ease forwards;
+            opacity: 0;
+        }
+        
+        .stat-card:nth-child(1) { animation-delay: 0.1s; }
+        .stat-card:nth-child(2) { animation-delay: 0.2s; }
+        .stat-card:nth-child(3) { animation-delay: 0.3s; }
+        .stat-card:nth-child(4) { animation-delay: 0.4s; }
+        
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .stat-card:hover {
+            transform: translateY(-5px);
+            border-color: rgba(59, 130, 246, 0.5);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+        }
+        
+        .stat-card .icon {
+            font-size: 2.5rem;
+            margin-bottom: 16px;
+        }
+        
+        .stat-card .value {
+            font-size: 2.5rem;
+            font-weight: bold;
+            background: linear-gradient(135deg, #3b82f6, #60a5fa);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .stat-card .label {
+            color: #94a3b8;
+            font-size: 14px;
+            margin-top: 8px;
+        }
+        
+        .stat-card .sub-stats {
+            display: flex;
+            gap: 16px;
+            margin-top: 16px;
+            padding-top: 16px;
+            border-top: 1px solid rgba(255,255,255,0.1);
+        }
+        
+        .stat-card .sub-stat {
+            flex: 1;
+        }
+        
+        .stat-card .sub-stat .sub-value {
+            font-size: 1.2rem;
+            font-weight: 600;
+        }
+        
+        .stat-card .sub-stat .sub-label {
+            font-size: 11px;
+            color: #64748b;
+        }
+        
+        .stat-card .sub-stat.free .sub-value { color: #10b981; }
+        .stat-card .sub-stat.used .sub-value { color: #f59e0b; }
+        
+        /* Main Grid */
+        .main-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+        }
+        
+        @media (max-width: 1024px) {
+            .main-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        /* Card */
+        .card {
+            background: rgba(30, 41, 59, 0.6);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            border: 1px solid rgba(255,255,255,0.1);
+            overflow: hidden;
+            animation: fadeInUp 0.5s ease forwards;
+            opacity: 0;
+            animation-delay: 0.5s;
+        }
+        
+        .card-header {
+            padding: 20px 24px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        
+        .card-header h2 {
+            font-size: 1.1rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .card-body {
+            padding: 24px;
+        }
+        
+        /* Module Grid */
+        .module-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 16px;
+        }
+        
+        .module-card {
+            background: rgba(255,255,255,0.05);
+            border-radius: 12px;
+            padding: 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 1px solid transparent;
+            text-decoration: none;
+            color: inherit;
+        }
+        
+        .module-card:hover {
+            background: rgba(255,255,255,0.1);
+            transform: translateY(-3px);
+            border-color: rgba(59, 130, 246, 0.5);
+        }
+        
+        .module-card .icon {
+            font-size: 2rem;
+            margin-bottom: 12px;
+        }
+        
+        .module-card .title {
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+        
+        .module-card .desc {
+            font-size: 12px;
+            color: #94a3b8;
+        }
+        
+        .module-card.intranet { border-right: 3px solid #3b82f6; }
+        .module-card.apn-int { border-right: 3px solid #8b5cf6; }
+        .module-card.apn-mali { border-right: 3px solid #10b981; }
+        .module-card.reserve { border-right: 3px solid #f59e0b; }
+        .module-card.db-manager { border-right: 3px solid #ef4444; }
+        
+        /* Chart Container */
+        .chart-container {
+            position: relative;
+            height: 250px;
+        }
+        
+        /* Activity List */
+        .activity-list {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        
+        .activity-item {
+            display: flex;
+            gap: 12px;
+            padding: 12px;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            transition: background 0.3s ease;
+        }
+        
+        .activity-item:hover {
+            background: rgba(255,255,255,0.05);
+        }
+        
+        .activity-item:last-child {
+            border-bottom: none;
+        }
+        
+        .activity-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+        
+        .activity-icon.reserve {
+            background: rgba(16, 185, 129, 0.2);
+            color: #10b981;
+        }
+        
+        .activity-icon.config {
+            background: rgba(59, 130, 246, 0.2);
+            color: #3b82f6;
+        }
+        
+        .activity-icon.login {
+            background: rgba(139, 92, 246, 0.2);
+            color: #8b5cf6;
+        }
+        
+        .activity-content {
+            flex: 1;
+        }
+        
+        .activity-content .title {
+            font-weight: 500;
+            font-size: 14px;
+        }
+        
+        .activity-content .desc {
+            font-size: 12px;
+            color: #94a3b8;
+        }
+        
+        .activity-content .time {
+            font-size: 11px;
+            color: #64748b;
+            margin-top: 4px;
+        }
+        
+        /* Footer */
+        .footer {
+            text-align: center;
+            padding: 24px;
+            color: #64748b;
+            font-size: 13px;
+        }
+        
+        /* Loading */
+        .loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100px;
+            color: #94a3b8;
+        }
+        
+        .loading::after {
+            content: '';
+            width: 24px;
+            height: 24px;
+            border: 2px solid #3b82f6;
+            border-top-color: transparent;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 12px;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="bg-animation"></div>
+    
+    <header class="header">
+        <div class="logo">
+            <span class="logo-icon">🌐</span>
+            <h1>پورتال مدیریت شبکه</h1>
+        </div>
+        <div class="user-section">
+            <div class="user-info">
+                <span>👤</span>
+                <span id="currentUser">کاربر</span>
+            </div>
+            <button class="logout-btn" onclick="logout()">خروج</button>
+        </div>
+    </header>
+    
+    <div class="container">
+        <!-- Stats Cards -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="icon">📍</div>
+                <div class="value" id="totalLanIps">-</div>
+                <div class="label">کل IP های LAN</div>
+                <div class="sub-stats">
+                    <div class="sub-stat free">
+                        <div class="sub-value" id="freeLanIps">-</div>
+                        <div class="sub-label">آزاد</div>
+                    </div>
+                    <div class="sub-stat used">
+                        <div class="sub-value" id="usedLanIps">-</div>
+                        <div class="sub-label">استفاده شده</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="stat-card">
+                <div class="icon">🔗</div>
+                <div class="value" id="totalTunnels">-</div>
+                <div class="label">Tunnel های Intranet</div>
+                <div class="sub-stats">
+                    <div class="sub-stat free">
+                        <div class="sub-value" id="freeTunnels">-</div>
+                        <div class="sub-label">آزاد</div>
+                    </div>
+                    <div class="sub-stat used">
+                        <div class="sub-value" id="usedTunnels">-</div>
+                        <div class="sub-label">استفاده شده</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="stat-card">
+                <div class="icon">🟣</div>
+                <div class="value" id="totalApnInt">-</div>
+                <div class="label">APN غیرمالی</div>
+                <div class="sub-stats">
+                    <div class="sub-stat free">
+                        <div class="sub-value" id="freeApnInt">-</div>
+                        <div class="sub-label">آزاد</div>
+                    </div>
+                    <div class="sub-stat used">
+                        <div class="sub-value" id="usedApnInt">-</div>
+                        <div class="sub-label">استفاده شده</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="stat-card">
+                <div class="icon">🟢</div>
+                <div class="value" id="totalApnMali">-</div>
+                <div class="label">APN مالی</div>
+                <div class="sub-stats">
+                    <div class="sub-stat free">
+                        <div class="sub-value" id="freeApnMali">-</div>
+                        <div class="sub-label">آزاد</div>
+                    </div>
+                    <div class="sub-stat used">
+                        <div class="sub-value" id="usedApnMali">-</div>
+                        <div class="sub-label">استفاده شده</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Main Grid -->
+        <div class="main-grid">
+            <!-- Modules Card -->
+            <div class="card">
+                <div class="card-header">
+                    <h2>🚀 ماژول‌های سیستم</h2>
+                </div>
+                <div class="card-body">
+                    <div class="module-grid">
+                        <a href="/intranet" class="module-card intranet">
+                            <div class="icon">🔵</div>
+                            <div class="title">INTRANET</div>
+                            <div class="desc">LAN & Tunnel200 برای WAN-INTR</div>
+                        </a>
+                        
+                        <a href="/apn-int" class="module-card apn-int">
+                            <div class="icon">🟣</div>
+                            <div class="title">APN غیرمالی</div>
+                            <div class="desc">APN-INT to HUB ASR + Tunnel200</div>
+                        </a>
+                        
+                        <a href="/apn-mali" class="module-card apn-mali">
+                            <div class="icon">🟢</div>
+                            <div class="title">APN مالی</div>
+                            <div class="desc">ISR-APN-RO + Financial APN</div>
+                        </a>
+                        
+                        <a href="/reserve-lan" class="module-card reserve">
+                            <div class="icon">🟡</div>
+                            <div class="title">رزرو IP LAN</div>
+                            <div class="desc">رزرو IP با انقضای 60 روزه</div>
+                        </a>
+                        
+                        <a href="/db-manager" class="module-card db-manager" style="grid-column: span 2; display: none;" id="dbManagerLink">
+                            <div class="icon">📊</div>
+                            <div class="title">مدیریت دیتابیس</div>
+                            <div class="desc">آپلود Excel، Backup، بروزرسانی داده‌ها (فقط ادمین)</div>
+                        </a>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Chart Card -->
+            <div class="card">
+                <div class="card-header">
+                    <h2>📈 نمودار وضعیت IP ها</h2>
+                </div>
+                <div class="card-body">
+                    <div class="chart-container">
+                        <canvas id="ipChart"></canvas>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Activity Card -->
+            <div class="card" style="grid-column: span 2;">
+                <div class="card-header">
+                    <h2>📋 فعالیت‌های اخیر</h2>
+                </div>
+                <div class="card-body">
+                    <div class="activity-list" id="activityList">
+                        <div class="loading">در حال بارگذاری...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <footer class="footer">
+        <p>🏢 Network Configuration Portal - Version 3.0</p>
+    </footer>
+    
+    <script>
+        let ipChart = null;
+        
+        // Check authentication
+        document.addEventListener('DOMContentLoaded', function() {
+            const username = localStorage.getItem('currentUser');
+            if (!username) {
+                location.href = '/login';
+                return;
+            }
+            document.getElementById('currentUser').textContent = username;
+            
+            // Check if user is admin (Sahebdel)
+            if (username === 'Sahebdel') {
+                document.getElementById('dbManagerLink').style.display = 'flex';
+            }
+            
+            loadStatistics();
+            loadActivity();
+        });
+        
+        function logout() {
+            localStorage.removeItem('currentUser');
+            location.href = '/login';
+        }
+        
+        async function loadStatistics() {
+            try {
+                const response = await fetch('/api/stats');
+                const data = await response.json();
+                
+                // LAN IPs
+                document.getElementById('totalLanIps').textContent = formatNumber(data.lan_ips?.total || 0);
+                document.getElementById('freeLanIps').textContent = formatNumber(data.lan_ips?.free || 0);
+                document.getElementById('usedLanIps').textContent = formatNumber(data.lan_ips?.used || 0);
+                
+                // Tunnels
+                const tunnelUsed = (data.tunnels?.total || 0) - (data.tunnels?.free || 0);
+                document.getElementById('totalTunnels').textContent = formatNumber(data.tunnels?.total || 0);
+                document.getElementById('freeTunnels').textContent = formatNumber(data.tunnels?.free || 0);
+                document.getElementById('usedTunnels').textContent = formatNumber(tunnelUsed);
+                
+                // APN غیرمالی
+                const apnUsed = (data.apn?.total || 0) - (data.apn?.free || 0);
+                document.getElementById('totalApnInt').textContent = formatNumber(data.apn?.total || 0);
+                document.getElementById('freeApnInt').textContent = formatNumber(data.apn?.free || 0);
+                document.getElementById('usedApnInt').textContent = formatNumber(apnUsed);
+                
+                // APN مالی
+                const maliUsed = (data.apn_mali?.total || 0) - (data.apn_mali?.free || 0);
+                document.getElementById('totalApnMali').textContent = formatNumber(data.apn_mali?.total || 0);
+                document.getElementById('freeApnMali').textContent = formatNumber(data.apn_mali?.free || 0);
+                document.getElementById('usedApnMali').textContent = formatNumber(maliUsed);
+                
+                // Update chart
+                updateChart(data);
+                
+            } catch (error) {
+                console.error('Error loading statistics:', error);
+            }
+        }
+        
+        function formatNumber(num) {
+            return new Intl.NumberFormat('fa-IR').format(num);
+        }
+        
+        function updateChart(data) {
+            const ctx = document.getElementById('ipChart').getContext('2d');
+            
+            if (ipChart) {
+                ipChart.destroy();
+            }
+            
+            ipChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['LAN آزاد', 'LAN استفاده شده', 'Tunnel آزاد', 'Tunnel استفاده شده'],
+                    datasets: [{
+                        data: [
+                            data.lan_ips?.free || 0,
+                            data.lan_ips?.used || 0,
+                            data.tunnels?.free || 0,
+                            (data.tunnels?.total || 0) - (data.tunnels?.free || 0)
+                        ],
+                        backgroundColor: [
+                            'rgba(16, 185, 129, 0.8)',
+                            'rgba(245, 158, 11, 0.8)',
+                            'rgba(59, 130, 246, 0.8)',
+                            'rgba(139, 92, 246, 0.8)'
+                        ],
+                        borderColor: [
+                            'rgba(16, 185, 129, 1)',
+                            'rgba(245, 158, 11, 1)',
+                            'rgba(59, 130, 246, 1)',
+                            'rgba(139, 92, 246, 1)'
+                        ],
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'right',
+                            labels: {
+                                color: '#e2e8f0',
+                                font: { size: 12 },
+                                padding: 16
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        
+        async function loadActivity() {
+            const container = document.getElementById('activityList');
+            
+            try {
+                const response = await fetch('/api/db/activity');
+                const activities = await response.json();
+                
+                if (activities.length === 0) {
+                    container.innerHTML = '<div style="text-align: center; padding: 32px; color: #94a3b8;">هیچ فعالیتی ثبت نشده</div>';
+                    return;
+                }
+                
+                container.innerHTML = activities.slice(0, 10).map(act => {
+                    let iconClass = 'config';
+                    let icon = '⚙️';
+                    
+                    if (act.title.includes('رزرو')) {
+                        iconClass = 'reserve';
+                        icon = '📍';
+                    } else if (act.title.includes('ورود')) {
+                        iconClass = 'login';
+                        icon = '🔐';
+                    } else if (act.title.includes('آزادسازی')) {
+                        iconClass = 'reserve';
+                        icon = '🔓';
+                    } else if (act.title.includes('آپلود') || act.title.includes('Backup')) {
+                        iconClass = 'config';
+                        icon = '💾';
+                    }
+                    
+                    return `
+                        <div class="activity-item">
+                            <div class="activity-icon ${iconClass}">${icon}</div>
+                            <div class="activity-content">
+                                <div class="title">${act.title}</div>
+                                <div class="desc">${act.description}</div>
+                                <div class="time">${act.time} - ${act.user}</div>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+                
+            } catch (error) {
+                container.innerHTML = '<div style="text-align: center; padding: 32px; color: #94a3b8;">خطا در بارگذاری</div>';
+            }
+        }
+    </script>
+</body>
+</html>
