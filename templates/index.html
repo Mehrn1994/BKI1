@@ -4,8 +4,42 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>پورتال مدیریت شبکه</title>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
+        /* ========== THEME VARIABLES ========== */
+        :root {
+            --bg-primary: #0f172a;
+            --bg-secondary: #1e293b;
+            --bg-card: rgba(30, 41, 59, 0.8);
+            --bg-header: rgba(30, 41, 59, 0.95);
+            --text-primary: #e2e8f0;
+            --text-secondary: #94a3b8;
+            --text-muted: #64748b;
+            --border-color: rgba(255, 255, 255, 0.1);
+            --shadow-color: rgba(0, 0, 0, 0.3);
+            --accent-green: #10b981;
+            --accent-blue: #3b82f6;
+            --accent-purple: #8b5cf6;
+            --accent-orange: #f59e0b;
+            --card-hover: rgba(255, 255, 255, 0.05);
+        }
+
+        [data-theme="light"] {
+            --bg-primary: #f8fafc;
+            --bg-secondary: #e2e8f0;
+            --bg-card: #ffffff;
+            --bg-header: #ffffff;
+            --text-primary: #0f172a;
+            --text-secondary: #1e293b;
+            --text-muted: #334155;
+            --border-color: rgba(0, 0, 0, 0.12);
+            --shadow-color: rgba(0, 0, 0, 0.08);
+            --accent-green: #059669;
+            --accent-blue: #2563eb;
+            --accent-purple: #7c3aed;
+            --accent-orange: #d97706;
+            --card-hover: rgba(0, 0, 0, 0.04);
+        }
+
         * {
             margin: 0;
             padding: 0;
@@ -14,12 +48,15 @@
         
         body {
             font-family: 'Segoe UI', Tahoma, sans-serif;
-            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 100%);
             min-height: 100vh;
-            color: #e2e8f0;
+            color: var(--text-primary);
+            font-size: 16px;
+            line-height: 1.6;
+            transition: background 0.3s ease, color 0.3s ease;
         }
         
-        /* Animated Background */
+        /* Background Image with Shadow Effect */
         .bg-animation {
             position: fixed;
             top: 0;
@@ -30,29 +67,37 @@
             overflow: hidden;
         }
         
-        .bg-animation::before,
+        .bg-animation::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: url('background.jpg');
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            opacity: 0.15;
+            filter: blur(2px);
+        }
+        
         .bg-animation::after {
             content: '';
             position: absolute;
-            width: 500px;
-            height: 500px;
-            border-radius: 50%;
-            filter: blur(100px);
-            opacity: 0.3;
-            animation: float 25s ease-in-out infinite;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, rgba(15, 23, 42, 0.85) 0%, rgba(30, 41, 59, 0.9) 100%);
+        }
+
+        [data-theme="light"] .bg-animation::before {
+            opacity: 0.25;
         }
         
-        .bg-animation::before {
-            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
-            top: -10%;
-            left: 10%;
-        }
-        
-        .bg-animation::after {
-            background: linear-gradient(135deg, #06b6d4, #10b981);
-            bottom: -10%;
-            right: 10%;
-            animation-delay: -12s;
+        [data-theme="light"] .bg-animation::after {
+            background: linear-gradient(135deg, rgba(248, 250, 252, 0.85) 0%, rgba(226, 232, 240, 0.9) 100%);
         }
         
         @keyframes float {
@@ -64,16 +109,21 @@
         
         /* Header */
         .header {
-            background: rgba(30, 41, 59, 0.9);
+            background: var(--bg-header);
             backdrop-filter: blur(10px);
             padding: 16px 32px;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            border-bottom: 1px solid rgba(255,255,255,0.1);
+            border-bottom: 1px solid var(--border-color);
             position: sticky;
             top: 0;
             z-index: 100;
+            transition: background 0.3s ease;
+        }
+
+        [data-theme="light"] .header {
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
         }
         
         .logo {
@@ -83,42 +133,67 @@
         }
         
         .logo-icon {
-            font-size: 2rem;
+            font-size: 2.2rem;
         }
         
         .logo h1 {
-            font-size: 1.4rem;
-            font-weight: 600;
+            font-size: 1.6rem;
+            font-weight: 700;
+            color: var(--text-primary);
         }
         
         .user-section {
             display: flex;
             align-items: center;
-            gap: 20px;
+            gap: 16px;
+        }
+
+        .theme-toggle {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 50%;
+            width: 44px;
+            height: 44px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.3rem;
+            transition: all 0.3s ease;
+        }
+
+        .theme-toggle:hover {
+            transform: scale(1.1);
+            background: var(--card-hover);
         }
         
         .user-info {
             display: flex;
             align-items: center;
             gap: 8px;
-            padding: 8px 16px;
+            padding: 10px 18px;
             background: rgba(59, 130, 246, 0.1);
-            border-radius: 20px;
-            border: 1px solid rgba(59, 130, 246, 0.3);
+            border-radius: 25px;
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--text-primary);
         }
         
         .logout-btn {
-            padding: 8px 16px;
-            background: rgba(239, 68, 68, 0.2);
-            border: 1px solid rgba(239, 68, 68, 0.5);
+            padding: 10px 20px;
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+            color: white;
+            border: none;
             border-radius: 8px;
-            color: #fca5a5;
             cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
             transition: all 0.3s ease;
         }
         
         .logout-btn:hover {
-            background: rgba(239, 68, 68, 0.3);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4);
         }
         
         /* Container */
@@ -149,14 +224,18 @@
         }
         
         .stat-card {
-            background: rgba(30, 41, 59, 0.6);
+            background: var(--bg-card);
             backdrop-filter: blur(10px);
             border-radius: 16px;
-            padding: 24px;
-            border: 1px solid rgba(255,255,255,0.1);
+            padding: 28px;
+            border: 1px solid var(--border-color);
             transition: all 0.3s ease;
             animation: fadeInUp 0.5s ease forwards;
             opacity: 0;
+        }
+
+        [data-theme="light"] .stat-card {
+            box-shadow: 0 4px 16px rgba(0,0,0,0.06);
         }
         
         .stat-card:nth-child(1) { animation-delay: 0.1s; }
@@ -177,36 +256,37 @@
         
         .stat-card:hover {
             transform: translateY(-5px);
-            border-color: rgba(59, 130, 246, 0.5);
-            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+            border-color: var(--accent-blue);
+            box-shadow: 0 20px 40px var(--shadow-color);
         }
         
         .stat-card .icon {
-            font-size: 2.5rem;
+            font-size: 2.8rem;
             margin-bottom: 16px;
         }
         
         .stat-card .value {
-            font-size: 2.5rem;
-            font-weight: bold;
-            background: linear-gradient(135deg, #3b82f6, #60a5fa);
+            font-size: 2.8rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--accent-blue), #60a5fa);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
         }
         
         .stat-card .label {
-            color: #94a3b8;
-            font-size: 14px;
+            color: var(--text-secondary);
+            font-size: 15px;
+            font-weight: 600;
             margin-top: 8px;
         }
         
         .stat-card .sub-stats {
             display: flex;
-            gap: 16px;
-            margin-top: 16px;
-            padding-top: 16px;
-            border-top: 1px solid rgba(255,255,255,0.1);
+            gap: 20px;
+            margin-top: 18px;
+            padding-top: 18px;
+            border-top: 1px solid var(--border-color);
         }
         
         .stat-card .sub-stat {
@@ -214,17 +294,18 @@
         }
         
         .stat-card .sub-stat .sub-value {
-            font-size: 1.2rem;
-            font-weight: 600;
+            font-size: 1.4rem;
+            font-weight: 700;
         }
         
         .stat-card .sub-stat .sub-label {
-            font-size: 11px;
-            color: #64748b;
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--text-muted);
         }
         
-        .stat-card .sub-stat.free .sub-value { color: #10b981; }
-        .stat-card .sub-stat.used .sub-value { color: #f59e0b; }
+        .stat-card .sub-stat.free .sub-value { color: var(--accent-green); }
+        .stat-card .sub-stat.used .sub-value { color: var(--accent-orange); }
         
         /* Main Grid */
         .main-grid {
@@ -241,26 +322,33 @@
         
         /* Card */
         .card {
-            background: rgba(30, 41, 59, 0.6);
+            background: var(--bg-card);
             backdrop-filter: blur(10px);
             border-radius: 16px;
-            border: 1px solid rgba(255,255,255,0.1);
+            border: 1px solid var(--border-color);
             overflow: hidden;
             animation: fadeInUp 0.5s ease forwards;
             opacity: 0;
             animation-delay: 0.5s;
+            transition: background 0.3s ease;
+        }
+
+        [data-theme="light"] .card {
+            box-shadow: 0 4px 16px rgba(0,0,0,0.06);
         }
         
         .card-header {
             padding: 20px 24px;
-            border-bottom: 1px solid rgba(255,255,255,0.1);
+            border-bottom: 1px solid var(--border-color);
         }
         
         .card-header h2 {
-            font-size: 1.1rem;
+            font-size: 1.2rem;
+            font-weight: 700;
             display: flex;
             align-items: center;
             gap: 10px;
+            color: var(--text-primary);
         }
         
         .card-body {
@@ -275,9 +363,9 @@
         }
         
         .module-card {
-            background: rgba(255,255,255,0.05);
+            background: var(--card-hover);
             border-radius: 12px;
-            padding: 20px;
+            padding: 22px;
             cursor: pointer;
             transition: all 0.3s ease;
             border: 1px solid transparent;
@@ -286,54 +374,79 @@
         }
         
         .module-card:hover {
-            background: rgba(255,255,255,0.1);
+            background: var(--bg-card);
             transform: translateY(-3px);
-            border-color: rgba(59, 130, 246, 0.5);
+            border-color: var(--accent-blue);
+            box-shadow: 0 10px 30px var(--shadow-color);
         }
         
         .module-card .icon {
-            font-size: 2rem;
+            font-size: 2.2rem;
             margin-bottom: 12px;
         }
         
         .module-card .title {
-            font-weight: 600;
-            margin-bottom: 4px;
+            font-size: 16px;
+            font-weight: 700;
+            margin-bottom: 6px;
+            color: var(--text-primary);
         }
         
         .module-card .desc {
-            font-size: 12px;
-            color: #94a3b8;
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--text-secondary);
         }
         
-        .module-card.intranet { border-right: 3px solid #3b82f6; }
-        .module-card.apn-int { border-right: 3px solid #8b5cf6; }
-        .module-card.apn-mali { border-right: 3px solid #10b981; }
-        .module-card.reserve { border-right: 3px solid #f59e0b; }
-        .module-card.db-manager { border-right: 3px solid #ef4444; }
+        .module-card.intranet { border-right: 4px solid var(--accent-blue); }
+        .module-card.apn-int { border-right: 4px solid var(--accent-purple); }
+        .module-card.apn-mali { border-right: 4px solid var(--accent-green); }
+        .module-card.reserve { border-right: 4px solid var(--accent-orange); }
+        .module-card.db-manager { border-right: 4px solid #ef4444; }
         
         /* Chart Container */
         .chart-container {
-            position: relative;
-            height: 250px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 40px;
+            min-height: 280px;
+        }
+        
+        .chart-legend {
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+        }
+
+        .chart-legend > div {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .chart-legend span {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-primary);
         }
         
         /* Activity List */
         .activity-list {
-            max-height: 300px;
+            max-height: 320px;
             overflow-y: auto;
         }
         
         .activity-item {
             display: flex;
-            gap: 12px;
-            padding: 12px;
-            border-bottom: 1px solid rgba(255,255,255,0.05);
+            gap: 14px;
+            padding: 14px;
+            border-bottom: 1px solid var(--border-color);
             transition: background 0.3s ease;
         }
         
         .activity-item:hover {
-            background: rgba(255,255,255,0.05);
+            background: var(--card-hover);
         }
         
         .activity-item:last-child {
@@ -341,28 +454,29 @@
         }
         
         .activity-icon {
-            width: 36px;
-            height: 36px;
+            width: 40px;
+            height: 40px;
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
             flex-shrink: 0;
+            font-size: 1.1rem;
         }
         
         .activity-icon.reserve {
             background: rgba(16, 185, 129, 0.2);
-            color: #10b981;
+            color: var(--accent-green);
         }
         
         .activity-icon.config {
             background: rgba(59, 130, 246, 0.2);
-            color: #3b82f6;
+            color: var(--accent-blue);
         }
         
         .activity-icon.login {
             background: rgba(139, 92, 246, 0.2);
-            color: #8b5cf6;
+            color: var(--accent-purple);
         }
         
         .activity-content {
@@ -370,18 +484,21 @@
         }
         
         .activity-content .title {
-            font-weight: 500;
-            font-size: 14px;
+            font-weight: 600;
+            font-size: 15px;
+            color: var(--text-primary);
         }
         
         .activity-content .desc {
-            font-size: 12px;
-            color: #94a3b8;
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--text-secondary);
         }
         
         .activity-content .time {
-            font-size: 11px;
-            color: #64748b;
+            font-size: 12px;
+            font-weight: 500;
+            color: var(--text-muted);
             margin-top: 4px;
         }
         
@@ -389,24 +506,25 @@
         .footer {
             text-align: center;
             padding: 24px;
-            color: #64748b;
-            font-size: 13px;
+            color: var(--text-muted);
+            font-size: 14px;
+            font-weight: 500;
         }
         
-        /* Loading */
         .loading {
             display: flex;
             align-items: center;
             justify-content: center;
             height: 100px;
-            color: #94a3b8;
+            color: var(--text-secondary);
+            font-size: 15px;
         }
         
         .loading::after {
             content: '';
             width: 24px;
             height: 24px;
-            border: 2px solid #3b82f6;
+            border: 2px solid var(--accent-blue);
             border-top-color: transparent;
             border-radius: 50%;
             animation: spin 1s linear infinite;
@@ -416,6 +534,107 @@
         @keyframes spin {
             to { transform: rotate(360deg); }
         }
+        
+        /* Problematic Nodes Table */
+        .problem-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+        }
+        
+        .problem-table th {
+            background: var(--bg-secondary);
+            padding: 12px 16px;
+            text-align: right;
+            font-weight: 600;
+            color: var(--text-secondary);
+            border-bottom: 1px solid var(--border-color);
+            font-size: 12px;
+            text-transform: uppercase;
+        }
+        
+        .problem-table td {
+            padding: 12px 16px;
+            border-bottom: 1px solid var(--border-color);
+            color: var(--text-primary);
+        }
+        
+        .problem-table tbody tr:hover {
+            background: var(--card-hover);
+        }
+        
+        .problem-table tbody tr:last-child td {
+            border-bottom: none;
+        }
+        
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        
+        .status-badge.down {
+            background: rgba(239, 68, 68, 0.2);
+            color: #fca5a5;
+        }
+        
+        .status-badge.timeout {
+            background: rgba(245, 158, 11, 0.2);
+            color: #fcd34d;
+        }
+        
+        .status-badge.packet-loss {
+            background: rgba(236, 72, 153, 0.2);
+            color: #f9a8d4;
+        }
+        
+        .status-indicator {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+        
+        .status-indicator.down { background: #ef4444; }
+        .status-indicator.timeout { background: #f59e0b; }
+        .status-indicator.packet-loss { background: #ec4899; }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        
+        .empty-problems {
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--text-muted);
+        }
+        
+        .empty-problems .icon {
+            font-size: 48px;
+            margin-bottom: 12px;
+        }
+        
+        .ping-btn {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            color: var(--text-secondary);
+            padding: 6px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.2s ease;
+        }
+        
+        .ping-btn:hover {
+            background: var(--accent-blue);
+            color: white;
+            border-color: var(--accent-blue);
+        }
     </style>
 </head>
 <body>
@@ -423,10 +642,13 @@
     
     <header class="header">
         <div class="logo">
-            <span class="logo-icon">🌐</span>
+            <img src="logo.png" alt="Logo" style="height: 40px; margin-left: 12px; border-radius: 8px;">
             <h1>پورتال مدیریت شبکه</h1>
         </div>
         <div class="user-section">
+            <button class="theme-toggle" onclick="toggleTheme()" title="تغییر تم">
+                <span id="themeIcon">🌙</span>
+            </button>
             <div class="user-info">
                 <span>👤</span>
                 <span id="currentUser">کاربر</span>
@@ -503,7 +725,7 @@
             </div>
         </div>
         
-        <!-- Main Grid -->
+        <!-- Main Content Grid -->
         <div class="main-grid">
             <!-- Modules Card -->
             <div class="card">
@@ -515,7 +737,7 @@
                         <a href="/intranet" class="module-card intranet">
                             <div class="icon">🔵</div>
                             <div class="title">INTRANET</div>
-                            <div class="desc">LAN & Tunnel200 برای WAN-INTR</div>
+                            <div class="desc">WAN-INTR برای LAN & Tunnel200</div>
                         </a>
                         
                         <a href="/apn-int" class="module-card apn-int">
@@ -536,7 +758,7 @@
                             <div class="desc">رزرو IP با انقضای 60 روزه</div>
                         </a>
                         
-                        <a href="/db-manager" class="module-card db-manager" style="grid-column: span 2; display: none;" id="dbManagerLink">
+                        <a href="/db-manager" class="module-card db-manager" style="display: none;" id="dbManagerLink">
                             <div class="icon">📊</div>
                             <div class="title">مدیریت دیتابیس</div>
                             <div class="desc">آپلود Excel، Backup، بروزرسانی داده‌ها (فقط ادمین)</div>
@@ -552,10 +774,226 @@
                 </div>
                 <div class="card-body">
                     <div class="chart-container">
-                        <canvas id="ipChart"></canvas>
+                        <svg id="donutChart" width="220" height="220" viewBox="0 0 200 200">
+                            <circle cx="100" cy="100" r="70" fill="none" stroke="#334155" stroke-width="30"/>
+                            <circle id="chartSlice1" cx="100" cy="100" r="70" fill="none" stroke="#10b981" stroke-width="30" 
+                                    stroke-dasharray="0 440" stroke-dashoffset="110" transform="rotate(-90 100 100)"/>
+                            <circle id="chartSlice2" cx="100" cy="100" r="70" fill="none" stroke="#f59e0b" stroke-width="30" 
+                                    stroke-dasharray="0 440" stroke-dashoffset="110" transform="rotate(-90 100 100)"/>
+                            <circle id="chartSlice3" cx="100" cy="100" r="70" fill="none" stroke="#3b82f6" stroke-width="30" 
+                                    stroke-dasharray="0 440" stroke-dashoffset="110" transform="rotate(-90 100 100)"/>
+                            <circle id="chartSlice4" cx="100" cy="100" r="70" fill="none" stroke="#8b5cf6" stroke-width="30" 
+                                    stroke-dasharray="0 440" stroke-dashoffset="110" transform="rotate(-90 100 100)"/>
+                        </svg>
+                        <div class="chart-legend">
+                            <div>
+                                <div style="width: 18px; height: 18px; background: #10b981; border-radius: 4px;"></div>
+                                <span id="legendLanFree">LAN آزاد: 0</span>
+                            </div>
+                            <div>
+                                <div style="width: 18px; height: 18px; background: #f59e0b; border-radius: 4px;"></div>
+                                <span id="legendLanUsed">LAN استفاده شده: 0</span>
+                            </div>
+                            <div>
+                                <div style="width: 18px; height: 18px; background: #3b82f6; border-radius: 4px;"></div>
+                                <span id="legendTunFree">Tunnel آزاد: 0</span>
+                            </div>
+                            <div>
+                                <div style="width: 18px; height: 18px; background: #8b5cf6; border-radius: 4px;"></div>
+                                <span id="legendTunUsed">Tunnel استفاده شده: 0</span>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
+            
+            <!-- System Info Card - EPIC DASHBOARD -->
+            <div class="card" style="grid-column: span 2;">
+                <div class="card-header">
+                    <h2>📊 داشبورد شبکه</h2>
+                </div>
+                <div class="card-body">
+                    <div id="systemInfoContainer">
+                        
+                        <!-- Row 1: Gauge Charts -->
+                        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; margin-bottom: 24px;">
+                            <!-- LAN IP Gauge -->
+                            <div class="gauge-container" style="text-align: center;">
+                                <div class="gauge-wrapper" style="position: relative; width: 120px; height: 120px; margin: 0 auto;">
+                                    <svg viewBox="0 0 120 120" style="transform: rotate(-90deg);">
+                                        <circle cx="60" cy="60" r="50" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="12"/>
+                                        <circle id="gaugeLan" cx="60" cy="60" r="50" fill="none" stroke="url(#gradientLan)" stroke-width="12" 
+                                                stroke-dasharray="0 314" stroke-linecap="round" style="transition: stroke-dasharray 1.5s ease-out;"/>
+                                        <defs>
+                                            <linearGradient id="gradientLan" x1="0%" y1="0%" x2="100%" y2="0%">
+                                                <stop offset="0%" style="stop-color:#10b981"/>
+                                                <stop offset="100%" style="stop-color:#34d399"/>
+                                            </linearGradient>
+                                        </defs>
+                                    </svg>
+                                    <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center;">
+                                        <div id="gaugeLanPercent" style="font-size: 24px; font-weight: 700; color: #10b981;">0%</div>
+                                        <div style="font-size: 10px; color: var(--text-muted);">استفاده</div>
+                                    </div>
+                                </div>
+                                <div style="margin-top: 8px; font-weight: 600; font-size: 13px;">📍 LAN IPs</div>
+                                <div style="font-size: 11px; color: var(--text-muted);"><span id="gaugeLanUsed">0</span> / <span id="gaugeLanTotal">0</span></div>
+                            </div>
+                            
+                            <!-- Tunnel Gauge -->
+                            <div class="gauge-container" style="text-align: center;">
+                                <div class="gauge-wrapper" style="position: relative; width: 120px; height: 120px; margin: 0 auto;">
+                                    <svg viewBox="0 0 120 120" style="transform: rotate(-90deg);">
+                                        <circle cx="60" cy="60" r="50" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="12"/>
+                                        <circle id="gaugeTunnel" cx="60" cy="60" r="50" fill="none" stroke="url(#gradientTunnel)" stroke-width="12" 
+                                                stroke-dasharray="0 314" stroke-linecap="round" style="transition: stroke-dasharray 1.5s ease-out;"/>
+                                        <defs>
+                                            <linearGradient id="gradientTunnel" x1="0%" y1="0%" x2="100%" y2="0%">
+                                                <stop offset="0%" style="stop-color:#3b82f6"/>
+                                                <stop offset="100%" style="stop-color:#60a5fa"/>
+                                            </linearGradient>
+                                        </defs>
+                                    </svg>
+                                    <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center;">
+                                        <div id="gaugeTunnelPercent" style="font-size: 24px; font-weight: 700; color: #3b82f6;">0%</div>
+                                        <div style="font-size: 10px; color: var(--text-muted);">استفاده</div>
+                                    </div>
+                                </div>
+                                <div style="margin-top: 8px; font-weight: 600; font-size: 13px;">🔗 Tunnels</div>
+                                <div style="font-size: 11px; color: var(--text-muted);"><span id="gaugeTunnelUsed">0</span> / <span id="gaugeTunnelTotal">0</span></div>
+                            </div>
+                            
+                            <!-- APN INT Gauge -->
+                            <div class="gauge-container" style="text-align: center;">
+                                <div class="gauge-wrapper" style="position: relative; width: 120px; height: 120px; margin: 0 auto;">
+                                    <svg viewBox="0 0 120 120" style="transform: rotate(-90deg);">
+                                        <circle cx="60" cy="60" r="50" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="12"/>
+                                        <circle id="gaugeApnInt" cx="60" cy="60" r="50" fill="none" stroke="url(#gradientApnInt)" stroke-width="12" 
+                                                stroke-dasharray="0 314" stroke-linecap="round" style="transition: stroke-dasharray 1.5s ease-out;"/>
+                                        <defs>
+                                            <linearGradient id="gradientApnInt" x1="0%" y1="0%" x2="100%" y2="0%">
+                                                <stop offset="0%" style="stop-color:#8b5cf6"/>
+                                                <stop offset="100%" style="stop-color:#a78bfa"/>
+                                            </linearGradient>
+                                        </defs>
+                                    </svg>
+                                    <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center;">
+                                        <div id="gaugeApnIntPercent" style="font-size: 24px; font-weight: 700; color: #8b5cf6;">0%</div>
+                                        <div style="font-size: 10px; color: var(--text-muted);">استفاده</div>
+                                    </div>
+                                </div>
+                                <div style="margin-top: 8px; font-weight: 600; font-size: 13px;">🟣 APN غیرمالی</div>
+                                <div style="font-size: 11px; color: var(--text-muted);"><span id="gaugeApnIntUsed">0</span> / <span id="gaugeApnIntTotal">0</span></div>
+                            </div>
+                            
+                            <!-- APN Mali Gauge -->
+                            <div class="gauge-container" style="text-align: center;">
+                                <div class="gauge-wrapper" style="position: relative; width: 120px; height: 120px; margin: 0 auto;">
+                                    <svg viewBox="0 0 120 120" style="transform: rotate(-90deg);">
+                                        <circle cx="60" cy="60" r="50" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="12"/>
+                                        <circle id="gaugeApnMali" cx="60" cy="60" r="50" fill="none" stroke="url(#gradientApnMali)" stroke-width="12" 
+                                                stroke-dasharray="0 314" stroke-linecap="round" style="transition: stroke-dasharray 1.5s ease-out;"/>
+                                        <defs>
+                                            <linearGradient id="gradientApnMali" x1="0%" y1="0%" x2="100%" y2="0%">
+                                                <stop offset="0%" style="stop-color:#f59e0b"/>
+                                                <stop offset="100%" style="stop-color:#fbbf24"/>
+                                            </linearGradient>
+                                        </defs>
+                                    </svg>
+                                    <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center;">
+                                        <div id="gaugeApnMaliPercent" style="font-size: 24px; font-weight: 700; color: #f59e0b;">0%</div>
+                                        <div style="font-size: 10px; color: var(--text-muted);">استفاده</div>
+                                    </div>
+                                </div>
+                                <div style="margin-top: 8px; font-weight: 600; font-size: 13px;">🟢 APN مالی</div>
+                                <div style="font-size: 11px; color: var(--text-muted);"><span id="gaugeApnMaliUsed">0</span> / <span id="gaugeApnMaliTotal">0</span></div>
+                            </div>
+                        </div>
+                        
+                        <!-- Row 2: Top Provinces Bar Chart + Live Stats -->
+                        <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 20px;">
+                            
+                            <!-- Top Provinces Horizontal Bar Chart -->
+                            <div style="background: rgba(255,255,255,0.03); border-radius: 16px; padding: 20px; border: 1px solid var(--border-color);">
+                                <h4 style="margin-bottom: 16px; font-size: 14px; display: flex; align-items: center; gap: 8px;">
+                                    <span>🏆</span> برترین استان‌ها (بیشترین IP فعال)
+                                </h4>
+                                <div id="topProvincesChart" style="display: flex; flex-direction: column; gap: 12px;">
+                                    <div style="color: var(--text-muted); font-size: 13px; text-align: center; padding: 20px;">در حال بارگذاری...</div>
+                                </div>
+                            </div>
+                            
+                            <!-- Live Stats Panel -->
+                            <div style="display: flex; flex-direction: column; gap: 12px;">
+                                <!-- Server Status -->
+                                <div style="background: linear-gradient(135deg, rgba(16, 185, 129, 0.15), rgba(16, 185, 129, 0.05)); border-radius: 12px; padding: 16px; border: 1px solid rgba(16, 185, 129, 0.3);">
+                                    <div style="display: flex; align-items: center; justify-content: space-between;">
+                                        <div style="display: flex; align-items: center; gap: 10px;">
+                                            <div style="width: 12px; height: 12px; background: #10b981; border-radius: 50%; animation: pulse 2s infinite;"></div>
+                                            <span style="font-weight: 600; color: #10b981;">سرور آنلاین</span>
+                                        </div>
+                                        <span style="font-size: 20px;">🚀</span>
+                                    </div>
+                                </div>
+                                
+                                <!-- Total Records Counter -->
+                                <div style="background: linear-gradient(135deg, rgba(59, 130, 246, 0.15), rgba(59, 130, 246, 0.05)); border-radius: 12px; padding: 16px; border: 1px solid rgba(59, 130, 246, 0.3);">
+                                    <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 4px;">کل رکوردها</div>
+                                    <div id="totalRecordsCounter" style="font-size: 28px; font-weight: 700; color: #3b82f6; font-family: monospace;">0</div>
+                                </div>
+                                
+                                <!-- Expiring Alert -->
+                                <div style="background: linear-gradient(135deg, rgba(239, 68, 68, 0.15), rgba(239, 68, 68, 0.05)); border-radius: 12px; padding: 16px; border: 1px solid rgba(239, 68, 68, 0.3);">
+                                    <div style="display: flex; align-items: center; justify-content: space-between;">
+                                        <div>
+                                            <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 4px;">نزدیک انقضا (7 روز)</div>
+                                            <div id="expiringCounter" style="font-size: 24px; font-weight: 700; color: #ef4444;">0</div>
+                                        </div>
+                                        <span style="font-size: 28px;">⚠️</span>
+                                    </div>
+                                </div>
+                                
+                                <!-- Today's Activity -->
+                                <div style="background: linear-gradient(135deg, rgba(139, 92, 246, 0.15), rgba(139, 92, 246, 0.05)); border-radius: 12px; padding: 16px; border: 1px solid rgba(139, 92, 246, 0.3);">
+                                    <div style="display: flex; align-items: center; justify-content: space-between;">
+                                        <div>
+                                            <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 4px;">فعالیت امروز</div>
+                                            <div id="todayActivityCounter" style="font-size: 24px; font-weight: 700; color: #8b5cf6;">0</div>
+                                        </div>
+                                        <span style="font-size: 28px;">📈</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                    </div>
+                </div>
+            </div>
+            
+            <style>
+                @keyframes pulse {
+                    0%, 100% { opacity: 1; transform: scale(1); }
+                    50% { opacity: 0.5; transform: scale(1.1); }
+                }
+                
+                @keyframes countUp {
+                    from { opacity: 0; transform: translateY(10px); }
+                    to { opacity: 1; transform: translateY(0); }
+                }
+                
+                .gauge-container:hover .gauge-wrapper {
+                    transform: scale(1.05);
+                    transition: transform 0.3s ease;
+                }
+                
+                .province-bar {
+                    transition: width 1s ease-out;
+                }
+                
+                .province-bar:hover {
+                    filter: brightness(1.2);
+                }
+            </style>
             
             <!-- Activity Card -->
             <div class="card" style="grid-column: span 2;">
@@ -576,9 +1014,28 @@
     </footer>
     
     <script>
+        // ============ Theme System ============
+        (function() {
+            var theme = localStorage.getItem('theme') || 'dark';
+            document.documentElement.setAttribute('data-theme', theme);
+        })();
+
+        function toggleTheme() {
+            var current = document.documentElement.getAttribute('data-theme') || 'dark';
+            var next = current === 'dark' ? 'light' : 'dark';
+            document.documentElement.setAttribute('data-theme', next);
+            localStorage.setItem('theme', next);
+            document.getElementById('themeIcon').textContent = next === 'dark' ? '🌙' : '☀️';
+        }
+
+        // Update theme icon on load
+        document.addEventListener('DOMContentLoaded', function() {
+            var theme = localStorage.getItem('theme') || 'dark';
+            document.getElementById('themeIcon').textContent = theme === 'dark' ? '🌙' : '☀️';
+        });
+
         let ipChart = null;
         
-        // Check authentication
         document.addEventListener('DOMContentLoaded', function() {
             const username = localStorage.getItem('currentUser');
             if (!username) {
@@ -587,14 +1044,51 @@
             }
             document.getElementById('currentUser').textContent = username;
             
-            // Check if user is admin (Sahebdel)
             if (username === 'Sahebdel') {
                 document.getElementById('dbManagerLink').style.display = 'flex';
             }
             
+            // Load cached stats first for instant display
+            loadCachedStats();
+            
+            // Then fetch fresh data
             loadStatistics();
             loadActivity();
+            loadDashboard();
         });
+        
+        function loadCachedStats() {
+            try {
+                const cached = localStorage.getItem('dashboardStats');
+                if (cached) {
+                    const data = JSON.parse(cached);
+                    updateStatsUI(data);
+                }
+            } catch (e) {}
+        }
+        
+        function updateStatsUI(data) {
+            document.getElementById('totalLanIps').textContent = formatNumber(data.lan_ips?.total || 0);
+            document.getElementById('freeLanIps').textContent = formatNumber(data.lan_ips?.free || 0);
+            document.getElementById('usedLanIps').textContent = formatNumber(data.lan_ips?.used || 0);
+            
+            const tunnelUsed = (data.tunnels?.total || 0) - (data.tunnels?.free || 0);
+            document.getElementById('totalTunnels').textContent = formatNumber(data.tunnels?.total || 0);
+            document.getElementById('freeTunnels').textContent = formatNumber(data.tunnels?.free || 0);
+            document.getElementById('usedTunnels').textContent = formatNumber(tunnelUsed);
+            
+            const apnUsed = (data.apn?.total || 0) - (data.apn?.free || 0);
+            document.getElementById('totalApnInt').textContent = formatNumber(data.apn?.total || 0);
+            document.getElementById('freeApnInt').textContent = formatNumber(data.apn?.free || 0);
+            document.getElementById('usedApnInt').textContent = formatNumber(apnUsed);
+            
+            const maliUsed = (data.apn_mali?.total || 0) - (data.apn_mali?.free || 0);
+            document.getElementById('totalApnMali').textContent = formatNumber(data.apn_mali?.total || 0);
+            document.getElementById('freeApnMali').textContent = formatNumber(data.apn_mali?.free || 0);
+            document.getElementById('usedApnMali').textContent = formatNumber(maliUsed);
+            
+            updateChart(data);
+        }
         
         function logout() {
             localStorage.removeItem('currentUser');
@@ -603,34 +1097,15 @@
         
         async function loadStatistics() {
             try {
-                const response = await fetch('/api/stats');
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 10000);
+                
+                const response = await fetch('/api/stats', { signal: controller.signal });
+                clearTimeout(timeoutId);
+                
                 const data = await response.json();
-                
-                // LAN IPs
-                document.getElementById('totalLanIps').textContent = formatNumber(data.lan_ips?.total || 0);
-                document.getElementById('freeLanIps').textContent = formatNumber(data.lan_ips?.free || 0);
-                document.getElementById('usedLanIps').textContent = formatNumber(data.lan_ips?.used || 0);
-                
-                // Tunnels
-                const tunnelUsed = (data.tunnels?.total || 0) - (data.tunnels?.free || 0);
-                document.getElementById('totalTunnels').textContent = formatNumber(data.tunnels?.total || 0);
-                document.getElementById('freeTunnels').textContent = formatNumber(data.tunnels?.free || 0);
-                document.getElementById('usedTunnels').textContent = formatNumber(tunnelUsed);
-                
-                // APN غیرمالی
-                const apnUsed = (data.apn?.total || 0) - (data.apn?.free || 0);
-                document.getElementById('totalApnInt').textContent = formatNumber(data.apn?.total || 0);
-                document.getElementById('freeApnInt').textContent = formatNumber(data.apn?.free || 0);
-                document.getElementById('usedApnInt').textContent = formatNumber(apnUsed);
-                
-                // APN مالی
-                const maliUsed = (data.apn_mali?.total || 0) - (data.apn_mali?.free || 0);
-                document.getElementById('totalApnMali').textContent = formatNumber(data.apn_mali?.total || 0);
-                document.getElementById('freeApnMali').textContent = formatNumber(data.apn_mali?.free || 0);
-                document.getElementById('usedApnMali').textContent = formatNumber(maliUsed);
-                
-                // Update chart
-                updateChart(data);
+                localStorage.setItem('dashboardStats', JSON.stringify(data));
+                updateStatsUI(data);
                 
             } catch (error) {
                 console.error('Error loading statistics:', error);
@@ -642,53 +1117,42 @@
         }
         
         function updateChart(data) {
-            const ctx = document.getElementById('ipChart').getContext('2d');
+            const lanFree = data.lan_ips?.free || 0;
+            const lanUsed = data.lan_ips?.used || 0;
+            const tunFree = data.tunnels?.free || 0;
+            const tunUsed = (data.tunnels?.total || 0) - (data.tunnels?.free || 0);
             
-            if (ipChart) {
-                ipChart.destroy();
-            }
+            const total = lanFree + lanUsed + tunFree + tunUsed;
+            if (total === 0) return;
             
-            ipChart = new Chart(ctx, {
-                type: 'doughnut',
-                data: {
-                    labels: ['LAN آزاد', 'LAN استفاده شده', 'Tunnel آزاد', 'Tunnel استفاده شده'],
-                    datasets: [{
-                        data: [
-                            data.lan_ips?.free || 0,
-                            data.lan_ips?.used || 0,
-                            data.tunnels?.free || 0,
-                            (data.tunnels?.total || 0) - (data.tunnels?.free || 0)
-                        ],
-                        backgroundColor: [
-                            'rgba(16, 185, 129, 0.8)',
-                            'rgba(245, 158, 11, 0.8)',
-                            'rgba(59, 130, 246, 0.8)',
-                            'rgba(139, 92, 246, 0.8)'
-                        ],
-                        borderColor: [
-                            'rgba(16, 185, 129, 1)',
-                            'rgba(245, 158, 11, 1)',
-                            'rgba(59, 130, 246, 1)',
-                            'rgba(139, 92, 246, 1)'
-                        ],
-                        borderWidth: 2
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: {
-                            position: 'right',
-                            labels: {
-                                color: '#e2e8f0',
-                                font: { size: 12 },
-                                padding: 16
-                            }
-                        }
-                    }
-                }
-            });
+            const circumference = 2 * Math.PI * 70;
+            
+            const slice1 = (lanFree / total) * circumference;
+            const slice2 = (lanUsed / total) * circumference;
+            const slice3 = (tunFree / total) * circumference;
+            const slice4 = (tunUsed / total) * circumference;
+            
+            let offset = 0;
+            
+            document.getElementById('chartSlice1').setAttribute('stroke-dasharray', `${slice1} ${circumference}`);
+            document.getElementById('chartSlice1').setAttribute('stroke-dashoffset', -offset);
+            offset += slice1;
+            
+            document.getElementById('chartSlice2').setAttribute('stroke-dasharray', `${slice2} ${circumference}`);
+            document.getElementById('chartSlice2').setAttribute('stroke-dashoffset', -offset);
+            offset += slice2;
+            
+            document.getElementById('chartSlice3').setAttribute('stroke-dasharray', `${slice3} ${circumference}`);
+            document.getElementById('chartSlice3').setAttribute('stroke-dashoffset', -offset);
+            offset += slice3;
+            
+            document.getElementById('chartSlice4').setAttribute('stroke-dasharray', `${slice4} ${circumference}`);
+            document.getElementById('chartSlice4').setAttribute('stroke-dashoffset', -offset);
+            
+            document.getElementById('legendLanFree').textContent = `LAN آزاد: ${formatNumber(lanFree)}`;
+            document.getElementById('legendLanUsed').textContent = `LAN استفاده شده: ${formatNumber(lanUsed)}`;
+            document.getElementById('legendTunFree').textContent = `Tunnel آزاد: ${formatNumber(tunFree)}`;
+            document.getElementById('legendTunUsed').textContent = `Tunnel استفاده شده: ${formatNumber(tunUsed)}`;
         }
         
         async function loadActivity() {
@@ -699,7 +1163,7 @@
                 const activities = await response.json();
                 
                 if (activities.length === 0) {
-                    container.innerHTML = '<div style="text-align: center; padding: 32px; color: #94a3b8;">هیچ فعالیتی ثبت نشده</div>';
+                    container.innerHTML = '<div style="text-align: center; padding: 32px; color: var(--text-secondary);">هیچ فعالیتی ثبت نشده</div>';
                     return;
                 }
                 
@@ -734,7 +1198,152 @@
                 }).join('');
                 
             } catch (error) {
-                container.innerHTML = '<div style="text-align: center; padding: 32px; color: #94a3b8;">خطا در بارگذاری</div>';
+                container.innerHTML = '<div style="text-align: center; padding: 32px; color: var(--text-secondary);">خطا در بارگذاری</div>';
+            }
+        }
+        
+        // ============ EPIC DASHBOARD FUNCTIONS ============
+        
+        // Animated Counter
+        function animateCounter(elementId, targetValue, duration = 1500) {
+            const element = document.getElementById(elementId);
+            if (!element) return;
+            
+            const start = parseInt(element.textContent.replace(/[^\d]/g, '')) || 0;
+            const increment = (targetValue - start) / (duration / 16);
+            let current = start;
+            
+            const timer = setInterval(() => {
+                current += increment;
+                if ((increment > 0 && current >= targetValue) || (increment < 0 && current <= targetValue)) {
+                    current = targetValue;
+                    clearInterval(timer);
+                }
+                element.textContent = formatNumber(Math.round(current));
+            }, 16);
+        }
+        
+        // Update Gauge Chart
+        function updateGauge(gaugeId, percentId, usedId, totalId, used, total) {
+            const percent = total > 0 ? Math.round((used / total) * 100) : 0;
+            const circumference = 2 * Math.PI * 50; // r=50
+            const dashArray = (percent / 100) * circumference;
+            
+            const gauge = document.getElementById(gaugeId);
+            const percentEl = document.getElementById(percentId);
+            const usedEl = document.getElementById(usedId);
+            const totalEl = document.getElementById(totalId);
+            
+            if (gauge) {
+                setTimeout(() => {
+                    gauge.setAttribute('stroke-dasharray', `${dashArray} ${circumference}`);
+                }, 100);
+            }
+            if (percentEl) percentEl.textContent = `${percent}%`;
+            if (usedEl) usedEl.textContent = formatNumber(used);
+            if (totalEl) totalEl.textContent = formatNumber(total);
+        }
+        
+        // Load Top Provinces
+        async function loadTopProvinces() {
+            try {
+                const response = await fetch('/api/top-provinces');
+                const provinces = await response.json();
+                
+                const container = document.getElementById('topProvincesChart');
+                if (!container) return;
+                
+                if (provinces.length === 0) {
+                    container.innerHTML = '<div style="color: var(--text-muted); font-size: 13px; text-align: center; padding: 20px;">داده‌ای یافت نشد</div>';
+                    return;
+                }
+                
+                const maxCount = Math.max(...provinces.map(p => p.count));
+                const colors = ['#10b981', '#3b82f6', '#8b5cf6', '#f59e0b', '#ef4444', '#ec4899', '#06b6d4', '#84cc16'];
+                
+                container.innerHTML = provinces.slice(0, 8).map((p, i) => {
+                    const widthPercent = (p.count / maxCount) * 100;
+                    const color = colors[i % colors.length];
+                    return `
+                        <div style="display: flex; align-items: center; gap: 12px;">
+                            <div style="width: 24px; height: 24px; background: ${color}; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; color: white;">${i + 1}</div>
+                            <div style="flex: 1;">
+                                <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+                                    <span style="font-size: 13px; font-weight: 500;">${p.province}</span>
+                                    <span style="font-size: 12px; color: var(--text-muted);">${formatNumber(p.count)} IP</span>
+                                </div>
+                                <div style="height: 8px; background: rgba(255,255,255,0.1); border-radius: 4px; overflow: hidden;">
+                                    <div class="province-bar" style="height: 100%; width: 0%; background: linear-gradient(90deg, ${color}, ${color}aa); border-radius: 4px; transition: width 1s ease-out;" data-width="${widthPercent}"></div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+                
+                // Animate bars after render
+                setTimeout(() => {
+                    container.querySelectorAll('.province-bar').forEach(bar => {
+                        bar.style.width = bar.dataset.width + '%';
+                    });
+                }, 100);
+                
+            } catch (error) {
+                console.error('Error loading top provinces:', error);
+                document.getElementById('topProvincesChart').innerHTML = '<div style="color: var(--text-muted); font-size: 13px; text-align: center;">خطا در بارگذاری</div>';
+            }
+        }
+        
+        // Load Dashboard Data
+        async function loadDashboard() {
+            try {
+                // Load stats
+                const statsRes = await fetch('/api/stats');
+                const stats = await statsRes.json();
+                
+                // Update Gauges with animation
+                const lanUsed = stats.lan_ips?.used || 0;
+                const lanTotal = stats.lan_ips?.total || 0;
+                updateGauge('gaugeLan', 'gaugeLanPercent', 'gaugeLanUsed', 'gaugeLanTotal', lanUsed, lanTotal);
+                
+                const tunUsed = stats.tunnels?.used || 0;
+                const tunTotal = stats.tunnels?.total || 0;
+                updateGauge('gaugeTunnel', 'gaugeTunnelPercent', 'gaugeTunnelUsed', 'gaugeTunnelTotal', tunUsed, tunTotal);
+                
+                const apnIntUsed = stats.apn?.used || 0;
+                const apnIntTotal = stats.apn?.total || 0;
+                updateGauge('gaugeApnInt', 'gaugeApnIntPercent', 'gaugeApnIntUsed', 'gaugeApnIntTotal', apnIntUsed, apnIntTotal);
+                
+                const apnMaliUsed = stats.apn_mali?.used || 0;
+                const apnMaliTotal = stats.apn_mali?.total || 0;
+                updateGauge('gaugeApnMali', 'gaugeApnMaliPercent', 'gaugeApnMaliUsed', 'gaugeApnMaliTotal', apnMaliUsed, apnMaliTotal);
+                
+                // Total Records Counter
+                const totalRecords = lanTotal + tunTotal + apnIntTotal + apnMaliTotal;
+                animateCounter('totalRecordsCounter', totalRecords);
+                
+                // Load expiring count
+                try {
+                    const expiringRes = await fetch('/api/expiring-reservations');
+                    const expiring = await expiringRes.json();
+                    animateCounter('expiringCounter', expiring.count || 0, 1000);
+                } catch (e) {
+                    document.getElementById('expiringCounter').textContent = '0';
+                }
+                
+                // Load today's activity count
+                try {
+                    const activityRes = await fetch('/api/today-activity');
+                    const activity = await activityRes.json();
+                    animateCounter('todayActivityCounter', activity.count || 0, 1000);
+                } catch (e) {
+                    document.getElementById('todayActivityCounter').textContent = '0';
+                }
+                
+                // Load top provinces
+                loadTopProvinces();
+                
+            } catch (error) {
+                console.error('Error loading dashboard:', error);
             }
         }
     </script>
