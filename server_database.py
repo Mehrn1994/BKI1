@@ -8,14 +8,109 @@ from flask_cors import CORS
 import sqlite3
 import os
 import subprocess
+import platform
 import shutil
 from datetime import datetime, timedelta
 import json
 import hashlib
 import pandas as pd
+import time
+import threading
 
 app = Flask(__name__)
 CORS(app)
+
+# ==================== AUTO-RELEASE EXPIRED RESERVATIONS ====================
+AUTO_RELEASE_INTERVAL = 3600 * 6  # Check every 6 hours
+auto_release_active = True
+
+def auto_release_expired_reservations():
+    """
+    Automatically release LAN IPs that:
+    - Have status = 'Reserved' (not 'Used' or 'activated')
+    - Have expiry_date < today (60 days passed)
+    
+    This runs in a background thread every 6 hours.
+    """
+    global auto_release_active
+    
+    print("🔄 Auto-release checker started!")
+    
+    while auto_release_active:
+        try:
+            conn = sqlite3.connect(DB_PATH)
+            conn.row_factory = sqlite3.Row
+            cursor = conn.cursor()
+            
+            today = datetime.now().strftime('%Y-%m-%d')
+            
+            # Find expired reservations that are still 'reserved' (not activated/used)
+            cursor.execute("""
+                SELECT id, octet2, octet3, branch_name, username, reservation_date, expiry_date
+                FROM reserved_ips 
+                WHERE expiry_date < ? 
+                AND (status = 'reserved' OR status IS NULL)
+            """, (today,))
+            
+            expired = cursor.fetchall()
+            
+            if expired:
+                print(f"🗑️ Found {len(expired)} expired reservations to release")
+                
+                for row in expired:
+                    octet2 = row['octet2']
+                    octet3 = row['octet3']
+                    branch_name = row['branch_name']
+                    expiry_date = row['expiry_date']
+                    
+                    # Release from lan_ips
+                    cursor.execute("""
+                        UPDATE lan_ips 
+                        SET username = NULL, reservation_date = NULL, branch_name = NULL, status = 'Free'
+                        WHERE octet2 = ? AND octet3 = ? AND status = 'Reserved'
+                    """, (octet2, octet3))
+                    
+                    # Delete from reserved_ips
+                    cursor.execute("DELETE FROM reserved_ips WHERE id = ?", (row['id'],))
+                    
+                    print(f"   ✅ Released: 10.{octet2}.{octet3}.0/24 ({branch_name}) - expired on {expiry_date}")
+                
+                conn.commit()
+                
+                # Log the auto-release activity
+                try:
+                    log_activity('info', 'آزادسازی خودکار', f'{len(expired)} IP منقضی شده آزاد شد', 'System')
+                except:
+                    pass
+            else:
+                print(f"✓ No expired reservations found (checked at {datetime.now().strftime('%H:%M:%S')})")
+            
+            conn.close()
+            
+        except Exception as e:
+            print(f"❌ Auto-release error: {e}")
+        
+        # Sleep for 6 hours
+        time.sleep(AUTO_RELEASE_INTERVAL)
+
+def start_auto_release_thread():
+    """Start the auto-release background thread"""
+    global auto_release_active
+    auto_release_active = True
+    thread = threading.Thread(target=auto_release_expired_reservations, daemon=True)
+    thread.start()
+    print("✅ Auto-release thread started (checks every 6 hours)")
+
+# Add response headers for caching
+@app.after_request
+def add_cache_headers(response):
+    # Cache static resources
+    if request.path.endswith(('.html', '.css', '.js', '.png', '.jpg', '.ico')):
+        response.headers['Cache-Control'] = 'public, max-age=3600'  # 1 hour
+    # API responses - short cache
+    elif request.path.startswith('/api/'):
+        response.headers['Cache-Control'] = 'public, max-age=5'  # 5 seconds
+    return response
 
 DB_PATH = os.path.join(os.path.dirname(__file__), 'data', 'network_ipam.db')
 BACKUP_DIR = os.path.join(os.path.dirname(__file__), 'data', 'backups')
@@ -24,7 +119,11 @@ ACTIVITY_LOG = os.path.join(os.path.dirname(__file__), 'data', 'activity.json')
 os.makedirs(BACKUP_DIR, exist_ok=True)
 os.makedirs(os.path.dirname(ACTIVITY_LOG), exist_ok=True)
 
-ALLOWED_USERS = ["Yarian", "Sattari", "Barari", "Sahebdel", "Vahedi", "Aghajani", "Hossein", "Rezaei"]
+# Simple cache for stats (60 seconds - much longer)
+_stats_cache = {'data': None, 'time': 0}
+STATS_CACHE_SECONDS = 60  # Cache for 1 minute
+
+ALLOWED_USERS = ["Yarian", "Sattari", "Barari", "Sahebdel", "Vahedi", "Aghajani", "Hossein", "Rezaei", "Bagheri"]
 DB_ADMIN_USER = "Sahebdel"
 
 def get_db():
@@ -43,7 +142,37 @@ def init_tables():
     cursor.execute("""CREATE TABLE IF NOT EXISTS reserved_ips (
         id INTEGER PRIMARY KEY AUTOINCREMENT, province TEXT, octet2 INTEGER, octet3 INTEGER,
         branch_name TEXT, username TEXT, reservation_date TEXT, expiry_date TEXT,
-        request_number TEXT, point_type TEXT, mehregostar_code TEXT)""")
+        request_number TEXT, point_type TEXT, mehregostar_code TEXT,
+        status TEXT DEFAULT 'reserved', activated_at TEXT, config_type TEXT)""")
+    
+    # Add status column to existing reserved_ips table if not exists
+    try:
+        cursor.execute("ALTER TABLE reserved_ips ADD COLUMN status TEXT DEFAULT 'reserved'")
+    except:
+        pass  # Column already exists
+    try:
+        cursor.execute("ALTER TABLE reserved_ips ADD COLUMN activated_at TEXT")
+    except:
+        pass
+    try:
+        cursor.execute("ALTER TABLE reserved_ips ADD COLUMN config_type TEXT")
+    except:
+        pass
+    
+    # Create indexes for faster COUNT queries (HUGE performance improvement)
+    try:
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_lan_ips_username ON lan_ips(username)")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_lan_ips_branch ON lan_ips(branch_name)")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_lan_ips_province ON lan_ips(province)")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_apn_ips_username ON apn_ips(username)")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_apn_mali_username ON apn_mali(username)")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_intranet_tunnels_status ON intranet_tunnels(status)")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_tunnel200_status ON tunnel200_ips(status)")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_tunnel_mali_status ON tunnel_mali(status)")
+        print("✓ Database indexes created")
+    except Exception as e:
+        print(f"⚠️ Index creation: {e}")
+    
     conn.commit()
     conn.close()
 
@@ -166,55 +295,255 @@ def check_admin():
     return jsonify({"is_admin": username == DB_ADMIN_USER, "admin_user": DB_ADMIN_USER})
 
 # ==================== STATS API ====================
-@app.route('/api/stats', methods=['GET'])
-def get_stats():
+@app.route('/api/debug/tables', methods=['GET'])
+def debug_tables():
+    """Debug endpoint to check table structure"""
     try:
         conn = get_db()
         cursor = conn.cursor()
         
-        cursor.execute("SELECT COUNT(*) FROM lan_ips")
-        total_lan = cursor.fetchone()[0]
-        cursor.execute("SELECT COUNT(*) FROM lan_ips WHERE username IS NULL OR username = ''")
-        free_lan = cursor.fetchone()[0]
+        tables = {}
         
-        cursor.execute("SELECT COUNT(*) FROM intranet_tunnels")
-        total_tun = cursor.fetchone()[0]
-        cursor.execute("SELECT COUNT(*) FROM intranet_tunnels WHERE LOWER(status) = 'free'")
-        free_tun = cursor.fetchone()[0]
-        
-        cursor.execute("SELECT COUNT(*) FROM apn_ips")
-        total_apn = cursor.fetchone()[0]
-        cursor.execute("SELECT COUNT(*) FROM apn_ips WHERE username IS NULL OR username = ''")
-        free_apn = cursor.fetchone()[0]
-        
-        cursor.execute("SELECT COUNT(*) FROM apn_mali")
-        total_mali = cursor.fetchone()[0]
-        cursor.execute("SELECT COUNT(*) FROM apn_mali WHERE username IS NULL OR username = ''")
-        free_mali = cursor.fetchone()[0]
-        
-        cursor.execute("SELECT COUNT(*) FROM tunnel200_ips")
-        total_t200 = cursor.fetchone()[0]
-        cursor.execute("SELECT COUNT(*) FROM tunnel200_ips WHERE status IS NULL OR status = '' OR LOWER(status) = 'free'")
-        free_t200 = cursor.fetchone()[0]
-        
-        cursor.execute("SELECT COUNT(*) FROM tunnel_mali")
-        total_tmali = cursor.fetchone()[0]
-        cursor.execute("SELECT COUNT(*) FROM tunnel_mali WHERE status IS NULL OR status = '' OR LOWER(status) = 'free'")
-        free_tmali = cursor.fetchone()[0]
+        # Check each table
+        for table in ['apn_ips', 'apn_mali', 'tunnel200_ips', 'tunnel_mali', 'lan_ips', 'intranet_tunnels']:
+            try:
+                cursor.execute(f"SELECT COUNT(*) as count FROM {table}")
+                count = cursor.fetchone()[0]
+                
+                cursor.execute(f"PRAGMA table_info({table})")
+                columns = [row[1] for row in cursor.fetchall()]
+                
+                tables[table] = {
+                    'exists': True,
+                    'count': count,
+                    'columns': columns
+                }
+            except Exception as e:
+                tables[table] = {
+                    'exists': False,
+                    'error': str(e)
+                }
         
         conn.close()
+        return jsonify(tables)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/stats', methods=['GET'])
+def get_stats():
+    global _stats_cache
+    
+    # Return cached result if less than 60 seconds old
+    if _stats_cache['data'] and (time.time() - _stats_cache['time']) < STATS_CACHE_SECONDS:
+        return jsonify(_stats_cache['data'])
+    
+    try:
+        conn = get_db()
+        cursor = conn.cursor()
         
-        return jsonify({
+        # OPTIMIZED: Single query instead of 12 separate queries
+        cursor.execute("""
+            SELECT 
+                (SELECT COUNT(*) FROM lan_ips) as total_lan,
+                (SELECT COUNT(*) FROM lan_ips WHERE (username IS NULL OR username = '') AND (branch_name IS NULL OR branch_name = '')) as free_lan,
+                (SELECT COUNT(*) FROM intranet_tunnels) as total_tun,
+                (SELECT COUNT(*) FROM intranet_tunnels WHERE LOWER(status) = 'free') as free_tun,
+                (SELECT COUNT(*) FROM apn_ips) as total_apn,
+                (SELECT COUNT(*) FROM apn_ips WHERE username IS NULL OR username = '') as free_apn,
+                (SELECT COUNT(*) FROM apn_mali) as total_mali,
+                (SELECT COUNT(*) FROM apn_mali WHERE username IS NULL OR username = '') as free_mali,
+                (SELECT COUNT(*) FROM tunnel200_ips) as total_t200,
+                (SELECT COUNT(*) FROM tunnel200_ips WHERE status IS NULL OR status = '' OR LOWER(status) = 'free') as free_t200,
+                (SELECT COUNT(*) FROM tunnel_mali) as total_tmali,
+                (SELECT COUNT(*) FROM tunnel_mali WHERE status IS NULL OR status = '' OR LOWER(status) = 'free') as free_tmali
+        """)
+        
+        row = cursor.fetchone()
+        conn.close()
+        
+        total_lan, free_lan = row[0], row[1]
+        total_tun, free_tun = row[2], row[3]
+        total_apn, free_apn = row[4], row[5]
+        total_mali, free_mali = row[6], row[7]
+        total_t200, free_t200 = row[8], row[9]
+        total_tmali, free_tmali = row[10], row[11]
+        
+        result = {
             'lan_ips': {'total': total_lan, 'free': free_lan, 'used': total_lan - free_lan},
             'tunnels': {'total': total_tun, 'free': free_tun, 'used': total_tun - free_tun},
             'apn': {'total': total_apn, 'free': free_apn, 'used': total_apn - free_apn},
             'apn_mali': {'total': total_mali, 'free': free_mali, 'used': total_mali - free_mali},
             'tunnel200': {'total': total_t200, 'free': free_t200, 'used': total_t200 - free_t200},
             'tunnel_mali': {'total': total_tmali, 'free': free_tmali, 'used': total_tmali - free_tmali}
-        })
+        }
+        
+        # Cache the result
+        _stats_cache['data'] = result
+        _stats_cache['time'] = time.time()
+        
+        return jsonify(result)
     except Exception as e:
         print(f"❌ Stats error: {e}")
         return jsonify({'error': str(e)}), 500
+
+# ==================== EXPIRING RESERVATIONS ====================
+@app.route('/api/expiring-reservations', methods=['GET'])
+def get_expiring_reservations():
+    """Get count of reservations expiring in next 7 days"""
+    try:
+        conn = get_db()
+        cursor = conn.cursor()
+        
+        # Calculate date 7 days from now
+        future_date = (datetime.now() + timedelta(days=7)).strftime('%Y-%m-%d')
+        today = datetime.now().strftime('%Y-%m-%d')
+        
+        cursor.execute("""
+            SELECT COUNT(*) FROM reserved_ips 
+            WHERE expiry_date BETWEEN ? AND ?
+            AND (status = 'reserved' OR status IS NULL)
+        """, (today, future_date))
+        
+        count = cursor.fetchone()[0]
+        conn.close()
+        
+        return jsonify({'count': count})
+    except Exception as e:
+        print(f"❌ Expiring reservations error: {e}")
+        return jsonify({'count': 0})
+
+# ==================== RECENT RESERVATIONS ====================
+@app.route('/api/recent-reservations', methods=['GET'])
+def get_recent_reservations():
+    """Get recent IP reservations from all tables"""
+    try:
+        conn = get_db()
+        cursor = conn.cursor()
+        
+        reservations = []
+        
+        # From apn_ips (APN غیرمالی)
+        try:
+            cursor.execute("""
+                SELECT branch_name, ip_wan_apn as ip, province, username, reservation_date, 'APN-INT' as type
+                FROM apn_ips 
+                WHERE username IS NOT NULL AND username != ''
+                ORDER BY reservation_date DESC
+                LIMIT 5
+            """)
+            for row in cursor.fetchall():
+                reservations.append({
+                    'branch_name': row['branch_name'] or '',
+                    'ip': row['ip'] or '',
+                    'province': row['province'] or '',
+                    'username': row['username'] or '',
+                    'date': row['reservation_date'] or '',
+                    'type': 'APN-INT'
+                })
+        except: pass
+        
+        # From apn_mali (APN مالی)
+        try:
+            cursor.execute("""
+                SELECT branch_name, ip_wan as ip, province, username, reservation_date, 'APN-MALI' as type
+                FROM apn_mali 
+                WHERE username IS NOT NULL AND username != ''
+                ORDER BY reservation_date DESC
+                LIMIT 5
+            """)
+            for row in cursor.fetchall():
+                reservations.append({
+                    'branch_name': row['branch_name'] or '',
+                    'ip': row['ip'] or '',
+                    'province': row['province'] or '',
+                    'username': row['username'] or '',
+                    'date': row['reservation_date'] or '',
+                    'type': 'APN-MALI'
+                })
+        except: pass
+        
+        # From reserved_ips (LAN IPs)
+        try:
+            cursor.execute("""
+                SELECT branch_name, octet2, octet3, province, username, reservation_date, 'LAN' as type
+                FROM reserved_ips 
+                WHERE username IS NOT NULL AND username != ''
+                ORDER BY reservation_date DESC
+                LIMIT 5
+            """)
+            for row in cursor.fetchall():
+                reservations.append({
+                    'branch_name': row['branch_name'] or '',
+                    'ip': f"10.{row['octet2']}.{row['octet3']}.0/24",
+                    'province': row['province'] or '',
+                    'username': row['username'] or '',
+                    'date': row['reservation_date'] or '',
+                    'type': 'LAN'
+                })
+        except: pass
+        
+        conn.close()
+        
+        # Sort by date descending and return top 5
+        reservations.sort(key=lambda x: x['date'] or '', reverse=True)
+        return jsonify(reservations[:5])
+        
+    except Exception as e:
+        print(f"❌ Recent reservations error: {e}")
+        return jsonify([])
+
+# ==================== TOP PROVINCES ====================
+@app.route('/api/top-provinces', methods=['GET'])
+def get_top_provinces():
+    """Get top provinces by active IP count"""
+    try:
+        conn = get_db()
+        cursor = conn.cursor()
+        
+        cursor.execute("""
+            SELECT province, COUNT(*) as count
+            FROM lan_ips 
+            WHERE province IS NOT NULL AND province != ''
+            AND branch_name IS NOT NULL AND branch_name != ''
+            GROUP BY province
+            ORDER BY count DESC
+            LIMIT 10
+        """)
+        
+        provinces = []
+        for row in cursor.fetchall():
+            provinces.append({
+                'province': row['province'],
+                'count': row['count']
+            })
+        
+        conn.close()
+        return jsonify(provinces)
+        
+    except Exception as e:
+        print(f"❌ Top provinces error: {e}")
+        return jsonify([])
+
+# ==================== TODAY ACTIVITY ====================
+@app.route('/api/today-activity', methods=['GET'])
+def get_today_activity():
+    """Get today's activity count"""
+    try:
+        today = datetime.now().strftime('%Y-%m-%d')
+        
+        # Read activity log
+        if os.path.exists(ACTIVITY_LOG):
+            with open(ACTIVITY_LOG, 'r', encoding='utf-8') as f:
+                activities = json.load(f)
+                
+            today_count = sum(1 for a in activities if a.get('time', '').startswith(today))
+            return jsonify({'count': today_count})
+        
+        return jsonify({'count': 0})
+        
+    except Exception as e:
+        print(f"❌ Today activity error: {e}")
+        return jsonify({'count': 0})
 
 # ==================== PROVINCES ====================
 @app.route('/api/provinces', methods=['GET'])
@@ -267,7 +596,7 @@ def get_provinces():
 # ==================== BRANCHES ====================
 @app.route('/api/branches', methods=['GET'])
 def get_branches():
-    """Get branches for APN-INT - from lan_ips table (main branch source)"""
+    """Get branches for APN-INT - from lan_ips table + reserved IPs"""
     try:
         conn = get_db()
         cursor = conn.cursor()
@@ -286,8 +615,44 @@ def get_branches():
                 'province': row['province'] or '',
                 'lan_ip': f"10.{row['octet2']}.{row['octet3']}.0/24",
                 'x': row['octet2'],
-                'y': row['octet3']
+                'y': row['octet3'],
+                'type': 'active'
             })
+        
+        # Add reserved IPs (not yet activated)
+        try:
+            # Try with status column first
+            cursor.execute("""
+                SELECT id, branch_name, province, octet2, octet3
+                FROM reserved_ips 
+                WHERE status = 'reserved' OR status IS NULL
+            """)
+            for row in cursor.fetchall():
+                branches.append({
+                    'name': f"🔖 {row['branch_name']} (رزرو شده)",
+                    'province': row['province'] or '',
+                    'lan_ip': f"10.{row['octet2']}.{row['octet3']}.0/24",
+                    'x': row['octet2'],
+                    'y': row['octet3'],
+                    'type': 'reserved'
+                })
+        except sqlite3.OperationalError:
+            # status column doesn't exist, get all reservations
+            try:
+                cursor.execute("SELECT id, branch_name, province, octet2, octet3 FROM reserved_ips")
+                for row in cursor.fetchall():
+                    branches.append({
+                        'name': f"🔖 {row['branch_name']} (رزرو شده)",
+                        'province': row['province'] or '',
+                        'lan_ip': f"10.{row['octet2']}.{row['octet3']}.0/24",
+                        'x': row['octet2'],
+                        'y': row['octet3'],
+                        'type': 'reserved'
+                    })
+            except:
+                pass
+        except:
+            pass
         
         conn.close()
         print(f"✓ Branches: {len(branches)}")
@@ -298,41 +663,65 @@ def get_branches():
 
 @app.route('/api/mali-branches', methods=['GET'])
 def get_mali_branches():
-    """Get branches for APN-Mali (مالی) - from apn_mali table"""
+    """Get branches for APN-Mali - from lan_ips table (same as APN-INT) + reserved IPs"""
     try:
         conn = get_db()
         cursor = conn.cursor()
+        
+        # Use lan_ips table (same as /api/branches for consistency)
         cursor.execute("""
-            SELECT id, branch_name, province, lan_ip, ip_wan
-            FROM apn_mali 
+            SELECT id, branch_name, province, octet2, octet3, wan_ip
+            FROM lan_ips 
             WHERE branch_name IS NOT NULL AND branch_name != ''
             ORDER BY province, branch_name
         """)
         
         branches = []
         for row in cursor.fetchall():
-            # Parse lan_ip to get x and y
-            lan_ip = row['lan_ip'] or ''
-            x, y = 0, 0
-            if lan_ip:
-                parts = lan_ip.replace('/24', '').split('.')
-                if len(parts) >= 3:
-                    try:
-                        x = int(parts[1])
-                        y = int(parts[2])
-                    except:
-                        pass
-            
             branches.append({
                 'name': row['branch_name'],
                 'province': row['province'] or '',
-                'lan_ip': lan_ip,
-                'x': x,
-                'y': y
+                'lan_ip': f"10.{row['octet2']}.{row['octet3']}.0/24",
+                'x': row['octet2'],
+                'y': row['octet3'],
+                'type': 'active'
             })
         
+        # Add reserved IPs (not yet activated)
+        try:
+            cursor.execute("""
+                SELECT id, branch_name, province, octet2, octet3
+                FROM reserved_ips 
+                WHERE status = 'reserved' OR status IS NULL
+            """)
+            for row in cursor.fetchall():
+                branches.append({
+                    'name': f"🔖 {row['branch_name']} (رزرو شده)",
+                    'province': row['province'] or '',
+                    'lan_ip': f"10.{row['octet2']}.{row['octet3']}.0/24",
+                    'x': row['octet2'],
+                    'y': row['octet3'],
+                    'type': 'reserved'
+                })
+        except sqlite3.OperationalError:
+            try:
+                cursor.execute("SELECT id, branch_name, province, octet2, octet3 FROM reserved_ips")
+                for row in cursor.fetchall():
+                    branches.append({
+                        'name': f"🔖 {row['branch_name']} (رزرو شده)",
+                        'province': row['province'] or '',
+                        'lan_ip': f"10.{row['octet2']}.{row['octet3']}.0/24",
+                        'x': row['octet2'],
+                        'y': row['octet3'],
+                        'type': 'reserved'
+                    })
+            except:
+                pass
+        except:
+            pass
+        
         conn.close()
-        print(f"✓ Mali Branches: {len(branches)}")
+        print(f"✓ Mali Branches (from lan_ips): {len(branches)}")
         return jsonify(branches)
     except Exception as e:
         print(f"❌ Mali Branches error: {e}")
@@ -378,16 +767,29 @@ def reserve_tunnel():
         data = request.json
         ip_address = data.get('IP Address')
         username = data.get('by')
+        tunnel_name = data.get('Tunnel Name')
+        ip_lan = data.get('IP LAN')
+        ip_intranet = data.get('IP Intranet')
+        description = data.get('Description')
+        province = data.get('Province')
         
         conn = get_db()
         cursor = conn.cursor()
         now = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         
+        # Update ALL fields, not just status
         cursor.execute("""
             UPDATE intranet_tunnels 
-            SET status = 'Reserved', reserved_by = ?, reserved_at = ?
+            SET status = 'Reserved', 
+                reserved_by = ?, 
+                reserved_at = ?,
+                tunnel_name = COALESCE(?, tunnel_name),
+                ip_lan = COALESCE(?, ip_lan),
+                ip_intranet = COALESCE(?, ip_intranet),
+                description = COALESCE(?, description),
+                province = COALESCE(?, province)
             WHERE ip_address = ?
-        """, (username, now, ip_address))
+        """, (username, now, tunnel_name, ip_lan, ip_intranet, description, province, ip_address))
         
         conn.commit()
         conn.close()
@@ -401,32 +803,46 @@ def reserve_tunnel():
 # ==================== TUNNEL200 IPs ====================
 @app.route('/api/tunnel200-ips', methods=['GET'])
 def get_tunnel200_ips():
+    """Get free Tunnel200 IPs for APN غیرمالی"""
     try:
         conn = get_db()
         cursor = conn.cursor()
-        cursor.execute("""
-            SELECT * FROM tunnel200_ips 
-            WHERE status IS NULL OR status = '' OR LOWER(status) = 'free'
-            ORDER BY id
-        """)
         
-        ips = []
-        for row in cursor.fetchall():
-            ips.append({
-                'id': row['id'],
-                'hub_ip': row['hub_ip'],
-                'branch_ip': row['branch_ip'],
-                'pair': row['pair_notation'],
-                'pair_notation': row['pair_notation'],
-                'tunnel_number': row['tunnel_number'],
-                'interface_name': row['interface_name'],
-                'description': row['description'],
-                'status': row['status']
-            })
-        
-        conn.close()
-        print(f"✓ Free Tunnel200 IPs: {len(ips)}")
-        return jsonify(ips)
+        try:
+            cursor.execute("""
+                SELECT * FROM tunnel200_ips 
+                WHERE status IS NULL OR status = '' OR LOWER(status) = 'free'
+                ORDER BY id
+                LIMIT 100
+            """)
+            
+            ips = []
+            for row in cursor.fetchall():
+                try:
+                    ips.append({
+                        'id': row['id'],
+                        'hub_ip': row['hub_ip'] if 'hub_ip' in row.keys() else '',
+                        'branch_ip': row['branch_ip'] if 'branch_ip' in row.keys() else '',
+                        'pair': row['pair_notation'] if 'pair_notation' in row.keys() else '',
+                        'pair_notation': row['pair_notation'] if 'pair_notation' in row.keys() else '',
+                        'tunnel_number': row['tunnel_number'] if 'tunnel_number' in row.keys() else '',
+                        'interface_name': row['interface_name'] if 'interface_name' in row.keys() else '',
+                        'description': row['description'] if 'description' in row.keys() else '',
+                        'status': row['status'] if 'status' in row.keys() else ''
+                    })
+                except Exception as row_err:
+                    print(f"⚠️ Row error: {row_err}")
+                    continue
+            
+            conn.close()
+            print(f"✓ Free Tunnel200 IPs: {len(ips)}")
+            return jsonify(ips)
+            
+        except sqlite3.OperationalError as e:
+            print(f"⚠️ tunnel200_ips table error: {e}")
+            conn.close()
+            return jsonify([])
+            
     except Exception as e:
         print(f"❌ Tunnel200 error: {e}")
         return jsonify([])
@@ -440,6 +856,8 @@ def reserve_tunnel200():
         username = data.get('username')
         branch_name = data.get('branch_name', '')
         tunnel_number = data.get('tunnel_number', '')
+        interface_name = data.get('interface_name', f'Tunnel{tunnel_number}')
+        description = data.get('description', f'APN-INT-{branch_name}')
         
         conn = get_db()
         cursor = conn.cursor()
@@ -447,14 +865,20 @@ def reserve_tunnel200():
         
         cursor.execute("""
             UPDATE tunnel200_ips 
-            SET status = 'Reserved', username = ?, branch_name = ?, tunnel_number = ?, reservation_date = ?
+            SET status = 'Reserved', 
+                username = ?, 
+                branch_name = ?, 
+                tunnel_number = ?, 
+                interface_name = ?,
+                description = ?,
+                reservation_date = ?
             WHERE hub_ip = ? AND branch_ip = ?
-        """, (username, branch_name, tunnel_number, now, hub_ip, branch_ip))
+        """, (username, branch_name, tunnel_number, interface_name, description, now, hub_ip, branch_ip))
         
         conn.commit()
         conn.close()
         
-        log_activity('success', 'رزرو Tunnel200', f"{hub_ip}/{branch_ip}", username)
+        log_activity('success', 'رزرو Tunnel200', f"{hub_ip}/{branch_ip} - {branch_name}", username)
         return jsonify({'status': 'ok'})
     except Exception as e:
         print(f"❌ Reserve tunnel200 error: {e}")
@@ -523,32 +947,85 @@ def reserve_tunnel_mali():
     try:
         data = request.json
         tunnel_id = data.get('tunnel_id') or data.get('id')
-        tunnel_number = data.get('tunnel_number')
+        tunnel_number = data.get('tunnel_number') or data.get('tunnelNumber')
         username = data.get('username')
-        branch_name = data.get('branch_name', '')
+        branch_name = data.get('branch_name') or data.get('branchName', '')
+        interface_name = data.get('interface_name') or data.get('interfaceName', '')
+        description = data.get('description', '')
+        ip_address = data.get('ip_address') or data.get('ipAddress', '')
+        hub_ip = data.get('hub_ip') or data.get('hubIp', '')
+        branch_ip = data.get('branch_ip') or data.get('branchIp', '')
+        destination_ip = data.get('destination_ip') or data.get('destinationIp', '')
+        
+        print(f"📥 Reserve tunnel: number={tunnel_number}, branch={branch_name}, interface={interface_name}")
         
         conn = get_db()
         cursor = conn.cursor()
         now = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         
+        rows_updated = 0
         if tunnel_id:
             cursor.execute("""
                 UPDATE tunnel_mali 
-                SET status = 'Reserved', username = ?, branch_name = ?, reservation_date = ?
+                SET status = 'Reserved', 
+                    username = ?, 
+                    branch_name = ?, 
+                    reservation_date = ?,
+                    interface_name = COALESCE(NULLIF(?, ''), interface_name),
+                    description = COALESCE(NULLIF(?, ''), description),
+                    hub_ip = COALESCE(NULLIF(?, ''), hub_ip),
+                    branch_ip = COALESCE(NULLIF(?, ''), branch_ip),
+                    destination_ip = COALESCE(NULLIF(?, ''), destination_ip)
                 WHERE id = ?
-            """, (username, branch_name, now, tunnel_id))
+            """, (username, branch_name, now, interface_name, description, hub_ip, branch_ip, destination_ip, tunnel_id))
+            rows_updated = cursor.rowcount
         elif tunnel_number:
+            # Try multiple matching strategies
+            # 1. Try exact match on interface_name like "Tunnel12345"
             cursor.execute("""
                 UPDATE tunnel_mali 
-                SET status = 'Reserved', username = ?, branch_name = ?, reservation_date = ?
-                WHERE interface_name LIKE ?
-            """, (username, branch_name, now, f'%{tunnel_number}%'))
+                SET status = 'Reserved', 
+                    username = ?, 
+                    branch_name = ?, 
+                    reservation_date = ?,
+                    interface_name = COALESCE(NULLIF(?, ''), interface_name),
+                    description = COALESCE(NULLIF(?, ''), description),
+                    hub_ip = COALESCE(NULLIF(?, ''), hub_ip),
+                    branch_ip = COALESCE(NULLIF(?, ''), branch_ip),
+                    destination_ip = COALESCE(NULLIF(?, ''), destination_ip)
+                WHERE (interface_name = ? OR interface_name LIKE ? OR interface_name LIKE ?)
+                  AND (status IS NULL OR status = '' OR LOWER(status) = 'free')
+                LIMIT 1
+            """, (username, branch_name, now, interface_name, description, hub_ip, branch_ip, destination_ip, 
+                  f'Tunnel{tunnel_number}', f'%{tunnel_number}%', f'Tunnel{tunnel_number}%'))
+            rows_updated = cursor.rowcount
+            
+            # If no rows updated, try finding any free tunnel
+            if rows_updated == 0:
+                print(f"⚠️ No matching tunnel found for {tunnel_number}, trying first free tunnel...")
+                cursor.execute("""
+                    UPDATE tunnel_mali 
+                    SET status = 'Reserved', 
+                        username = ?, 
+                        branch_name = ?, 
+                        reservation_date = ?,
+                        interface_name = COALESCE(NULLIF(?, ''), interface_name),
+                        description = COALESCE(NULLIF(?, ''), description),
+                        hub_ip = COALESCE(NULLIF(?, ''), hub_ip),
+                        branch_ip = COALESCE(NULLIF(?, ''), branch_ip),
+                        destination_ip = COALESCE(NULLIF(?, ''), destination_ip)
+                    WHERE (status IS NULL OR status = '' OR LOWER(status) = 'free')
+                    ORDER BY id
+                    LIMIT 1
+                """, (username, branch_name, now, interface_name, description, hub_ip, branch_ip, destination_ip))
+                rows_updated = cursor.rowcount
         
         conn.commit()
         conn.close()
         
-        log_activity('success', 'رزرو تونل مالی', f'Tunnel {tunnel_number}', username)
-        return jsonify({'status': 'ok'})
+        print(f"✓ Tunnel reserved: {rows_updated} rows updated")
+        log_activity('success', 'رزرو تونل مالی', f'Tunnel {tunnel_number} - {branch_name}', username)
+        return jsonify({'status': 'ok', 'rows_updated': rows_updated})
     except Exception as e:
         print(f"❌ Reserve tunnel mali error: {e}")
         return jsonify({'status': 'error', 'error': str(e)}), 500
@@ -556,27 +1033,61 @@ def reserve_tunnel_mali():
 # ==================== APN IPs ====================
 @app.route('/api/apn-ips', methods=['GET'])
 def get_apn_ips():
+    """Get free APN IPs for APN غیرمالی (10.250.66.x)"""
     try:
         conn = get_db()
         cursor = conn.cursor()
-        cursor.execute("""
-            SELECT * FROM apn_ips 
-            WHERE username IS NULL OR username = ''
-            ORDER BY id
-        """)
         
-        ips = []
-        for row in cursor.fetchall():
-            ips.append({
-                'id': row['id'],
-                'ip': row['ip_wan_apn'],
-                'province': row['province'],
-                'branch_name': row['branch_name']
-            })
-        
-        conn.close()
-        print(f"✓ Free APN IPs: {len(ips)}")
-        return jsonify(ips)
+        # First check if table exists and has correct structure
+        try:
+            cursor.execute("""
+                SELECT * FROM apn_ips 
+                WHERE (username IS NULL OR username = '')
+                ORDER BY id
+                LIMIT 100
+            """)
+            
+            ips = []
+            for row in cursor.fetchall():
+                # Try different field names
+                ip_value = None
+                for field in ['ip_wan_apn', 'ip', 'ip_wan', 'ip_address']:
+                    try:
+                        ip_value = row[field]
+                        if ip_value:
+                            break
+                    except:
+                        continue
+                
+                if ip_value:
+                    ips.append({
+                        'id': row['id'],
+                        'ip': ip_value,
+                        'province': row['province'] if 'province' in row.keys() else '',
+                        'branch_name': row['branch_name'] if 'branch_name' in row.keys() else ''
+                    })
+            
+            conn.close()
+            print(f"✓ Free APN IPs (غیرمالی): {len(ips)}")
+            return jsonify(ips)
+            
+        except sqlite3.OperationalError as e:
+            print(f"⚠️ apn_ips table error: {e}")
+            conn.close()
+            
+            # Fallback: Generate IPs from 10.250.66.x range
+            print("📋 Generating APN IPs from 10.250.66.x range...")
+            ips = []
+            for i in range(2, 255):  # 10.250.66.2 to 10.250.66.254 (skip .1 for HUB)
+                ips.append({
+                    'id': i,
+                    'ip': f'10.250.66.{i}',
+                    'province': '',
+                    'branch_name': ''
+                })
+            print(f"✓ Generated {len(ips)} APN IPs")
+            return jsonify(ips)
+            
     except Exception as e:
         print(f"❌ APN IPs error: {e}")
         return jsonify([])
@@ -586,24 +1097,35 @@ def get_mali_free_ips():
     try:
         conn = get_db()
         cursor = conn.cursor()
-        cursor.execute("""
-            SELECT * FROM apn_mali 
-            WHERE username IS NULL OR username = ''
-            ORDER BY id
-        """)
         
-        ips = []
-        for row in cursor.fetchall():
-            ips.append({
-                'id': row['id'],
-                'ip': row['ip_wan'],
-                'province': row['province'],
-                'branch_name': row['branch_name']
-            })
-        
-        conn.close()
-        print(f"✓ Mali Free IPs: {len(ips)}")
-        return jsonify(ips)
+        # Try to get free IPs from apn_mali table
+        try:
+            cursor.execute("""
+                SELECT id, ip_wan, province, branch_name FROM apn_mali 
+                WHERE (username IS NULL OR username = '')
+                AND ip_wan IS NOT NULL AND ip_wan != ''
+                ORDER BY id
+            """)
+            
+            ips = []
+            for row in cursor.fetchall():
+                if row['ip_wan']:
+                    ips.append({
+                        'id': row['id'],
+                        'ip': row['ip_wan'],
+                        'province': row['province'] or '',
+                        'branch_name': row['branch_name'] or ''
+                    })
+            
+            conn.close()
+            print(f"✓ Mali Free IPs: {len(ips)}")
+            return jsonify(ips)
+        except sqlite3.OperationalError as e:
+            # Table structure might be different
+            print(f"⚠️ Mali Free IPs query error: {e}")
+            conn.close()
+            return jsonify([])
+            
     except Exception as e:
         print(f"❌ Mali Free IPs error: {e}")
         return jsonify([])
@@ -709,6 +1231,42 @@ def get_used_lan_ips():
         traceback.print_exc()
         return jsonify([])
 
+# ==================== LAN IPs API ====================
+@app.route('/api/lan-ips', methods=['GET'])
+def get_lan_ips():
+    """Get ALL LAN IPs from lan_ips table (for monitoring purposes)"""
+    try:
+        conn = get_db()
+        cursor = conn.cursor()
+        
+        cursor.execute("""
+            SELECT id, branch_name, province, octet2, octet3, wan_ip, status, username
+            FROM lan_ips 
+            WHERE branch_name IS NOT NULL AND branch_name != ''
+            AND octet2 IS NOT NULL AND octet3 IS NOT NULL
+            ORDER BY province, branch_name
+        """)
+        
+        ips = []
+        for row in cursor.fetchall():
+            ips.append({
+                'id': row['id'],
+                'branch_name': row['branch_name'] or '',
+                'province': row['province'] or '',
+                'octet2': row['octet2'],
+                'octet3': row['octet3'],
+                'wan_ip': row['wan_ip'] or '',
+                'status': row['status'] or 'Active',
+                'username': row['username'] or ''
+            })
+        
+        conn.close()
+        print(f"✓ LAN IPs for monitoring: {len(ips)}")
+        return jsonify({'success': True, 'data': ips})
+    except Exception as e:
+        print(f"❌ LAN IPs error: {e}")
+        return jsonify({'success': False, 'error': str(e), 'data': []})
+
 # ==================== CHECK REQUEST NUMBER ====================
 @app.route('/api/check-request-number', methods=['GET'])
 def check_request_number():
@@ -722,6 +1280,115 @@ def check_request_number():
         return jsonify({'exists': row is not None, 'data': dict(row) if row else None})
     except Exception as e:
         return jsonify({'exists': False, 'error': str(e)})
+
+# ==================== PROBLEMATIC NODES (for Dashboard) ====================
+@app.route('/api/problematic-nodes', methods=['GET'])
+def get_problematic_nodes():
+    """Get a sample of nodes for monitoring preview (random sample for demo)"""
+    try:
+        conn = get_db()
+        cursor = conn.cursor()
+        
+        # Get a sample of branch nodes for preview
+        cursor.execute("""
+            SELECT branch_name, province, octet2, octet3
+            FROM lan_ips 
+            WHERE branch_name IS NOT NULL AND branch_name != ''
+            AND octet2 IS NOT NULL AND octet3 IS NOT NULL
+            LIMIT 50
+        """)
+        
+        nodes = []
+        for row in cursor.fetchall():
+            nodes.append({
+                'ip': f"10.{row['octet2']}.254.{row['octet3']}",
+                'branchName': row['branch_name'],
+                'province': row['province'] or '',
+                'status': 'unknown',
+                'lastCheck': None
+            })
+        
+        conn.close()
+        
+        # Note: Actual status would need real-time ping data
+        # This endpoint returns nodes that can be monitored
+        return jsonify({
+            'success': True, 
+            'nodes': [],  # Empty - actual data comes from monitoring scan
+            'message': 'Run monitoring scan to get real data'
+        })
+    except Exception as e:
+        print(f"❌ Problematic nodes error: {e}")
+        return jsonify({'success': False, 'nodes': [], 'error': str(e)})
+
+# ==================== ACTIVATE RESERVATION ====================
+@app.route('/api/activate-reservation', methods=['POST'])
+def activate_reservation():
+    """Move IP from reserved to used when config is generated"""
+    try:
+        data = request.json
+        lan_ip = data.get('lan_ip', '')
+        config_type = data.get('config_type', 'unknown')
+        username = data.get('username', '')
+        
+        parts = lan_ip.replace('/24', '').split('.')
+        if len(parts) < 3:
+            return jsonify({'status': 'ok', 'was_reserved': False})
+        
+        try:
+            octet2 = int(parts[1])
+            octet3 = int(parts[2])
+        except:
+            return jsonify({'status': 'ok', 'was_reserved': False})
+        
+        conn = get_db()
+        cursor = conn.cursor()
+        
+        # Check if this IP is reserved (try with status column, fall back without)
+        reservation = None
+        try:
+            cursor.execute("""
+                SELECT id, branch_name FROM reserved_ips 
+                WHERE octet2 = ? AND octet3 = ? AND (status = 'reserved' OR status IS NULL)
+            """, (octet2, octet3))
+            reservation = cursor.fetchone()
+        except sqlite3.OperationalError:
+            # status column doesn't exist, just check if row exists
+            cursor.execute("""
+                SELECT id, branch_name FROM reserved_ips 
+                WHERE octet2 = ? AND octet3 = ?
+            """, (octet2, octet3))
+            reservation = cursor.fetchone()
+        
+        if reservation:
+            now = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+            
+            # Try to update with status column
+            try:
+                cursor.execute("""
+                    UPDATE reserved_ips SET status = 'activated', activated_at = ?, config_type = ?
+                    WHERE id = ?
+                """, (now, config_type, reservation['id']))
+            except sqlite3.OperationalError:
+                pass  # status column doesn't exist, skip
+            
+            # Update lan_ips to mark as used
+            cursor.execute("""
+                UPDATE lan_ips SET status = 'Used', username = ?
+                WHERE octet2 = ? AND octet3 = ?
+            """, (username, octet2, octet3))
+            
+            conn.commit()
+            conn.close()
+            
+            log_activity('success', 'فعال‌سازی رزرو', f'10.{octet2}.{octet3}.0/24 - {reservation["branch_name"]}', username)
+            return jsonify({'status': 'ok', 'was_reserved': True, 'message': 'رزرو فعال شد'})
+        
+        conn.close()
+        return jsonify({'status': 'ok', 'was_reserved': False})
+    except Exception as e:
+        print(f"❌ Activate reservation error: {e}")
+        return jsonify({'status': 'error', 'was_reserved': False, 'message': str(e)})
 
 # ==================== RESERVE LAN IP ====================
 @app.route('/api/reserve-lan', methods=['POST'])
@@ -764,11 +1431,18 @@ def reserve_lan_ip():
             WHERE octet2 = ? AND octet3 = ?
         """, (username, now.strftime('%Y-%m-%d'), branch_name, octet2, octet3))
         
-        # Insert into reserved_ips table
-        cursor.execute("""
-            INSERT INTO reserved_ips (province, octet2, octet3, branch_name, username, reservation_date, expiry_date, request_number, point_type, mehregostar_code)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        """, (province, octet2, octet3, branch_name, username, now.strftime('%Y-%m-%d'), expiry.strftime('%Y-%m-%d'), request_number, point_type, mehregostar_code))
+        # Insert into reserved_ips table (check if status column exists)
+        try:
+            cursor.execute("""
+                INSERT INTO reserved_ips (province, octet2, octet3, branch_name, username, reservation_date, expiry_date, request_number, point_type, mehregostar_code, status)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'reserved')
+            """, (province, octet2, octet3, branch_name, username, now.strftime('%Y-%m-%d'), expiry.strftime('%Y-%m-%d'), request_number, point_type, mehregostar_code))
+        except sqlite3.OperationalError:
+            # status column doesn't exist, insert without it
+            cursor.execute("""
+                INSERT INTO reserved_ips (province, octet2, octet3, branch_name, username, reservation_date, expiry_date, request_number, point_type, mehregostar_code)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """, (province, octet2, octet3, branch_name, username, now.strftime('%Y-%m-%d'), expiry.strftime('%Y-%m-%d'), request_number, point_type, mehregostar_code))
         
         conn.commit()
         conn.close()
@@ -796,23 +1470,43 @@ def release_used_lan():
         octet2 = data.get('octet2')
         octet3 = data.get('octet3')
         lan_id = data.get('id')
+        lan_ip = data.get('lan_ip')
+        
+        # Parse lan_ip if provided (e.g., "10.3.25.0")
+        if lan_ip and not octet2:
+            parts = lan_ip.replace('/24', '').split('.')
+            if len(parts) >= 3:
+                try:
+                    octet2 = int(parts[1])
+                    octet3 = int(parts[2])
+                except:
+                    pass
+        
+        if not octet2 or not octet3:
+            return jsonify({'status': 'error', 'message': 'IP نامعتبر است'}), 400
         
         conn = get_db()
         cursor = conn.cursor()
         
         if lan_id:
-            cursor.execute("UPDATE lan_ips SET username = NULL, reservation_date = NULL WHERE id = ?", (lan_id,))
+            cursor.execute("UPDATE lan_ips SET username = NULL, reservation_date = NULL, branch_name = NULL, status = 'Free' WHERE id = ?", (lan_id,))
         elif octet2 and octet3:
-            cursor.execute("UPDATE lan_ips SET username = NULL, reservation_date = NULL WHERE octet2 = ? AND octet3 = ?", (octet2, octet3))
+            cursor.execute("UPDATE lan_ips SET username = NULL, reservation_date = NULL, branch_name = NULL, status = 'Free' WHERE octet2 = ? AND octet3 = ?", (octet2, octet3))
+        
+        # Also remove from reserved_ips if exists
+        try:
+            cursor.execute("DELETE FROM reserved_ips WHERE octet2 = ? AND octet3 = ?", (octet2, octet3))
+        except:
+            pass
         
         conn.commit()
         conn.close()
         
         log_activity('warning', 'آزادسازی IP', f'10.{octet2}.{octet3}.0')
-        return jsonify({'success': True})
+        return jsonify({'status': 'ok', 'success': True, 'message': f'IP 10.{octet2}.{octet3}.0 آزاد شد'})
     except Exception as e:
         print(f"❌ Release used LAN error: {e}")
-        return jsonify({'success': False, 'error': str(e)}), 500
+        return jsonify({'status': 'error', 'success': False, 'message': str(e)}), 500
 
 # ==================== RESERVED IPs ====================
 @app.route('/api/reserved-ips', methods=['GET'])
@@ -924,6 +1618,8 @@ def reserve_ips():
         branch_name = data.get('branchName')
         lan_ip = data.get('lanIp')
         apn_ip = data.get('apnIp')
+        province = data.get('province', '')
+        ip_type = data.get('type', 'APN-INT')
         
         updates = []
         conn = get_db()
@@ -934,18 +1630,51 @@ def reserve_ips():
             parts = lan_ip.replace('/24', '').split('.')
             if len(parts) >= 3:
                 octet2, octet3 = parts[1], parts[2]
+                
+                # Update lan_ips - mark as Used if it was Reserved
                 cursor.execute("""
-                    UPDATE lan_ips SET username = ?, reservation_date = ?
+                    UPDATE lan_ips SET username = ?, reservation_date = ?, status = 'Used'
                     WHERE octet2 = ? AND octet3 = ?
                 """, (username, now, octet2, octet3))
-                updates.append(f"LAN IP {lan_ip} رزرو شد")
+                updates.append(f"LAN IP {lan_ip} فعال شد")
+                
+                # Also update reserved_ips status to 'activated'
+                cursor.execute("""
+                    UPDATE reserved_ips 
+                    SET status = 'activated', activated_at = ?, config_type = 'APN_INT'
+                    WHERE octet2 = ? AND octet3 = ? AND (status = 'reserved' OR status IS NULL)
+                """, (now, octet2, octet3))
         
         if apn_ip:
+            # Update apn_ips with ALL fields
             cursor.execute("""
-                UPDATE apn_ips SET username = ?, reservation_date = ?
+                UPDATE apn_ips 
+                SET username = ?, 
+                    reservation_date = ?,
+                    branch_name = ?,
+                    province = COALESCE(?, province),
+                    type = COALESCE(?, type),
+                    lan_ip = COALESCE(?, lan_ip)
                 WHERE ip_wan_apn = ?
-            """, (username, now, apn_ip))
+            """, (username, now, branch_name, province, ip_type, lan_ip, apn_ip))
             updates.append(f"APN IP {apn_ip} رزرو شد")
+        
+        # *** IMPORTANT: Also mark LAN IP as Used by branch_name ***
+        if branch_name and not lan_ip:
+            cursor.execute("""
+                UPDATE lan_ips 
+                SET status = 'Used'
+                WHERE branch_name = ? AND status = 'Reserved'
+            """, (branch_name,))
+            
+            if cursor.rowcount > 0:
+                updates.append(f"LAN IP برای {branch_name} فعال شد")
+                
+                cursor.execute("""
+                    UPDATE reserved_ips 
+                    SET status = 'activated', activated_at = ?, config_type = 'APN_INT'
+                    WHERE branch_name = ? AND (status = 'reserved' OR status IS NULL)
+                """, (now, branch_name))
         
         conn.commit()
         conn.close()
@@ -964,6 +1693,15 @@ def reserve_mali_ips():
         branch_name = data.get('branchName')
         apn_ip = data.get('apnIp')
         tunnel_id = data.get('tunnelId')
+        tunnel_ip_branch = data.get('tunnelIpBranch')
+        tunnel_ip_hub = data.get('tunnelIpHub')
+        tunnel_number = data.get('tunnelNumber')
+        province = data.get('province', '')
+        lan_ip = data.get('lanIp', '')
+        interface_name = data.get('interfaceName', f'Tunnel{tunnel_number}')
+        description = data.get('description', f'Gilanet-{branch_name}')
+        destination_ip = data.get('destinationIp', '')
+        node_type = data.get('type', 'APN-MALI')  # کیوسک، شعبه، ATM
         
         updates = []
         conn = get_db()
@@ -971,24 +1709,60 @@ def reserve_mali_ips():
         now = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         
         if apn_ip:
+            # Update apn_mali with ALL fields including type
             cursor.execute("""
-                UPDATE apn_mali SET username = ?, reservation_date = ?
+                UPDATE apn_mali 
+                SET username = ?, 
+                    reservation_date = ?,
+                    branch_name = ?,
+                    province = COALESCE(?, province),
+                    type = ?,
+                    lan_ip = COALESCE(?, lan_ip)
                 WHERE ip_wan = ?
-            """, (username, now, apn_ip))
+            """, (username, now, branch_name, province, node_type, lan_ip, apn_ip))
             updates.append(f"APN Mali IP {apn_ip} رزرو شد")
         
         if tunnel_id:
+            # Update tunnel_mali with ALL fields
             cursor.execute("""
-                UPDATE tunnel_mali SET status = 'Reserved', username = ?, branch_name = ?, reservation_date = ?
+                UPDATE tunnel_mali 
+                SET status = 'Reserved', 
+                    username = ?, 
+                    branch_name = ?, 
+                    reservation_date = ?,
+                    interface_name = COALESCE(?, interface_name),
+                    description = COALESCE(?, description),
+                    ip_address = COALESCE(?, ip_address),
+                    hub_ip = COALESCE(?, hub_ip),
+                    branch_ip = COALESCE(?, branch_ip),
+                    destination_ip = COALESCE(?, destination_ip)
                 WHERE id = ?
-            """, (username, branch_name, now, tunnel_id))
+            """, (username, branch_name, now, interface_name, description, 
+                  tunnel_ip_branch, tunnel_ip_hub, tunnel_ip_branch, destination_ip, tunnel_id))
             updates.append(f"Tunnel Mali رزرو شد")
+        
+        # *** IMPORTANT: Mark LAN IP as Used (Active) ***
+        if branch_name:
+            cursor.execute("""
+                UPDATE lan_ips 
+                SET status = 'Used'
+                WHERE branch_name = ? AND status = 'Reserved'
+            """, (branch_name,))
+            
+            if cursor.rowcount > 0:
+                updates.append(f"LAN IP برای {branch_name} فعال شد")
+                
+                cursor.execute("""
+                    UPDATE reserved_ips 
+                    SET status = 'activated', activated_at = ?, config_type = 'APN_MALI'
+                    WHERE branch_name = ? AND (status = 'reserved' OR status IS NULL)
+                """, (now, branch_name))
         
         conn.commit()
         conn.close()
         
-        log_activity('success', 'رزرو IP مالی', f'{branch_name}: {apn_ip}', username)
-        return jsonify({'status': 'ok', 'updates': updates})
+        log_activity('success', 'رزرو IP مالی', f'{branch_name}: {apn_ip}, Tunnel: {tunnel_number}', username)
+        return jsonify({'status': 'ok', 'updates': updates, 'message': f'تمام فیلدها برای {branch_name} ذخیره شد'})
     except Exception as e:
         print(f"❌ Reserve Mali IPs error: {e}")
         return jsonify({'status': 'error', 'error': str(e)}), 500
@@ -999,10 +1773,37 @@ def ping_ip():
     try:
         data = request.json
         ip = data.get('ip')
-        result = subprocess.run(['ping', '-n', '2', '-w', '2000', ip], capture_output=True, text=True, timeout=10)
-        return jsonify({'success': result.returncode == 0, 'ip': ip, 'output': result.stdout})
-    except:
-        return jsonify({'success': False, 'error': 'Timeout'})
+        
+        if not ip:
+            return jsonify({'success': False, 'error': 'No IP provided'})
+        
+        # Cross-platform ping command
+        if platform.system().lower() == 'windows':
+            cmd = ['ping', '-n', '2', '-w', '2000', ip]
+        else:
+            cmd = ['ping', '-c', '2', '-W', '2', ip]
+        
+        result = subprocess.run(cmd, capture_output=True, text=True, timeout=10)
+        
+        # Parse response time from output
+        response_time = None
+        output = result.stdout
+        if 'time=' in output or 'time<' in output:
+            import re
+            match = re.search(r'time[=<](\d+)', output)
+            if match:
+                response_time = int(match.group(1))
+        
+        return jsonify({
+            'success': result.returncode == 0, 
+            'ip': ip, 
+            'output': output,
+            'response_time': response_time
+        })
+    except subprocess.TimeoutExpired:
+        return jsonify({'success': False, 'ip': ip, 'error': 'Timeout'})
+    except Exception as e:
+        return jsonify({'success': False, 'ip': ip, 'error': str(e)})
 
 @app.route('/api/ping-lan-ip', methods=['POST'])
 def ping_lan_ip():
@@ -1057,6 +1858,77 @@ def ping_lan_ip():
         print(f"❌ Ping error: {e}")
         return jsonify({'reachable': False, 'message': f'خطا: {str(e)}'})
 
+@app.route('/api/check-expired-reservations', methods=['GET', 'POST'])
+def check_expired_reservations():
+    """
+    Manually check and optionally release expired reservations.
+    GET: Just check how many are expired
+    POST: Actually release them
+    """
+    try:
+        conn = get_db()
+        cursor = conn.cursor()
+        
+        today = datetime.now().strftime('%Y-%m-%d')
+        
+        # Find expired reservations that are still 'reserved'
+        cursor.execute("""
+            SELECT r.id, r.octet2, r.octet3, r.branch_name, r.username, 
+                   r.reservation_date, r.expiry_date, r.status
+            FROM reserved_ips r
+            WHERE r.expiry_date < ? 
+            AND (r.status = 'reserved' OR r.status IS NULL)
+        """, (today,))
+        
+        expired = cursor.fetchall()
+        expired_list = []
+        
+        for row in expired:
+            expired_list.append({
+                'id': row['id'],
+                'ip': f"10.{row['octet2']}.{row['octet3']}.0/24",
+                'branch_name': row['branch_name'],
+                'username': row['username'],
+                'reservation_date': row['reservation_date'],
+                'expiry_date': row['expiry_date'],
+                'status': row['status']
+            })
+        
+        if request.method == 'POST' and expired_list:
+            # Actually release them
+            released = 0
+            for row in expired:
+                cursor.execute("""
+                    UPDATE lan_ips 
+                    SET username = NULL, reservation_date = NULL, branch_name = NULL, status = 'Free'
+                    WHERE octet2 = ? AND octet3 = ? AND status = 'Reserved'
+                """, (row['octet2'], row['octet3']))
+                
+                cursor.execute("DELETE FROM reserved_ips WHERE id = ?", (row['id'],))
+                released += 1
+            
+            conn.commit()
+            conn.close()
+            
+            log_activity('info', 'آزادسازی دستی', f'{released} IP منقضی شده آزاد شد', 'Admin')
+            return jsonify({
+                'success': True,
+                'released': released,
+                'message': f'{released} IP منقضی شده آزاد شد'
+            })
+        
+        conn.close()
+        return jsonify({
+            'success': True,
+            'expired_count': len(expired_list),
+            'expired': expired_list,
+            'message': f'{len(expired_list)} IP منقضی شده پیدا شد' if expired_list else 'هیچ IP منقضی شده‌ای وجود ندارد'
+        })
+        
+    except Exception as e:
+        print(f"❌ Check expired error: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
 @app.route('/api/ping-loopback', methods=['POST'])
 def ping_loopback():
     try:
@@ -1072,13 +1944,15 @@ def ping_loopback():
             octet3 = data.get('octet3')
             ip = f"10.{octet2}.254.{octet3}"
         
-        # Windows ping command
-        result = subprocess.run(
-            ['ping', '-n', '2', '-w', '2000', ip], 
-            capture_output=True, 
-            text=True, 
-            timeout=10
-        )
+        # Cross-platform ping command
+        if platform.system().lower() == 'windows':
+            cmd = ['ping', '-n', '2', '-w', '2000', ip]
+        else:
+            cmd = ['ping', '-c', '2', '-W', '2', ip]
+        
+        start_time = time.time()
+        result = subprocess.run(cmd, capture_output=True, text=True, timeout=10)
+        response_time = (time.time() - start_time) * 1000 / 2  # Average per ping
         
         reachable = result.returncode == 0
         
@@ -1086,6 +1960,7 @@ def ping_loopback():
             'success': reachable,
             'reachable': reachable,
             'ip': ip,
+            'responseTime': round(response_time, 2) if reachable else None,
             'message': f'✅ {ip} پاسخ داد' if reachable else f'❌ {ip} پاسخ نداد'
         })
     except subprocess.TimeoutExpired:
@@ -1095,12 +1970,24 @@ def ping_loopback():
         return jsonify({'success': False, 'reachable': False, 'message': str(e)})
 
 # ==================== DB MANAGEMENT ====================
+# Activity log cache
+_activity_cache = {'data': None, 'time': 0}
+
 @app.route('/api/db/activity', methods=['GET'])
 def get_activity():
+    global _activity_cache
+    
+    # Return cached result if less than 30 seconds old
+    if _activity_cache['data'] and (time.time() - _activity_cache['time']) < 30:
+        return jsonify(_activity_cache['data'])
+    
     try:
         if os.path.exists(ACTIVITY_LOG):
             with open(ACTIVITY_LOG, 'r', encoding='utf-8') as f:
-                return jsonify(json.load(f))
+                data = json.load(f)
+                _activity_cache['data'] = data
+                _activity_cache['time'] = time.time()
+                return jsonify(data)
         return jsonify([])
     except:
         return jsonify([])
@@ -1225,5 +2112,10 @@ if __name__ == '__main__':
     print(f"📂 Database: {DB_PATH}")
     print(f"👥 Users: {', '.join(ALLOWED_USERS)}")
     print(f"🔐 DB Admin: {DB_ADMIN_USER}")
+    print(f"🗑️ Auto-Release Check: Every {AUTO_RELEASE_INTERVAL // 3600} hours")
     print("=" * 70)
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    
+    # Start auto-release thread for expired reservations
+    start_auto_release_thread()
+    
+    app.run(host='0.0.0.0', port=5000, debug=True, use_reloader=False)
