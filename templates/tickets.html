@@ -474,10 +474,11 @@
 
         <div class="tabs">
             <button class="tab active" onclick="switchTab('inbox')">📥 صندوق ورودی</button>
-            <button class="tab" onclick="switchTab('tickets')">🎫 تیکت‌ها</button>
+            <button class="tab" onclick="switchTab('mytickets')">📂 تیکت‌های من</button>
+            <button class="tab" onclick="switchTab('alltickets')">🎫 همه تیکت‌ها</button>
         </div>
 
-        <!-- Tab 1: Inbox -->
+        <!-- Tab 1: Inbox (unassigned only) -->
         <div id="inboxTab" class="tab-content active">
             <div class="card-grid" id="emailList">
                 <div class="empty-state">
@@ -487,12 +488,22 @@
             </div>
         </div>
 
-        <!-- Tab 2: Tickets -->
-        <div id="ticketsTab" class="tab-content">
-            <div class="card-grid" id="ticketList">
+        <!-- Tab 2: My Tickets -->
+        <div id="myticketsTab" class="tab-content">
+            <div class="card-grid" id="myTicketList">
+                <div class="empty-state">
+                    <div class="icon">📂</div>
+                    <div class="text">در حال بارگذاری...</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab 3: All Tickets -->
+        <div id="allticketsTab" class="tab-content">
+            <div class="card-grid" id="allTicketList">
                 <div class="empty-state">
                     <div class="icon">🎫</div>
-                    <div class="text">در حال بارگذاری تیکت‌ها...</div>
+                    <div class="text">در حال بارگذاری...</div>
                 </div>
             </div>
         </div>
@@ -544,34 +555,41 @@
                 document.querySelectorAll('.tab')[0].classList.add('active');
                 document.getElementById('inboxTab').classList.add('active');
                 loadEmails();
-            } else {
+            } else if (tab === 'mytickets') {
                 document.querySelectorAll('.tab')[1].classList.add('active');
-                document.getElementById('ticketsTab').classList.add('active');
-                loadTickets();
+                document.getElementById('myticketsTab').classList.add('active');
+                loadTickets('mine');
+            } else {
+                document.querySelectorAll('.tab')[2].classList.add('active');
+                document.getElementById('allticketsTab').classList.add('active');
+                loadTickets('all');
             }
         }
 
-        // ============ LOAD EMAILS ============
+        // ============ LOAD EMAILS (Only unassigned) ============
         async function loadEmails() {
             try {
                 const res = await fetch('/api/tickets/emails');
                 const emails = await res.json();
                 const container = document.getElementById('emailList');
 
-                if (emails.length === 0) {
-                    container.innerHTML = '<div class="empty-state"><div class="icon">📭</div><div class="text">ایمیلی در صندوق ورودی نیست</div></div>';
+                // Only show emails without tickets
+                const available = emails.filter(e => !e.has_ticket);
+
+                if (available.length === 0) {
+                    container.innerHTML = '<div class="empty-state"><div class="icon">✅</div><div class="text">همه ایمیل‌ها برداشته شده‌اند. درخواست جدیدی وجود ندارد.</div></div>';
                     return;
                 }
 
-                container.innerHTML = emails.map(e => `
-                    <div class="email-card ${e.has_ticket ? 'used' : ''}" onclick="${e.has_ticket ? '' : `createTicket('${e.id}')`}">
+                container.innerHTML = available.map(e => `
+                    <div class="email-card" onclick="pickupTicket('${e.id}')">
                         <div class="email-header">
-                            <div class="subject">${e.has_ticket ? '✅' : '📩'} ${e.subject}</div>
+                            <div class="subject">📩 ${e.subject}</div>
                             <div class="date">${e.date}</div>
                         </div>
                         <div style="display: flex; justify-content: space-between; align-items: center;">
                             <div class="sender">از: ${e.sender}</div>
-                            ${e.has_ticket ? '<span class="badge badge-ip">تیکت ایجاد شده</span>' : '<span style="font-size:12px; color: var(--accent-blue);">کلیک کنید برای ایجاد تیکت &larr;</span>'}
+                            <span style="font-size:12px; color: var(--accent-blue); font-weight:600;">برداشتن تیکت ✋</span>
                         </div>
                         <div class="body-preview">${e.body}</div>
                     </div>
@@ -581,8 +599,10 @@
             }
         }
 
-        // ============ CREATE TICKET ============
-        async function createTicket(emailId) {
+        // ============ PICK UP TICKET ============
+        async function pickupTicket(emailId) {
+            if (!confirm('آیا این تیکت را برمی‌دارید؟ تیکت به صندوق شما منتقل می‌شود.')) return;
+
             const emails = await (await fetch('/api/tickets/emails')).json();
             const email = emails.find(e => e.id === emailId);
             if (!email) return;
@@ -602,7 +622,7 @@
                 });
                 const data = await res.json();
                 if (data.success) {
-                    switchTab('tickets');
+                    switchTab('mytickets');
                     setTimeout(() => openTicket(data.ticket_id), 300);
                 } else {
                     alert(data.error || 'خطا در ایجاد تیکت');
@@ -613,14 +633,22 @@
         }
 
         // ============ LOAD TICKETS ============
-        async function loadTickets() {
+        async function loadTickets(mode) {
             try {
                 const res = await fetch('/api/tickets');
-                const tickets = await res.json();
-                const container = document.getElementById('ticketList');
+                let tickets = await res.json();
+                const isMine = mode === 'mine';
+                const container = document.getElementById(isMine ? 'myTicketList' : 'allTicketList');
+
+                if (isMine) {
+                    tickets = tickets.filter(t => t.assigned_user === currentUser);
+                }
 
                 if (tickets.length === 0) {
-                    container.innerHTML = '<div class="empty-state"><div class="icon">🎫</div><div class="text">هنوز تیکتی ایجاد نشده. از تب صندوق ورودی روی ایمیل کلیک کنید.</div></div>';
+                    const msg = isMine
+                        ? 'هنوز تیکتی برنداشته‌اید. از صندوق ورودی یک تیکت بردارید.'
+                        : 'هیچ تیکتی وجود ندارد.';
+                    container.innerHTML = `<div class="empty-state"><div class="icon">${isMine ? '📂' : '🎫'}</div><div class="text">${msg}</div></div>`;
                     return;
                 }
 
@@ -631,7 +659,10 @@
                         <div class="ticket-card" onclick="openTicket(${t.id})">
                             <div class="ticket-header">
                                 <div class="ticket-id">#${t.id}</div>
-                                <span class="badge ${badgeClass}">${badgeText}</span>
+                                <div style="display:flex; gap:8px; align-items:center;">
+                                    <span style="font-size:12px; color:var(--text-muted);">👤 ${t.assigned_user || '-'}</span>
+                                    <span class="badge ${badgeClass}">${badgeText}</span>
+                                </div>
                             </div>
                             <div class="ticket-subject">${t.email_subject || 'بدون موضوع'}</div>
                             <div class="ticket-meta">
@@ -644,7 +675,8 @@
                     `;
                 }).join('');
             } catch (err) {
-                document.getElementById('ticketList').innerHTML = '<div class="empty-state"><div class="icon">❌</div><div class="text">خطا در بارگذاری</div></div>';
+                const container = document.getElementById(mode === 'mine' ? 'myTicketList' : 'allTicketList');
+                container.innerHTML = '<div class="empty-state"><div class="icon">❌</div><div class="text">خطا در بارگذاری</div></div>';
             }
         }
 
@@ -663,8 +695,9 @@
             document.getElementById('ticketModal').classList.remove('active');
             currentTicket = null;
             selectedIp = null;
-            loadTickets();
-            loadEmails();
+            // Refresh whichever tab is active
+            const activeTab = document.querySelector('.tab.active');
+            if (activeTab) activeTab.click();
         }
 
         // ============ RENDER MODAL ============
@@ -1398,8 +1431,11 @@ ${hubGilanetAcl}`;
 ip route ${loop2} 255.255.255.255 ${FIXED_ASR_NEXTHOP} name ${routeName}-APN-INT
 !`;
 
-            const fullConfig = branchCfg + '\n\n' + hubCfg + '\n\n' + asrCfg;
-            saveAndShowConfig('apn_int', fullConfig);
+            saveAndShowConfig('apn_int', {
+                'Branch Router': branchCfg,
+                'APN-INT-HUB Router': hubCfg,
+                'ASR1006-WAN-MB': asrCfg
+            });
         }
 
         function generateApnMaliConfig() {
@@ -1697,12 +1733,15 @@ router ospf ${OSPF_PROCESS}
 !
 end`;
 
-            const fullConfig = branchCfg + '\n\n' + hubCfg;
-            saveAndShowConfig('apn_mali', fullConfig);
+            saveAndShowConfig('apn_mali', {
+                'Branch Router': branchCfg,
+                'ISR-APN-RO (HUB)': hubCfg
+            });
         }
 
-        async function saveAndShowConfig(configType, configOutput) {
-            // Save to server
+        async function saveAndShowConfig(configType, configParts) {
+            // Save as JSON string with separate parts
+            const configOutput = JSON.stringify(configParts);
             try {
                 const res = await fetch(`/api/tickets/${currentTicket.id}/generate-config`, {
                     method: 'POST',
@@ -1726,40 +1765,67 @@ end`;
             }
         }
 
+        function parseConfigParts(configOutput) {
+            try {
+                return JSON.parse(configOutput);
+            } catch(e) {
+                // Legacy: single string config
+                return { 'کانفیگ': configOutput };
+            }
+        }
+
+        function renderConfigBoxes(configOutput) {
+            const parts = parseConfigParts(configOutput);
+            const colors = ['#3b82f6', '#8b5cf6', '#f59e0b', '#10b981'];
+            let i = 0;
+            return Object.entries(parts).map(([title, cfg]) => {
+                const color = colors[i++ % colors.length];
+                return `
+                    <div style="margin-bottom: 16px;">
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                            <h4 style="color:${color}; font-size:14px;">⚙️ ${title}</h4>
+                            <button class="btn btn-secondary" style="padding:4px 12px; font-size:11px;" onclick="copyText(this)">📋 کپی</button>
+                        </div>
+                        <div class="config-box" style="max-height:300px; border-color:${color}30;">${cfg}</div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function copyText(btn) {
+            const box = btn.closest('div').nextElementSibling || btn.parentElement.nextElementSibling;
+            navigator.clipboard.writeText(box.textContent).then(() => {
+                const orig = btn.textContent;
+                btn.textContent = '✅ کپی شد';
+                setTimeout(() => btn.textContent = orig, 1500);
+            });
+        }
+
         // ============ STAGE: CONFIG GENERATED ============
         function renderStageConfigGenerated() {
             const t = currentTicket;
             const configTypeLabel = t.config_type === 'apn_int' ? 'APN غیرمالی' : 'APN مالی';
+            const defaultReply = `سلام و احترام\n\nIP اختصاص داده شده: ${t.assigned_ip}\nنوع کانفیگ: ${configTypeLabel}\nنقطه: ${t.branch_name} (${t.province})\n\nکانفیگ تولید شده به پیوست ارسال می‌شود.\n\nبا تشکر\nواحد شبکه`;
 
             return `
                 <div class="info-box" style="border-color: rgba(16,185,129,0.3); background: rgba(16,185,129,0.08);">
                     ✅ IP: ${t.assigned_ip} | نقطه: ${t.branch_name} | نوع کانفیگ: ${configTypeLabel}
                 </div>
 
-                <h4 style="margin-bottom: 12px;">⚙️ کانفیگ تولید شده:</h4>
-                <div class="config-box">${t.config_output}</div>
+                ${renderConfigBoxes(t.config_output)}
 
-                <div style="display: flex; gap: 10px; margin-top: 16px;">
-                    <button class="btn btn-secondary" onclick="copyConfig()" style="flex:1;">📋 کپی کانفیگ</button>
-                    <button class="btn btn-success" onclick="sendReply()" style="flex:1;">📧 ارسال پاسخ (ریپلای ایمیل)</button>
-                </div>
+                <button class="btn btn-success" onclick="document.getElementById('replyPreviewArea').style.display='block'" style="width:100%; margin-top: 8px;">
+                    📧 ارسال پاسخ (ریپلای ایمیل)
+                </button>
 
                 <div id="replyPreviewArea" style="display:none; margin-top: 16px;">
                     <div class="reply-preview">
-                        <h4>📧 پیش‌نمایش ریپلای:</h4>
-                        <div style="margin-top: 10px; font-size: 13px; line-height: 1.8; color: var(--text-secondary);">
-                            <div><strong>To:</strong> ${t.email_sender}</div>
-                            <div><strong>Subject:</strong> Re: ${t.email_subject}</div>
-                            <hr style="border-color: var(--border-color); margin: 10px 0;">
-                            <div style="direction: rtl;">
-                                سلام و احترام<br><br>
-                                IP اختصاص داده شده: <strong>${t.assigned_ip}</strong><br>
-                                نوع کانفیگ: <strong>${configTypeLabel}</strong><br>
-                                نقطه: <strong>${t.branch_name}</strong> (${t.province})<br><br>
-                                کانفیگ تولید شده به پیوست ارسال می‌شود.<br><br>
-                                با تشکر<br>
-                                واحد شبکه
-                            </div>
+                        <h4>📧 ویرایش و ارسال ریپلای:</h4>
+                        <div style="margin-top: 10px; font-size: 13px; color: var(--text-secondary);">
+                            <div style="margin-bottom:8px;"><strong>To:</strong> ${t.email_sender}</div>
+                            <div style="margin-bottom:12px;"><strong>Subject:</strong> Re: ${t.email_subject}</div>
+                            <label style="font-size:12px; color:var(--text-muted); display:block; margin-bottom:6px;">متن ایمیل (قابل ویرایش):</label>
+                            <textarea id="replyText" style="width:100%; min-height:180px; padding:12px; border:1px solid var(--input-border); border-radius:8px; background:var(--input-bg); color:var(--text-primary); font-size:14px; font-family:inherit; line-height:1.8; resize:vertical; direction:rtl; box-sizing:border-box;">${defaultReply}</textarea>
                         </div>
                     </div>
                     <button class="btn btn-success" onclick="confirmSendReply()" style="width:100%; margin-top: 12px;">
@@ -1769,22 +1835,13 @@ end`;
             `;
         }
 
-        function copyConfig() {
-            navigator.clipboard.writeText(currentTicket.config_output).then(() => {
-                alert('کانفیگ کپی شد');
-            });
-        }
-
-        function sendReply() {
-            document.getElementById('replyPreviewArea').style.display = 'block';
-        }
-
         async function confirmSendReply() {
+            const replyText = document.getElementById('replyText').value;
             try {
                 const res = await fetch(`/api/tickets/${currentTicket.id}/send-reply`, {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({ username: currentUser })
+                    body: JSON.stringify({ username: currentUser, reply_text: replyText })
                 });
                 const data = await res.json();
                 if (data.success) {
@@ -1806,7 +1863,7 @@ end`;
 
             return `
                 <div class="info-box" style="border-color: rgba(16,185,129,0.3); background: rgba(16,185,129,0.08);">
-                    ✅ <strong>تیکت بسته شده</strong> - پاسخ ارسال شد
+                    ✅ <strong>تیکت بسته شده</strong> - پاسخ ارسال شد توسط ${t.assigned_user || '-'}
                 </div>
 
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 16px;">
@@ -1828,9 +1885,7 @@ end`;
                     </div>
                 </div>
 
-                <h4 style="margin-bottom: 10px;">⚙️ کانفیگ:</h4>
-                <div class="config-box" style="max-height: 250px;">${t.config_output}</div>
-                <button class="btn btn-secondary" onclick="copyConfig()" style="width: 100%; margin-top: 10px;">📋 کپی کانفیگ</button>
+                ${renderConfigBoxes(t.config_output)}
             `;
         }
 
