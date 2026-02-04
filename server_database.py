@@ -3,7 +3,7 @@ Network Config Portal Server - COMPLETE FIXED VERSION
 All APIs fixed + DB Manager only for Sahebdel
 """
 
-from flask import Flask, jsonify, request, render_template
+from flask import Flask, jsonify, request, render_template, Response
 from flask_cors import CORS
 import sqlite3
 import os
@@ -47,6 +47,17 @@ def validate_octet(value):
         return 0 <= n <= 255
     except (ValueError, TypeError):
         return False
+
+def validate_ip(ip):
+    """Validate IPv4 address format"""
+    import re
+    if not ip or not isinstance(ip, str):
+        return False
+    pattern = r'^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$'
+    match = re.match(pattern, ip)
+    if not match:
+        return False
+    return all(0 <= int(g) <= 255 for g in match.groups())
 
 # ==================== AUTO-RELEASE EXPIRED RESERVATIONS ====================
 AUTO_RELEASE_INTERVAL = 3600 * 6  # Check every 6 hours
@@ -295,6 +306,33 @@ def register_user():
     log_activity('success', 'ثبت نام', username, username)
     return jsonify({"success": True})
 
+@app.route('/api/change-password', methods=['POST'])
+def change_password():
+    data = request.json
+    username = data.get('username')
+    old_password = data.get('old_password')
+    new_password = data.get('new_password')
+    if username not in ALLOWED_USERS:
+        return jsonify({"error": "کاربر مجاز نیست"}), 403
+    if not new_password or len(new_password) < 4:
+        return jsonify({"error": "رمز جدید باید حداقل 4 کاراکتر باشد"}), 400
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("SELECT password_hash FROM user_passwords WHERE username = ?", (username,))
+    row = cursor.fetchone()
+    if not row:
+        conn.close()
+        return jsonify({"error": "کاربر یافت نشد"}), 404
+    if row['password_hash'] != hash_password(old_password):
+        conn.close()
+        return jsonify({"error": "رمز فعلی اشتباه است"}), 401
+    cursor.execute("UPDATE user_passwords SET password_hash = ? WHERE username = ?",
+                   (hash_password(new_password), username))
+    conn.commit()
+    conn.close()
+    log_activity('success', 'تغییر رمز', username, username)
+    return jsonify({"success": True, "message": "رمز با موفقیت تغییر کرد"})
+
 @app.route('/api/login', methods=['POST'])
 def login():
     client_ip = request.remote_addr
@@ -330,7 +368,10 @@ def check_admin():
 # ==================== STATS API ====================
 @app.route('/api/debug/tables', methods=['GET'])
 def debug_tables():
-    """Debug endpoint to check table structure"""
+    """Debug endpoint to check table structure - admin only"""
+    username = request.args.get('username', '')
+    if username != DB_ADMIN_USER:
+        return jsonify({'error': 'دسترسی فقط برای مدیر سیستم'}), 403
     try:
         conn = get_db()
         cursor = conn.cursor()
@@ -1212,9 +1253,6 @@ def get_free_lan_ips():
         import traceback
         traceback.print_exc()
         return jsonify([])
-    except Exception as e:
-        print(f"❌ Free LAN error: {e}")
-        return jsonify([])
 
 @app.route('/api/used-lan-ips', methods=['GET'])
 def get_used_lan_ips():
@@ -1810,9 +1848,9 @@ def ping_ip():
         data = request.json
         ip = data.get('ip')
         
-        if not ip:
-            return jsonify({'success': False, 'error': 'No IP provided'})
-        
+        if not ip or not validate_ip(ip):
+            return jsonify({'success': False, 'error': 'IP نامعتبر است'})
+
         # Cross-platform ping command
         if platform.system().lower() == 'windows':
             cmd = ['ping', '-n', '2', '-w', '2000', ip]
@@ -1862,11 +1900,16 @@ def ping_lan_ip():
         # Ping format: 10.{octet2}.254.{octet3}
         ping_ip = f"10.{octet2}.254.{octet3}"
         
-        # Windows ping command
+        # Cross-platform ping command
+        if platform.system().lower() == 'windows':
+            cmd = ['ping', '-n', '2', '-w', '2000', ping_ip]
+        else:
+            cmd = ['ping', '-c', '2', '-W', '2', ping_ip]
+
         result = subprocess.run(
-            ['ping', '-n', '2', '-w', '2000', ping_ip], 
-            capture_output=True, 
-            text=True, 
+            cmd,
+            capture_output=True,
+            text=True,
             timeout=10
         )
         
@@ -2113,7 +2156,12 @@ def restore_backup():
         
         if username != DB_ADMIN_USER:
             return jsonify({'error': 'فقط مدیر سیستم می‌تواند بازیابی کند'}), 403
-        
+
+        # Sanitize filename to prevent path traversal
+        fname = os.path.basename(fname)
+        if not fname.endswith('.db'):
+            return jsonify({'error': 'فرمت فایل نامعتبر'}), 400
+
         src = os.path.join(BACKUP_DIR, fname)
         if os.path.exists(src):
             shutil.copy2(src, DB_PATH)
@@ -2137,6 +2185,61 @@ def reset_users():
         conn.commit()
         conn.close()
         return jsonify({'success': True})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+# ==================== EXPORT CSV ====================
+@app.route('/api/export/lan-ips', methods=['GET'])
+def export_lan_ips():
+    """Export all LAN IPs as CSV"""
+    try:
+        conn = get_db()
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT octet2, octet3, branch_name, province, wan_ip, username, reservation_date, status
+            FROM lan_ips
+            WHERE branch_name IS NOT NULL AND branch_name != ''
+            ORDER BY province, branch_name
+        """)
+        rows = cursor.fetchall()
+        conn.close()
+
+        import io, csv
+        output = io.StringIO()
+        output.write('\ufeff')  # BOM for Excel Persian support
+        writer = csv.writer(output)
+        writer.writerow(['IP LAN', 'نام شعبه', 'استان', 'WAN IP', 'کاربر', 'تاریخ رزرو', 'وضعیت'])
+        for r in rows:
+            writer.writerow([f"10.{r['octet2']}.{r['octet3']}.0/24", r['branch_name'] or '', r['province'] or '',
+                             r['wan_ip'] or '', r['username'] or '', r['reservation_date'] or '', r['status'] or 'Active'])
+
+        return Response(output.getvalue(), mimetype='text/csv',
+                        headers={'Content-Disposition': 'attachment; filename=lan_ips_export.csv'})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/export/reservations', methods=['GET'])
+def export_reservations():
+    """Export all reservations as CSV"""
+    try:
+        conn = get_db()
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM reserved_ips ORDER BY reservation_date DESC")
+        rows = cursor.fetchall()
+        conn.close()
+
+        import io, csv
+        output = io.StringIO()
+        output.write('\ufeff')
+        writer = csv.writer(output)
+        writer.writerow(['IP LAN', 'استان', 'نام شعبه', 'نوع نقطه', 'شماره درخواست', 'کاربر', 'تاریخ رزرو', 'تاریخ انقضا', 'وضعیت'])
+        for r in rows:
+            writer.writerow([f"10.{r['octet2']}.{r['octet3']}.0/24", r['province'] or '', r['branch_name'] or '',
+                             r['point_type'] or '', r['request_number'] or '', r['username'] or '',
+                             r['reservation_date'] or '', r['expiry_date'] or '', r['status'] or 'reserved'])
+
+        return Response(output.getvalue(), mimetype='text/csv',
+                        headers={'Content-Disposition': 'attachment; filename=reservations_export.csv'})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 

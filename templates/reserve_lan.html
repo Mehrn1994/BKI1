@@ -776,8 +776,16 @@ document.addEventListener('DOMContentLoaded', function() {
         </div>
 
         <div class="main-card">
-            <h1>🔖 رزرو IP LAN</h1>
-            <p style="color: #666; margin-bottom: 20px;">رزرو IP برای نقاط جدید (قبل از پیکربندی)</p>
+            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+                <div>
+                    <h1 style="margin:0;">🔖 رزرو IP LAN</h1>
+                    <p style="color: #666; margin-bottom: 0; margin-top:5px;">رزرو IP برای نقاط جدید (قبل از پیکربندی)</p>
+                </div>
+                <div style="display:flex; gap:8px;">
+                    <a href="/api/export/reservations" style="background:#10b981; color:white; padding:8px 14px; border-radius:8px; text-decoration:none; font-size:12px; font-weight:600;">📥 خروجی رزروها (CSV)</a>
+                    <a href="/api/export/lan-ips" style="background:#3b82f6; color:white; padding:8px 14px; border-radius:8px; text-decoration:none; font-size:12px; font-weight:600;">📥 خروجی IP ها (CSV)</a>
+                </div>
+            </div>
 
             <h2>فرم رزرو IP</h2>
             <form id="reserveForm">
@@ -920,9 +928,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // Check if user is logged in
         if (!localStorage.getItem('currentUser') && !sessionStorage.getItem('username') && !localStorage.getItem('username')) {
-            // Redirect to login if no username found
-            console.warn('No username found, redirecting to login...');
-            // Uncomment to enable redirect: window.location.href = '/login';
+            window.location.href = '/login';
         }
 
         let selectedProvince = '';
