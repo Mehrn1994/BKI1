@@ -2462,10 +2462,13 @@ def ticket_assign_existing(ticket_id):
 
 @app.route('/api/tickets/<int:ticket_id>/generate-config', methods=['POST'])
 def ticket_generate_config(ticket_id):
-    """Stage 2: Generate config for ticket"""
+    """Stage 2: Save generated config for ticket (config generated client-side)"""
     data = request.json
     config_type = data.get('config_type')  # 'apn_int' or 'apn_mali'
-    config_params = data.get('config_params', {})
+    config_output = data.get('config_output', '')
+
+    if not config_type or not config_output:
+        return jsonify({'error': 'اطلاعات کانفیگ ناقص است'}), 400
 
     conn = get_db()
     cursor = conn.cursor()
@@ -2474,19 +2477,6 @@ def ticket_generate_config(ticket_id):
     if not ticket:
         conn.close()
         return jsonify({'error': 'تیکت یافت نشد'}), 404
-
-    octet2 = ticket['octet2']
-    octet3 = ticket['octet3']
-    branch_name = config_params.get('branch_name_en', ticket['branch_name'])
-
-    # Generate config based on type
-    if config_type == 'apn_int':
-        config_output = generate_apn_int_config(octet2, octet3, branch_name, config_params)
-    elif config_type == 'apn_mali':
-        config_output = generate_apn_mali_config(octet2, octet3, branch_name, config_params)
-    else:
-        conn.close()
-        return jsonify({'error': 'نوع کانفیگ نامعتبر'}), 400
 
     now = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
     cursor.execute("""
@@ -2498,77 +2488,7 @@ def ticket_generate_config(ticket_id):
     conn.close()
 
     log_activity('success', 'تولید کانفیگ از تیکت', f'تیکت #{ticket_id}: {config_type}', data.get('username', 'System'))
-    return jsonify({'success': True, 'config': config_output})
-
-def generate_apn_int_config(octet2, octet3, branch_name, params):
-    """Generate APN non-financial config text"""
-    node_type = params.get('node_type', 'Branch')
-    route_name = params.get('route_name', branch_name)
-    tunnel_id = params.get('tunnel_id', octet3)
-    wan_ip = params.get('wan_ip', f'172.16.{octet2}.{octet3}')
-
-    config = f"""! ============================================
-! APN غیرمالی - {branch_name}
-! Node Type: {node_type}
-! LAN: 10.{octet2}.{octet3}.0/24
-! Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
-! ============================================
-!
-hostname {route_name}
-!
-interface Loopback0
- ip address 10.{octet2}.{octet3}.1 255.255.255.255
-!
-interface Tunnel{tunnel_id}
- ip address 172.20.{octet2}.{octet3} 255.255.255.252
- tunnel source {wan_ip}
- tunnel destination 10.255.255.1
- tunnel mode gre ip
-!
-interface GigabitEthernet0/0
- ip address 10.{octet2}.{octet3}.1 255.255.255.0
- no shutdown
-!
-ip route 0.0.0.0 0.0.0.0 Tunnel{tunnel_id}
-!
-end"""
-    return config
-
-def generate_apn_mali_config(octet2, octet3, branch_name, params):
-    """Generate APN financial config text"""
-    node_type = params.get('node_type', 'Branch')
-    hostname = params.get('hostname', branch_name)
-    wan_ip = params.get('wan_ip', f'172.16.{octet2}.{octet3}')
-
-    config = f"""! ============================================
-! APN مالی - {branch_name}
-! Node Type: {node_type}
-! LAN: 10.{octet2}.{octet3}.0/24
-! Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
-! ============================================
-!
-hostname {hostname}
-!
-interface Loopback0
- ip address 10.{octet2}.{octet3}.1 255.255.255.255
-!
-interface GigabitEthernet0/0
- ip address 10.{octet2}.{octet3}.1 255.255.255.0
- ip nat inside
- no shutdown
-!
-interface GigabitEthernet0/1
- ip address {wan_ip} 255.255.255.252
- ip nat outside
- no shutdown
-!
-ip nat inside source list 1 interface GigabitEthernet0/1 overload
-access-list 1 permit 10.{octet2}.{octet3}.0 0.0.0.255
-!
-ip route 0.0.0.0 0.0.0.0 GigabitEthernet0/1
-!
-end"""
-    return config
+    return jsonify({'success': True})
 
 @app.route('/api/tickets/<int:ticket_id>/send-reply', methods=['POST'])
 def ticket_send_reply(ticket_id):

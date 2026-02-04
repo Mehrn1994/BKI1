@@ -1012,6 +1012,12 @@
         }
 
         // ============ STAGE: IP ASSIGNED ============
+        // Auto-assigned resources cache
+        let autoApnIp = null;
+        let autoTunnel200 = null;
+        let autoMaliIp = null;
+        let autoTunnelPair = null;
+
         function renderStageIpAssigned() {
             const t = currentTicket;
             return `
@@ -1039,94 +1045,673 @@
             `;
         }
 
-        function showConfigForm(type) {
+        async function showConfigForm(type) {
             document.querySelectorAll('.choice-card').forEach(c => c.classList.remove('selected'));
             event.target.closest('.choice-card').classList.add('selected');
 
             const area = document.getElementById('configFormArea');
             area.style.display = 'block';
-
             const t = currentTicket;
+            const x = t.octet2;
+            const y = t.octet3;
 
             if (type === 'apn_int') {
                 area.innerHTML = `
-                    <h4 style="margin: 16px 0 12px;">پارامترهای APN غیرمالی</h4>
+                    <h4 style="margin: 16px 0 12px;">⚙️ پارامترهای APN غیرمالی</h4>
+                    <div class="info-box">فیلدهای خودکار از دیتابیس تخصیص داده می‌شوند. فیلدهای دستی را پر کنید.</div>
+
                     <div class="form-row">
                         <div class="form-group">
-                            <label>Node Type</label>
-                            <select id="cfgNodeType">
-                                <option value="Branch">Branch</option>
-                                <option value="ATM">ATM</option>
-                                <option value="Kiosk">Kiosk</option>
-                            </select>
+                            <label>🌐 APN IP (خودکار)</label>
+                            <input type="text" id="cfgApnIp" readonly style="opacity:0.7; cursor:not-allowed;" value="⏳ در حال دریافت...">
                         </div>
                         <div class="form-group">
-                            <label>Route Name (English)</label>
-                            <input type="text" id="cfgRouteName" placeholder="e.g. Tehran-Vanak-01" value="${t.branch_name || ''}">
+                            <label>🔗 Tunnel200 HUB IP (خودکار)</label>
+                            <input type="text" id="cfgTun200Hub" readonly style="opacity:0.7; cursor:not-allowed;" value="⏳ در حال دریافت...">
                         </div>
                     </div>
                     <div class="form-row">
                         <div class="form-group">
-                            <label>Tunnel ID</label>
-                            <input type="text" id="cfgTunnelId" value="${t.octet3 || ''}">
+                            <label>🔗 Tunnel200 Branch IP (خودکار)</label>
+                            <input type="text" id="cfgTun200Branch" readonly style="opacity:0.7; cursor:not-allowed;" value="⏳ در حال دریافت...">
                         </div>
                         <div class="form-group">
-                            <label>WAN IP</label>
-                            <input type="text" id="cfgWanIp" placeholder="172.16.x.x" value="172.16.${t.octet2}.${t.octet3}">
+                            <label>📋 OSPF Area (خودکار)</label>
+                            <input type="text" id="cfgOspfArea" readonly style="opacity:0.7; cursor:not-allowed;" value="${x}">
                         </div>
                     </div>
-                    <button class="btn btn-purple" onclick="generateConfig('apn_int')" style="width:100%; margin-top: 10px;">
-                        ⚙️ تولید کانفیگ APN غیرمالی
-                    </button>
-                `;
-            } else {
-                area.innerHTML = `
-                    <h4 style="margin: 16px 0 12px;">پارامترهای APN مالی</h4>
+
+                    <hr style="border-color: var(--border-color); margin: 16px 0;">
+
                     <div class="form-row">
                         <div class="form-group">
-                            <label>Node Type</label>
+                            <label>📋 Node Type</label>
                             <select id="cfgNodeType">
-                                <option value="Branch">Branch</option>
-                                <option value="ATM">ATM</option>
+                                <option value="Branch">🏢 شعبه (Branch)</option>
+                                <option value="ATM">💳 ATM</option>
+                                <option value="Kiosk">🖥️ کیوسک (Kiosk)</option>
                             </select>
                         </div>
                         <div class="form-group">
-                            <label>Hostname (English)</label>
-                            <input type="text" id="cfgHostname" placeholder="e.g. TEH-Branch-Vanak" value="${t.branch_name || ''}">
+                            <label>🔤 Route Name (English) *</label>
+                            <input type="text" id="cfgRouteName" placeholder="e.g. Tehran-Vanak-01" value="">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>🔌 WAN Interface *</label>
+                            <input type="text" id="cfgWanIface" value="FastEthernet0/1">
+                        </div>
+                        <div class="form-group">
+                            <label>🔢 شماره Tunnel روی HUB *</label>
+                            <input type="text" id="cfgHubTunnelId" placeholder="مثال: 10158100170">
                         </div>
                     </div>
                     <div class="form-group">
-                        <label>WAN IP</label>
-                        <input type="text" id="cfgWanIp" placeholder="172.16.x.x" value="172.16.${t.octet2}.${t.octet3}">
+                        <label>📝 HUB Tunnel Description *</label>
+                        <input type="text" id="cfgHubDesc" placeholder="e.g. Gilanet-Tehran-Vanak-01">
                     </div>
-                    <button class="btn btn-success" onclick="generateConfig('apn_mali')" style="width:100%; margin-top: 10px;">
+                    <div class="form-group" style="display: flex; align-items: center; gap: 10px;">
+                        <input type="checkbox" id="cfgSecondary" style="width:auto;">
+                        <label for="cfgSecondary" style="margin:0; cursor:pointer;">⚠️ IP به صورت Secondary (شعبه قبلاً APN مالی دارد)</label>
+                    </div>
+
+                    <button class="btn btn-purple" onclick="generateApnIntConfig()" style="width:100%; margin-top: 10px;">
+                        ⚙️ تولید کانفیگ APN غیرمالی
+                    </button>
+                `;
+                // Auto-assign APN IP and Tunnel200
+                autoAssignForApnInt();
+
+            } else {
+                area.innerHTML = `
+                    <h4 style="margin: 16px 0 12px;">⚙️ پارامترهای APN مالی</h4>
+                    <div class="info-box">فیلدهای خودکار از دیتابیس تخصیص داده می‌شوند. فیلدهای دستی را پر کنید.</div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>🌐 APN مالی IP (خودکار)</label>
+                            <input type="text" id="cfgMaliIp" readonly style="opacity:0.7; cursor:not-allowed;" value="⏳ در حال دریافت...">
+                        </div>
+                        <div class="form-group">
+                            <label>🔗 Tunnel Pair (خودکار)</label>
+                            <input type="text" id="cfgTunnelPairDisplay" readonly style="opacity:0.7; cursor:not-allowed;" value="⏳ در حال دریافت...">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>📋 OSPF Area (خودکار)</label>
+                            <input type="text" id="cfgOspfArea" readonly style="opacity:0.7; cursor:not-allowed;" value="${x}">
+                        </div>
+                        <div class="form-group">
+                            <label>📋 Node Type</label>
+                            <select id="cfgNodeType">
+                                <option value="Branch">🏢 شعبه (Branch)</option>
+                                <option value="Kiosk">🖥️ کیوسک (Kiosk)</option>
+                                <option value="ATM">💳 ATM</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <hr style="border-color: var(--border-color); margin: 16px 0;">
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>🔤 نام شعبه (English) *</label>
+                            <input type="text" id="cfgBranchNameEn" placeholder="e.g. TEH-Branch-Vanak">
+                        </div>
+                        <div class="form-group">
+                            <label>🔌 WAN Interface *</label>
+                            <input type="text" id="cfgWanIface" value="FastEthernet0/1">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>🔢 شماره Tunnel روی HUB *</label>
+                        <input type="text" id="cfgHubTunnelNum" placeholder="مثال: 10158100170">
+                    </div>
+                    <div class="form-group" style="display: flex; align-items: center; gap: 10px;">
+                        <input type="checkbox" id="cfgIncludeBase" style="width:auto;">
+                        <label for="cfgIncludeBase" style="margin:0; cursor:pointer;">📦 شامل Base Configuration (کانفیگ پایه اولیه)</label>
+                    </div>
+                    <div id="baseConfigFields" style="display:none;">
+                        <div class="form-group">
+                            <label>🏷️ Router Hostname *</label>
+                            <input type="text" id="cfgRouterHostname" placeholder="e.g. GLS-Kiosk-Behshadafarin">
+                        </div>
+                    </div>
+
+                    <button class="btn btn-success" onclick="generateApnMaliConfig()" style="width:100%; margin-top: 10px;">
                         ⚙️ تولید کانفیگ APN مالی
                     </button>
                 `;
+                // Auto-assign APN Mali IP and Tunnel pair
+                autoAssignForApnMali();
+                // Toggle base config fields
+                document.getElementById('cfgIncludeBase').addEventListener('change', function() {
+                    document.getElementById('baseConfigFields').style.display = this.checked ? 'block' : 'none';
+                });
             }
         }
 
-        async function generateConfig(type) {
-            const params = { username: currentUser };
+        // ============ AUTO-ASSIGN RESOURCES ============
+        async function autoAssignForApnInt() {
+            // APN IP
+            try {
+                const res = await fetch('/api/apn-ips');
+                const ips = await res.json();
+                const field = document.getElementById('cfgApnIp');
+                if (ips.length > 0) {
+                    autoApnIp = ips[0].ip;
+                    field.value = '✅ ' + autoApnIp + ' (خودکار)';
+                } else {
+                    field.value = '❌ IP آزاد موجود نیست';
+                }
+            } catch(e) { document.getElementById('cfgApnIp').value = '❌ خطا'; }
 
-            if (type === 'apn_int') {
-                params.node_type = document.getElementById('cfgNodeType').value;
-                params.route_name = document.getElementById('cfgRouteName').value;
-                params.tunnel_id = document.getElementById('cfgTunnelId').value;
-                params.wan_ip = document.getElementById('cfgWanIp').value;
-                params.branch_name_en = document.getElementById('cfgRouteName').value;
-            } else {
-                params.node_type = document.getElementById('cfgNodeType').value;
-                params.hostname = document.getElementById('cfgHostname').value;
-                params.wan_ip = document.getElementById('cfgWanIp').value;
-                params.branch_name_en = document.getElementById('cfgHostname').value;
+            // Tunnel200
+            try {
+                const res = await fetch('/api/tunnel200-ips');
+                const pairs = await res.json();
+                const hubField = document.getElementById('cfgTun200Hub');
+                const brField = document.getElementById('cfgTun200Branch');
+                if (pairs.length > 0) {
+                    autoTunnel200 = pairs[0];
+                    hubField.value = '✅ ' + autoTunnel200.hub_ip + ' (خودکار)';
+                    brField.value = '✅ ' + autoTunnel200.branch_ip + ' (خودکار)';
+                } else {
+                    hubField.value = '❌ IP آزاد موجود نیست';
+                    brField.value = '❌ IP آزاد موجود نیست';
+                }
+            } catch(e) {
+                document.getElementById('cfgTun200Hub').value = '❌ خطا';
+                document.getElementById('cfgTun200Branch').value = '❌ خطا';
+            }
+        }
+
+        async function autoAssignForApnMali() {
+            // Mali APN IP
+            try {
+                const res = await fetch('/api/mali-free-ips');
+                const ips = await res.json();
+                const field = document.getElementById('cfgMaliIp');
+                if (ips.length > 0) {
+                    autoMaliIp = ips[0].ip;
+                    field.value = '✅ ' + autoMaliIp + ' (خودکار)';
+                } else {
+                    field.value = '❌ IP آزاد موجود نیست';
+                }
+            } catch(e) { document.getElementById('cfgMaliIp').value = '❌ خطا'; }
+
+            // Tunnel pair
+            try {
+                const res = await fetch('/api/free-tunnel-pairs');
+                const tunnels = await res.json();
+                const field = document.getElementById('cfgTunnelPairDisplay');
+                if (tunnels.length > 0) {
+                    autoTunnelPair = tunnels[0];
+                    field.value = '✅ Tunnel ' + autoTunnelPair.tunnel_number + ' - Branch: ' + autoTunnelPair.tunnel_ip_branch + ' ↔ HUB: ' + autoTunnelPair.tunnel_ip_hub;
+                } else {
+                    field.value = '❌ Tunnel آزاد موجود نیست';
+                }
+            } catch(e) { document.getElementById('cfgTunnelPairDisplay').value = '❌ خطا'; }
+        }
+
+        // ============ CONFIG GENERATORS (Exact match with APN pages) ============
+
+        function lanNetwork(x, y) { return '10.' + x + '.' + y + '.0'; }
+
+        function generateApnIntConfig() {
+            const t = currentTicket;
+            const x = t.octet2;
+            const y = t.octet3;
+            const routeName = document.getElementById('cfgRouteName').value.trim();
+            const wanIface = document.getElementById('cfgWanIface').value.trim();
+            const hubTunnelId = document.getElementById('cfgHubTunnelId').value.trim();
+            const hubDescription = document.getElementById('cfgHubDesc').value.trim();
+            const isSecondary = document.getElementById('cfgSecondary').checked;
+            const ospfArea = x;
+
+            if (!routeName) { alert('لطفاً Route Name را وارد کنید'); return; }
+            if (!wanIface) { alert('لطفاً WAN Interface را وارد کنید'); return; }
+            if (!hubTunnelId) { alert('لطفاً شماره Tunnel روی HUB را وارد کنید'); return; }
+            if (!hubDescription) { alert('لطفاً HUB Tunnel Description را وارد کنید'); return; }
+            if (!autoApnIp) { alert('APN IP تخصیص داده نشده. صفحه را رفرش کنید.'); return; }
+            if (!autoTunnel200) { alert('Tunnel200 IP تخصیص داده نشده. صفحه را رفرش کنید.'); return; }
+
+            const FIXED_HUB_APN_IP = '10.250.66.1';
+            const FIXED_ASR_NEXTHOP = '10.0.151.4';
+            const FIXED_OSPF_PROCESS = '200';
+            const branchApnIp = autoApnIp;
+            const hubApnIp = FIXED_HUB_APN_IP;
+            const tun200Hub = autoTunnel200.hub_ip;
+            const tun200Branch = autoTunnel200.branch_ip;
+            const branchName = t.branch_name;
+            const loop2 = '10.210.' + x + '.' + y;
+            const lanNet = lanNetwork(x, y);
+
+            const secondaryNote = isSecondary ? '\n! ⚠️ توجه: IP به صورت SECONDARY اضافه شده (شعبه قبلاً APN مالی دارد)\n! ⚠️ کانفیگ‌های Crypto از قبل روی روتر وجود دارد و نیاز به اضافه کردن نیست\n!' : '';
+
+            const cryptoConfig = isSecondary ? `!
+! ⚠️ کانفیگ‌های زیر از قبل روی روتر وجود دارند (APN مالی) - نیازی به اعمال مجدد نیست
+! crypto isakmp policy 101
+! crypto isakmp key ... (already exists)
+! crypto ipsec transform-set GILANETTS (already exists)
+! crypto map GILANET (already exists)
+!` : `!
+crypto isakmp policy 101
+ encr aes
+ authentication pre-share
+ group 2
+!
+crypto isakmp key G!l@n3tIntr@n3t address ${hubApnIp}
+!
+crypto ipsec transform-set GILANETTS esp-aes esp-sha-hmac
+!
+crypto map GILANET 10 ipsec-isakmp
+ set peer ${hubApnIp}
+ set transform-set GILANETTS
+ match address GILANET-ACL
+!`;
+
+            const gilanetAcl = isSecondary ? `!
+! ⚠️ GILANET-ACL از قبل وجود دارد - فقط این خط را به آن اضافه کنید:
+! (config)# ip access-list extended GILANET-ACL
+!          permit gre host ${branchApnIp} host ${hubApnIp}
+!` : `!
+ip access-list extended GILANET-ACL
+ permit gre host ${branchApnIp} host ${hubApnIp}
+!`;
+
+            const branchCfg = `!
+! ===== Branch Router (${branchName}) - APN غیرمالی =====${secondaryNote}
+${cryptoConfig}
+interface Loopback2
+ ip address ${loop2} 255.255.255.255
+!
+interface Tunnel200
+ description ** APN-INT-HUB **
+ ip address ${tun200Branch} 255.255.255.254
+ ip mtu 1460
+ ip nat outside
+ ip virtual-reassembly
+ ip tcp adjust-mss 1420
+ ip ospf hello-interval 100
+ ip ospf dead-interval 300
+ tunnel source ${branchApnIp}
+ tunnel destination ${hubApnIp}
+!${isSecondary ? '\n! ⚠️ IP زیر به صورت secondary است چون شعبه قبلاً APN مالی دارد' : ''}
+interface ${wanIface}
+ ip address ${branchApnIp} 255.255.255.0${isSecondary ? ' secondary' : ''}
+ ip virtual-reassembly
+ crypto map GILANET
+!
+router ospf ${FIXED_OSPF_PROCESS}
+ router-id ${loop2}
+ log-adjacency-changes
+ network ${tun200Branch} 0.0.0.0 area ${ospfArea}
+ network ${loop2} 0.0.0.0 area ${ospfArea}
+!
+ip nat inside source list intnat interface Loopback2 overload
+${gilanetAcl}
+ip access-list extended intnat
+ permit ip ${lanNet} 0.0.0.255 10.0.54.0 0.0.0.255
+ permit ip ${lanNet} 0.0.0.255 10.0.55.0 0.0.0.255
+ permit ip ${lanNet} 0.0.0.255 10.0.68.0 0.0.0.255
+ permit ip ${lanNet} 0.0.0.255 10.0.76.0 0.0.0.255
+ permit ip ${lanNet} 0.0.0.255 10.0.89.0 0.0.0.255
+ permit ip ${lanNet} 0.0.0.255 host 10.0.97.26
+ permit ip ${lanNet} 0.0.0.255 host 10.0.192.206
+ permit ip ${lanNet} 0.0.0.255 host 10.42.8.129
+ permit ip ${lanNet} 0.0.0.255 host 10.42.19.129
+!`;
+
+            const hubGilanetAcl = isSecondary ? `!
+! ⚠️ GILANET-AccessList از قبل وجود دارد - فقط این خط را به آن اضافه کنید:
+! (config)# ip access-list extended GILANET-AccessList
+!          permit gre host ${hubApnIp} host ${branchApnIp}
+!` : `!
+ip access-list extended GILANET-AccessList
+ permit gre host ${hubApnIp} host ${branchApnIp}
+!`;
+
+            const hubCfg = `!
+! ===== APN-INT-HUB Router =====${isSecondary ? '\n! ⚠️ شعبه قبلاً APN مالی دارد - فقط ACL entry اضافه شود' : ''}
+!
+interface Tunnel${hubTunnelId}
+ description ** ${hubDescription} **
+ ip address ${tun200Hub} 255.255.255.254
+ ip mtu 1460
+ ip virtual-reassembly
+ ip tcp adjust-mss 1420
+ ip ospf hello-interval 100
+ ip ospf dead-interval 300
+ ip ospf mtu-ignore
+ tunnel source ${hubApnIp}
+ tunnel destination ${branchApnIp}
+!
+router ospf ${FIXED_OSPF_PROCESS}
+ network ${tun200Hub} 0.0.0.0 area ${ospfArea}
+${hubGilanetAcl}`;
+
+            const asrCfg = `!
+! ===== ASR1006-WAN-MB =====
+ip route ${loop2} 255.255.255.255 ${FIXED_ASR_NEXTHOP} name ${routeName}-APN-INT
+!`;
+
+            const fullConfig = branchCfg + '\n\n' + hubCfg + '\n\n' + asrCfg;
+            saveAndShowConfig('apn_int', fullConfig);
+        }
+
+        function generateApnMaliConfig() {
+            const t = currentTicket;
+            const x = t.octet2;
+            const y = t.octet3;
+            const branchNameEn = document.getElementById('cfgBranchNameEn').value.trim();
+            const wanIface = document.getElementById('cfgWanIface').value.trim();
+            const hubTunnelNum = document.getElementById('cfgHubTunnelNum').value.trim();
+            const includeBase = document.getElementById('cfgIncludeBase').checked;
+            const routerHostname = includeBase ? (document.getElementById('cfgRouterHostname').value.trim() || branchNameEn) : '';
+            const ospfArea = x;
+
+            if (!branchNameEn) { alert('لطفاً نام شعبه به انگلیسی را وارد کنید'); return; }
+            if (!wanIface) { alert('لطفاً WAN Interface را وارد کنید'); return; }
+            if (!hubTunnelNum) { alert('لطفاً شماره Tunnel روی HUB را وارد کنید'); return; }
+            if (!autoMaliIp) { alert('APN مالی IP تخصیص داده نشده. صفحه را رفرش کنید.'); return; }
+            if (!autoTunnelPair) { alert('Tunnel pair تخصیص داده نشده. صفحه را رفرش کنید.'); return; }
+
+            const FIXED_HUB_IP = '10.250.46.1';
+            const CRYPTO_KEY = 'G!l@n3tAcc3ss';
+            const OSPF_PROCESS = '2';
+            const apnIpBranch = autoMaliIp;
+            const tunnelIpBranch = autoTunnelPair.tunnel_ip_branch;
+            const tunnelIpHub = autoTunnelPair.tunnel_ip_hub;
+            const hubTunnelInterface = 'Tunnel' + hubTunnelNum;
+            const branchName = t.branch_name;
+
+            // Calculate Router-ID
+            const tunnelParts = tunnelIpBranch.split('.');
+            const tunnelSecondOctet = tunnelParts[1] || '250';
+            const routerId = '10.' + tunnelSecondOctet + '.' + x + '.' + y;
+
+            let branchCfg = '';
+
+            // Base Config
+            if (includeBase) {
+                branchCfg = `!
+! ========================================================
+! ===== BASE CONFIGURATION - First Time Setup =====
+! ========================================================
+!
+service timestamps debug datetime msec
+service timestamps log datetime msec
+no service password-encryption
+!
+hostname ${routerHostname}
+!
+boot-start-marker
+boot-end-marker
+!
+enable secret 5 $1$1kQA$TOB1eE4SmnYjXXjtxUXus0
+!
+aaa new-model
+!
+aaa authentication login CACS group tacacs+ local
+aaa authentication enable default group tacacs+ enable
+aaa authorization console
+aaa authorization config-commands
+aaa authorization exec CACS group tacacs+ local
+aaa authorization commands 0 CACS group tacacs+ local
+aaa authorization commands 1 CACS group tacacs+ local
+aaa authorization commands 2 CACS group tacacs+ local
+aaa authorization commands 3 CACS group tacacs+ local
+aaa authorization commands 15 CACS group tacacs+ local
+aaa accounting exec CACS start-stop group tacacs+
+aaa accounting commands 0 CACS start-stop group tacacs+
+aaa accounting commands 1 CACS start-stop group tacacs+
+aaa accounting commands 2 CACS start-stop group tacacs+
+aaa accounting commands 3 CACS start-stop group tacacs+
+aaa accounting commands 15 CACS start-stop group tacacs+
+!
+aaa session-id common
+clock timezone Tehran 3 30
+ip cef
+!
+no ip domain lookup
+ip domain name agri-bank.com
+ip ssh time-out 120
+ip ssh version 2
+ip ssh port 2001 rotary 1
+crypto key generate rsa
+768
+!
+ip ssh authentication-retries 2
+!
+!
+username bkiadmin privilege 15 secret 5 $1$y/X2$m2zhThmBZUcxNZ56uEQvA1
+!
+track 5 ip route 10.0.0.0 255.255.0.0 reachability
+!
+`;
             }
 
+            // APN Mali Config
+            branchCfg += `!
+! ===== Branch Router (${branchName}) - APN مالی =====
+!
+crypto isakmp policy 10
+ encr aes
+ authentication pre-share
+ group 2
+crypto isakmp key ${CRYPTO_KEY} address ${FIXED_HUB_IP}
+crypto isakmp invalid-spi-recovery
+!
+crypto ipsec transform-set GILANETTS esp-aes esp-sha-hmac
+!
+crypto map GILANET 10 ipsec-isakmp
+ set peer ${FIXED_HUB_IP}
+ set transform-set GILANETTS
+ match address GILANET-ACL
+!
+interface Loopback0
+ ip address 10.${x}.254.${y} 255.255.255.255
+!
+interface Tunnel156
+ description ** Gilanet **
+ ip address ${tunnelIpBranch} 255.255.255.254
+ ip ospf hello-interval 100
+ ip ospf dead-interval 300
+ ip ospf priority 0
+ tunnel source ${apnIpBranch}
+ tunnel destination ${FIXED_HUB_IP}
+!`;
+
+            if (includeBase) {
+                branchCfg += `
+!
+interface FastEthernet0/0
+ description ** LAN **
+ ip address 10.${x}.${y}.5 255.255.255.0
+ ip access-group ETHERNET_IN in
+ duplex auto
+ speed auto
+ standby 1 ip 10.${x}.${y}.1
+ standby 1 timers 1 3
+ standby 1 preempt
+ standby 1 track 5 decrement 25
+!`;
+            }
+
+            branchCfg += `
+interface ${wanIface}
+ description ** Gilanet **
+ ip address ${apnIpBranch} 255.255.248.0
+ duplex auto
+ speed auto
+ crypto map GILANET
+!
+router ospf ${OSPF_PROCESS}
+ router-id ${routerId}
+ log-adjacency-changes
+ passive-interface default
+ no passive-interface Tunnel156
+ network 10.${x}.${y}.5 0.0.0.0 area ${ospfArea}
+ network 10.${x}.254.${y} 0.0.0.0 area ${ospfArea}
+ network ${tunnelIpBranch} 0.0.0.0 area ${ospfArea}
+ distribute-list OSPF-PERMIT in
+!`;
+
+            if (includeBase) {
+                branchCfg += `
+ip forward-protocol nd
+!
+no ip http server
+no ip http secure-server
+ip tacacs source-interface Loopback0
+!
+ip access-list standard OSPF-PERMIT
+ permit 10.0.0.0 0.0.255.255
+ip access-list standard SNMP-READ
+ permit 10.0.50.0 0.0.1.255
+ip access-list standard SNMP-WRITE
+ permit 10.0.51.49
+ permit 10.0.51.48
+ip access-list standard TELNET_ACCESS
+ permit 10.250.46.1
+ permit 10.0.50.0 0.0.1.255
+ permit 10.${x}.${y}.6 0.0.0.1
+!
+ip access-list extended ETHERNET_IN
+ deny   tcp any any range 135 139
+ deny   tcp any any eq 445
+ deny   udp any any range 135 netbios-ss
+ deny   udp any any eq 1434
+ deny   udp any any eq 1433
+ deny   tcp any any eq 1026
+ deny   tcp any any eq 4444
+ deny   udp any any eq 445
+ permit ip 10.${x}.${y}.0 0.0.0.255 192.168.65.0 0.0.0.255
+ permit ip 10.${x}.${y}.0 0.0.0.255 192.168.72.0 0.0.0.255
+ permit udp 10.${x}.${y}.0 0.0.0.255 224.0.0.0 0.0.0.255
+ permit ip 10.${x}.${y}.0 0.0.0.255 10.${x}.${y}.0 0.0.0.255
+ permit ip 10.${x}.${y}.0 0.0.0.255 10.0.0.0 0.0.255.255
+ permit ip 10.${x}.${y}.0 0.0.0.255 10.${x}.0.0 0.0.7.255
+ip access-list extended GILANET-ACL
+ permit gre host ${apnIpBranch} host ${FIXED_HUB_IP}
+!
+logging 10.0.51.63
+snmp-server group LMS v3 priv read myview write myview access SNMP-WRITE
+snmp-server group NMS v3 priv access SNMP-READ
+snmp-server view myview mib-2 included
+snmp-server view myview system included
+snmp-server view myview cisco included
+snmp-server ifindex persist
+!
+tacacs-server host 10.0.51.56
+tacacs-server host 10.0.51.57
+tacacs-server directed-request
+tacacs-server key 7 1324045C445D577A
+!
+control-plane
+!
+banner motd ^C
+        ===
+       -+ +-
+       | | |
+    <--\\\\ | /-->
+   ##| ||||| |##
+  ###| |+++| |###
+ /____\\\\\\\\ | //____\\\\ ********************************************************
+   <###\\\\|||/###>                  Keshavarzi Bank Network
+    +====+====+     WARNING: Access is restricted to authorized users only.
+    | WAN-BKI |     Unauthorized access is a violation of state , civil and
+    +===+=+===+                       criminal laws.
+        +=+        ********************************************************
+^C
+privilege interface level 3 shutdown
+privilege interface level 3 no shutdown
+privilege interface level 3 no
+privilege configure level 3 interface
+privilege exec level 3 traceroute
+privilege exec level 3 ping
+privilege exec level 3 configure terminal
+privilege exec level 3 configure
+privilege exec level 3 reload
+privilege exec level 3 terminal monitor
+privilege exec level 3 terminal
+privilege exec all level 3 show running-config
+privilege exec level 3 show
+!
+line con 0
+ authorization exec CACS
+ login authentication CACS
+line aux 0
+ no exec
+line vty 0 4
+ privilege level 15
+ authorization exec CACS
+ accounting exec CACS
+ login authentication CACS
+ transport input ssh
+ transport output ssh
+line vty 5 15
+ privilege level 15
+ authorization exec CACS
+ accounting exec CACS
+ login authentication CACS
+ transport input ssh
+ transport output ssh
+!
+scheduler allocate 20000 1000
+ntp authenticate
+ntp trusted-key 1
+ntp clock-period 17178037
+ntp source Loopback0
+ntp update-calendar
+ntp server 10.0.51.27
+!
+end`;
+            } else {
+                branchCfg += `
+ip access-list standard OSPF-PERMIT
+ permit 10.0.0.0 0.0.255.255
+!
+ip access-list extended GILANET-ACL
+ permit gre host ${apnIpBranch} host ${FIXED_HUB_IP}
+!
+end`;
+            }
+
+            const hubCfg = `!
+! ===== ISR-APN-RO (HUB) - ${branchNameEn} =====
+!
+interface ${hubTunnelInterface}
+ description ** Gilanet-${branchNameEn} **
+ ip address ${tunnelIpHub} 255.255.255.254
+ ip ospf dead-interval 300
+ ip ospf hello-interval 100
+ tunnel source ${FIXED_HUB_IP}
+ tunnel destination ${apnIpBranch}
+!
+router ospf ${OSPF_PROCESS}
+ network ${tunnelIpHub} 0.0.0.0 area ${ospfArea}
+!
+end`;
+
+            const fullConfig = branchCfg + '\n\n' + hubCfg;
+            saveAndShowConfig('apn_mali', fullConfig);
+        }
+
+        async function saveAndShowConfig(configType, configOutput) {
+            // Save to server
             try {
                 const res = await fetch(`/api/tickets/${currentTicket.id}/generate-config`, {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({ config_type: type, config_params: params, username: currentUser })
+                    body: JSON.stringify({
+                        config_type: configType,
+                        config_output: configOutput,
+                        username: currentUser
+                    })
                 });
                 const data = await res.json();
                 if (data.success) {
