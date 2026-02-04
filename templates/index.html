@@ -1036,7 +1036,7 @@
         let ipChart = null;
         
         document.addEventListener('DOMContentLoaded', function() {
-            const username = localStorage.getItem('currentUser');
+            const username = localStorage.getItem('currentUser') || localStorage.getItem('username') || sessionStorage.getItem('username');
             if (!username) {
                 location.href = '/login';
                 return;

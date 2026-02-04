@@ -1513,6 +1513,19 @@ loadBranches();
 loadProvinces();
 autoAssignApnIp();
 autoAssignTunnelPair();
+
+// Warn before leaving page with unsaved form data
+let formModified = false;
+document.querySelectorAll('input, select, textarea').forEach(el => {
+    el.addEventListener('change', () => { formModified = true; });
+    el.addEventListener('input', () => { formModified = true; });
+});
+window.addEventListener('beforeunload', function(e) {
+    if (formModified) {
+        e.preventDefault();
+        e.returnValue = '';
+    }
+});
 </script>
 
 </body>
