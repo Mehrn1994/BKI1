@@ -2431,6 +2431,35 @@ def ticket_assign_ip(ticket_id):
     log_activity('success', 'اختصاص IP از تیکت', f'تیکت #{ticket_id}: {assigned_ip} برای {branch_name}', username)
     return jsonify({'success': True, 'assigned_ip': assigned_ip})
 
+@app.route('/api/tickets/<int:ticket_id>/assign-existing', methods=['POST'])
+def ticket_assign_existing(ticket_id):
+    """Stage 1 (existing point): Link ticket to an existing branch without new reservation"""
+    data = request.json
+    province = data.get('province', '')
+    branch_name = data.get('branch_name', '')
+    octet2 = data.get('octet2')
+    octet3 = data.get('octet3')
+    username = data.get('username', '')
+
+    if not octet2 or not octet3:
+        return jsonify({'error': 'اطلاعات ناقص است'}), 400
+
+    assigned_ip = f"10.{octet2}.{octet3}.0/24"
+    now = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("""
+        UPDATE tickets SET stage = 'ip_assigned', province = ?, branch_name = ?,
+        assigned_ip = ?, octet2 = ?, octet3 = ?, point_type = 'EXISTING', updated_at = ?
+        WHERE id = ?
+    """, (province, branch_name, assigned_ip, octet2, octet3, now, ticket_id))
+    conn.commit()
+    conn.close()
+
+    log_activity('success', 'انتخاب نقطه موجود از تیکت', f'تیکت #{ticket_id}: {assigned_ip} - {branch_name}', username)
+    return jsonify({'success': True, 'assigned_ip': assigned_ip})
+
 @app.route('/api/tickets/<int:ticket_id>/generate-config', methods=['POST'])
 def ticket_generate_config(ticket_id):
     """Stage 2: Generate config for ticket"""
