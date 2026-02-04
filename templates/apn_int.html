@@ -4,6 +4,202 @@
   <meta charset="UTF-8">
   <title>APN-INT Config Generator</title>
   <style>
+/* ========== THEME SYSTEM ========== */
+:root {
+    --bg-primary: #0f172a;
+    --bg-secondary: #1e293b;
+    --bg-card: rgba(30, 41, 59, 0.8);
+    --bg-header: rgba(30, 41, 59, 0.9);
+    --text-primary: #e2e8f0;
+    --text-secondary: #94a3b8;
+    --text-muted: #64748b;
+    --border-color: rgba(255, 255, 255, 0.1);
+    --shadow-color: rgba(0, 0, 0, 0.3);
+    --input-bg: rgba(15, 23, 42, 0.8);
+    --input-border: rgba(255, 255, 255, 0.2);
+    --card-hover: rgba(255, 255, 255, 0.05);
+}
+
+
+[data-theme="light"] {
+    --bg-primary: #f8fafc;
+    --bg-secondary: #f1f5f9;
+    --bg-card: #ffffff;
+    --bg-header: #ffffff;
+    --text-primary: #0f172a;
+    --text-secondary: #334155;
+    --text-muted: #475569;
+    --border-color: rgba(0, 0, 0, 0.15);
+    --shadow-color: rgba(0, 0, 0, 0.1);
+    --input-bg: #ffffff;
+    --input-border: rgba(0, 0, 0, 0.2);
+    --card-hover: rgba(0, 0, 0, 0.05);
+}
+
+body { transition: background 0.3s ease, color 0.3s ease; }
+
+[data-theme="light"] body {
+    background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 100%) !important;
+    color: var(--text-primary) !important;
+}
+
+[data-theme="light"] .header, [data-theme="light"] header,
+[data-theme="light"] .top-bar, [data-theme="light"] .navbar {
+    background: var(--bg-header) !important;
+    border-color: var(--border-color) !important;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08) !important;
+}
+
+[data-theme="light"] .card, [data-theme="light"] .form-section,
+[data-theme="light"] .config-section, [data-theme="light"] .result-section,
+[data-theme="light"] .section, [data-theme="light"] .panel,
+[data-theme="light"] .main-card, [data-theme="light"] .box {
+    background: var(--bg-card) !important;
+    border-color: var(--border-color) !important;
+    color: var(--text-primary) !important;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.06) !important;
+}
+
+[data-theme="light"] input, [data-theme="light"] select, [data-theme="light"] textarea {
+    background: var(--input-bg) !important;
+    border: 1px solid var(--input-border) !important;
+    color: #0f172a !important;
+}
+
+[data-theme="light"] input::placeholder { color: #64748b !important; }
+[data-theme="light"] select option { background: #fff; color: #0f172a; }
+
+[data-theme="light"] label, [data-theme="light"] .form-label,
+[data-theme="light"] h1, [data-theme="light"] h2, [data-theme="light"] h3, [data-theme="light"] h4,
+[data-theme="light"] .section-title, [data-theme="light"] .title,
+[data-theme="light"] .app-title h1, [data-theme="light"] .app-title p {
+    color: #0f172a !important;
+}
+
+[data-theme="light"] p, [data-theme="light"] span:not(.badge):not(.tag), 
+[data-theme="light"] div:not(.btn):not(.badge) {
+    color: inherit;
+}
+
+[data-theme="light"] .hint, [data-theme="light"] .info-text, [data-theme="light"] small,
+[data-theme="light"] .description, [data-theme="light"] .help-text,
+[data-theme="light"] .form-hint, [data-theme="light"] .note {
+    color: #334155 !important;
+}
+
+[data-theme="light"] .user-display, [data-theme="light"] .user-info,
+[data-theme="light"] .user-name, [data-theme="light"] #currentUser {
+    color: #0f172a !important;
+}
+
+[data-theme="light"] .badge, [data-theme="light"] .tag, [data-theme="light"] .count {
+    color: #fff !important;
+}
+
+[data-theme="light"] a:not(.btn):not(button):not(.back-btn):not(.logout-link) {
+    color: #2563eb !important;
+}
+
+[data-theme="light"] .back-btn, [data-theme="light"] .logout-link {
+    color: #dc2626 !important;
+}
+
+[data-theme="light"] pre, [data-theme="light"] code, [data-theme="light"] .config-output,
+[data-theme="light"] .output-box, [data-theme="light"] .code-block {
+    background: #1e293b !important;
+    color: #e2e8f0 !important;
+}
+
+[data-theme="light"] table { border-color: var(--border-color) !important; }
+[data-theme="light"] th, [data-theme="light"] td { 
+    border-color: var(--border-color) !important;
+    color: #0f172a !important;
+}
+[data-theme="light"] th { background: #f1f5f9 !important; color: #0f172a !important; }
+[data-theme="light"] tr:hover { background: #f8fafc !important; }
+
+[data-theme="light"] .success, [data-theme="light"] .alert-success,
+[data-theme="light"] .success-box, [data-theme="light"] .ip-reserved {
+    background: #dcfce7 !important;
+    color: #166534 !important;
+    border-color: #86efac !important;
+}
+
+[data-theme="light"] .error, [data-theme="light"] .alert-error,
+[data-theme="light"] .error-box {
+    background: #fee2e2 !important;
+    color: #991b1b !important;
+    border-color: #fca5a5 !important;
+}
+
+[data-theme="light"] .warning, [data-theme="light"] .alert-warning {
+    background: #fef3c7 !important;
+    color: #92400e !important;
+    border-color: #fcd34d !important;
+}
+
+[data-theme="light"] .info-box, [data-theme="light"] .notice,
+[data-theme="light"] .auto-ip-info {
+    background: #eff6ff !important;
+    color: #1e40af !important;
+    border-color: #93c5fd !important;
+}
+
+[data-theme="light"] .btn-primary, [data-theme="light"] button[type="submit"] {
+    background: #2563eb !important;
+    color: #fff !important;
+}
+
+[data-theme="light"] .btn-secondary {
+    background: #64748b !important;
+    color: #fff !important;
+}
+
+[data-theme="light"] .free-count { color: #059669 !important; font-weight: bold; }
+[data-theme="light"] .used-count { color: #dc2626 !important; font-weight: bold; }
+
+/* Router boxes for intranet */
+[data-theme="light"] .router-box, [data-theme="light"] .device-box {
+    background: #fff !important;
+    border: 1px solid #e2e8f0 !important;
+    color: #0f172a !important;
+}
+
+[data-theme="light"] .router-header, [data-theme="light"] .device-box-header {
+    color: #0f172a !important;
+}
+
+/* Stats cards */
+[data-theme="light"] .stat-card {
+    background: #fff !important;
+    border: 1px solid #e2e8f0 !important;
+}
+
+[data-theme="light"] .stat-card .value {
+    color: #2563eb !important;
+}
+
+[data-theme="light"] .stat-card .label {
+    color: #475569 !important;
+}
+
+.theme-toggle {
+    background: var(--bg-card, rgba(30,41,59,0.8));
+    border: 1px solid var(--border-color, rgba(255,255,255,0.1));
+    border-radius: 50%;
+    width: 36px;
+    height: 36px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
+    transition: all 0.3s ease;
+    margin-left: 10px;
+}
+.theme-toggle:hover { transform: scale(1.1); }
+/* ========== END THEME ========== */
+
     body { font-family: sans-serif; background:#0f172a; padding:30px; color:#e2e8f0; }
 
     .top-bar {
@@ -223,9 +419,178 @@
       from { opacity:0; transform:translateY(-10px); }
       to { opacity:1; transform:translateY(0); }
     }
-  </style>
+  
+
+
+    
+/* ========== BETTER FONTS ========== */
+body {
+    font-size: 16px !important;
+    line-height: 1.6 !important;
+}
+
+h1 { font-size: 1.8rem !important; font-weight: 700 !important; }
+h2 { font-size: 1.4rem !important; font-weight: 700 !important; }
+h3 { font-size: 1.2rem !important; font-weight: 600 !important; }
+h4 { font-size: 1.1rem !important; font-weight: 600 !important; }
+
+label, .form-label {
+    font-size: 15px !important;
+    font-weight: 600 !important;
+    color: var(--text-primary, inherit) !important;
+}
+
+input, select, textarea {
+    font-size: 15px !important;
+    padding: 12px 14px !important;
+}
+
+.section-title, .title {
+    font-size: 1.15rem !important;
+    font-weight: 700 !important;
+}
+
+.hint, .info-text, .help-text, .form-hint, small, .note, .description {
+    font-size: 14px !important;
+    font-weight: 500 !important;
+}
+
+.btn, button:not(.theme-toggle) {
+    font-size: 15px !important;
+    font-weight: 600 !important;
+}
+
+table { font-size: 15px !important; }
+th { font-weight: 700 !important; }
+th, td { padding: 12px 14px !important; }
+
+.info-box, .notice, .alert, .success-box, .error-box, .auto-ip-info, .ip-reserved {
+    font-size: 15px !important;
+    font-weight: 500 !important;
+    padding: 14px 18px !important;
+}
+
+.badge, .tag, .count {
+    font-size: 13px !important;
+    font-weight: 600 !important;
+    padding: 5px 12px !important;
+}
+
+.user-display, .user-info, .user-name {
+    font-size: 15px !important;
+    font-weight: 600 !important;
+}
+
+pre, code, .config-output, .output-box {
+    font-size: 14px !important;
+    line-height: 1.5 !important;
+}
+
+.app-title h1 { font-size: 1.8rem !important; font-weight: 700 !important; }
+.app-title p { font-size: 15px !important; font-weight: 500 !important; }
+
+/* Light theme text improvements */
+[data-theme="light"] label, 
+[data-theme="light"] .form-label,
+[data-theme="light"] .section-title, 
+[data-theme="light"] .title,
+[data-theme="light"] h1, 
+[data-theme="light"] h2, 
+[data-theme="light"] h3 {
+    color: #0f172a !important;
+}
+
+[data-theme="light"] .hint, 
+[data-theme="light"] small,
+[data-theme="light"] .info-text, 
+[data-theme="light"] .description,
+[data-theme="light"] .help-text {
+    color: #334155 !important;
+}
+
+[data-theme="light"] input,
+[data-theme="light"] select,
+[data-theme="light"] textarea {
+    color: #0f172a !important;
+    background: #fff !important;
+    border: 1px solid rgba(0,0,0,0.2) !important;
+}
+
+[data-theme="light"] input::placeholder {
+    color: #64748b !important;
+}
+/* ========== END BETTER FONTS ========== */
+
+    </style>
+
+<script>
+// Theme System - runs immediately
+(function() {
+    var theme = localStorage.getItem('theme') || 'dark';
+    document.documentElement.setAttribute('data-theme', theme);
+})();
+
+function toggleTheme() {
+    var current = document.documentElement.getAttribute('data-theme') || 'dark';
+    var next = current === 'dark' ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', next);
+    localStorage.setItem('theme', next);
+    var icon = document.getElementById('themeIcon');
+    if (icon) icon.textContent = next === 'dark' ? '🌙' : '☀️';
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    var icon = document.getElementById('themeIcon');
+    if (icon) {
+        var theme = localStorage.getItem('theme') || 'dark';
+        icon.textContent = theme === 'dark' ? '🌙' : '☀️';
+    }
+});
+</script>
 </head>
 <body>
+
+<!-- Background Image -->
+<div class="page-background"></div>
+<style>
+.page-background {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: -1;
+    overflow: hidden;
+}
+.page-background::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-image: url('background.jpg');
+    background-size: cover;
+    background-position: center;
+    opacity: 0.12;
+    filter: blur(2px);
+}
+.page-background::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(135deg, rgba(15, 23, 42, 0.9) 0%, rgba(30, 41, 59, 0.95) 100%);
+}
+[data-theme="light"] .page-background::before {
+    opacity: 0.2;
+}
+[data-theme="light"] .page-background::after {
+    background: linear-gradient(135deg, rgba(248, 250, 252, 0.9) 0%, rgba(241, 245, 249, 0.95) 100%);
+}
+</style>
 
 <!-- Top bar showing logged in user -->
 <div class="top-bar">
@@ -233,10 +598,12 @@
     <a href="/" style="background:#3b82f6; color:white; padding:8px 16px; border-radius:8px; text-decoration:none; font-size:13px; font-weight:600;">
       ⬅️ بازگشت به منو اصلی
     </a>
+    <img src="logo.png" alt="Logo" style="height: 32px; border-radius: 6px;">
     <div class="user-display">
       👤 کاربر فعال: <span class="user-name" id="currentUser">...</span>
     </div>
   </div>
+  <button class="theme-toggle" onclick="toggleTheme()" title="تغییر تم"><span id="themeIcon">🌙</span></button>
   <a href="/login" class="logout-link" onclick="localStorage.clear(); sessionStorage.clear();">خروج</a>
 </div>
 
@@ -268,6 +635,21 @@
         💡 <strong>برای شعبات موجود:</strong> از لیست انتخاب کنید | 
         <strong>برای نقاط جدید:</strong> نام را به انگلیسی وارد کنید
       </div>
+    </div>
+
+    <!-- Node Type Selection -->
+    <div class="form-group">
+      <label for="nodeType">
+        <span class="info-badge" style="background: #f59e0b;">📋 نوع</span>
+        نوع نقطه <span class="required">*</span>
+      </label>
+      <select id="nodeType" required style="padding: 12px; border-radius: 10px; border: 1px solid var(--border-color); background: var(--bg-secondary); color: var(--text-primary); font-size: 14px;">
+        <option value="شعبه">🏢 شعبه</option>
+        <option value="کیوسک">🖥️ کیوسک</option>
+        <option value="ATM">💳 ATM</option>
+        <option value="سایر">📌 سایر</option>
+      </select>
+      <div class="help-text">💡 نوع نقطه را انتخاب کنید (شعبه، کیوسک، ATM یا سایر)</div>
     </div>
 
     <!-- Route Name Field (appears only for existing branches) -->
@@ -388,6 +770,15 @@
         <label for="wanIface">نام اینترفیس WAN روی شعبه <span class="required">*</span></label>
         <input id="wanIface" type="text" value="FastEthernet0/1" required>
         <div class="help-text">مثال: FastEthernet0/1 یا GigabitEthernet0/0</div>
+        
+        <!-- Secondary IP Option -->
+        <div style="margin-top: 10px; padding: 10px; background: rgba(245, 158, 11, 0.1); border-radius: 8px; border: 1px solid rgba(245, 158, 11, 0.3);">
+          <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; margin: 0;">
+            <input type="checkbox" id="secondaryIp" style="width: 18px; height: 18px; cursor: pointer;">
+            <span style="font-weight: 500; color: #f59e0b;">🔄 این شعبه قبلاً APN مالی دارد (IP به صورت Secondary اضافه شود)</span>
+          </label>
+          <div class="help-text" style="margin-top: 5px; margin-right: 26px;">اگر شعبه از قبل APN مالی روی این اینترفیس دارد، این گزینه را فعال کنید</div>
+        </div>
       </div>
 
       <div class="form-group">
@@ -816,10 +1207,16 @@ function lanNetwork(x, y) {
 function generateConfigsSeparated(d) {
   const loop2 = "10.210." + d.x + "." + d.y;
   const lanNet = lanNetwork(d.x, d.y);
+  const secondaryNote = d.isSecondary ? '\n! ⚠️ توجه: IP به صورت SECONDARY اضافه شده (شعبه قبلاً APN مالی دارد)\n! ⚠️ کانفیگ‌های Crypto از قبل روی روتر وجود دارد و نیاز به اضافه کردن نیست\n!' : '';
 
-  const branchCfg = `!
-! ===== Branch Router (${d.branchName}) - APN غیرمالی =====
-!
+  // Crypto configs - only include if NOT secondary
+  const cryptoConfig = d.isSecondary ? `!
+! ⚠️ کانفیگ‌های زیر از قبل روی روتر وجود دارند (APN مالی) - نیازی به اعمال مجدد نیست
+! crypto isakmp policy 101
+! crypto isakmp key ... (already exists)
+! crypto ipsec transform-set GILANETTS (already exists)
+! crypto map GILANET (already exists)
+!` : `!
 crypto isakmp policy 101
  encr aes
  authentication pre-share
@@ -833,7 +1230,21 @@ crypto map GILANET 10 ipsec-isakmp
  set peer ${d.hubApnIp}
  set transform-set GILANETTS
  match address GILANET-ACL
-!
+!`;
+
+  // GILANET ACL - only include if NOT secondary  
+  const gilanetAcl = d.isSecondary ? `!
+! ⚠️ GILANET-ACL از قبل وجود دارد - فقط این خط را به آن اضافه کنید:
+! (config)# ip access-list extended GILANET-ACL
+!          permit gre host ${d.branchApnIp} host ${d.hubApnIp}
+!` : `!
+ip access-list extended GILANET-ACL
+ permit gre host ${d.branchApnIp} host ${d.hubApnIp}
+!`;
+
+  const branchCfg = `!
+! ===== Branch Router (${d.branchName}) - APN غیرمالی =====${secondaryNote}
+${cryptoConfig}
 interface Loopback2
  ip address ${loop2} 255.255.255.255
 !
@@ -846,12 +1257,11 @@ interface Tunnel200
  ip tcp adjust-mss 1420
  ip ospf hello-interval 100
  ip ospf dead-interval 300
- ip ospf mtu-ignore
  tunnel source ${d.branchApnIp}
  tunnel destination ${d.hubApnIp}
-!
+!${d.isSecondary ? '\n! ⚠️ IP زیر به صورت secondary است چون شعبه قبلاً APN مالی دارد' : ''}
 interface ${d.wanIface}
- ip address ${d.branchApnIp} 255.255.255.0
+ ip address ${d.branchApnIp} 255.255.255.0${d.isSecondary ? ' secondary' : ''}
  ip virtual-reassembly
  crypto map GILANET
 !
@@ -862,10 +1272,7 @@ router ospf ${d.ospfProcess}
  network ${loop2} 0.0.0.0 area ${d.ospfArea}
 !
 ip nat inside source list intnat interface Loopback2 overload
-!
-ip access-list extended GILANET-ACL
- permit gre host ${d.branchApnIp} host ${d.hubApnIp}
-!
+${gilanetAcl}
 ip access-list extended intnat
  permit ip ${lanNet} 0.0.0.255 10.0.54.0 0.0.0.255
  permit ip ${lanNet} 0.0.0.255 10.0.55.0 0.0.0.255
@@ -878,8 +1285,18 @@ ip access-list extended intnat
  permit ip ${lanNet} 0.0.0.255 host 10.42.19.129
 !`;
 
+  // HUB GILANET-AccessList - only include if NOT secondary
+  const hubGilanetAcl = d.isSecondary ? `!
+! ⚠️ GILANET-AccessList از قبل وجود دارد - فقط این خط را به آن اضافه کنید:
+! (config)# ip access-list extended GILANET-AccessList
+!          permit gre host ${d.hubApnIp} host ${d.branchApnIp}
+!` : `!
+ip access-list extended GILANET-AccessList
+ permit gre host ${d.hubApnIp} host ${d.branchApnIp}
+!`;
+
   const hubCfg = `!
-! ===== APN-INT-HUB Router =====
+! ===== APN-INT-HUB Router =====${d.isSecondary ? '\n! ⚠️ شعبه قبلاً APN مالی دارد - فقط ACL entry اضافه شود' : ''}
 !
 interface Tunnel${d.hubTunnelId}
  description ** ${d.hubDescription} **
@@ -895,7 +1312,7 @@ interface Tunnel${d.hubTunnelId}
 !
 router ospf ${d.ospfProcess}
  network ${d.tun200Hub} 0.0.0.0 area ${d.ospfArea}
-!`;
+${hubGilanetAcl}`;
 
   const asrCfg = `!
 ! ===== ASR1006-WAN-MB =====
@@ -1081,6 +1498,7 @@ document.getElementById('configForm').addEventListener('submit', async function(
     branchName,
     routeName,
     wanIface:     document.getElementById('wanIface').value,
+    isSecondary:  document.getElementById('secondaryIp').checked,
     branchApnIp:  apnIp,
     hubApnIp:     FIXED_HUB_APN_IP,
     hubTunnelId:  hubTunnelId,
@@ -1103,6 +1521,10 @@ document.getElementById('configForm').addEventListener('submit', async function(
 
   document.getElementById('outputs').style.display = 'grid';
 
+  // Get province from selected branch (using different var name to avoid redeclaration)
+  const selectedBranchOption = document.querySelector('#branchList option[value="' + CSS.escape(branchInput) + '"]');
+  const selectedProvince = selectedBranchOption ? selectedBranchOption.getAttribute('data-province') : province;
+  
   // Reserve Tunnel200 IPs
   console.log('🔒 Reserving Tunnel200 IPs in database...');
   try {
@@ -1114,7 +1536,9 @@ document.getElementById('configForm').addEventListener('submit', async function(
         branch_ip: autoAssignedTunnel200.branch_ip,
         branch_name: branchName,
         tunnel_number: data.hubTunnelId,
-        username: username
+        username: username,
+        interface_name: `Tunnel${data.hubTunnelId}`,
+        description: hubDescription
       })
     });
     
@@ -1130,6 +1554,7 @@ document.getElementById('configForm').addEventListener('submit', async function(
 
   // Reserve APN and LAN IPs
   console.log('🔒 Reserving APN and LAN IPs in database...');
+  const nodeType = document.getElementById('nodeType').value;
   try {
     const res = await fetch('/api/reserve-ips', {
       method: 'POST',
@@ -1138,7 +1563,10 @@ document.getElementById('configForm').addEventListener('submit', async function(
         username: username,
         branchName: branchName,
         lanIp: lanIp,
-        apnIp: apnIp
+        apnIp: apnIp,
+        province: province,
+        type: nodeType,
+        config_type: 'APN-INT'
       })
     });
 
@@ -1158,13 +1586,9 @@ document.getElementById('configForm').addEventListener('submit', async function(
       
       successMsg += `\n\n` + result.updates.join('\n');
       successMsg += `\n\n✅ Tunnel200 IPs: HUB=${autoAssignedTunnel200.hub_ip}, Branch=${autoAssignedTunnel200.branch_ip}`;
-      successMsg += `\n\nصفحه در 60 ثانیه بازخوانی می‌شود تا IP های آزاد به‌روز شوند...`;
       
       alert(successMsg);
 
-      setTimeout(() => {
-        location.reload();
-      }, 60000);
     } else {
       console.error('❌ Failed to reserve IPs:', result.error);
       alert('⚠️ پیکربندی تولید شد اما IP رزرو نشد:\n' + result.error);
