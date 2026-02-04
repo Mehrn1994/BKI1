@@ -208,6 +208,15 @@ body { transition: background 0.3s ease, color 0.3s ease; }
       background:#020617; padding:12px 20px; border-radius:12px;
       border:1px solid #1f2937;
     }
+    .top-bar .logo-img {
+      mix-blend-mode: screen;
+    }
+    [data-theme="light"] .top-bar .logo-img {
+      mix-blend-mode: normal;
+      background: #1e293b;
+      border-radius: 8px;
+      padding: 4px 8px;
+    }
     .user-display {
       font-size:14px; color:#a0aec0;
     }
@@ -572,8 +581,8 @@ document.addEventListener('DOMContentLoaded', function() {
     background-image: url('background.jpg');
     background-size: cover;
     background-position: center;
-    opacity: 0.12;
-    filter: blur(2px);
+    opacity: 0.35;
+    filter: blur(1px);
 }
 .page-background::after {
     content: '';
@@ -582,13 +591,13 @@ document.addEventListener('DOMContentLoaded', function() {
     left: 0;
     width: 100%;
     height: 100%;
-    background: linear-gradient(135deg, rgba(15, 23, 42, 0.9) 0%, rgba(30, 41, 59, 0.95) 100%);
+    background: linear-gradient(135deg, rgba(15, 23, 42, 0.6) 0%, rgba(30, 41, 59, 0.7) 100%);
 }
 [data-theme="light"] .page-background::before {
-    opacity: 0.2;
+    opacity: 0.35;
 }
 [data-theme="light"] .page-background::after {
-    background: linear-gradient(135deg, rgba(248, 250, 252, 0.9) 0%, rgba(241, 245, 249, 0.95) 100%);
+    background: linear-gradient(135deg, rgba(248, 250, 252, 0.7) 0%, rgba(241, 245, 249, 0.75) 100%);
 }
 </style>
 
@@ -598,7 +607,7 @@ document.addEventListener('DOMContentLoaded', function() {
     <a href="/" style="background:#3b82f6; color:white; padding:8px 16px; border-radius:8px; text-decoration:none; font-size:13px; font-weight:600;">
       ⬅️ بازگشت به منو اصلی
     </a>
-    <img src="logo.png" alt="Logo" style="height: 32px; border-radius: 6px;">
+    <img src="logo.png" alt="Logo" class="logo-img" style="height: 48px; mix-blend-mode: screen;">
     <div class="user-display">
       👤 کاربر فعال: <span class="user-name" id="currentUser">...</span>
     </div>
