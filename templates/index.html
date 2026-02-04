@@ -652,10 +652,26 @@
                 <span>👤</span>
                 <span id="currentUser">کاربر</span>
             </div>
+            <button onclick="document.getElementById('changePassModal').style.display='flex'" style="background:transparent; border:1px solid var(--border-color); color:var(--text-secondary); padding:6px 12px; border-radius:8px; cursor:pointer; font-size:12px;">🔑 تغییر رمز</button>
             <button class="logout-btn" onclick="logout()">خروج</button>
         </div>
     </header>
-    
+
+    <!-- Change Password Modal -->
+    <div id="changePassModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:1000; align-items:center; justify-content:center;">
+        <div style="background:var(--bg-card); border:1px solid var(--border-color); border-radius:16px; padding:32px; width:380px; max-width:90vw;">
+            <h3 style="margin:0 0 20px; color:var(--text-primary);">🔑 تغییر رمز عبور</h3>
+            <input type="password" id="cpOldPass" placeholder="رمز فعلی" style="width:100%; padding:10px 14px; margin-bottom:12px; border:1px solid var(--border-color); border-radius:8px; background:var(--input-bg); color:var(--text-primary); box-sizing:border-box;">
+            <input type="password" id="cpNewPass" placeholder="رمز جدید (حداقل ۴ کاراکتر)" style="width:100%; padding:10px 14px; margin-bottom:12px; border:1px solid var(--border-color); border-radius:8px; background:var(--input-bg); color:var(--text-primary); box-sizing:border-box;">
+            <input type="password" id="cpConfirmPass" placeholder="تکرار رمز جدید" style="width:100%; padding:10px 14px; margin-bottom:16px; border:1px solid var(--border-color); border-radius:8px; background:var(--input-bg); color:var(--text-primary); box-sizing:border-box;">
+            <div id="cpError" style="color:#ef4444; font-size:13px; margin-bottom:12px; display:none;"></div>
+            <div style="display:flex; gap:10px; justify-content:flex-end;">
+                <button onclick="document.getElementById('changePassModal').style.display='none'" style="padding:8px 20px; border:1px solid var(--border-color); background:transparent; color:var(--text-secondary); border-radius:8px; cursor:pointer;">انصراف</button>
+                <button onclick="changePassword()" style="padding:8px 20px; background:#3b82f6; color:white; border:none; border-radius:8px; cursor:pointer; font-weight:600;">ذخیره</button>
+            </div>
+        </div>
+    </div>
+
     <div class="container">
         <!-- Stats Cards -->
         <div class="stats-grid">
@@ -1090,10 +1106,43 @@
         }
         
         function logout() {
-            localStorage.removeItem('currentUser');
+            localStorage.clear();
+            sessionStorage.clear();
             location.href = '/login';
         }
-        
+
+        async function changePassword() {
+            const oldPass = document.getElementById('cpOldPass').value;
+            const newPass = document.getElementById('cpNewPass').value;
+            const confirm = document.getElementById('cpConfirmPass').value;
+            const errEl = document.getElementById('cpError');
+            errEl.style.display = 'none';
+            if (!oldPass) { errEl.textContent = 'رمز فعلی را وارد کنید'; errEl.style.display = 'block'; return; }
+            if (newPass.length < 4) { errEl.textContent = 'رمز جدید باید حداقل ۴ کاراکتر باشد'; errEl.style.display = 'block'; return; }
+            if (newPass !== confirm) { errEl.textContent = 'رمز جدید و تکرار آن مطابقت ندارند'; errEl.style.display = 'block'; return; }
+            try {
+                const res = await fetch('/api/change-password', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ username: document.getElementById('currentUser').textContent, old_password: oldPass, new_password: newPass })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    document.getElementById('changePassModal').style.display = 'none';
+                    document.getElementById('cpOldPass').value = '';
+                    document.getElementById('cpNewPass').value = '';
+                    document.getElementById('cpConfirmPass').value = '';
+                    alert('رمز با موفقیت تغییر کرد');
+                } else {
+                    errEl.textContent = data.error || 'خطا در تغییر رمز';
+                    errEl.style.display = 'block';
+                }
+            } catch (e) {
+                errEl.textContent = 'خطا در اتصال به سرور';
+                errEl.style.display = 'block';
+            }
+        }
+
         async function loadStatistics() {
             try {
                 const controller = new AbortController();
