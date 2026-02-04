@@ -1,0 +1,1120 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>سیستم تیکت - پورتال مدیریت شبکه</title>
+    <style>
+        :root {
+            --bg-primary: #0f172a;
+            --bg-secondary: #1e293b;
+            --bg-card: rgba(30, 41, 59, 0.8);
+            --bg-header: rgba(30, 41, 59, 0.95);
+            --text-primary: #e2e8f0;
+            --text-secondary: #94a3b8;
+            --text-muted: #64748b;
+            --border-color: rgba(255, 255, 255, 0.1);
+            --accent-green: #10b981;
+            --accent-blue: #3b82f6;
+            --accent-purple: #8b5cf6;
+            --accent-orange: #f59e0b;
+            --input-bg: rgba(15, 23, 42, 0.8);
+            --input-border: rgba(255, 255, 255, 0.2);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: url('/static/background.jpg') center/cover no-repeat;
+            opacity: 0.5;
+            z-index: -2;
+        }
+        body::after {
+            content: '';
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: linear-gradient(135deg, rgba(15, 23, 42, 0.55), rgba(15, 23, 42, 0.45));
+            z-index: -1;
+        }
+
+        .header {
+            background: var(--bg-header);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--border-color);
+            padding: 12px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .header-right { display: flex; align-items: center; gap: 15px; }
+        .header-right img { height: 56px; }
+        .header-left { display: flex; align-items: center; gap: 10px; }
+        .header-left button, .header-left a {
+            background: transparent;
+            border: 1px solid var(--border-color);
+            color: var(--text-secondary);
+            padding: 6px 14px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 12px;
+            text-decoration: none;
+        }
+        .header-left button:hover, .header-left a:hover { background: rgba(255,255,255,0.05); }
+        .logout-btn { background: rgba(239, 68, 68, 0.15) !important; color: #ef4444 !important; border-color: rgba(239, 68, 68, 0.3) !important; }
+
+        .container { max-width: 1400px; margin: 0 auto; padding: 20px 30px; }
+
+        .page-title {
+            font-size: 22px;
+            font-weight: 700;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        /* Tabs */
+        .tabs {
+            display: flex;
+            gap: 4px;
+            margin-bottom: 20px;
+            background: var(--bg-secondary);
+            border-radius: 12px;
+            padding: 4px;
+            border: 1px solid var(--border-color);
+        }
+        .tab {
+            padding: 10px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--text-secondary);
+            transition: all 0.2s;
+            border: none;
+            background: transparent;
+        }
+        .tab:hover { color: var(--text-primary); background: rgba(255,255,255,0.05); }
+        .tab.active { background: var(--accent-blue); color: white; }
+
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+
+        /* Email & Ticket Cards */
+        .card-grid { display: flex; flex-direction: column; gap: 12px; }
+
+        .email-card, .ticket-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 18px 22px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .email-card:hover, .ticket-card:hover {
+            border-color: var(--accent-blue);
+            background: rgba(30, 41, 59, 0.95);
+        }
+        .email-card.used { opacity: 0.5; cursor: default; }
+        .email-card .email-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+        .email-card .subject { font-weight: 600; font-size: 15px; }
+        .email-card .sender { color: var(--text-muted); font-size: 12px; }
+        .email-card .date { color: var(--text-muted); font-size: 12px; }
+        .email-card .body-preview { color: var(--text-secondary); font-size: 13px; margin-top: 6px; line-height: 1.5; white-space: pre-line; max-height: 60px; overflow: hidden; }
+
+        /* Ticket card */
+        .ticket-card .ticket-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .ticket-card .ticket-id { font-weight: 700; color: var(--accent-blue); font-size: 14px; }
+        .ticket-card .ticket-subject { font-weight: 600; font-size: 15px; margin-bottom: 4px; }
+        .ticket-card .ticket-meta { display: flex; gap: 16px; font-size: 12px; color: var(--text-muted); }
+
+        /* Stage badges */
+        .badge {
+            display: inline-block;
+            padding: 3px 10px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+        .badge-new { background: rgba(59,130,246,0.15); color: #3b82f6; }
+        .badge-ip { background: rgba(245,158,11,0.15); color: #f59e0b; }
+        .badge-config { background: rgba(139,92,246,0.15); color: #8b5cf6; }
+        .badge-replied { background: rgba(16,185,129,0.15); color: #10b981; }
+
+        /* Modal */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.7);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .modal-overlay.active { display: flex; }
+        .modal {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            width: 800px;
+            max-width: 95vw;
+            max-height: 90vh;
+            overflow-y: auto;
+            padding: 0;
+        }
+        .modal-header {
+            padding: 20px 24px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .modal-header h3 { font-size: 17px; }
+        .modal-close {
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            font-size: 22px;
+            cursor: pointer;
+            padding: 4px;
+        }
+        .modal-body { padding: 24px; }
+        .modal-footer {
+            padding: 16px 24px;
+            border-top: 1px solid var(--border-color);
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+
+        /* Steps indicator */
+        .steps {
+            display: flex;
+            gap: 0;
+            margin-bottom: 24px;
+            position: relative;
+        }
+        .step {
+            flex: 1;
+            text-align: center;
+            padding: 12px 8px;
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-muted);
+            position: relative;
+            border-bottom: 3px solid var(--border-color);
+        }
+        .step.active { color: var(--accent-blue); border-bottom-color: var(--accent-blue); }
+        .step.done { color: var(--accent-green); border-bottom-color: var(--accent-green); }
+        .step-num {
+            display: inline-block;
+            width: 24px;
+            height: 24px;
+            line-height: 24px;
+            border-radius: 50%;
+            background: var(--border-color);
+            color: var(--text-muted);
+            font-size: 12px;
+            margin-left: 6px;
+        }
+        .step.active .step-num { background: var(--accent-blue); color: white; }
+        .step.done .step-num { background: var(--accent-green); color: white; }
+
+        /* Form elements */
+        .form-group { margin-bottom: 16px; }
+        .form-group label {
+            display: block;
+            font-size: 13px;
+            font-weight: 600;
+            margin-bottom: 6px;
+            color: var(--text-secondary);
+        }
+        .form-group input, .form-group select, .form-group textarea {
+            width: 100%;
+            padding: 10px 14px;
+            border: 1px solid var(--input-border);
+            border-radius: 8px;
+            background: var(--input-bg);
+            color: var(--text-primary);
+            font-size: 14px;
+            font-family: inherit;
+        }
+        .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+            border-color: var(--accent-blue);
+            outline: none;
+        }
+        .form-group select option { background: var(--bg-secondary); color: var(--text-primary); }
+        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+
+        /* Buttons */
+        .btn {
+            padding: 10px 22px;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            border: none;
+            transition: all 0.2s;
+        }
+        .btn-primary { background: var(--accent-blue); color: white; }
+        .btn-primary:hover { background: #2563eb; }
+        .btn-success { background: var(--accent-green); color: white; }
+        .btn-success:hover { background: #059669; }
+        .btn-secondary { background: transparent; border: 1px solid var(--border-color); color: var(--text-secondary); }
+        .btn-secondary:hover { background: rgba(255,255,255,0.05); }
+        .btn-orange { background: var(--accent-orange); color: white; }
+        .btn-purple { background: var(--accent-purple); color: white; }
+
+        /* IP grid */
+        .ip-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+            gap: 8px;
+            max-height: 250px;
+            overflow-y: auto;
+            padding: 4px;
+        }
+        .ip-item {
+            padding: 8px 12px;
+            background: rgba(16,185,129,0.1);
+            border: 1px solid rgba(16,185,129,0.2);
+            border-radius: 8px;
+            font-size: 13px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-family: monospace;
+        }
+        .ip-item:hover { background: rgba(16,185,129,0.25); border-color: var(--accent-green); }
+        .ip-item.selected { background: var(--accent-green); color: white; border-color: var(--accent-green); }
+
+        /* Config output */
+        .config-box {
+            background: #0d1117;
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            padding: 16px;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            line-height: 1.6;
+            white-space: pre-wrap;
+            direction: ltr;
+            text-align: left;
+            color: #c9d1d9;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        /* Email preview in modal */
+        .email-preview {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            padding: 16px;
+            margin-bottom: 20px;
+        }
+        .email-preview .ep-subject { font-weight: 700; font-size: 16px; margin-bottom: 8px; }
+        .email-preview .ep-meta { font-size: 12px; color: var(--text-muted); margin-bottom: 10px; display: flex; gap: 16px; }
+        .email-preview .ep-body { font-size: 14px; line-height: 1.7; white-space: pre-line; color: var(--text-secondary); }
+
+        /* Reply preview */
+        .reply-preview {
+            background: rgba(16,185,129,0.05);
+            border: 1px solid rgba(16,185,129,0.2);
+            border-radius: 10px;
+            padding: 16px;
+        }
+        .reply-preview h4 { margin-bottom: 10px; color: var(--accent-green); font-size: 14px; }
+
+        /* Info box */
+        .info-box {
+            background: rgba(59,130,246,0.08);
+            border: 1px solid rgba(59,130,246,0.2);
+            border-radius: 10px;
+            padding: 14px 18px;
+            font-size: 13px;
+            color: var(--text-secondary);
+            margin-bottom: 16px;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--text-muted);
+        }
+        .empty-state .icon { font-size: 48px; margin-bottom: 12px; }
+        .empty-state .text { font-size: 15px; }
+
+        .footer {
+            text-align: center;
+            padding: 20px;
+            color: var(--text-muted);
+            font-size: 12px;
+        }
+
+        /* Choice cards */
+        .choice-cards {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 14px;
+            margin-bottom: 20px;
+        }
+        .choice-card {
+            background: rgba(255,255,255,0.03);
+            border: 2px solid var(--border-color);
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .choice-card:hover { border-color: var(--accent-blue); background: rgba(59,130,246,0.05); }
+        .choice-card.selected { border-color: var(--accent-blue); background: rgba(59,130,246,0.1); }
+        .choice-card .cc-icon { font-size: 32px; margin-bottom: 8px; }
+        .choice-card .cc-title { font-weight: 700; font-size: 15px; margin-bottom: 4px; }
+        .choice-card .cc-desc { font-size: 12px; color: var(--text-muted); }
+
+        .demo-banner {
+            background: linear-gradient(135deg, rgba(245,158,11,0.15), rgba(245,158,11,0.05));
+            border: 1px solid rgba(245,158,11,0.3);
+            border-radius: 12px;
+            padding: 14px 20px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 13px;
+            color: var(--accent-orange);
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <div class="header-right">
+            <img src="/static/logo.png" alt="Logo" style="mix-blend-mode: screen;">
+            <div>
+                <div style="font-weight: 700; font-size: 15px;">سیستم تیکت</div>
+                <div style="font-size: 11px; color: var(--text-muted);">مدیریت درخواست‌های شبکه</div>
+            </div>
+        </div>
+        <div class="header-left">
+            <span>👤 <span id="currentUser">کاربر</span></span>
+            <a href="/">🏠 داشبورد</a>
+            <button class="logout-btn" onclick="logout()">خروج</button>
+        </div>
+    </header>
+
+    <div class="container">
+        <div class="demo-banner">
+            <span style="font-size: 24px;">🧪</span>
+            <div>
+                <strong>حالت دمو</strong> - ایمیل‌ها شبیه‌سازی شده‌اند. در نسخه نهایی، ایمیل‌ها از فولدر Outlook از طریق Microsoft Graph API دریافت می‌شوند.
+            </div>
+        </div>
+
+        <div class="page-title">📨 سیستم تیکت شبکه</div>
+
+        <div class="tabs">
+            <button class="tab active" onclick="switchTab('inbox')">📥 صندوق ورودی</button>
+            <button class="tab" onclick="switchTab('tickets')">🎫 تیکت‌ها</button>
+        </div>
+
+        <!-- Tab 1: Inbox -->
+        <div id="inboxTab" class="tab-content active">
+            <div class="card-grid" id="emailList">
+                <div class="empty-state">
+                    <div class="icon">📭</div>
+                    <div class="text">در حال بارگذاری ایمیل‌ها...</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab 2: Tickets -->
+        <div id="ticketsTab" class="tab-content">
+            <div class="card-grid" id="ticketList">
+                <div class="empty-state">
+                    <div class="icon">🎫</div>
+                    <div class="text">در حال بارگذاری تیکت‌ها...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Ticket Detail Modal -->
+    <div class="modal-overlay" id="ticketModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 id="modalTitle">تیکت</h3>
+                <button class="modal-close" onclick="closeModal()">&times;</button>
+            </div>
+            <div class="modal-body" id="modalBody">
+                <!-- Dynamic content -->
+            </div>
+        </div>
+    </div>
+
+    <footer class="footer">
+        <p>🏢 Network Configuration Portal - Ticket System (Demo)</p>
+    </footer>
+
+    <script>
+        // ============ AUTH ============
+        const currentUser = localStorage.getItem('currentUser') || localStorage.getItem('username') || sessionStorage.getItem('username');
+        if (!currentUser) {
+            window.location.href = '/login';
+        } else {
+            document.getElementById('currentUser').textContent = currentUser;
+        }
+
+        function logout() {
+            localStorage.clear();
+            sessionStorage.clear();
+            location.href = '/login';
+        }
+
+        // ============ STATE ============
+        let currentTicket = null;
+        let selectedIp = null;
+        let provincesCache = [];
+
+        // ============ TABS ============
+        function switchTab(tab) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+
+            if (tab === 'inbox') {
+                document.querySelectorAll('.tab')[0].classList.add('active');
+                document.getElementById('inboxTab').classList.add('active');
+                loadEmails();
+            } else {
+                document.querySelectorAll('.tab')[1].classList.add('active');
+                document.getElementById('ticketsTab').classList.add('active');
+                loadTickets();
+            }
+        }
+
+        // ============ LOAD EMAILS ============
+        async function loadEmails() {
+            try {
+                const res = await fetch('/api/tickets/emails');
+                const emails = await res.json();
+                const container = document.getElementById('emailList');
+
+                if (emails.length === 0) {
+                    container.innerHTML = '<div class="empty-state"><div class="icon">📭</div><div class="text">ایمیلی در صندوق ورودی نیست</div></div>';
+                    return;
+                }
+
+                container.innerHTML = emails.map(e => `
+                    <div class="email-card ${e.has_ticket ? 'used' : ''}" onclick="${e.has_ticket ? '' : `createTicket('${e.id}')`}">
+                        <div class="email-header">
+                            <div class="subject">${e.has_ticket ? '✅' : '📩'} ${e.subject}</div>
+                            <div class="date">${e.date}</div>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <div class="sender">از: ${e.sender}</div>
+                            ${e.has_ticket ? '<span class="badge badge-ip">تیکت ایجاد شده</span>' : '<span style="font-size:12px; color: var(--accent-blue);">کلیک کنید برای ایجاد تیکت &larr;</span>'}
+                        </div>
+                        <div class="body-preview">${e.body}</div>
+                    </div>
+                `).join('');
+            } catch (err) {
+                document.getElementById('emailList').innerHTML = '<div class="empty-state"><div class="icon">❌</div><div class="text">خطا در بارگذاری</div></div>';
+            }
+        }
+
+        // ============ CREATE TICKET ============
+        async function createTicket(emailId) {
+            const emails = await (await fetch('/api/tickets/emails')).json();
+            const email = emails.find(e => e.id === emailId);
+            if (!email) return;
+
+            try {
+                const res = await fetch('/api/tickets', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        email_id: email.id,
+                        email_subject: email.subject,
+                        email_sender: email.sender,
+                        email_body: email.body,
+                        email_date: email.date,
+                        assigned_user: currentUser
+                    })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    switchTab('tickets');
+                    setTimeout(() => openTicket(data.ticket_id), 300);
+                } else {
+                    alert(data.error || 'خطا در ایجاد تیکت');
+                }
+            } catch (err) {
+                alert('خطا در اتصال به سرور');
+            }
+        }
+
+        // ============ LOAD TICKETS ============
+        async function loadTickets() {
+            try {
+                const res = await fetch('/api/tickets');
+                const tickets = await res.json();
+                const container = document.getElementById('ticketList');
+
+                if (tickets.length === 0) {
+                    container.innerHTML = '<div class="empty-state"><div class="icon">🎫</div><div class="text">هنوز تیکتی ایجاد نشده. از تب صندوق ورودی روی ایمیل کلیک کنید.</div></div>';
+                    return;
+                }
+
+                container.innerHTML = tickets.map(t => {
+                    const badgeClass = t.stage === 'new' ? 'badge-new' : t.stage === 'ip_assigned' ? 'badge-ip' : t.stage === 'config_generated' ? 'badge-config' : 'badge-replied';
+                    const badgeText = t.stage === 'new' ? 'جدید' : t.stage === 'ip_assigned' ? 'IP اختصاص داده شد' : t.stage === 'config_generated' ? 'کانفیگ تولید شد' : 'پاسخ ارسال شد';
+                    return `
+                        <div class="ticket-card" onclick="openTicket(${t.id})">
+                            <div class="ticket-header">
+                                <div class="ticket-id">#${t.id}</div>
+                                <span class="badge ${badgeClass}">${badgeText}</span>
+                            </div>
+                            <div class="ticket-subject">${t.email_subject || 'بدون موضوع'}</div>
+                            <div class="ticket-meta">
+                                <span>📧 ${t.email_sender || '-'}</span>
+                                <span>📅 ${t.created_at || '-'}</span>
+                                ${t.assigned_ip ? `<span>🌐 ${t.assigned_ip}</span>` : ''}
+                                ${t.config_type ? `<span>⚙️ ${t.config_type === 'apn_int' ? 'APN غیرمالی' : 'APN مالی'}</span>` : ''}
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            } catch (err) {
+                document.getElementById('ticketList').innerHTML = '<div class="empty-state"><div class="icon">❌</div><div class="text">خطا در بارگذاری</div></div>';
+            }
+        }
+
+        // ============ OPEN TICKET ============
+        async function openTicket(ticketId) {
+            try {
+                const res = await fetch(`/api/tickets/${ticketId}`);
+                currentTicket = await res.json();
+                renderTicketModal();
+            } catch (err) {
+                alert('خطا در بارگذاری تیکت');
+            }
+        }
+
+        function closeModal() {
+            document.getElementById('ticketModal').classList.remove('active');
+            currentTicket = null;
+            selectedIp = null;
+            loadTickets();
+            loadEmails();
+        }
+
+        // ============ RENDER MODAL ============
+        function renderTicketModal() {
+            const t = currentTicket;
+            document.getElementById('modalTitle').textContent = `تیکت #${t.id} - ${t.email_subject || ''}`;
+            document.getElementById('ticketModal').classList.add('active');
+
+            const body = document.getElementById('modalBody');
+
+            // Steps indicator
+            const stageIndex = {'new': 0, 'ip_assigned': 1, 'config_generated': 2, 'replied': 3};
+            const si = stageIndex[t.stage] || 0;
+
+            let html = `
+                <div class="steps">
+                    <div class="step ${si === 0 ? 'active' : (si > 0 ? 'done' : '')}">
+                        <span class="step-num">${si > 0 ? '✓' : '1'}</span>
+                        ایجاد تیکت
+                    </div>
+                    <div class="step ${si === 1 ? 'active' : (si > 1 ? 'done' : '')}">
+                        <span class="step-num">${si > 1 ? '✓' : '2'}</span>
+                        اختصاص IP
+                    </div>
+                    <div class="step ${si === 2 ? 'active' : (si > 2 ? 'done' : '')}">
+                        <span class="step-num">${si > 2 ? '✓' : '3'}</span>
+                        تولید کانفیگ
+                    </div>
+                    <div class="step ${si === 3 ? 'active' : ''}">
+                        <span class="step-num">${si >= 3 ? '✓' : '4'}</span>
+                        ارسال پاسخ
+                    </div>
+                </div>
+            `;
+
+            // Email preview
+            html += `
+                <div class="email-preview">
+                    <div class="ep-subject">📧 ${t.email_subject}</div>
+                    <div class="ep-meta">
+                        <span>از: ${t.email_sender}</span>
+                        <span>تاریخ: ${t.email_date}</span>
+                    </div>
+                    <div class="ep-body">${t.email_body}</div>
+                </div>
+            `;
+
+            // Stage-specific content
+            if (t.stage === 'new') {
+                html += renderStageNew();
+            } else if (t.stage === 'ip_assigned') {
+                html += renderStageIpAssigned();
+            } else if (t.stage === 'config_generated') {
+                html += renderStageConfigGenerated();
+            } else if (t.stage === 'replied') {
+                html += renderStageReplied();
+            }
+
+            body.innerHTML = html;
+
+            // Post-render setup
+            if (t.stage === 'new') {
+                loadProvincesForTicket();
+            }
+        }
+
+        // ============ STAGE: NEW ============
+        function renderStageNew() {
+            return `
+                <h4 style="margin-bottom: 14px;">نوع درخواست را انتخاب کنید:</h4>
+                <div class="choice-cards">
+                    <div class="choice-card" id="choiceNew" onclick="selectChoice('new')">
+                        <div class="cc-icon">🆕</div>
+                        <div class="cc-title">نقطه / شعبه جدید</div>
+                        <div class="cc-desc">هنوز IP اختصاص داده نشده</div>
+                    </div>
+                    <div class="choice-card" id="choiceExisting" onclick="selectChoice('existing')">
+                        <div class="cc-icon">🔄</div>
+                        <div class="cc-title">نقطه موجود</div>
+                        <div class="cc-desc">IP قبلاً اختصاص داده شده</div>
+                    </div>
+                </div>
+
+                <div id="newPointForm" style="display:none;">
+                    <div class="info-box">
+                        فیلدهای زیر را برای رزرو IP جدید پر کنید. پس از ثبت، IP به صورت خودکار رزرو می‌شود.
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>استان *</label>
+                            <select id="ticketProvince" onchange="loadFreeIpsForTicket()">
+                                <option value="">-- انتخاب کنید --</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>نوع نقطه *</label>
+                            <select id="ticketPointType">
+                                <option value="">-- انتخاب کنید --</option>
+                                <option value="BRANCH">شعبه (Branch)</option>
+                                <option value="ATM">خودپرداز (ATM)</option>
+                                <option value="KIOSK">کیوسک (Kiosk)</option>
+                                <option value="COUNTER">باجه (Counter)</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>نام نقطه (فارسی) *</label>
+                            <input type="text" id="ticketBranchName" placeholder="مثال: شعبه مرکزی تهران">
+                        </div>
+                        <div class="form-group">
+                            <label>شماره درخواست *</label>
+                            <input type="text" id="ticketRequestNum" placeholder="مثال: REQ-2026-001">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>کد مهرگستر (اختیاری)</label>
+                        <input type="text" id="ticketMehrCode" placeholder="اختیاری">
+                    </div>
+
+                    <div class="form-group">
+                        <label>IP LAN آزاد * (یک IP انتخاب کنید)</label>
+                        <div id="ticketFreeIps" class="ip-grid" style="min-height: 60px;">
+                            <div style="color: var(--text-muted); font-size: 13px; grid-column: 1/-1; text-align: center; padding: 20px;">ابتدا استان را انتخاب کنید</div>
+                        </div>
+                    </div>
+
+                    <button class="btn btn-primary" onclick="assignIpToTicket()" style="width:100%; margin-top:10px;">
+                        ✅ ثبت و اختصاص IP
+                    </button>
+                </div>
+
+                <div id="existingPointInfo" style="display:none;">
+                    <div class="info-box">
+                        این قابلیت در نسخه نهایی با اتصال به دیتابیس فعال می‌شود. فعلاً از گزینه "نقطه جدید" استفاده کنید.
+                    </div>
+                </div>
+            `;
+        }
+
+        function selectChoice(choice) {
+            document.querySelectorAll('.choice-card').forEach(c => c.classList.remove('selected'));
+            if (choice === 'new') {
+                document.getElementById('choiceNew').classList.add('selected');
+                document.getElementById('newPointForm').style.display = 'block';
+                document.getElementById('existingPointInfo').style.display = 'none';
+            } else {
+                document.getElementById('choiceExisting').classList.add('selected');
+                document.getElementById('newPointForm').style.display = 'none';
+                document.getElementById('existingPointInfo').style.display = 'block';
+            }
+        }
+
+        async function loadProvincesForTicket() {
+            try {
+                const res = await fetch('/api/provinces');
+                provincesCache = await res.json();
+                const select = document.getElementById('ticketProvince');
+                if (!select) return;
+                provincesCache.forEach(p => {
+                    const opt = document.createElement('option');
+                    opt.value = p;
+                    opt.textContent = p;
+                    select.appendChild(opt);
+                });
+            } catch (err) {
+                console.error('Error loading provinces:', err);
+            }
+        }
+
+        async function loadFreeIpsForTicket() {
+            const province = document.getElementById('ticketProvince').value;
+            const container = document.getElementById('ticketFreeIps');
+            if (!province) {
+                container.innerHTML = '<div style="color: var(--text-muted); font-size: 13px; grid-column: 1/-1; text-align: center; padding: 20px;">ابتدا استان را انتخاب کنید</div>';
+                return;
+            }
+
+            container.innerHTML = '<div style="color: var(--text-muted); font-size: 13px; grid-column: 1/-1; text-align: center; padding: 20px;">در حال بارگذاری...</div>';
+
+            try {
+                const res = await fetch(`/api/free-lan-ips?province=${province}`);
+                const ips = await res.json();
+
+                if (ips.length === 0) {
+                    container.innerHTML = '<div style="color: #ef4444; font-size: 13px; grid-column: 1/-1; text-align: center; padding: 20px;">IP آزاد در این استان موجود نیست</div>';
+                    return;
+                }
+
+                selectedIp = null;
+                container.innerHTML = ips.slice(0, 50).map(ip => `
+                    <div class="ip-item" data-octet2="${ip.octet2}" data-octet3="${ip.octet3}" onclick="selectIp(this, ${ip.octet2}, ${ip.octet3})">
+                        10.${ip.octet2}.${ip.octet3}.0/24
+                    </div>
+                `).join('');
+            } catch (err) {
+                container.innerHTML = '<div style="color: #ef4444; font-size: 13px; grid-column: 1/-1; text-align: center; padding: 20px;">خطا در بارگذاری</div>';
+            }
+        }
+
+        function selectIp(el, o2, o3) {
+            document.querySelectorAll('.ip-item').forEach(i => i.classList.remove('selected'));
+            el.classList.add('selected');
+            selectedIp = { octet2: o2, octet3: o3 };
+        }
+
+        async function assignIpToTicket() {
+            const province = document.getElementById('ticketProvince').value;
+            const branchName = document.getElementById('ticketBranchName').value;
+            const pointType = document.getElementById('ticketPointType').value;
+            const requestNum = document.getElementById('ticketRequestNum').value;
+            const mehrCode = document.getElementById('ticketMehrCode').value;
+
+            if (!province || !branchName || !pointType || !requestNum) {
+                alert('لطفاً تمام فیلدهای ضروری (*) را پر کنید');
+                return;
+            }
+            if (!selectedIp) {
+                alert('لطفاً یک IP از لیست انتخاب کنید');
+                return;
+            }
+
+            try {
+                const res = await fetch(`/api/tickets/${currentTicket.id}/assign-ip`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        province, branch_name: branchName, point_type: pointType,
+                        request_number: requestNum, mehregostar_code: mehrCode,
+                        octet2: selectedIp.octet2, octet3: selectedIp.octet3,
+                        username: currentUser
+                    })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    // Reload ticket
+                    const tres = await fetch(`/api/tickets/${currentTicket.id}`);
+                    currentTicket = await tres.json();
+                    renderTicketModal();
+                } else {
+                    alert(data.error || 'خطا');
+                }
+            } catch (err) {
+                alert('خطا در اتصال به سرور');
+            }
+        }
+
+        // ============ STAGE: IP ASSIGNED ============
+        function renderStageIpAssigned() {
+            const t = currentTicket;
+            return `
+                <div class="info-box" style="border-color: rgba(16,185,129,0.3); background: rgba(16,185,129,0.08);">
+                    ✅ <strong>IP اختصاص داده شد:</strong> ${t.assigned_ip} | استان: ${t.province} | نقطه: ${t.branch_name} (${t.point_type})
+                </div>
+
+                <h4 style="margin-bottom: 14px;">نوع کانفیگ را انتخاب کنید:</h4>
+                <div class="choice-cards">
+                    <div class="choice-card" onclick="showConfigForm('apn_int')">
+                        <div class="cc-icon">🟣</div>
+                        <div class="cc-title">APN غیرمالی</div>
+                        <div class="cc-desc">APN-INT to HUB ASR + Tunnel200</div>
+                    </div>
+                    <div class="choice-card" onclick="showConfigForm('apn_mali')">
+                        <div class="cc-icon">🟢</div>
+                        <div class="cc-title">APN مالی</div>
+                        <div class="cc-desc">ISR-APN-RO + Financial APN</div>
+                    </div>
+                </div>
+
+                <div id="configFormArea" style="display:none;">
+                    <!-- Filled dynamically -->
+                </div>
+            `;
+        }
+
+        function showConfigForm(type) {
+            document.querySelectorAll('.choice-card').forEach(c => c.classList.remove('selected'));
+            event.target.closest('.choice-card').classList.add('selected');
+
+            const area = document.getElementById('configFormArea');
+            area.style.display = 'block';
+
+            const t = currentTicket;
+
+            if (type === 'apn_int') {
+                area.innerHTML = `
+                    <h4 style="margin: 16px 0 12px;">پارامترهای APN غیرمالی</h4>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Node Type</label>
+                            <select id="cfgNodeType">
+                                <option value="Branch">Branch</option>
+                                <option value="ATM">ATM</option>
+                                <option value="Kiosk">Kiosk</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Route Name (English)</label>
+                            <input type="text" id="cfgRouteName" placeholder="e.g. Tehran-Vanak-01" value="${t.branch_name || ''}">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Tunnel ID</label>
+                            <input type="text" id="cfgTunnelId" value="${t.octet3 || ''}">
+                        </div>
+                        <div class="form-group">
+                            <label>WAN IP</label>
+                            <input type="text" id="cfgWanIp" placeholder="172.16.x.x" value="172.16.${t.octet2}.${t.octet3}">
+                        </div>
+                    </div>
+                    <button class="btn btn-purple" onclick="generateConfig('apn_int')" style="width:100%; margin-top: 10px;">
+                        ⚙️ تولید کانفیگ APN غیرمالی
+                    </button>
+                `;
+            } else {
+                area.innerHTML = `
+                    <h4 style="margin: 16px 0 12px;">پارامترهای APN مالی</h4>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Node Type</label>
+                            <select id="cfgNodeType">
+                                <option value="Branch">Branch</option>
+                                <option value="ATM">ATM</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Hostname (English)</label>
+                            <input type="text" id="cfgHostname" placeholder="e.g. TEH-Branch-Vanak" value="${t.branch_name || ''}">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>WAN IP</label>
+                        <input type="text" id="cfgWanIp" placeholder="172.16.x.x" value="172.16.${t.octet2}.${t.octet3}">
+                    </div>
+                    <button class="btn btn-success" onclick="generateConfig('apn_mali')" style="width:100%; margin-top: 10px;">
+                        ⚙️ تولید کانفیگ APN مالی
+                    </button>
+                `;
+            }
+        }
+
+        async function generateConfig(type) {
+            const params = { username: currentUser };
+
+            if (type === 'apn_int') {
+                params.node_type = document.getElementById('cfgNodeType').value;
+                params.route_name = document.getElementById('cfgRouteName').value;
+                params.tunnel_id = document.getElementById('cfgTunnelId').value;
+                params.wan_ip = document.getElementById('cfgWanIp').value;
+                params.branch_name_en = document.getElementById('cfgRouteName').value;
+            } else {
+                params.node_type = document.getElementById('cfgNodeType').value;
+                params.hostname = document.getElementById('cfgHostname').value;
+                params.wan_ip = document.getElementById('cfgWanIp').value;
+                params.branch_name_en = document.getElementById('cfgHostname').value;
+            }
+
+            try {
+                const res = await fetch(`/api/tickets/${currentTicket.id}/generate-config`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ config_type: type, config_params: params, username: currentUser })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    const tres = await fetch(`/api/tickets/${currentTicket.id}`);
+                    currentTicket = await tres.json();
+                    renderTicketModal();
+                } else {
+                    alert(data.error || 'خطا');
+                }
+            } catch (err) {
+                alert('خطا در اتصال به سرور');
+            }
+        }
+
+        // ============ STAGE: CONFIG GENERATED ============
+        function renderStageConfigGenerated() {
+            const t = currentTicket;
+            const configTypeLabel = t.config_type === 'apn_int' ? 'APN غیرمالی' : 'APN مالی';
+
+            return `
+                <div class="info-box" style="border-color: rgba(16,185,129,0.3); background: rgba(16,185,129,0.08);">
+                    ✅ IP: ${t.assigned_ip} | نقطه: ${t.branch_name} | نوع کانفیگ: ${configTypeLabel}
+                </div>
+
+                <h4 style="margin-bottom: 12px;">⚙️ کانفیگ تولید شده:</h4>
+                <div class="config-box">${t.config_output}</div>
+
+                <div style="display: flex; gap: 10px; margin-top: 16px;">
+                    <button class="btn btn-secondary" onclick="copyConfig()" style="flex:1;">📋 کپی کانفیگ</button>
+                    <button class="btn btn-success" onclick="sendReply()" style="flex:1;">📧 ارسال پاسخ (ریپلای ایمیل)</button>
+                </div>
+
+                <div id="replyPreviewArea" style="display:none; margin-top: 16px;">
+                    <div class="reply-preview">
+                        <h4>📧 پیش‌نمایش ریپلای:</h4>
+                        <div style="margin-top: 10px; font-size: 13px; line-height: 1.8; color: var(--text-secondary);">
+                            <div><strong>To:</strong> ${t.email_sender}</div>
+                            <div><strong>Subject:</strong> Re: ${t.email_subject}</div>
+                            <hr style="border-color: var(--border-color); margin: 10px 0;">
+                            <div style="direction: rtl;">
+                                سلام و احترام<br><br>
+                                IP اختصاص داده شده: <strong>${t.assigned_ip}</strong><br>
+                                نوع کانفیگ: <strong>${configTypeLabel}</strong><br>
+                                نقطه: <strong>${t.branch_name}</strong> (${t.province})<br><br>
+                                کانفیگ تولید شده به پیوست ارسال می‌شود.<br><br>
+                                با تشکر<br>
+                                واحد شبکه
+                            </div>
+                        </div>
+                    </div>
+                    <button class="btn btn-success" onclick="confirmSendReply()" style="width:100%; margin-top: 12px;">
+                        ✅ تایید و ارسال
+                    </button>
+                </div>
+            `;
+        }
+
+        function copyConfig() {
+            navigator.clipboard.writeText(currentTicket.config_output).then(() => {
+                alert('کانفیگ کپی شد');
+            });
+        }
+
+        function sendReply() {
+            document.getElementById('replyPreviewArea').style.display = 'block';
+        }
+
+        async function confirmSendReply() {
+            try {
+                const res = await fetch(`/api/tickets/${currentTicket.id}/send-reply`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ username: currentUser })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    const tres = await fetch(`/api/tickets/${currentTicket.id}`);
+                    currentTicket = await tres.json();
+                    renderTicketModal();
+                } else {
+                    alert(data.error || 'خطا');
+                }
+            } catch (err) {
+                alert('خطا در اتصال به سرور');
+            }
+        }
+
+        // ============ STAGE: REPLIED ============
+        function renderStageReplied() {
+            const t = currentTicket;
+            const configTypeLabel = t.config_type === 'apn_int' ? 'APN غیرمالی' : 'APN مالی';
+
+            return `
+                <div class="info-box" style="border-color: rgba(16,185,129,0.3); background: rgba(16,185,129,0.08);">
+                    ✅ <strong>تیکت بسته شده</strong> - پاسخ ارسال شد
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 16px;">
+                    <div style="background: rgba(255,255,255,0.03); border: 1px solid var(--border-color); border-radius: 10px; padding: 14px;">
+                        <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 4px;">IP اختصاص داده شده</div>
+                        <div style="font-size: 18px; font-weight: 700; color: var(--accent-green); font-family: monospace;">${t.assigned_ip}</div>
+                    </div>
+                    <div style="background: rgba(255,255,255,0.03); border: 1px solid var(--border-color); border-radius: 10px; padding: 14px;">
+                        <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 4px;">نوع کانفیگ</div>
+                        <div style="font-size: 18px; font-weight: 700; color: var(--accent-purple);">${configTypeLabel}</div>
+                    </div>
+                    <div style="background: rgba(255,255,255,0.03); border: 1px solid var(--border-color); border-radius: 10px; padding: 14px;">
+                        <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 4px;">نقطه</div>
+                        <div style="font-size: 14px; font-weight: 600;">${t.branch_name} (${t.point_type})</div>
+                    </div>
+                    <div style="background: rgba(255,255,255,0.03); border: 1px solid var(--border-color); border-radius: 10px; padding: 14px;">
+                        <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 4px;">استان</div>
+                        <div style="font-size: 14px; font-weight: 600;">${t.province}</div>
+                    </div>
+                </div>
+
+                <h4 style="margin-bottom: 10px;">⚙️ کانفیگ:</h4>
+                <div class="config-box" style="max-height: 250px;">${t.config_output}</div>
+                <button class="btn btn-secondary" onclick="copyConfig()" style="width: 100%; margin-top: 10px;">📋 کپی کانفیگ</button>
+            `;
+        }
+
+        // ============ INIT ============
+        loadEmails();
+    </script>
+</body>
+</html>

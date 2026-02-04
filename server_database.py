@@ -212,6 +212,32 @@ def init_tables():
     except Exception as e:
         print(f"⚠️ Index creation: {e}")
     
+    # Tickets table for email-based workflow
+    cursor.execute("""CREATE TABLE IF NOT EXISTS tickets (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        email_id TEXT,
+        email_subject TEXT,
+        email_sender TEXT,
+        email_body TEXT,
+        email_date TEXT,
+        status TEXT DEFAULT 'new',
+        stage TEXT DEFAULT 'new',
+        province TEXT,
+        branch_name TEXT,
+        point_type TEXT,
+        request_number TEXT,
+        mehregostar_code TEXT,
+        assigned_ip TEXT,
+        octet2 INTEGER,
+        octet3 INTEGER,
+        config_type TEXT,
+        config_output TEXT,
+        reply_sent INTEGER DEFAULT 0,
+        assigned_user TEXT,
+        created_at TEXT,
+        updated_at TEXT
+    )""")
+
     conn.commit()
     conn.close()
 
@@ -258,6 +284,10 @@ def reserve_lan_page():
 @app.route('/db-manager')
 def db_manager_page():
     return render_template('db_manager.html')
+
+@app.route('/tickets')
+def tickets_page():
+    return render_template('tickets.html')
 
 # ==================== AUTH APIs ====================
 @app.route('/api/users', methods=['GET'])
@@ -2242,6 +2272,299 @@ def export_reservations():
                         headers={'Content-Disposition': 'attachment; filename=reservations_export.csv'})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+# ==================== TICKET SYSTEM (DEMO) ====================
+# Mock emails for demo - simulates Outlook inbox
+MOCK_EMAILS = [
+    {
+        "id": "email_001",
+        "subject": "درخواست IP جدید - شعبه ونک تهران",
+        "sender": "network-req@bank.ir",
+        "body": "سلام\nلطفاً برای شعبه جدید ونک تهران یک IP LAN اختصاص دهید.\nنوع نقطه: شعبه\nشماره درخواست: REQ-2026-001\n\nبا تشکر",
+        "date": "2026-02-04 09:30:00",
+        "folder": "Network-Requests"
+    },
+    {
+        "id": "email_002",
+        "subject": "درخواست کانفیگ APN مالی - شعبه مرکزی اصفهان",
+        "sender": "it-support@bank.ir",
+        "body": "با سلام\nبرای شعبه مرکزی اصفهان کانفیگ APN مالی نیاز داریم.\nIP قبلاً اختصاص داده شده: 10.5.120.0/24\n\nبا تشکر",
+        "date": "2026-02-03 14:15:00",
+        "folder": "Network-Requests"
+    },
+    {
+        "id": "email_003",
+        "subject": "راه‌اندازی خودپرداز جدید - میدان آزادی",
+        "sender": "atm-dept@bank.ir",
+        "body": "سلام\nیک خودپرداز جدید در میدان آزادی نصب شده.\nلطفاً IP و کانفیگ APN غیرمالی ارسال شود.\nشماره درخواست: ATM-2026-055\n\nبا تشکر",
+        "date": "2026-02-02 11:00:00",
+        "folder": "Network-Requests"
+    },
+    {
+        "id": "email_004",
+        "subject": "درخواست کیوسک جدید - شهرکرد",
+        "sender": "branches@bank.ir",
+        "body": "سلام و احترام\nیک کیوسک بانکی در شهرکرد نیاز به IP و کانفیگ دارد.\nکد مهرگستر: MG-44012\nشماره درخواست: KSK-2026-012\n\nبا تشکر",
+        "date": "2026-02-01 16:45:00",
+        "folder": "Network-Requests"
+    }
+]
+
+@app.route('/api/tickets/emails', methods=['GET'])
+def get_mock_emails():
+    """Get mock inbox emails (simulates Outlook folder)"""
+    # Check which emails already have tickets
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("SELECT email_id FROM tickets")
+    existing = {row['email_id'] for row in cursor.fetchall()}
+    conn.close()
+
+    emails = []
+    for e in MOCK_EMAILS:
+        emails.append({**e, 'has_ticket': e['id'] in existing})
+    return jsonify(emails)
+
+@app.route('/api/tickets', methods=['GET'])
+def get_tickets():
+    """Get all tickets"""
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM tickets ORDER BY created_at DESC")
+    tickets = [dict(row) for row in cursor.fetchall()]
+    conn.close()
+    return jsonify(tickets)
+
+@app.route('/api/tickets', methods=['POST'])
+def create_ticket():
+    """Create ticket from email"""
+    data = request.json
+    email_id = data.get('email_id')
+
+    conn = get_db()
+    cursor = conn.cursor()
+
+    # Check if ticket already exists for this email
+    cursor.execute("SELECT id FROM tickets WHERE email_id = ?", (email_id,))
+    if cursor.fetchone():
+        conn.close()
+        return jsonify({'error': 'تیکت برای این ایمیل قبلاً ایجاد شده'}), 400
+
+    now = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    cursor.execute("""
+        INSERT INTO tickets (email_id, email_subject, email_sender, email_body, email_date, status, stage, assigned_user, created_at, updated_at)
+        VALUES (?, ?, ?, ?, ?, 'open', 'new', ?, ?, ?)
+    """, (email_id, data.get('email_subject'), data.get('email_sender'),
+          data.get('email_body'), data.get('email_date'), data.get('assigned_user', ''), now, now))
+
+    ticket_id = cursor.lastrowid
+    conn.commit()
+    conn.close()
+
+    log_activity('success', 'ایجاد تیکت', f'تیکت #{ticket_id} از ایمیل: {data.get("email_subject", "")}', data.get('assigned_user', 'System'))
+    return jsonify({'success': True, 'ticket_id': ticket_id})
+
+@app.route('/api/tickets/<int:ticket_id>', methods=['GET'])
+def get_ticket(ticket_id):
+    """Get single ticket"""
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM tickets WHERE id = ?", (ticket_id,))
+    ticket = cursor.fetchone()
+    conn.close()
+    if not ticket:
+        return jsonify({'error': 'تیکت یافت نشد'}), 404
+    return jsonify(dict(ticket))
+
+@app.route('/api/tickets/<int:ticket_id>/assign-ip', methods=['POST'])
+def ticket_assign_ip(ticket_id):
+    """Stage 1: Assign IP to ticket (reserve new IP)"""
+    data = request.json
+    province = data.get('province')
+    branch_name = data.get('branch_name')
+    point_type = data.get('point_type')
+    request_number = data.get('request_number')
+    mehregostar_code = data.get('mehregostar_code', '')
+    octet2 = data.get('octet2')
+    octet3 = data.get('octet3')
+    username = data.get('username', '')
+
+    if not all([province, branch_name, point_type, octet2, octet3]):
+        return jsonify({'error': 'اطلاعات ناقص است'}), 400
+
+    conn = get_db()
+    cursor = conn.cursor()
+
+    now = datetime.now()
+    expiry = now + timedelta(days=60)
+
+    # Reserve the IP in lan_ips
+    cursor.execute("""
+        UPDATE lan_ips SET username = ?, reservation_date = ?, branch_name = ?, status = 'Reserved'
+        WHERE octet2 = ? AND octet3 = ?
+    """, (username, now.strftime('%Y-%m-%d'), branch_name, octet2, octet3))
+
+    # Insert into reserved_ips
+    try:
+        cursor.execute("""
+            INSERT INTO reserved_ips (province, octet2, octet3, branch_name, username, reservation_date, expiry_date, request_number, point_type, mehregostar_code, status)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'reserved')
+        """, (province, octet2, octet3, branch_name, username, now.strftime('%Y-%m-%d'), expiry.strftime('%Y-%m-%d'), request_number, point_type, mehregostar_code))
+    except sqlite3.OperationalError:
+        cursor.execute("""
+            INSERT INTO reserved_ips (province, octet2, octet3, branch_name, username, reservation_date, expiry_date, request_number, point_type, mehregostar_code)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """, (province, octet2, octet3, branch_name, username, now.strftime('%Y-%m-%d'), expiry.strftime('%Y-%m-%d'), request_number, point_type, mehregostar_code))
+
+    assigned_ip = f"10.{octet2}.{octet3}.0/24"
+
+    # Update ticket
+    cursor.execute("""
+        UPDATE tickets SET stage = 'ip_assigned', province = ?, branch_name = ?, point_type = ?,
+        request_number = ?, mehregostar_code = ?, assigned_ip = ?, octet2 = ?, octet3 = ?, updated_at = ?
+        WHERE id = ?
+    """, (province, branch_name, point_type, request_number, mehregostar_code, assigned_ip, octet2, octet3, now.strftime('%Y-%m-%d %H:%M:%S'), ticket_id))
+
+    conn.commit()
+    conn.close()
+
+    log_activity('success', 'اختصاص IP از تیکت', f'تیکت #{ticket_id}: {assigned_ip} برای {branch_name}', username)
+    return jsonify({'success': True, 'assigned_ip': assigned_ip})
+
+@app.route('/api/tickets/<int:ticket_id>/generate-config', methods=['POST'])
+def ticket_generate_config(ticket_id):
+    """Stage 2: Generate config for ticket"""
+    data = request.json
+    config_type = data.get('config_type')  # 'apn_int' or 'apn_mali'
+    config_params = data.get('config_params', {})
+
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM tickets WHERE id = ?", (ticket_id,))
+    ticket = cursor.fetchone()
+    if not ticket:
+        conn.close()
+        return jsonify({'error': 'تیکت یافت نشد'}), 404
+
+    octet2 = ticket['octet2']
+    octet3 = ticket['octet3']
+    branch_name = config_params.get('branch_name_en', ticket['branch_name'])
+
+    # Generate config based on type
+    if config_type == 'apn_int':
+        config_output = generate_apn_int_config(octet2, octet3, branch_name, config_params)
+    elif config_type == 'apn_mali':
+        config_output = generate_apn_mali_config(octet2, octet3, branch_name, config_params)
+    else:
+        conn.close()
+        return jsonify({'error': 'نوع کانفیگ نامعتبر'}), 400
+
+    now = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    cursor.execute("""
+        UPDATE tickets SET stage = 'config_generated', config_type = ?, config_output = ?, updated_at = ?
+        WHERE id = ?
+    """, (config_type, config_output, now, ticket_id))
+
+    conn.commit()
+    conn.close()
+
+    log_activity('success', 'تولید کانفیگ از تیکت', f'تیکت #{ticket_id}: {config_type}', data.get('username', 'System'))
+    return jsonify({'success': True, 'config': config_output})
+
+def generate_apn_int_config(octet2, octet3, branch_name, params):
+    """Generate APN non-financial config text"""
+    node_type = params.get('node_type', 'Branch')
+    route_name = params.get('route_name', branch_name)
+    tunnel_id = params.get('tunnel_id', octet3)
+    wan_ip = params.get('wan_ip', f'172.16.{octet2}.{octet3}')
+
+    config = f"""! ============================================
+! APN غیرمالی - {branch_name}
+! Node Type: {node_type}
+! LAN: 10.{octet2}.{octet3}.0/24
+! Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
+! ============================================
+!
+hostname {route_name}
+!
+interface Loopback0
+ ip address 10.{octet2}.{octet3}.1 255.255.255.255
+!
+interface Tunnel{tunnel_id}
+ ip address 172.20.{octet2}.{octet3} 255.255.255.252
+ tunnel source {wan_ip}
+ tunnel destination 10.255.255.1
+ tunnel mode gre ip
+!
+interface GigabitEthernet0/0
+ ip address 10.{octet2}.{octet3}.1 255.255.255.0
+ no shutdown
+!
+ip route 0.0.0.0 0.0.0.0 Tunnel{tunnel_id}
+!
+end"""
+    return config
+
+def generate_apn_mali_config(octet2, octet3, branch_name, params):
+    """Generate APN financial config text"""
+    node_type = params.get('node_type', 'Branch')
+    hostname = params.get('hostname', branch_name)
+    wan_ip = params.get('wan_ip', f'172.16.{octet2}.{octet3}')
+
+    config = f"""! ============================================
+! APN مالی - {branch_name}
+! Node Type: {node_type}
+! LAN: 10.{octet2}.{octet3}.0/24
+! Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
+! ============================================
+!
+hostname {hostname}
+!
+interface Loopback0
+ ip address 10.{octet2}.{octet3}.1 255.255.255.255
+!
+interface GigabitEthernet0/0
+ ip address 10.{octet2}.{octet3}.1 255.255.255.0
+ ip nat inside
+ no shutdown
+!
+interface GigabitEthernet0/1
+ ip address {wan_ip} 255.255.255.252
+ ip nat outside
+ no shutdown
+!
+ip nat inside source list 1 interface GigabitEthernet0/1 overload
+access-list 1 permit 10.{octet2}.{octet3}.0 0.0.0.255
+!
+ip route 0.0.0.0 0.0.0.0 GigabitEthernet0/1
+!
+end"""
+    return config
+
+@app.route('/api/tickets/<int:ticket_id>/send-reply', methods=['POST'])
+def ticket_send_reply(ticket_id):
+    """Stage 3: Mark reply as sent (in demo mode, just simulates)"""
+    data = request.json
+
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM tickets WHERE id = ?", (ticket_id,))
+    ticket = cursor.fetchone()
+    if not ticket:
+        conn.close()
+        return jsonify({'error': 'تیکت یافت نشد'}), 404
+
+    now = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    cursor.execute("""
+        UPDATE tickets SET stage = 'replied', status = 'closed', reply_sent = 1, updated_at = ?
+        WHERE id = ?
+    """, (now, ticket_id))
+
+    conn.commit()
+    conn.close()
+
+    log_activity('success', 'ارسال پاسخ تیکت', f'تیکت #{ticket_id}: ریپلای ارسال شد (دمو)', data.get('username', 'System'))
+    return jsonify({'success': True, 'message': 'پاسخ با موفقیت ارسال شد (حالت دمو)'})
 
 # ==================== MAIN ====================
 if __name__ == '__main__':
