@@ -395,6 +395,43 @@
         .choice-card .cc-title { font-weight: 700; font-size: 15px; margin-bottom: 4px; }
         .choice-card .cc-desc { font-size: 12px; color: var(--text-muted); }
 
+        /* Branch list for existing points */
+        .branch-search {
+            width: 100%;
+            padding: 10px 14px;
+            border: 1px solid var(--input-border);
+            border-radius: 8px;
+            background: var(--input-bg);
+            color: var(--text-primary);
+            font-size: 14px;
+            margin-bottom: 10px;
+        }
+        .branch-search:focus { border-color: var(--accent-blue); outline: none; }
+        .branch-list {
+            max-height: 350px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+        .branch-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 16px;
+            background: rgba(255,255,255,0.03);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .branch-item:hover { border-color: var(--accent-blue); background: rgba(59,130,246,0.05); }
+        .branch-item.selected { border-color: var(--accent-green); background: rgba(16,185,129,0.1); }
+        .branch-item .bi-name { font-weight: 600; font-size: 14px; }
+        .branch-item .bi-province { font-size: 12px; color: var(--accent-purple); margin-top: 2px; }
+        .branch-item .bi-ip { font-family: monospace; font-size: 13px; color: var(--accent-green); font-weight: 600; }
+        .branch-item .bi-type { font-size: 11px; color: var(--text-muted); }
+
         .demo-banner {
             background: linear-gradient(135deg, rgba(245,158,11,0.15), rgba(245,158,11,0.05));
             border: 1px solid rgba(245,158,11,0.3);
@@ -762,11 +799,21 @@
 
                 <div id="existingPointInfo" style="display:none;">
                     <div class="info-box">
-                        این قابلیت در نسخه نهایی با اتصال به دیتابیس فعال می‌شود. فعلاً از گزینه "نقطه جدید" استفاده کنید.
+                        شعبه یا نقطه موجود را از لیست زیر انتخاب کنید. اطلاعات IP از دیتابیس بارگذاری می‌شود.
                     </div>
+                    <input type="text" class="branch-search" id="branchSearch" placeholder="🔍 جستجوی نام شعبه یا استان..." oninput="filterBranches()">
+                    <div class="branch-list" id="branchList">
+                        <div style="text-align: center; padding: 30px; color: var(--text-muted);">در حال بارگذاری...</div>
+                    </div>
+                    <button class="btn btn-success" id="btnSelectExisting" onclick="assignExistingToTicket()" style="width:100%; margin-top:12px; display:none;">
+                        ✅ انتخاب و ادامه
+                    </button>
                 </div>
             `;
         }
+
+        let allBranches = [];
+        let selectedBranch = null;
 
         function selectChoice(choice) {
             document.querySelectorAll('.choice-card').forEach(c => c.classList.remove('selected'));
@@ -778,6 +825,95 @@
                 document.getElementById('choiceExisting').classList.add('selected');
                 document.getElementById('newPointForm').style.display = 'none';
                 document.getElementById('existingPointInfo').style.display = 'block';
+                loadBranchesForTicket();
+            }
+        }
+
+        async function loadBranchesForTicket() {
+            try {
+                const res = await fetch('/api/branches');
+                const branches = await res.json();
+                branches.sort((a, b) => {
+                    if (a.province !== b.province) return a.province.localeCompare(b.province);
+                    return a.name.localeCompare(b.name);
+                });
+                allBranches = branches;
+                selectedBranch = null;
+                document.getElementById('btnSelectExisting').style.display = 'none';
+                renderBranchList(allBranches);
+            } catch (err) {
+                document.getElementById('branchList').innerHTML = '<div style="text-align:center; padding:30px; color:#ef4444;">خطا در بارگذاری لیست شعب</div>';
+            }
+        }
+
+        function renderBranchList(branches) {
+            const container = document.getElementById('branchList');
+            if (branches.length === 0) {
+                container.innerHTML = '<div style="text-align:center; padding:30px; color:var(--text-muted);">شعبه‌ای یافت نشد</div>';
+                return;
+            }
+            container.innerHTML = branches.map((b, i) => `
+                <div class="branch-item" data-idx="${i}" onclick="selectBranchItem(this, ${b.x}, ${b.y}, '${(b.name || '').replace(/'/g, "\\'")}', '${(b.province || '').replace(/'/g, "\\'")}')">
+                    <div>
+                        <div class="bi-name">${b.name}</div>
+                        <div class="bi-province">📍 ${b.province}</div>
+                    </div>
+                    <div style="text-align: left;">
+                        <div class="bi-ip">${b.lan_ip}</div>
+                        <div class="bi-type">${b.type === 'reserved' ? '🔖 رزرو شده' : '✅ فعال'}</div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function filterBranches() {
+            const q = document.getElementById('branchSearch').value.trim().toLowerCase();
+            if (!q) {
+                renderBranchList(allBranches);
+                return;
+            }
+            const filtered = allBranches.filter(b =>
+                (b.name || '').toLowerCase().includes(q) ||
+                (b.province || '').toLowerCase().includes(q) ||
+                (b.lan_ip || '').includes(q)
+            );
+            renderBranchList(filtered);
+        }
+
+        function selectBranchItem(el, o2, o3, name, province) {
+            document.querySelectorAll('.branch-item').forEach(i => i.classList.remove('selected'));
+            el.classList.add('selected');
+            selectedBranch = { octet2: o2, octet3: o3, name: name, province: province };
+            document.getElementById('btnSelectExisting').style.display = 'block';
+        }
+
+        async function assignExistingToTicket() {
+            if (!selectedBranch) {
+                alert('لطفاً یک شعبه از لیست انتخاب کنید');
+                return;
+            }
+            try {
+                const res = await fetch(`/api/tickets/${currentTicket.id}/assign-existing`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        province: selectedBranch.province,
+                        branch_name: selectedBranch.name,
+                        octet2: selectedBranch.octet2,
+                        octet3: selectedBranch.octet3,
+                        username: currentUser
+                    })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    const tres = await fetch(`/api/tickets/${currentTicket.id}`);
+                    currentTicket = await tres.json();
+                    renderTicketModal();
+                } else {
+                    alert(data.error || 'خطا');
+                }
+            } catch (err) {
+                alert('خطا در اتصال به سرور');
             }
         }
 
