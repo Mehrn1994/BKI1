@@ -23,59 +23,109 @@
             box-shadow: 0 25px 50px rgba(0,0,0,0.3);
         }
         .logo { text-align: center; margin-bottom: 30px; }
-        .logo h1 { font-size: 1.8rem; color: #1e293b; margin-top: 10px; }
         .logo .icon { font-size: 4rem; }
-        .users-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 20px; }
+        .logo h1 { font-size: 1.8rem; color: #1e293b; margin-top: 10px; }
+        .users-grid { display: grid; grid-template-columns: 1fr; gap: 12px; }
         .user-btn {
-            padding: 16px;
-            border: 2px solid #e2e8f0;
-            border-radius: 12px;
-            background: white;
-            cursor: pointer;
-            transition: all 0.3s;
-            display: flex;
-            align-items: center;
-            gap: 10px;
+            display: flex; align-items: center; gap: 15px;
+            padding: 15px 20px; background: #f8fafc;
+            border: 2px solid #e2e8f0; border-radius: 12px;
+            cursor: pointer; transition: all 0.3s ease;
         }
-        .user-btn:hover { border-color: #667eea; background: #f8fafc; }
+        .user-btn:hover { border-color: #667eea; background: #eef2ff; transform: translateX(-5px); }
         .user-btn .avatar {
-            width: 40px; height: 40px; border-radius: 50%;
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            display: flex; align-items: center; justify-content: center;
-            color: white; font-weight: bold;
+            width: 50px; height: 50px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 50%; display: flex; align-items: center;
+            justify-content: center; color: white; font-size: 1.3rem; font-weight: bold;
         }
-        .user-btn .name { font-weight: 500; color: #1e293b; }
-        .user-btn .status { font-size: 11px; color: #64748b; }
+        .user-btn .name { font-size: 1.1rem; font-weight: 600; color: #1e293b; }
+        .user-btn .status { font-size: 0.85rem; color: #64748b; margin-top: 3px; }
         .user-btn .status.new { color: #f59e0b; }
         .password-section { display: none; }
         .password-section.show { display: block; }
         .selected-user {
-            display: flex; align-items: center; gap: 12px;
-            padding: 16px; background: #f8fafc; border-radius: 12px; margin-bottom: 20px;
+            display: flex; align-items: center; gap: 15px;
+            padding: 20px; background: #f1f5f9;
+            border-radius: 12px; margin-bottom: 20px;
         }
         .selected-user .avatar {
-            width: 50px; height: 50px; border-radius: 50%;
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            display: flex; align-items: center; justify-content: center;
-            color: white; font-size: 1.2rem; font-weight: bold;
+            width: 60px; height: 60px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 50%; display: flex; align-items: center;
+            justify-content: center; color: white; font-size: 1.5rem; font-weight: bold;
         }
-        .change-user { margin-right: auto; background: none; border: none; color: #667eea; cursor: pointer; }
-        .form-group { margin-bottom: 16px; }
-        .form-group label { display: block; margin-bottom: 8px; font-weight: 500; color: #475569; }
+        .selected-user .info h3 { color: #1e293b; font-size: 1.3rem; }
+        .selected-user .info p { color: #64748b; font-size: 0.9rem; }
+        .selected-user .change-user {
+            margin-right: auto; background: none;
+            border: none; color: #667eea; cursor: pointer;
+            font-size: 0.9rem; padding: 8px 12px;
+        }
+        .selected-user .change-user:hover { text-decoration: underline; }
+        .form-group { margin-bottom: 20px; }
+        .form-group label { display: block; margin-bottom: 8px; color: #334155; font-weight: 600; }
         .form-group input {
-            width: 100%; padding: 14px 16px; border: 2px solid #e2e8f0;
-            border-radius: 10px; font-size: 16px;
+            width: 100%; padding: 14px 18px;
+            border: 2px solid #e2e8f0; border-radius: 10px;
+            font-size: 1rem; transition: all 0.3s ease;
         }
-        .form-group input:focus { outline: none; border-color: #667eea; }
+        .form-group input:focus { outline: none; border-color: #667eea; box-shadow: 0 0 0 3px rgba(102,126,234,0.1); }
         .btn {
-            width: 100%; padding: 16px; border: none; border-radius: 10px;
-            font-size: 16px; font-weight: 600; cursor: pointer;
-            background: linear-gradient(135deg, #667eea, #764ba2); color: white;
+            width: 100%; padding: 16px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white; border: none; border-radius: 10px;
+            font-size: 1.1rem; font-weight: 600; cursor: pointer;
+            transition: all 0.3s ease;
         }
-        .btn:hover { opacity: 0.9; }
-        .error-msg { background: #fee2e2; color: #dc2626; padding: 12px; border-radius: 8px; margin-bottom: 16px; display: none; }
+        .btn:hover { transform: translateY(-2px); box-shadow: 0 10px 20px rgba(102,126,234,0.3); }
+        .btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+        .error-msg {
+            background: #fee2e2; color: #dc2626;
+            padding: 12px 16px; border-radius: 8px;
+            margin-bottom: 15px; display: none;
+            border: 1px solid #fca5a5;
+        }
         .error-msg.show { display: block; }
-        .info-box { background: #fef3c7; color: #92400e; padding: 12px; border-radius: 8px; margin-bottom: 16px; }
+        .info-box {
+            background: #dbeafe; color: #1e40af;
+            padding: 12px 16px; border-radius: 8px;
+            margin-bottom: 20px; border: 1px solid #93c5fd;
+        }
+        .loading {
+            display: inline-block;
+            width: 20px; height: 20px;
+            border: 2px solid #fff;
+            border-top-color: transparent;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin-left: 10px;
+            vertical-align: middle;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .debug-panel {
+            margin-top: 20px;
+            padding: 15px;
+            background: #1e293b;
+            border-radius: 10px;
+            font-size: 12px;
+            color: #94a3b8;
+            display: none;
+            max-height: 200px;
+            overflow-y: auto;
+            font-family: monospace;
+        }
+        .debug-panel.show { display: block; }
+        .debug-panel .log { margin: 4px 0; padding: 4px 0; border-bottom: 1px solid #334155; }
+        .debug-panel .error { color: #ef4444; }
+        .debug-panel .success { color: #10b981; }
+        .debug-panel .info { color: #3b82f6; }
+        .retry-btn {
+            margin-top: 15px; padding: 10px 20px;
+            background: #667eea; color: white;
+            border: none; border-radius: 8px; cursor: pointer;
+        }
+        .retry-btn:hover { background: #5a67d8; }
     </style>
 </head>
 <body>
@@ -84,10 +134,17 @@
             <span class="icon">🌐</span>
             <h1>پورتال مدیریت شبکه</h1>
         </div>
+        
         <div id="userSelection">
             <p style="text-align: center; color: #64748b; margin-bottom: 20px;">کاربر خود را انتخاب کنید</p>
-            <div class="users-grid" id="usersGrid"></div>
+            <div class="users-grid" id="usersGrid">
+                <div style="text-align: center; padding: 30px; color: #64748b;">
+                    <div class="loading" style="border-color: #667eea; border-top-color: transparent; width: 30px; height: 30px;"></div>
+                    <p style="margin-top: 15px;">در حال بارگذاری...</p>
+                </div>
+            </div>
         </div>
+        
         <div id="passwordSection" class="password-section">
             <div class="selected-user">
                 <div class="avatar" id="selectedAvatar">Y</div>
@@ -97,7 +154,9 @@
                 </div>
                 <button class="change-user" onclick="changeUser()">تغییر کاربر</button>
             </div>
+            
             <div class="error-msg" id="errorMsg"></div>
+            
             <div id="registerForm" style="display: none;">
                 <div class="info-box">🔐 اولین ورود - رمز عبور تعیین کنید</div>
                 <div class="form-group">
@@ -106,82 +165,227 @@
                 </div>
                 <div class="form-group">
                     <label>تکرار رمز عبور</label>
-                    <input type="password" id="confirmPassword">
+                    <input type="password" id="confirmPassword" placeholder="تکرار رمز عبور">
                 </div>
-                <button class="btn" onclick="register()">ثبت رمز و ورود</button>
+                <button class="btn" id="registerBtn" onclick="register()">ثبت رمز و ورود</button>
             </div>
+            
             <div id="loginForm" style="display: none;">
                 <div class="form-group">
                     <label>رمز عبور</label>
-                    <input type="password" id="password" placeholder="رمز عبور">
+                    <input type="password" id="password" placeholder="رمز عبور خود را وارد کنید">
                 </div>
-                <button class="btn" onclick="login()">ورود</button>
+                <button class="btn" id="loginBtn" onclick="login()">ورود</button>
             </div>
         </div>
+        
+        <div class="debug-panel" id="debugPanel"></div>
     </div>
+
     <script>
         let selectedUser = null;
-        document.addEventListener('DOMContentLoaded', loadUsers);
-        async function loadUsers() {
-            const response = await fetch('/api/users');
-            const data = await response.json();
-            document.getElementById('usersGrid').innerHTML = data.users.map(user => 
-                '<div class="user-btn" onclick="selectUser(\'' + user.name + '\', ' + user.registered + ')">' +
-                    '<div class="avatar">' + user.name[0] + '</div>' +
-                    '<div>' +
-                        '<div class="name">' + user.name + '</div>' +
-                        '<div class="status ' + (user.registered ? '' : 'new') + '">' + (user.registered ? '✓ ثبت شده' : '● جدید') + '</div>' +
-                    '</div>' +
-                '</div>'
-            ).join('');
+        
+        // Debug logging
+        function log(message, type = 'info') {
+            console.log(`[${type.toUpperCase()}] ${message}`);
+            const panel = document.getElementById('debugPanel');
+            const time = new Date().toLocaleTimeString();
+            panel.innerHTML += `<div class="log ${type}">[${time}] ${message}</div>`;
+            panel.scrollTop = panel.scrollHeight;
         }
+
+        // Toggle debug panel (triple-click logo)
+        let clickCount = 0;
+        document.querySelector('.logo').addEventListener('click', () => {
+            clickCount++;
+            setTimeout(() => clickCount = 0, 500);
+            if (clickCount >= 3) {
+                document.getElementById('debugPanel').classList.toggle('show');
+            }
+        });
+
+        // Page load
+        document.addEventListener('DOMContentLoaded', function() {
+            log('صفحه بارگذاری شد', 'info');
+            loadUsers();
+        });
+
+        // Load users
+        async function loadUsers() {
+            log('درخواست لیست کاربران...', 'info');
+            
+            try {
+                const response = await fetch('/api/users');
+                log(`پاسخ سرور: ${response.status}`, response.ok ? 'success' : 'error');
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP Error: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                log(`${data.users?.length || 0} کاربر دریافت شد`, 'success');
+                
+                if (!data.users || data.users.length === 0) {
+                    throw new Error('لیست کاربران خالی است');
+                }
+                
+                document.getElementById('usersGrid').innerHTML = data.users.map(user => `
+                    <div class="user-btn" onclick="selectUser('${user.name}', ${user.registered})">
+                        <div class="avatar">${user.name[0]}</div>
+                        <div>
+                            <div class="name">${user.name}</div>
+                            <div class="status ${user.registered ? '' : 'new'}">${user.registered ? '✓ ثبت شده' : '● جدید'}</div>
+                        </div>
+                    </div>
+                `).join('');
+                
+            } catch (error) {
+                log(`خطا: ${error.message}`, 'error');
+                document.getElementById('usersGrid').innerHTML = `
+                    <div style="text-align: center; padding: 30px; color: #dc2626;">
+                        <p style="font-size: 2rem; margin-bottom: 10px;">❌</p>
+                        <p><strong>خطا در اتصال به سرور</strong></p>
+                        <p style="font-size: 0.85rem; margin-top: 10px; color: #64748b;">${error.message}</p>
+                        <button class="retry-btn" onclick="loadUsers()">🔄 تلاش مجدد</button>
+                    </div>
+                `;
+            }
+        }
+
+        // Select user
         function selectUser(username, hasPassword) {
+            log(`کاربر انتخاب شد: ${username}`, 'info');
             selectedUser = username;
+            
             document.getElementById('userSelection').style.display = 'none';
             document.getElementById('passwordSection').classList.add('show');
             document.getElementById('selectedAvatar').textContent = username[0];
             document.getElementById('selectedName').textContent = username;
+            document.getElementById('errorMsg').classList.remove('show');
+            
             if (hasPassword) {
+                document.getElementById('selectedStatus').textContent = 'ورود به سیستم';
                 document.getElementById('registerForm').style.display = 'none';
                 document.getElementById('loginForm').style.display = 'block';
-                document.getElementById('password').focus();
+                document.getElementById('password').value = '';
+                setTimeout(() => document.getElementById('password').focus(), 100);
             } else {
+                document.getElementById('selectedStatus').textContent = 'کاربر جدید - تعیین رمز';
                 document.getElementById('registerForm').style.display = 'block';
                 document.getElementById('loginForm').style.display = 'none';
-                document.getElementById('newPassword').focus();
+                document.getElementById('newPassword').value = '';
+                document.getElementById('confirmPassword').value = '';
+                setTimeout(() => document.getElementById('newPassword').focus(), 100);
             }
         }
+
+        // Change user
         function changeUser() {
             document.getElementById('userSelection').style.display = 'block';
             document.getElementById('passwordSection').classList.remove('show');
             document.getElementById('errorMsg').classList.remove('show');
+            selectedUser = null;
         }
+
+        // Show error
+        function showError(msg) {
+            log(`خطا: ${msg}`, 'error');
+            const el = document.getElementById('errorMsg');
+            el.textContent = msg;
+            el.classList.add('show');
+        }
+
+        // Loading state
+        function setLoading(btnId, loading) {
+            const btn = document.getElementById(btnId);
+            if (loading) {
+                btn.disabled = true;
+                btn.dataset.originalText = btn.innerHTML;
+                btn.innerHTML = 'لطفا صبر کنید... <span class="loading"></span>';
+            } else {
+                btn.disabled = false;
+                btn.innerHTML = btn.dataset.originalText || btn.innerHTML;
+            }
+        }
+
+        // Register
         async function register() {
             const p1 = document.getElementById('newPassword').value;
             const p2 = document.getElementById('confirmPassword').value;
+            
             if (p1.length < 4) { showError('رمز باید حداقل 4 کاراکتر باشد'); return; }
             if (p1 !== p2) { showError('رمزها مطابقت ندارند'); return; }
-            const response = await fetch('/api/register', {
-                method: 'POST', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ username: selectedUser, password: p1 })
-            });
-            const data = await response.json();
-            if (data.success) { localStorage.setItem('currentUser', selectedUser); location.href = '/'; }
-            else { showError(data.error); }
+            
+            setLoading('registerBtn', true);
+            
+            try {
+                log('ارسال درخواست ثبت نام...', 'info');
+                const response = await fetch('/api/register', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username: selectedUser, password: p1 })
+                });
+                
+                const data = await response.json();
+                log(`نتیجه: ${JSON.stringify(data)}`, data.success ? 'success' : 'error');
+                
+                if (data.success) {
+                    localStorage.setItem('currentUser', selectedUser);
+                    window.location.href = '/';
+                } else {
+                    showError(data.error || 'خطا در ثبت نام');
+                }
+            } catch (error) {
+                log(`خطای شبکه: ${error.message}`, 'error');
+                showError('خطا در اتصال به سرور: ' + error.message);
+            } finally {
+                setLoading('registerBtn', false);
+            }
         }
+
+        // Login
         async function login() {
             const password = document.getElementById('password').value;
+            
             if (!password) { showError('رمز را وارد کنید'); return; }
-            const response = await fetch('/api/login', {
-                method: 'POST', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ username: selectedUser, password: password })
-            });
-            const data = await response.json();
-            if (data.success) { localStorage.setItem('currentUser', selectedUser); location.href = '/'; }
-            else { showError(data.message); }
+            
+            setLoading('loginBtn', true);
+            
+            try {
+                log('ارسال درخواست ورود...', 'info');
+                const response = await fetch('/api/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username: selectedUser, password: password })
+                });
+                
+                const data = await response.json();
+                log(`نتیجه: ${JSON.stringify(data)}`, data.success ? 'success' : 'error');
+                
+                if (data.success) {
+                    localStorage.setItem('currentUser', selectedUser);
+                    window.location.href = '/';
+                } else {
+                    showError(data.message || 'رمز اشتباه است');
+                }
+            } catch (error) {
+                log(`خطای شبکه: ${error.message}`, 'error');
+                showError('خطا در اتصال به سرور: ' + error.message);
+            } finally {
+                setLoading('loginBtn', false);
+            }
         }
-        function showError(msg) { const el = document.getElementById('errorMsg'); el.textContent = msg; el.classList.add('show'); }
-        document.addEventListener('keypress', e => { if (e.key === 'Enter') { document.getElementById('loginForm').style.display !== 'none' ? login() : register(); } });
+
+        // Enter key
+        document.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                if (document.getElementById('loginForm').style.display !== 'none') {
+                    login();
+                } else if (document.getElementById('registerForm').style.display !== 'none') {
+                    register();
+                }
+            }
+        });
     </script>
 </body>
 </html>
