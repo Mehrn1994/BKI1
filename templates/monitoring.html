@@ -1,0 +1,998 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>پایش شبکه - Network Monitoring</title>
+    <style>
+        :root {
+            --bg-primary: #0a0f1a;
+            --bg-secondary: #0f172a;
+            --bg-card: linear-gradient(145deg, #1e293b 0%, #0f172a 100%);
+            --text-primary: #e2e8f0;
+            --text-secondary: #94a3b8;
+            --text-muted: #64748b;
+            --border-color: rgba(255, 255, 255, 0.1);
+            --accent-blue: #3b82f6;
+            --accent-green: #10b981;
+            --accent-red: #ef4444;
+            --accent-yellow: #f59e0b;
+            --accent-purple: #8b5cf6;
+            --accent-pink: #ec4899;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, sans-serif;
+            background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 100%);
+            min-height: 100vh;
+            color: var(--text-primary);
+        }
+
+        .navbar {
+            background: rgba(15, 23, 42, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border-color);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .nav-brand { font-size: 1.3rem; font-weight: bold; color: var(--accent-blue); }
+
+        .nav-menu { display: flex; gap: 0.5rem; }
+
+        .nav-link {
+            color: var(--text-secondary);
+            text-decoration: none;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+        }
+
+        .nav-link:hover, .nav-link.active {
+            color: var(--text-primary);
+            background: rgba(59, 130, 246, 0.2);
+        }
+
+        .nav-user { display: flex; align-items: center; gap: 1rem; }
+
+        .container { max-width: 1600px; margin: 0 auto; padding: 2rem; }
+
+        .page-header {
+            background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);
+            border-radius: 16px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .page-header h1 { font-size: 1.8rem; margin-bottom: 0.5rem; }
+        .page-header p { color: rgba(255, 255, 255, 0.8); }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        @media (max-width: 1200px) { .stats-grid { grid-template-columns: repeat(3, 1fr); } }
+        @media (max-width: 768px) { .stats-grid { grid-template-columns: repeat(2, 1fr); } }
+
+        .stat-card {
+            background: var(--bg-card);
+            border-radius: 12px;
+            padding: 1.5rem;
+            border: 1px solid var(--border-color);
+            position: relative;
+        }
+
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0; right: 0;
+            width: 4px; height: 100%;
+        }
+
+        .stat-card.success::before { background: var(--accent-green); }
+        .stat-card.danger::before { background: var(--accent-red); }
+        .stat-card.warning::before { background: var(--accent-yellow); }
+        .stat-card.info::before { background: var(--accent-blue); }
+        .stat-card.purple::before { background: var(--accent-purple); }
+        .stat-card.pink::before { background: var(--accent-pink); }
+
+        .stat-icon { font-size: 2rem; margin-bottom: 0.5rem; }
+        .stat-value { font-size: 2rem; font-weight: bold; }
+        .stat-label { color: var(--text-muted); font-size: 0.9rem; }
+        .stat-sub { color: var(--text-muted); font-size: 0.8rem; margin-top: 0.25rem; }
+
+        .control-panel {
+            background: var(--bg-card);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            border: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .control-left, .control-right { display: flex; gap: 0.75rem; align-items: center; }
+
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: white;
+        }
+        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 4px 15px rgba(16, 185, 129, 0.4); }
+
+        .btn-secondary {
+            background: rgba(100, 116, 139, 0.3);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+        }
+        .btn-secondary:hover { background: rgba(100, 116, 139, 0.5); }
+
+        .btn-info { background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); color: white; }
+        .btn-warning { background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: white; }
+        .btn-sm { padding: 0.4rem 0.8rem; font-size: 0.85rem; }
+
+        .search-box, .filter-select {
+            background: rgba(15, 23, 42, 0.8);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 0.75rem 1rem;
+            color: var(--text-primary);
+        }
+        .search-box { width: 250px; }
+        .filter-select { min-width: 150px; }
+        .search-box:focus, .filter-select:focus { outline: none; border-color: var(--accent-blue); }
+
+        .progress-container {
+            background: var(--bg-card);
+            border-radius: 12px;
+            padding: 1rem 1.5rem;
+            margin-bottom: 2rem;
+            border: 1px solid var(--border-color);
+            display: none;
+        }
+
+        .progress-bar {
+            height: 8px;
+            background: rgba(59, 130, 246, 0.2);
+            border-radius: 4px;
+            overflow: hidden;
+            margin-bottom: 0.5rem;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #3b82f6, #10b981);
+            border-radius: 4px;
+            transition: width 0.3s ease;
+            width: 0%;
+        }
+
+        .progress-text { text-align: center; color: var(--text-secondary); font-size: 0.9rem; }
+
+        .table-container {
+            background: var(--bg-card);
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+            overflow: hidden;
+        }
+
+        .nodes-table { width: 100%; border-collapse: collapse; }
+
+        .nodes-table th {
+            background: rgba(30, 41, 59, 0.8);
+            padding: 1rem;
+            text-align: right;
+            font-weight: 600;
+            color: var(--text-secondary);
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .nodes-table td { padding: 1rem; border-bottom: 1px solid var(--border-color); }
+        .nodes-table tr:hover { background: rgba(59, 130, 246, 0.05); }
+        .nodes-table tr.row-danger { background: rgba(239, 68, 68, 0.1); }
+
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.35rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+
+        .status-badge.online { background: rgba(16, 185, 129, 0.2); color: #34d399; }
+        .status-badge.down { background: rgba(239, 68, 68, 0.2); color: #f87171; }
+        .status-badge.timeout { background: rgba(245, 158, 11, 0.2); color: #fbbf24; }
+        .status-badge.packet-loss { background: rgba(236, 72, 153, 0.2); color: #f472b6; }
+        .status-badge.checking { background: rgba(59, 130, 246, 0.2); color: #60a5fa; }
+        .status-badge.unknown { background: rgba(100, 116, 139, 0.2); color: #94a3b8; }
+
+        .status-indicator {
+            width: 8px; height: 8px;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        .status-indicator.online { background: #10b981; }
+        .status-indicator.down { background: #ef4444; }
+        .status-indicator.timeout { background: #f59e0b; }
+        .status-indicator.packet-loss { background: #ec4899; }
+        .status-indicator.checking { background: #3b82f6; }
+        .status-indicator.unknown { background: #64748b; }
+
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+
+        .ping-good { color: #10b981; }
+        .ping-warning { color: #f59e0b; }
+        .ping-bad { color: #ef4444; }
+
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            padding: 2rem;
+        }
+        .modal-overlay.active { display: flex; }
+
+        .modal {
+            background: var(--bg-secondary);
+            border-radius: 16px;
+            max-width: 800px;
+            width: 100%;
+            max-height: 80vh;
+            overflow-y: auto;
+            border: 1px solid var(--border-color);
+        }
+
+        .modal-header {
+            padding: 1.5rem;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-title { font-size: 1.3rem; font-weight: bold; }
+        .modal-close { background: none; border: none; color: var(--text-muted); font-size: 1.5rem; cursor: pointer; }
+        .modal-body { padding: 1.5rem; }
+
+        .empty-state { text-align: center; padding: 4rem 2rem; color: var(--text-muted); }
+        .empty-state .icon { font-size: 4rem; margin-bottom: 1rem; opacity: 0.5; }
+
+        .toast-container {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .toast {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            padding: 12px 20px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            animation: slideDown 0.3s ease;
+            min-width: 300px;
+        }
+
+        @keyframes slideDown { from { opacity: 0; transform: translateY(-20px); } to { opacity: 1; transform: translateY(0); } }
+        .toast.removing { animation: slideUp 0.3s ease forwards; }
+        @keyframes slideUp { to { opacity: 0; transform: translateY(-20px); } }
+
+        .report-list { list-style: none; }
+        .report-list li {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.75rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .issue-count {
+            background: rgba(239, 68, 68, 0.2);
+            color: #fca5a5;
+            padding: 0.25rem 0.75rem;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 0.8rem;
+        }
+
+        #reportSummary { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 1.5rem; }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-brand">🌐 پایش شبکه</div>
+        <div class="nav-menu">
+            <a href="/" class="nav-link">خانه</a>
+            <a href="/monitoring" class="nav-link active">پایش</a>
+            <a href="/intranet" class="nav-link">اینترانت</a>
+            <a href="/apn-int" class="nav-link">APN INT</a>
+            <a href="/apn-mali" class="nav-link">APN مالی</a>
+            <a href="/reserve-lan" class="nav-link">رزرو LAN</a>
+        </div>
+        <div class="nav-user">
+            <span id="currentUser"></span>
+            <button class="btn btn-secondary btn-sm" onclick="logout()">خروج</button>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="page-header">
+            <h1>📡 سیستم پایش شبکه</h1>
+            <p>نظارت بر وضعیت نودها • آخرین بروزرسانی: <span id="lastUpdate">-</span></p>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-card success">
+                <div class="stat-icon">✅</div>
+                <div class="stat-value" id="onlineCount">-</div>
+                <div class="stat-label">نودهای آنلاین</div>
+                <div class="stat-sub" id="onlinePercent">-</div>
+            </div>
+            <div class="stat-card danger">
+                <div class="stat-icon">🔴</div>
+                <div class="stat-value" id="downCount">-</div>
+                <div class="stat-label">نودهای Down</div>
+                <div class="stat-sub" id="downPercent">-</div>
+            </div>
+            <div class="stat-card warning">
+                <div class="stat-icon">⏱️</div>
+                <div class="stat-value" id="timeoutCount">-</div>
+                <div class="stat-label">Timeout</div>
+                <div class="stat-sub" id="timeoutPercent">-</div>
+            </div>
+            <div class="stat-card pink">
+                <div class="stat-icon">📉</div>
+                <div class="stat-value" id="packetLossCount">-</div>
+                <div class="stat-label">Packet Loss</div>
+                <div class="stat-sub" id="packetLossPercent">-</div>
+            </div>
+            <div class="stat-card info">
+                <div class="stat-icon">📊</div>
+                <div class="stat-value" id="avgPing">-</div>
+                <div class="stat-label">میانگین Ping</div>
+                <div class="stat-sub">ms</div>
+            </div>
+            <div class="stat-card purple">
+                <div class="stat-icon">🖥️</div>
+                <div class="stat-value" id="totalNodes">-</div>
+                <div class="stat-label">کل نودها</div>
+                <div class="stat-sub">بررسی شده</div>
+            </div>
+        </div>
+
+        <div class="control-panel">
+            <div class="control-left">
+                <input type="text" class="search-box" id="searchBox" placeholder="🔍 جستجو..." oninput="filterNodes()">
+                <select class="filter-select" id="filterStatus" onchange="filterNodes()">
+                    <option value="all">همه نودها</option>
+                    <option value="online">آنلاین</option>
+                    <option value="down">Down</option>
+                    <option value="timeout">Timeout</option>
+                    <option value="packet-loss">Packet Loss</option>
+                </select>
+                <!-- Quick filter buttons -->
+                <button class="btn btn-sm" style="background: #ef4444; margin-right: 5px;" onclick="quickFilter('down')">🔴 فقط Down</button>
+                <button class="btn btn-sm" style="background: #10b981;" onclick="quickFilter('online')">🟢 فقط آنلاین</button>
+                <button class="btn btn-sm" style="background: #6b7280;" onclick="quickFilter('all')">📋 همه</button>
+            </div>
+            <div class="control-right">
+                <button class="btn btn-primary" onclick="startMonitoring()">▶️ شروع پایش</button>
+                <button class="btn btn-secondary" onclick="stopMonitoring()">⏹️ توقف</button>
+                <button class="btn btn-info" onclick="exportReport()">📄 گزارش Excel</button>
+                <button class="btn btn-warning" onclick="showMonthlyReport()">📊 گزارش ماهانه</button>
+            </div>
+        </div>
+
+        <div class="progress-container" id="scanProgress">
+            <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+            <div class="progress-text">در حال اسکن: <span id="scanProgressText">0/0</span></div>
+        </div>
+
+        <div class="table-container">
+            <table class="nodes-table">
+                <thead>
+                    <tr>
+                        <th>IP نود</th><th>نام شعبه</th><th>استان</th><th>وضعیت</th>
+                        <th>زمان پاسخ (MS)</th><th>PACKET LOSS (%)</th><th>JITTER (MS)</th>
+                        <th>آخرین بررسی</th><th>عملیات</th>
+                    </tr>
+                </thead>
+                <tbody id="nodesTableBody">
+                    <tr><td colspan="9"><div class="empty-state"><div class="icon">💡</div><div>برای شروع پایش، دکمه "شروع پایش" را کلیک کنید</div></div></td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="toast-container" id="toastContainer"></div>
+
+    <div class="modal-overlay" id="monthlyReportModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 class="modal-title">📊 گزارش ماهانه</h3>
+                <button class="modal-close" onclick="closeModal('monthlyReportModal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div id="reportSummary"></div>
+                <h4 style="margin: 1rem 0;">🔴 نودهای با بیشترین Down</h4>
+                <ul class="report-list" id="topDownNodes"></ul>
+                <h4 style="margin: 1rem 0;">⏱️ نودهای با بیشترین Timeout</h4>
+                <ul class="report-list" id="topTimeoutNodes"></ul>
+                <div style="text-align: center; margin-top: 1.5rem;">
+                    <button class="btn btn-primary" onclick="downloadMonthlyReport()">📥 دانلود گزارش</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ========== VARIABLES ==========
+        let allNodes = [], nodes = [];
+        let isMonitoring = false, scanTimer = null;
+        const settings = { 
+            batchSize: 20,          // بیشتر نود در هر batch = سریع‌تر
+            quickTimeout: 1000,     // تایم‌اوت سریع برای اسکن اولیه (1 ثانیه)
+            verifyTimeout: 3000,    // تایم‌اوت برای تایید (3 ثانیه)
+            verifyRetries: 3,       // تعداد تلاش مجدد برای نودهای مشکل‌دار
+            cycleDelay: 10000       // فاصله بین سیکل‌ها (10 ثانیه)
+        };
+        let monthlyStats = { downEvents: {}, timeoutEvents: {}, packetLossEvents: {}, totalChecks: 0, startDate: null };
+
+        // ========== TOAST ==========
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toastContainer');
+            const colors = { success: '#10b981', error: '#ef4444', warning: '#f59e0b', info: '#3b82f6' };
+            const toast = document.createElement('div');
+            toast.className = 'toast';
+            toast.style.borderLeft = `4px solid ${colors[type]}`;
+            toast.innerHTML = `<span style="flex: 1;">${message}</span>`;
+            container.appendChild(toast);
+            setTimeout(() => { toast.classList.add('removing'); setTimeout(() => toast.remove(), 300); }, 3000);
+        }
+
+        // ========== AUTH ==========
+        function checkAuth() {
+            const user = localStorage.getItem('currentUser');
+            if (!user) { window.location.href = '/login'; return; }
+            document.getElementById('currentUser').textContent = user;
+        }
+        function logout() { localStorage.removeItem('currentUser'); window.location.href = '/login'; }
+
+        // ========== MODAL ==========
+        function showModal(id) { document.getElementById(id).classList.add('active'); }
+        function closeModal(id) { document.getElementById(id).classList.remove('active'); }
+
+        // ========== INIT ==========
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🚀 Page loaded');
+            checkAuth();
+            loadMonthlyStats();
+            
+            // Load data from backend immediately
+            loadBackendStatus();
+            
+            // Auto-refresh from backend every 5 seconds (faster to show progress)
+            setInterval(loadBackendStatus, 5000);
+        });
+        
+        // ========== LOAD FROM BACKEND ==========
+        async function loadBackendStatus() {
+            try {
+                // Get monitoring status
+                const statusRes = await fetch('/api/monitoring/status');
+                if (!statusRes.ok) return;
+                const status = await statusRes.json();
+                
+                console.log('Status:', status);  // Debug
+                
+                // Update stats
+                setText('onlineCount', status.online_count || 0);
+                setText('downCount', status.down_count || 0);
+                setText('timeoutCount', status.timeout_count || 0);
+                setText('packetLossCount', status.packet_loss_count || 0);
+                setText('totalNodes', status.total_nodes || 0);
+                
+                const total = status.total_nodes || 1;
+                setText('onlinePercent', `${((status.online_count / total) * 100).toFixed(1)}%`);
+                setText('downPercent', `${((status.down_count / total) * 100).toFixed(1)}%`);
+                setText('timeoutPercent', `${((status.timeout_count / total) * 100).toFixed(1)}%`);
+                setText('packetLossPercent', `${((status.packet_loss_count / total) * 100).toFixed(1)}%`);
+                
+                if (status.last_scan) {
+                    document.getElementById('lastUpdate').textContent = new Date(status.last_scan).toLocaleString('fa-IR');
+                }
+                
+                // Show scan progress
+                const progressBar = document.getElementById('scanProgress');
+                const progressFill = document.getElementById('progressFill');
+                const progressText = document.getElementById('scanProgressText');
+                
+                if (status.scan_in_progress) {
+                    progressBar.style.display = 'block';
+                    progressFill.style.width = `${status.scan_progress || 0}%`;
+                    progressText.textContent = `در حال اسکن: ${status.scan_progress || 0}% (${status.total_nodes} نود)`;
+                } else if (status.is_running) {
+                    progressBar.style.display = 'block';
+                    progressFill.style.width = '100%';
+                    progressText.textContent = `🟢 پایش فعال | آخرین اسکن: ${status.last_scan ? new Date(status.last_scan).toLocaleTimeString('fa-IR') : '-'}`;
+                }
+                
+                // Always try to get nodes from backend
+                const nodesRes = await fetch('/api/monitoring/all-nodes');
+                if (nodesRes.ok) {
+                    const nodesData = await nodesRes.json();
+                    console.log('Nodes data:', nodesData.nodes?.length);  // Debug
+                    
+                    if (nodesData.nodes && nodesData.nodes.length > 0) {
+                        // Map backend fields to frontend fields
+                        allNodes = nodesData.nodes.map(n => ({
+                            ip: n.ip,
+                            branchName: n.branch_name || n.branchName || 'نامشخص',
+                            province: n.province || 'نامشخص',
+                            status: n.status || 'unknown',
+                            ping: n.ping,
+                            packetLoss: n.packet_loss !== undefined ? n.packet_loss : (n.packetLoss !== undefined ? n.packetLoss : null),
+                            jitter: n.jitter || null,
+                            lastCheck: n.last_check || n.lastCheck
+                        }));
+                        
+                        // Calculate average ping
+                        const onlineNodes = allNodes.filter(n => n.status === 'online' && n.ping);
+                        const avgPing = onlineNodes.length > 0 
+                            ? onlineNodes.reduce((sum, n) => sum + n.ping, 0) / onlineNodes.length 
+                            : 0;
+                        setText('avgPing', avgPing > 0 ? Math.round(avgPing) : '-');
+                        
+                        // Apply current filter (preserve filter state)
+                        filterNodes();
+                    }
+                }
+                
+            } catch (error) {
+                console.error('Backend error:', error);
+            }
+        }
+
+        // ========== MONTHLY STATS ==========
+        function loadMonthlyStats() {
+            const saved = localStorage.getItem('monthlyStats');
+            if (saved) {
+                try {
+                    const data = JSON.parse(saved);
+                    if (data.startDate && (Date.now() - new Date(data.startDate)) / 86400000 <= 30) {
+                        monthlyStats = data; return;
+                    }
+                } catch (e) {}
+            }
+            resetMonthlyStats();
+        }
+        function resetMonthlyStats() {
+            monthlyStats = { downEvents: {}, timeoutEvents: {}, packetLossEvents: {}, totalChecks: 0, startDate: new Date().toISOString() };
+            saveMonthlyStats();
+        }
+        function saveMonthlyStats() { localStorage.setItem('monthlyStats', JSON.stringify(monthlyStats)); }
+
+        // ========== SAVE PROBLEMATIC ==========
+        function saveProblematicNodes() {
+            const problematic = allNodes.filter(n => ['down', 'timeout', 'packet-loss'].includes(n.status))
+                .map(n => ({ ip: n.ip, branchName: n.branchName, province: n.province, status: n.status, ping: n.ping, packetLoss: n.packetLoss, lastCheck: n.lastCheck }))
+                .sort((a, b) => ({ down: 0, timeout: 1, 'packet-loss': 2 }[a.status] - { down: 0, timeout: 1, 'packet-loss': 2 }[b.status]));
+            localStorage.setItem('problematicNodes', JSON.stringify(problematic));
+            console.log(`💾 ${problematic.length} problematic nodes saved`);
+        }
+
+        // ========== START MONITORING ==========
+        async function startMonitoring() {
+            showToast('🔄 در حال شروع پایش...', 'info');
+            
+            try {
+                // Tell backend to start (usually already running)
+                const res = await fetch('/api/monitoring/start', { method: 'POST' });
+                const data = await res.json();
+                
+                showToast('✅ پایش بکگراند فعال است', 'success');
+                
+                // Just load data from backend - no frontend scanning
+                loadBackendStatus();
+                
+            } catch (error) {
+                showToast('❌ خطا در شروع پایش', 'error');
+            }
+        }
+
+        // ========== STOP ==========
+        async function stopMonitoring() {
+            showToast('⏸️ پایش صفحه متوقف شد (بکگراند ادامه دارد)', 'info');
+            // Reload from backend
+            loadBackendStatus();
+        }
+
+        // ========== LOAD NODES ==========
+        async function loadNodes() {
+            try {
+                console.log('📥 Loading nodes...');
+                const response = await fetch('/api/lan-ips');
+                const data = await response.json();
+                if (data.success && data.data) {
+                    allNodes = data.data.filter(row => row.octet2 && row.octet3).map(row => ({
+                        ip: `10.${row.octet2}.254.${row.octet3}`,
+                        branchName: row.branch_name || 'نامشخص',
+                        province: row.province || 'نامشخص',
+                        status: 'unknown', ping: null, packetLoss: null, jitter: null, lastCheck: null
+                    }));
+                    nodes = [...allNodes];
+                    console.log(`✅ ${nodes.length} nodes loaded`);
+                }
+            } catch (error) {
+                console.error('❌ Error:', error);
+                showToast('خطا در بارگذاری نودها', 'error');
+            }
+        }
+
+        // ========== TWO-PHASE SCAN ==========
+        async function continuousScan() {
+            if (!isMonitoring) return;
+            const total = allNodes.length;
+            console.log('🚀 === شروع سیکل جدید ===');
+            
+            // ===== PHASE 1: Quick Scan =====
+            console.log('⚡ فاز 1: اسکن سریع...');
+            showToast('⚡ اسکن سریع شبکه...', 'info');
+            
+            let completed = 0;
+            const suspectNodes = []; // نودهایی که احتمالاً مشکل دارن
+            
+            // اسکن سریع همه نودها با batch بزرگ
+            for (let i = 0; i < allNodes.length && isMonitoring; i += settings.batchSize) {
+                const batch = allNodes.slice(i, i + settings.batchSize);
+                
+                await Promise.all(batch.map(async (node) => {
+                    const result = await quickPing(node.ip);
+                    if (result.ok) {
+                        node.status = 'online';
+                        node.ping = result.time;
+                        node.packetLoss = 0;
+                    } else {
+                        // مشکوک - بعداً بررسی میشه
+                        node.status = 'checking';
+                        suspectNodes.push(node);
+                    }
+                    node.lastCheck = new Date().toISOString();
+                }));
+                
+                completed += batch.length;
+                updateProgress(completed, total);
+                updateStats();
+            }
+            
+            if (!isMonitoring) return;
+            
+            console.log(`⚠️ ${suspectNodes.length} نود مشکوک پیدا شد`);
+            
+            // ===== PHASE 2: Verify Suspect Nodes =====
+            if (suspectNodes.length > 0) {
+                console.log('🔍 فاز 2: بررسی دقیق نودهای مشکوک...');
+                showToast(`🔍 بررسی ${suspectNodes.length} نود مشکوک...`, 'warning');
+                
+                for (const node of suspectNodes) {
+                    if (!isMonitoring) break;
+                    
+                    // چند بار تلاش کن
+                    let isDown = true;
+                    let totalPings = 0;
+                    let successPings = 0;
+                    let totalTime = 0;
+                    
+                    for (let retry = 0; retry < settings.verifyRetries; retry++) {
+                        const result = await verifyPing(node.ip);
+                        totalPings++;
+                        if (result.ok) {
+                            successPings++;
+                            totalTime += result.time;
+                            isDown = false;
+                        }
+                        await sleep(500); // کمی صبر بین تلاش‌ها
+                    }
+                    
+                    // تعیین وضعیت نهایی
+                    const packetLoss = ((totalPings - successPings) / totalPings) * 100;
+                    
+                    if (successPings === 0) {
+                        // هیچ پینگی جواب نداد = Down
+                        if (node.status !== 'down') recordEvent('down', node.ip);
+                        node.status = 'down';
+                        node.ping = null;
+                        node.packetLoss = 100;
+                    } else if (packetLoss >= 50) {
+                        // بیش از 50% پکت لاس
+                        if (node.status !== 'packet-loss') recordEvent('packet-loss', node.ip);
+                        node.status = 'packet-loss';
+                        node.ping = totalTime / successPings;
+                        node.packetLoss = Math.round(packetLoss);
+                    } else {
+                        // OK شد
+                        node.status = 'online';
+                        node.ping = totalTime / successPings;
+                        node.packetLoss = Math.round(packetLoss);
+                    }
+                    
+                    node.lastCheck = new Date().toISOString();
+                    renderNodesTable(); // آپدیت لحظه‌ای جدول
+                    updateStats();
+                }
+            }
+            
+            if (!isMonitoring) return;
+            
+            // ===== COMPLETE =====
+            monthlyStats.totalChecks++;
+            saveMonthlyStats();
+            saveProblematicNodes();
+            renderNodesTable();
+            updateLastUpdate();
+            
+            const downCount = allNodes.filter(n => n.status === 'down').length;
+            const plCount = allNodes.filter(n => n.status === 'packet-loss').length;
+            
+            if (downCount > 0 || plCount > 0) {
+                showToast(`⚠️ ${downCount} قطع، ${plCount} پکت‌لاس`, 'error');
+            } else {
+                showToast('✅ همه نودها آنلاین', 'success');
+            }
+            
+            console.log('✅ سیکل کامل شد');
+            
+            // سیکل بعدی
+            scanTimer = setTimeout(continuousScan, settings.cycleDelay);
+        }
+
+        // ========== QUICK PING (فقط 1 تلاش سریع) ==========
+        async function quickPing(ip) {
+            try {
+                const controller = new AbortController();
+                const timeout = setTimeout(() => controller.abort(), settings.quickTimeout);
+                
+                const response = await fetch('/api/ping-loopback', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ loopback_ip: ip }),
+                    signal: controller.signal
+                });
+                
+                clearTimeout(timeout);
+                const result = await response.json();
+                
+                return {
+                    ok: result.reachable,
+                    time: result.responseTime || 0
+                };
+            } catch (error) {
+                return { ok: false, time: 0 };
+            }
+        }
+
+        // ========== VERIFY PING (با تایم‌اوت بیشتر) ==========
+        async function verifyPing(ip) {
+            try {
+                const controller = new AbortController();
+                const timeout = setTimeout(() => controller.abort(), settings.verifyTimeout);
+                
+                const response = await fetch('/api/ping-loopback', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ loopback_ip: ip }),
+                    signal: controller.signal
+                });
+                
+                clearTimeout(timeout);
+                const result = await response.json();
+                
+                return {
+                    ok: result.reachable,
+                    time: result.responseTime || 0
+                };
+            } catch (error) {
+                return { ok: false, time: 0 };
+            }
+        }
+
+        // ========== PING NODE (برای پینگ دستی) ==========
+        async function pingNode(node) {
+            const result = await verifyPing(node.ip);
+            if (result.ok) {
+                node.status = 'online';
+                node.ping = result.time;
+                node.packetLoss = 0;
+            } else {
+                if (node.status !== 'down') recordEvent('down', node.ip);
+                node.status = 'down';
+                node.ping = null;
+                node.packetLoss = 100;
+            }
+            node.lastCheck = new Date().toISOString();
+        }
+
+        function recordEvent(type, ip) {
+            if (type === 'down') monthlyStats.downEvents[ip] = (monthlyStats.downEvents[ip] || 0) + 1;
+            else if (type === 'timeout') monthlyStats.timeoutEvents[ip] = (monthlyStats.timeoutEvents[ip] || 0) + 1;
+        }
+
+        // ========== UPDATE UI ==========
+        function updateProgress(current, total) {
+            document.getElementById('progressFill').style.width = `${(current / total) * 100}%`;
+            document.getElementById('scanProgressText').textContent = `${current}/${total}`;
+        }
+
+        function updateStats() {
+            const online = allNodes.filter(n => n.status === 'online').length;
+            const down = allNodes.filter(n => n.status === 'down').length;
+            const timeout = allNodes.filter(n => n.status === 'timeout').length;
+            const packetLoss = allNodes.filter(n => n.status === 'packet-loss').length;
+            const unknown = allNodes.filter(n => n.status === 'unknown').length;
+            const checked = allNodes.length - unknown;
+            const onlineNodes = allNodes.filter(n => n.status === 'online' && n.ping);
+            const avgPing = onlineNodes.length > 0 ? onlineNodes.reduce((sum, n) => sum + n.ping, 0) / onlineNodes.length : 0;
+
+            setText('onlineCount', online);
+            setText('downCount', down);
+            setText('timeoutCount', timeout);
+            setText('packetLossCount', packetLoss);
+            setText('avgPing', avgPing > 0 ? Math.round(avgPing) : '-');
+            setText('totalNodes', checked);
+            if (checked > 0) {
+                setText('onlinePercent', `${((online / checked) * 100).toFixed(1)}%`);
+                setText('downPercent', `${((down / checked) * 100).toFixed(1)}%`);
+                setText('timeoutPercent', `${((timeout / checked) * 100).toFixed(1)}%`);
+                setText('packetLossPercent', `${((packetLoss / checked) * 100).toFixed(1)}%`);
+            }
+        }
+
+        function setText(id, text) { const el = document.getElementById(id); if (el) el.textContent = text; }
+        function updateLastUpdate() { document.getElementById('lastUpdate').textContent = new Date().toLocaleString('fa-IR'); }
+
+        // ========== RENDER TABLE ==========
+        function renderNodesTable() {
+            const tbody = document.getElementById('nodesTableBody');
+            if (nodes.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="9"><div class="empty-state"><div class="icon">💡</div><div>برای شروع پایش، دکمه "شروع پایش" را کلیک کنید</div></div></td></tr>';
+                return;
+            }
+            const statusMap = { online: { text: 'آنلاین', icon: '🟢' }, down: { text: 'Down', icon: '🔴' }, timeout: { text: 'Timeout', icon: '🟠' }, 'packet-loss': { text: 'Packet Loss', icon: '🟡' }, checking: { text: 'در حال بررسی', icon: '🔵' }, unknown: { text: 'نامشخص', icon: '⚪' } };
+            tbody.innerHTML = nodes.map(node => {
+                const status = statusMap[node.status] || statusMap.unknown;
+                const pingClass = !node.ping ? '' : (node.ping < 50 ? 'ping-good' : (node.ping < 100 ? 'ping-warning' : 'ping-bad'));
+                const packetLossDisplay = (node.packetLoss !== null && node.packetLoss !== undefined) ? node.packetLoss + '%' : '-';
+                return `<tr class="${node.status === 'down' ? 'row-danger' : ''}">
+                    <td style="font-family: monospace; font-weight: 600;">${node.ip}</td>
+                    <td>${node.branchName || '-'}</td><td>${node.province || '-'}</td>
+                    <td><span class="status-badge ${node.status}"><span class="status-indicator ${node.status}"></span>${status.icon} ${status.text}</span></td>
+                    <td class="${pingClass}">${node.ping ? Math.round(node.ping) : '-'}</td>
+                    <td>${packetLossDisplay}</td>
+                    <td>${node.jitter ? Math.round(node.jitter) : '-'}</td>
+                    <td style="font-size: 0.85rem;">${node.lastCheck ? new Date(node.lastCheck).toLocaleTimeString('fa-IR') : '-'}</td>
+                    <td><button class="btn btn-secondary btn-sm" onclick="rePing('${node.ip}')">🔄</button></td>
+                </tr>`;
+            }).join('');
+        }
+
+        async function rePing(ip) {
+            const node = allNodes.find(n => n.ip === ip);
+            if (node) {
+                showToast(`پینگ ${ip}...`, 'info');
+                await pingNode(node);
+                filterNodes();  // Preserve filter
+                updateStats();
+                showToast(node.status === 'online' ? `✅ ${ip} آنلاین` : `❌ ${ip} قطع`, node.status === 'online' ? 'success' : 'error');
+            }
+        }
+
+        function filterNodes() {
+            const search = (document.getElementById('searchBox').value || '').toLowerCase();
+            const status = document.getElementById('filterStatus').value;
+            nodes = allNodes.filter(node => {
+                const matchSearch = !search || node.ip.includes(search) || (node.branchName && node.branchName.toLowerCase().includes(search)) || (node.province && node.province.toLowerCase().includes(search));
+                return matchSearch && (status === 'all' || node.status === status);
+            });
+            renderNodesTable();
+        }
+        
+        // Quick filter function for buttons
+        function quickFilter(status) {
+            document.getElementById('filterStatus').value = status;
+            document.getElementById('searchBox').value = '';
+            filterNodes();
+        }
+
+        // ========== REPORTS ==========
+        function showMonthlyReport() {
+            const topDown = Object.entries(monthlyStats.downEvents).sort((a, b) => b[1] - a[1]).slice(0, 10);
+            const topTimeout = Object.entries(monthlyStats.timeoutEvents).sort((a, b) => b[1] - a[1]).slice(0, 10);
+            const days = Math.ceil((Date.now() - new Date(monthlyStats.startDate)) / 86400000);
+            document.getElementById('reportSummary').innerHTML = `
+                <div class="stat-card"><div class="stat-label">دوره</div><div class="stat-value">${days} روز</div></div>
+                <div class="stat-card"><div class="stat-label">بررسی‌ها</div><div class="stat-value">${monthlyStats.totalChecks}</div></div>
+                <div class="stat-card danger"><div class="stat-label">Down</div><div class="stat-value">${Object.values(monthlyStats.downEvents).reduce((a, b) => a + b, 0)}</div></div>
+                <div class="stat-card warning"><div class="stat-label">Timeout</div><div class="stat-value">${Object.values(monthlyStats.timeoutEvents).reduce((a, b) => a + b, 0)}</div></div>
+            `;
+            renderReportList('topDownNodes', topDown);
+            renderReportList('topTimeoutNodes', topTimeout);
+            showModal('monthlyReportModal');
+        }
+
+        function renderReportList(id, items) {
+            const el = document.getElementById(id);
+            if (items.length === 0) { el.innerHTML = '<li style="text-align:center;color:#64748b;">رکوردی نیست</li>'; return; }
+            el.innerHTML = items.map(([ip, count]) => {
+                const node = allNodes.find(n => n.ip === ip);
+                return `<li><div><strong>${ip}</strong><br><small>${node?.branchName || 'نامشخص'}</small></div><span class="issue-count">${count}</span></li>`;
+            }).join('');
+        }
+
+        function exportReport() {
+            if (nodes.length === 0) { showToast('داده‌ای نیست', 'warning'); return; }
+            const csv = ['IP,Branch,Province,Status,Ping,PacketLoss,LastCheck', ...nodes.map(n => `${n.ip},${n.branchName},${n.province},${n.status},${n.ping || '-'},${n.packetLoss || '-'},${n.lastCheck || '-'}`)].join('\n');
+            downloadFile(csv, `monitoring-${new Date().toISOString().split('T')[0]}.csv`);
+            showToast('✅ گزارش دانلود شد', 'success');
+        }
+
+        function downloadMonthlyReport() {
+            const lines = ['Monthly Report', `Start: ${monthlyStats.startDate}`, `Checks: ${monthlyStats.totalChecks}`, '', 'Top Down:', ...Object.entries(monthlyStats.downEvents).sort((a, b) => b[1] - a[1]).slice(0, 20).map(([ip, c]) => `${ip},${c}`)];
+            downloadFile(lines.join('\n'), `monthly-${new Date().toISOString().split('T')[0]}.csv`);
+            showToast('✅ دانلود شد', 'success');
+        }
+
+        function downloadFile(content, filename) {
+            const blob = new Blob(['\ufeff' + content], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = filename;
+            link.click();
+        }
+
+        function sleep(ms) { return new Promise(resolve => setTimeout(resolve, ms)); }
+
+        document.addEventListener('click', e => { if (e.target.classList.contains('modal-overlay')) e.target.classList.remove('active'); });
+        document.addEventListener('keydown', e => { if (e.key === 'Escape') document.querySelectorAll('.modal-overlay.active').forEach(m => m.classList.remove('active')); });
+    </script>
+</body>
+</html>
