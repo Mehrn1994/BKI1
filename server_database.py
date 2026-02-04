@@ -18,7 +18,35 @@ import time
 import threading
 
 app = Flask(__name__)
-CORS(app)
+CORS(app, origins=["http://localhost:*", "http://127.0.0.1:*"])
+
+# ==================== RATE LIMITING ====================
+login_attempts = {}  # {ip: [timestamp, timestamp, ...]}
+LOGIN_MAX_ATTEMPTS = 5
+LOGIN_WINDOW_SECONDS = 300  # 5 minutes
+
+def is_rate_limited(ip):
+    """Check if an IP has exceeded login attempt limit"""
+    now = time.time()
+    if ip not in login_attempts:
+        login_attempts[ip] = []
+    # Clean old attempts outside the window
+    login_attempts[ip] = [t for t in login_attempts[ip] if now - t < LOGIN_WINDOW_SECONDS]
+    return len(login_attempts[ip]) >= LOGIN_MAX_ATTEMPTS
+
+def record_login_attempt(ip):
+    """Record a failed login attempt"""
+    if ip not in login_attempts:
+        login_attempts[ip] = []
+    login_attempts[ip].append(time.time())
+
+def validate_octet(value):
+    """Validate that value is a valid IP octet (0-255)"""
+    try:
+        n = int(value)
+        return 0 <= n <= 255
+    except (ValueError, TypeError):
+        return False
 
 # ==================== AUTO-RELEASE EXPIRED RESERVATIONS ====================
 AUTO_RELEASE_INTERVAL = 3600 * 6  # Check every 6 hours
@@ -269,10 +297,14 @@ def register_user():
 
 @app.route('/api/login', methods=['POST'])
 def login():
+    client_ip = request.remote_addr
+    if is_rate_limited(client_ip):
+        return jsonify({"success": False, "message": "تعداد تلاش بیش از حد مجاز. لطفا ۵ دقیقه صبر کنید."}), 429
     data = request.json
     username = data.get('username')
     password = data.get('password')
     if username not in ALLOWED_USERS:
+        record_login_attempt(client_ip)
         return jsonify({"success": False, "message": "کاربر مجاز نیست"}), 403
     conn = get_db()
     cursor = conn.cursor()
@@ -282,6 +314,7 @@ def login():
         conn.close()
         return jsonify({"success": False, "message": "ابتدا رمز تعیین کنید", "need_register": True}), 401
     if row['password_hash'] != hash_password(password):
+        record_login_attempt(client_ip)
         conn.close()
         return jsonify({"success": False, "message": "رمز اشتباه"}), 401
     cursor.execute("UPDATE user_passwords SET last_login = ? WHERE username = ?", (datetime.now().strftime('%Y-%m-%d %H:%M:%S'), username))
@@ -1418,6 +1451,9 @@ def reserve_lan_ip():
         
         if not octet2 or not octet3 or not username:
             return jsonify({'status': 'error', 'message': 'اطلاعات ناقص است'}), 400
+
+        if not validate_octet(octet2) or not validate_octet(octet3):
+            return jsonify({'status': 'error', 'message': 'فرمت IP نامعتبر است (مقادیر باید بین 0 تا 255 باشند)'}), 400
         
         conn = get_db()
         cursor = conn.cursor()

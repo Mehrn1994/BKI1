@@ -1230,12 +1230,12 @@ document.addEventListener('DOMContentLoaded', function() {
         // ============ Initialization ============
         document.addEventListener('DOMContentLoaded', function() {
             // Check authentication
-            const username = localStorage.getItem('currentUser');
+            const username = localStorage.getItem('currentUser') || localStorage.getItem('username') || sessionStorage.getItem('username');
             if (!username) {
                 location.href = '/login';
                 return;
             }
-            
+
             // Check if user is admin (Sahebdel only)
             if (username !== 'Sahebdel') {
                 alert('⛔ شما دسترسی به این صفحه ندارید!\n\nفقط کاربر Sahebdel می‌تواند به مدیریت دیتابیس دسترسی داشته باشد.');
