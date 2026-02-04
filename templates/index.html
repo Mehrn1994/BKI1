@@ -78,8 +78,8 @@
             background-size: cover;
             background-position: center;
             background-repeat: no-repeat;
-            opacity: 0.15;
-            filter: blur(2px);
+            opacity: 0.35;
+            filter: blur(1px);
         }
         
         .bg-animation::after {
@@ -89,15 +89,15 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: linear-gradient(135deg, rgba(15, 23, 42, 0.85) 0%, rgba(30, 41, 59, 0.9) 100%);
+            background: linear-gradient(135deg, rgba(15, 23, 42, 0.6) 0%, rgba(30, 41, 59, 0.7) 100%);
         }
 
         [data-theme="light"] .bg-animation::before {
-            opacity: 0.25;
+            opacity: 0.35;
         }
-        
+
         [data-theme="light"] .bg-animation::after {
-            background: linear-gradient(135deg, rgba(248, 250, 252, 0.85) 0%, rgba(226, 232, 240, 0.9) 100%);
+            background: linear-gradient(135deg, rgba(248, 250, 252, 0.7) 0%, rgba(226, 232, 240, 0.75) 100%);
         }
         
         @keyframes float {
@@ -131,7 +131,18 @@
             align-items: center;
             gap: 12px;
         }
-        
+
+        .logo img {
+            mix-blend-mode: screen;
+        }
+
+        [data-theme="light"] .logo img {
+            mix-blend-mode: normal;
+            background: #1e293b;
+            border-radius: 8px;
+            padding: 4px 8px;
+        }
+
         .logo-icon {
             font-size: 2.2rem;
         }
@@ -642,7 +653,7 @@
     
     <header class="header">
         <div class="logo">
-            <img src="logo.png" alt="Logo" style="height: 40px; margin-left: 12px; border-radius: 8px;">
+            <img src="logo.png" alt="Logo" style="height: 54px; margin-left: 12px; mix-blend-mode: screen;">
             <h1>پورتال مدیریت شبکه</h1>
         </div>
         <div class="user-section">
