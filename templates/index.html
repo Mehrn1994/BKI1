@@ -501,6 +501,109 @@
             margin-top: 4px;
         }
         
+        /* Global Search */
+        .search-wrapper {
+            position: relative;
+            margin-bottom: 20px;
+        }
+        .search-input {
+            width: 100%;
+            padding: 14px 20px 14px 50px;
+            border: 1px solid var(--border-color);
+            border-radius: 14px;
+            background: var(--bg-card);
+            color: var(--text-primary);
+            font-size: 15px;
+            font-family: inherit;
+            backdrop-filter: blur(10px);
+            transition: border-color 0.2s;
+        }
+        .search-input:focus { outline: none; border-color: var(--accent-blue); }
+        .search-icon {
+            position: absolute;
+            left: 18px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 18px;
+            color: var(--text-muted);
+            pointer-events: none;
+        }
+        .search-results {
+            position: absolute;
+            top: 100%;
+            left: 0; right: 0;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            margin-top: 6px;
+            max-height: 420px;
+            overflow-y: auto;
+            z-index: 100;
+            display: none;
+            box-shadow: 0 12px 40px var(--shadow-color);
+        }
+        .search-results.open { display: block; }
+        .search-result-item {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            padding: 12px 18px;
+            border-bottom: 1px solid var(--border-color);
+            cursor: pointer;
+            transition: background 0.15s;
+            text-decoration: none;
+            color: inherit;
+        }
+        .search-result-item:hover { background: var(--card-hover); }
+        .search-result-item:last-child { border-bottom: none; }
+        .sr-icon { font-size: 22px; width: 36px; text-align: center; }
+        .sr-info { flex: 1; min-width: 0; }
+        .sr-title { font-weight: 600; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .sr-sub { font-size: 12px; color: var(--text-muted); }
+        .sr-badge { font-size: 10px; padding: 2px 8px; border-radius: 10px; font-weight: 600; }
+        .sr-badge.free { background: rgba(16,185,129,0.15); color: var(--accent-green); }
+        .sr-badge.used { background: rgba(239,68,68,0.15); color: #ef4444; }
+
+        /* Network Map */
+        .map-container {
+            position: relative;
+            width: 100%;
+            aspect-ratio: 1.2;
+            background: radial-gradient(ellipse at center, rgba(59,130,246,0.05), transparent 70%);
+            border-radius: 12px;
+            overflow: hidden;
+        }
+        .map-dot {
+            position: absolute;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: var(--accent-green);
+            border: 2px solid rgba(255,255,255,0.3);
+            cursor: pointer;
+            transition: all 0.2s;
+            z-index: 2;
+        }
+        .map-dot:hover { transform: scale(1.8); z-index: 10; }
+        .map-dot.hot { background: #ef4444; }
+        .map-dot.warm { background: var(--accent-orange); }
+        .map-dot.cool { background: var(--accent-green); }
+        .map-tooltip {
+            display: none;
+            position: absolute;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            padding: 10px 14px;
+            font-size: 12px;
+            z-index: 20;
+            min-width: 180px;
+            box-shadow: 0 8px 24px var(--shadow-color);
+            pointer-events: none;
+        }
+        .map-dot:hover + .map-tooltip,
+        .map-dot:hover ~ .map-tooltip[data-for] { display: block; }
+
         /* Footer */
         .footer {
             text-align: center;
@@ -652,6 +755,7 @@
                 <span>👤</span>
                 <span id="currentUser">کاربر</span>
             </div>
+            <button onclick="window.open('/api/report/pdf?user='+encodeURIComponent(document.getElementById('currentUser').textContent),'_blank')" style="background:transparent; border:1px solid var(--border-color); color:var(--text-secondary); padding:6px 12px; border-radius:8px; cursor:pointer; font-size:12px;">📄 گزارش PDF</button>
             <button onclick="document.getElementById('changePassModal').style.display='flex'" style="background:transparent; border:1px solid var(--border-color); color:var(--text-secondary); padding:6px 12px; border-radius:8px; cursor:pointer; font-size:12px;">🔑 تغییر رمز</button>
             <button class="logout-btn" onclick="logout()">خروج</button>
         </div>
@@ -673,6 +777,15 @@
     </div>
 
     <div class="container">
+        <!-- Global Search -->
+        <div class="search-wrapper">
+            <span class="search-icon">🔍</span>
+            <input type="text" class="search-input" id="globalSearch"
+                   placeholder="جستجو در IP، شعبه، استان، تانل، تیکت..."
+                   autocomplete="off" oninput="handleSearch(this.value)">
+            <div class="search-results" id="searchResults"></div>
+        </div>
+
         <!-- Stats Cards -->
         <div class="stats-grid">
             <div class="stat-card">
@@ -828,6 +941,18 @@
                 </div>
             </div>
             
+            <!-- Network Map Card -->
+            <div class="card" style="grid-column: span 2;">
+                <div class="card-header">
+                    <h2>🗺️ نقشه شبکه ایران</h2>
+                </div>
+                <div class="card-body" style="padding: 16px;">
+                    <div class="map-container" id="networkMap">
+                        <div style="text-align:center; padding:40px; color:var(--text-muted);">در حال بارگذاری نقشه...</div>
+                    </div>
+                </div>
+            </div>
+
             <!-- System Info Card - EPIC DASHBOARD -->
             <div class="card" style="grid-column: span 2;">
                 <div class="card-header">
@@ -1395,10 +1520,157 @@
                 
                 // Load top provinces
                 loadTopProvinces();
-                
+
+                // Load network map
+                loadNetworkMap();
+
             } catch (error) {
                 console.error('Error loading dashboard:', error);
             }
+        }
+
+        // ============ SMART SEARCH ============
+        let searchTimeout = null;
+        function handleSearch(query) {
+            clearTimeout(searchTimeout);
+            const box = document.getElementById('searchResults');
+            if (!query || query.length < 2) {
+                box.classList.remove('open');
+                return;
+            }
+            searchTimeout = setTimeout(async () => {
+                try {
+                    const res = await fetch('/api/search?q=' + encodeURIComponent(query));
+                    const results = await res.json();
+                    if (results.length === 0) {
+                        box.innerHTML = '<div style="padding:20px; text-align:center; color:var(--text-muted);">نتیجه‌ای یافت نشد</div>';
+                    } else {
+                        box.innerHTML = results.map(r => {
+                            const badgeClass = (r.status === 'Free' || r.status === 'new') ? 'free' : 'used';
+                            const badgeText = r.status === 'Free' ? 'آزاد' : (r.status === 'new' ? 'جدید' : r.status);
+                            return `<a class="search-result-item" href="${r.link}">
+                                <div class="sr-icon">${r.icon}</div>
+                                <div class="sr-info">
+                                    <div class="sr-title">${r.title}</div>
+                                    <div class="sr-sub">${r.subtitle} ${r.extra ? '| ' + r.extra : ''}</div>
+                                </div>
+                                <span class="sr-badge ${badgeClass}">${badgeText}</span>
+                            </a>`;
+                        }).join('');
+                    }
+                    box.classList.add('open');
+                } catch(e) {
+                    box.classList.remove('open');
+                }
+            }, 300);
+        }
+
+        // Close search on click outside
+        document.addEventListener('click', function(e) {
+            if (!e.target.closest('.search-wrapper')) {
+                document.getElementById('searchResults').classList.remove('open');
+            }
+        });
+
+        // ============ NETWORK MAP ============
+        // Iran province approximate coordinates (percentage-based for responsive)
+        const PROVINCE_COORDS = {
+            'تهران': {x: 54, y: 28}, 'اصفهان': {x: 52, y: 42},
+            'فارس': {x: 52, y: 60}, 'خراسان رضوی': {x: 77, y: 25},
+            'خوزستان': {x: 38, y: 50}, 'آذربایجان شرقی': {x: 35, y: 12},
+            'آذربایجان غربی': {x: 27, y: 12}, 'مازندران': {x: 55, y: 18},
+            'گیلان': {x: 42, y: 16}, 'کرمان': {x: 68, y: 55},
+            'کرمانشاه': {x: 30, y: 30}, 'سیستان و بلوچستان': {x: 82, y: 60},
+            'هرمزگان': {x: 62, y: 72}, 'لرستان': {x: 38, y: 38},
+            'همدان': {x: 38, y: 28}, 'گلستان': {x: 65, y: 15},
+            'کردستان': {x: 28, y: 26}, 'مرکزی': {x: 46, y: 32},
+            'قزوین': {x: 44, y: 22}, 'زنجان': {x: 38, y: 20},
+            'بوشهر': {x: 48, y: 65}, 'اردبیل': {x: 36, y: 8},
+            'قم': {x: 48, y: 32}, 'یزد': {x: 60, y: 44},
+            'چهارمحال و بختیاری': {x: 46, y: 44}, 'ایلام': {x: 30, y: 38},
+            'سمنان': {x: 62, y: 25}, 'کهگیلویه و بویراحمد': {x: 44, y: 54},
+            'خراسان شمالی': {x: 75, y: 15}, 'خراسان جنوبی': {x: 78, y: 40},
+            'البرز': {x: 50, y: 25}, 'آذربايجان شرقي': {x: 35, y: 12},
+            'آذربايجان غربي': {x: 27, y: 12}, 'سيستان و بلوچستان': {x: 82, y: 60},
+            'چهارمحال وبختياري': {x: 46, y: 44}, 'كرمان': {x: 68, y: 55},
+            'كرمانشاه': {x: 30, y: 30}, 'كردستان': {x: 28, y: 26},
+            'كهگيلويه و بويراحمد': {x: 44, y: 54}
+        };
+
+        async function loadNetworkMap() {
+            const container = document.getElementById('networkMap');
+            try {
+                const res = await fetch('/api/province-map');
+                const provinces = await res.json();
+
+                if (provinces.length === 0) {
+                    container.innerHTML = '<div style="text-align:center; padding:40px; color:var(--text-muted);">داده‌ای برای نمایش نقشه وجود ندارد</div>';
+                    return;
+                }
+
+                const maxLan = Math.max(...provinces.map(p => p.lan_total));
+                let html = '';
+
+                // Draw Iran outline (simplified SVG)
+                html += `<svg viewBox="0 0 100 85" style="position:absolute; inset:0; width:100%; height:100%; opacity:0.15;">
+                    <path d="M30,5 L38,3 L42,8 L48,6 L55,10 L60,8 L68,10 L75,8 L82,12 L85,18 L80,22 L82,28 L78,35 L82,42 L85,50 L82,58 L78,65 L72,70 L65,75 L58,78 L50,72 L45,68 L40,62 L35,55 L32,48 L28,42 L25,35 L22,28 L25,20 L28,12 Z"
+                    fill="none" stroke="var(--accent-blue)" stroke-width="0.5"/>
+                </svg>`;
+
+                provinces.forEach(p => {
+                    const coords = PROVINCE_COORDS[p.name];
+                    if (!coords) return;
+
+                    const usagePct = p.lan_total > 0 ? (p.lan_used / p.lan_total) * 100 : 0;
+                    let dotClass = 'cool';
+                    if (usagePct > 80) dotClass = 'hot';
+                    else if (usagePct > 50) dotClass = 'warm';
+
+                    const size = Math.max(8, Math.min(20, (p.lan_total / maxLan) * 20));
+
+                    html += `<div class="map-dot ${dotClass}"
+                        style="left:${coords.x}%; top:${coords.y}%; width:${size}px; height:${size}px;"
+                        onclick="showMapTooltip(event, '${p.name}', ${p.lan_total}, ${p.lan_used}, ${p.lan_free}, ${p.tunnels})"
+                        title="${p.name}: ${p.lan_used}/${p.lan_total} IP"></div>`;
+                });
+
+                // Legend
+                html += `<div style="position:absolute; bottom:10px; right:10px; display:flex; gap:12px; font-size:11px; color:var(--text-muted); background:var(--bg-card); padding:6px 12px; border-radius:8px; border:1px solid var(--border-color);">
+                    <span><span style="display:inline-block; width:8px; height:8px; border-radius:50%; background:var(--accent-green); margin-left:4px;"></span>زیر ۵۰٪</span>
+                    <span><span style="display:inline-block; width:8px; height:8px; border-radius:50%; background:var(--accent-orange); margin-left:4px;"></span>۵۰-۸۰٪</span>
+                    <span><span style="display:inline-block; width:8px; height:8px; border-radius:50%; background:#ef4444; margin-left:4px;"></span>بالای ۸۰٪</span>
+                </div>`;
+
+                // Floating tooltip
+                html += `<div class="map-tooltip" id="mapTooltip"></div>`;
+
+                container.innerHTML = html;
+
+            } catch(e) {
+                container.innerHTML = '<div style="text-align:center; padding:40px; color:var(--text-muted);">خطا در بارگذاری نقشه</div>';
+            }
+        }
+
+        function showMapTooltip(event, name, total, used, free, tunnels) {
+            const tip = document.getElementById('mapTooltip');
+            const pct = total > 0 ? Math.round((used/total)*100) : 0;
+            tip.innerHTML = `
+                <div style="font-weight:700; font-size:14px; margin-bottom:6px; color:var(--accent-blue);">${name}</div>
+                <div>IP کل: <strong>${total}</strong></div>
+                <div style="color:var(--accent-green);">آزاد: ${free}</div>
+                <div style="color:#ef4444;">مصرفی: ${used} (${pct}%)</div>
+                <div>تانل: ${tunnels}</div>
+                <div style="margin-top:4px; height:4px; background:rgba(255,255,255,0.1); border-radius:2px;">
+                    <div style="height:100%; width:${pct}%; background:${pct > 80 ? '#ef4444' : pct > 50 ? 'var(--accent-orange)' : 'var(--accent-green)'}; border-radius:2px;"></div>
+                </div>
+            `;
+            tip.style.display = 'block';
+            const rect = event.target.getBoundingClientRect();
+            const mapRect = document.getElementById('networkMap').getBoundingClientRect();
+            tip.style.left = (rect.left - mapRect.left + 20) + 'px';
+            tip.style.top = (rect.top - mapRect.top - 10) + 'px';
+
+            setTimeout(() => { tip.style.display = 'none'; }, 3000);
         }
     </script>
 </body>

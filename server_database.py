@@ -183,8 +183,22 @@ def get_db():
     conn.row_factory = sqlite3.Row
     return conn
 
-def hash_password(password):
+SALT_KEY = 'BKI-Network-Portal-2026'
+
+def hash_password(password, use_salt=True):
+    if use_salt:
+        salted = f"{SALT_KEY}:{password}:{SALT_KEY}"
+        return hashlib.sha256(salted.encode()).hexdigest()
     return hashlib.sha256(password.encode()).hexdigest()
+
+def verify_password(stored_hash, password):
+    """Verify password with auto-migration: try salted first, then legacy"""
+    if stored_hash == hash_password(password, use_salt=True):
+        return True
+    # Fallback: check legacy (unsalted) hash for existing users
+    if stored_hash == hash_password(password, use_salt=False):
+        return True
+    return False
 
 def init_tables():
     conn = get_db()
@@ -381,7 +395,7 @@ def change_password():
     if not row:
         conn.close()
         return jsonify({"error": "کاربر یافت نشد"}), 404
-    if row['password_hash'] != hash_password(old_password):
+    if not verify_password(row['password_hash'], old_password):
         conn.close()
         return jsonify({"error": "رمز فعلی اشتباه است"}), 401
     cursor.execute("UPDATE user_passwords SET password_hash = ? WHERE username = ?",
@@ -409,10 +423,14 @@ def login():
     if not row:
         conn.close()
         return jsonify({"success": False, "message": "ابتدا رمز تعیین کنید", "need_register": True}), 401
-    if row['password_hash'] != hash_password(password):
+    if not verify_password(row['password_hash'], password):
         record_login_attempt(client_ip)
         conn.close()
         return jsonify({"success": False, "message": "رمز اشتباه"}), 401
+    # Auto-migrate to salted hash if using legacy
+    if row['password_hash'] == hash_password(password, use_salt=False) and row['password_hash'] != hash_password(password, use_salt=True):
+        cursor.execute("UPDATE user_passwords SET password_hash = ? WHERE username = ?", (hash_password(password), username))
+        conn.commit()
     cursor.execute("UPDATE user_passwords SET last_login = ? WHERE username = ?", (datetime.now().strftime('%Y-%m-%d %H:%M:%S'), username))
     conn.commit()
     conn.close()
@@ -2298,6 +2316,325 @@ def export_reservations():
 
         return Response(output.getvalue(), mimetype='text/csv',
                         headers={'Content-Disposition': 'attachment; filename=reservations_export.csv'})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+# ==================== SMART SEARCH ====================
+@app.route('/api/search', methods=['GET'])
+def smart_search():
+    """Search across all tables: IPs, tunnels, branches, tickets"""
+    q = request.args.get('q', '').strip()
+    if not q or len(q) < 2:
+        return jsonify([])
+
+    results = []
+    conn = get_db()
+    cursor = conn.cursor()
+    like = f'%{q}%'
+
+    # Search LAN IPs
+    cursor.execute("""
+        SELECT 'lan_ip' as type, branch_name, province, octet2, octet3, username, status
+        FROM lan_ips WHERE branch_name LIKE ? OR province LIKE ? OR username LIKE ?
+        OR (octet2||'.'||octet3) LIKE ? LIMIT 15
+    """, (like, like, like, like))
+    for r in cursor.fetchall():
+        results.append({
+            'type': 'lan_ip', 'icon': '📍',
+            'title': f"10.{r['octet2']}.{r['octet3']}.0/24",
+            'subtitle': f"{r['province']} - {r['branch_name'] or 'آزاد'}",
+            'extra': r['username'] or 'بدون کاربر',
+            'status': r['status'] or 'Free',
+            'link': '/reserve-lan'
+        })
+
+    # Search Tunnels
+    cursor.execute("""
+        SELECT 'tunnel' as type, tunnel_name, ip_address, description, province, status
+        FROM intranet_tunnels WHERE tunnel_name LIKE ? OR ip_address LIKE ? OR description LIKE ? OR province LIKE ? LIMIT 10
+    """, (like, like, like, like))
+    for r in cursor.fetchall():
+        results.append({
+            'type': 'tunnel', 'icon': '🔗',
+            'title': r['tunnel_name'] or r['ip_address'],
+            'subtitle': r['description'] or r['province'] or '',
+            'extra': r['ip_address'] or '',
+            'status': r['status'] or 'Free',
+            'link': '/intranet'
+        })
+
+    # Search APN IPs
+    cursor.execute("""
+        SELECT 'apn' as type, branch_name, province, lan_ip, ip_wan_apn, username
+        FROM apn_ips WHERE branch_name LIKE ? OR province LIKE ? OR lan_ip LIKE ? OR ip_wan_apn LIKE ? LIMIT 10
+    """, (like, like, like, like))
+    for r in cursor.fetchall():
+        results.append({
+            'type': 'apn_int', 'icon': '🟣',
+            'title': r['ip_wan_apn'] or r['lan_ip'] or '',
+            'subtitle': f"{r['province']} - {r['branch_name'] or ''}",
+            'extra': r['username'] or 'آزاد',
+            'status': 'Used' if r['username'] else 'Free',
+            'link': '/apn-int'
+        })
+
+    # Search APN Mali
+    cursor.execute("""
+        SELECT 'apn_mali' as type, branch_name, province, lan_ip, ip_wan, username
+        FROM apn_mali WHERE branch_name LIKE ? OR province LIKE ? OR lan_ip LIKE ? OR ip_wan LIKE ? LIMIT 10
+    """, (like, like, like, like))
+    for r in cursor.fetchall():
+        results.append({
+            'type': 'apn_mali', 'icon': '🟢',
+            'title': r['ip_wan'] or r['lan_ip'] or '',
+            'subtitle': f"{r['province']} - {r['branch_name'] or ''}",
+            'extra': r['username'] or 'آزاد',
+            'status': 'Used' if r['username'] else 'Free',
+            'link': '/apn-mali'
+        })
+
+    # Search Tickets
+    cursor.execute("""
+        SELECT id, email_subject, email_sender, assigned_ip, branch_name, stage
+        FROM tickets WHERE email_subject LIKE ? OR email_sender LIKE ? OR branch_name LIKE ? OR assigned_ip LIKE ? LIMIT 10
+    """, (like, like, like, like))
+    for r in cursor.fetchall():
+        results.append({
+            'type': 'ticket', 'icon': '🎫',
+            'title': f"#{r['id']} - {r['email_subject'] or ''}",
+            'subtitle': r['branch_name'] or r['email_sender'] or '',
+            'extra': r['assigned_ip'] or '',
+            'status': r['stage'] or 'new',
+            'link': '/tickets'
+        })
+
+    conn.close()
+    return jsonify(results[:30])
+
+# ==================== PROVINCE MAP DATA ====================
+@app.route('/api/province-map', methods=['GET'])
+def province_map_data():
+    """Get province stats for map visualization"""
+    conn = get_db()
+    cursor = conn.cursor()
+
+    province_stats = {}
+
+    # LAN IPs per province
+    cursor.execute("""
+        SELECT province, COUNT(*) as total,
+        SUM(CASE WHEN (username IS NULL OR username = '') AND (branch_name IS NULL OR branch_name = '') THEN 1 ELSE 0 END) as free
+        FROM lan_ips WHERE province IS NOT NULL AND province != ''
+        GROUP BY province
+    """)
+    for r in cursor.fetchall():
+        p = r['province']
+        if p not in province_stats:
+            province_stats[p] = {'lan_total': 0, 'lan_free': 0, 'tunnels': 0, 'apn': 0, 'tickets': 0}
+        province_stats[p]['lan_total'] = r['total']
+        province_stats[p]['lan_free'] = r['free']
+
+    # Tunnels per province
+    cursor.execute("""
+        SELECT province, COUNT(*) as total FROM intranet_tunnels
+        WHERE province IS NOT NULL AND province != '' GROUP BY province
+    """)
+    for r in cursor.fetchall():
+        p = r['province']
+        if p not in province_stats:
+            province_stats[p] = {'lan_total': 0, 'lan_free': 0, 'tunnels': 0, 'apn': 0, 'tickets': 0}
+        province_stats[p]['tunnels'] = r['total']
+
+    # Tickets per province
+    cursor.execute("""
+        SELECT province, COUNT(*) as total FROM tickets
+        WHERE province IS NOT NULL AND province != '' GROUP BY province
+    """)
+    for r in cursor.fetchall():
+        p = r['province']
+        if p in province_stats:
+            province_stats[p]['tickets'] = r['total']
+
+    conn.close()
+
+    result = []
+    for province, stats in province_stats.items():
+        result.append({
+            'name': province,
+            'lan_total': stats['lan_total'],
+            'lan_free': stats['lan_free'],
+            'lan_used': stats['lan_total'] - stats['lan_free'],
+            'tunnels': stats['tunnels'],
+            'tickets': stats['tickets']
+        })
+
+    result.sort(key=lambda x: x['lan_total'], reverse=True)
+    return jsonify(result)
+
+# ==================== PDF REPORT ====================
+@app.route('/api/report/pdf', methods=['GET'])
+def generate_pdf_report():
+    """Generate network status PDF report"""
+    try:
+        conn = get_db()
+        cursor = conn.cursor()
+
+        # Gather all stats
+        cursor.execute("""
+            SELECT
+                (SELECT COUNT(*) FROM lan_ips) as total_lan,
+                (SELECT COUNT(*) FROM lan_ips WHERE (username IS NULL OR username = '') AND (branch_name IS NULL OR branch_name = '')) as free_lan,
+                (SELECT COUNT(*) FROM intranet_tunnels) as total_tun,
+                (SELECT COUNT(*) FROM intranet_tunnels WHERE LOWER(status) = 'free') as free_tun,
+                (SELECT COUNT(*) FROM apn_ips) as total_apn,
+                (SELECT COUNT(*) FROM apn_ips WHERE username IS NULL OR username = '') as free_apn,
+                (SELECT COUNT(*) FROM apn_mali) as total_mali,
+                (SELECT COUNT(*) FROM apn_mali WHERE username IS NULL OR username = '') as free_mali,
+                (SELECT COUNT(*) FROM tickets) as total_tickets,
+                (SELECT COUNT(*) FROM tickets WHERE stage = 'replied') as closed_tickets,
+                (SELECT COUNT(*) FROM reserved_ips WHERE status = 'reserved') as active_reservations
+        """)
+        s = cursor.fetchone()
+
+        # Top provinces
+        cursor.execute("""
+            SELECT province, COUNT(*) as cnt FROM lan_ips
+            WHERE province IS NOT NULL AND province != '' AND (username IS NOT NULL AND username != '')
+            GROUP BY province ORDER BY cnt DESC LIMIT 10
+        """)
+        top_provinces = [{'province': r['province'], 'count': r['cnt']} for r in cursor.fetchall()]
+
+        # Recent reservations
+        cursor.execute("""
+            SELECT province, branch_name, octet2, octet3, username, reservation_date, status
+            FROM reserved_ips ORDER BY reservation_date DESC LIMIT 15
+        """)
+        recent_res = [dict(r) for r in cursor.fetchall()]
+
+        # Expiring soon
+        cursor.execute("""
+            SELECT province, branch_name, octet2, octet3, expiry_date, username
+            FROM reserved_ips WHERE status = 'reserved' AND expiry_date <= date('now', '+7 days')
+            ORDER BY expiry_date ASC LIMIT 10
+        """)
+        expiring = [dict(r) for r in cursor.fetchall()]
+
+        conn.close()
+
+        now = datetime.now().strftime('%Y-%m-%d %H:%M')
+        username = request.args.get('user', 'System')
+
+        # Build HTML for PDF (will be converted client-side via browser print)
+        html = f"""<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<title>گزارش وضعیت شبکه - {now}</title>
+<style>
+    @page {{ size: A4; margin: 15mm; }}
+    * {{ margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, sans-serif; }}
+    body {{ padding: 20px; color: #1e293b; font-size: 12px; direction: rtl; }}
+    .header {{ text-align: center; border-bottom: 3px solid #1e40af; padding-bottom: 15px; margin-bottom: 20px; }}
+    .header h1 {{ color: #1e40af; font-size: 20px; margin-bottom: 4px; }}
+    .header p {{ color: #64748b; font-size: 11px; }}
+    .stats-grid {{ display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 20px; }}
+    .stat-box {{ background: #f1f5f9; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px; text-align: center; }}
+    .stat-box .val {{ font-size: 22px; font-weight: 700; color: #1e40af; }}
+    .stat-box .lbl {{ font-size: 10px; color: #64748b; margin-top: 2px; }}
+    .stat-box .sub {{ display: flex; justify-content: center; gap: 12px; margin-top: 6px; font-size: 10px; }}
+    .stat-box .sub .free {{ color: #059669; }} .stat-box .sub .used {{ color: #dc2626; }}
+    .section {{ margin-bottom: 18px; }}
+    .section h2 {{ font-size: 14px; color: #1e40af; border-bottom: 2px solid #e2e8f0; padding-bottom: 6px; margin-bottom: 10px; }}
+    table {{ width: 100%; border-collapse: collapse; font-size: 11px; }}
+    th {{ background: #1e40af; color: white; padding: 6px 8px; text-align: right; }}
+    td {{ padding: 5px 8px; border-bottom: 1px solid #e2e8f0; }}
+    tr:nth-child(even) {{ background: #f8fafc; }}
+    .bar-chart {{ display: flex; flex-direction: column; gap: 6px; }}
+    .bar-row {{ display: flex; align-items: center; gap: 8px; }}
+    .bar-name {{ width: 100px; font-size: 11px; text-align: left; }}
+    .bar-track {{ flex: 1; height: 16px; background: #e2e8f0; border-radius: 4px; overflow: hidden; }}
+    .bar-fill {{ height: 100%; border-radius: 4px; background: linear-gradient(90deg, #3b82f6, #1e40af); }}
+    .bar-val {{ width: 40px; font-size: 10px; color: #64748b; }}
+    .footer {{ text-align: center; color: #94a3b8; font-size: 10px; margin-top: 20px; border-top: 1px solid #e2e8f0; padding-top: 10px; }}
+    .alert {{ background: #fef2f2; border: 1px solid #fecaca; border-radius: 6px; padding: 8px 12px; margin-bottom: 12px; color: #dc2626; font-size: 11px; }}
+</style>
+</head>
+<body>
+<div class="header">
+    <h1>گزارش وضعیت شبکه - بانک کشاورزی</h1>
+    <p>تاریخ تهیه: {now} | تهیه کننده: {username} | Network Configuration Portal</p>
+</div>
+
+<div class="stats-grid">
+    <div class="stat-box">
+        <div class="val">{s['total_lan']}</div>
+        <div class="lbl">کل IP LAN</div>
+        <div class="sub"><span class="free">آزاد: {s['free_lan']}</span> <span class="used">مصرفی: {s['total_lan'] - s['free_lan']}</span></div>
+    </div>
+    <div class="stat-box">
+        <div class="val">{s['total_tun']}</div>
+        <div class="lbl">Tunnel Intranet</div>
+        <div class="sub"><span class="free">آزاد: {s['free_tun']}</span> <span class="used">مصرفی: {s['total_tun'] - s['free_tun']}</span></div>
+    </div>
+    <div class="stat-box">
+        <div class="val">{s['total_apn']}</div>
+        <div class="lbl">APN غیرمالی</div>
+        <div class="sub"><span class="free">آزاد: {s['free_apn']}</span> <span class="used">مصرفی: {s['total_apn'] - s['free_apn']}</span></div>
+    </div>
+    <div class="stat-box">
+        <div class="val">{s['total_mali']}</div>
+        <div class="lbl">APN مالی</div>
+        <div class="sub"><span class="free">آزاد: {s['free_mali']}</span> <span class="used">مصرفی: {s['total_mali'] - s['free_mali']}</span></div>
+    </div>
+</div>"""
+
+        # Expiring warning
+        if expiring:
+            html += f'<div class="alert">⚠️ {len(expiring)} رزرو در ۷ روز آینده منقضی می‌شوند!</div>'
+
+        # Top provinces bar chart
+        html += '<div class="section"><h2>برترین استان‌ها (بر اساس IP فعال)</h2><div class="bar-chart">'
+        if top_provinces:
+            max_c = top_provinces[0]['count']
+            for p in top_provinces:
+                pct = int((p['count'] / max_c) * 100) if max_c else 0
+                html += f'<div class="bar-row"><div class="bar-name">{p["province"]}</div><div class="bar-track"><div class="bar-fill" style="width:{pct}%"></div></div><div class="bar-val">{p["count"]}</div></div>'
+        html += '</div></div>'
+
+        # Recent reservations table
+        html += '<div class="section"><h2>آخرین رزروها</h2><table><tr><th>IP</th><th>استان</th><th>شعبه</th><th>کاربر</th><th>تاریخ</th><th>وضعیت</th></tr>'
+        for r in recent_res:
+            ip = f"10.{r['octet2']}.{r['octet3']}.0/24"
+            html += f"<tr><td>{ip}</td><td>{r['province'] or ''}</td><td>{r['branch_name'] or ''}</td><td>{r['username'] or ''}</td><td>{r['reservation_date'] or ''}</td><td>{r['status'] or ''}</td></tr>"
+        html += '</table></div>'
+
+        # Expiring table
+        if expiring:
+            html += '<div class="section"><h2>رزروهای در حال انقضا (۷ روز آینده)</h2><table><tr><th>IP</th><th>استان</th><th>شعبه</th><th>تاریخ انقضا</th><th>کاربر</th></tr>'
+            for r in expiring:
+                ip = f"10.{r['octet2']}.{r['octet3']}.0/24"
+                html += f"<tr><td>{ip}</td><td>{r['province'] or ''}</td><td>{r['branch_name'] or ''}</td><td>{r['expiry_date'] or ''}</td><td>{r['username'] or ''}</td></tr>"
+            html += '</table></div>'
+
+        # Summary
+        html += f"""
+<div class="section"><h2>خلاصه</h2>
+<table>
+<tr><td><strong>تعداد تیکت‌ها</strong></td><td>{s['total_tickets']} (بسته شده: {s['closed_tickets']})</td></tr>
+<tr><td><strong>رزروهای فعال</strong></td><td>{s['active_reservations']}</td></tr>
+<tr><td><strong>درصد مصرف LAN</strong></td><td>{int(((s['total_lan']-s['free_lan'])/s['total_lan'])*100) if s['total_lan'] else 0}%</td></tr>
+<tr><td><strong>درصد مصرف Tunnel</strong></td><td>{int(((s['total_tun']-s['free_tun'])/s['total_tun'])*100) if s['total_tun'] else 0}%</td></tr>
+</table>
+</div>
+
+<div class="footer">
+    Network Configuration Portal - Keshavarzi Bank - گزارش خودکار {now}
+</div>
+</body></html>"""
+
+        log_activity('success', 'تهیه گزارش PDF', f'گزارش وضعیت شبکه تهیه شد', username)
+        return Response(html, mimetype='text/html')
+
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 

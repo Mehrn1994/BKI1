@@ -11,6 +11,7 @@ from exchangelib.protocol import BaseProtocol
 import json
 import os
 import sqlite3
+import base64
 from datetime import datetime
 
 # Settings file path
@@ -23,29 +24,51 @@ urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 # Allow self-signed certificates (common in enterprise environments)
 BaseProtocol.HTTP_ADAPTER_CLS = None  # Will be set if needed
 
+# Simple obfuscation for stored password (not plain text in JSON)
+_OBF_PREFIX = 'obf:'
+
+def _obfuscate(text):
+    if not text:
+        return ''
+    return _OBF_PREFIX + base64.b64encode(text.encode('utf-8')).decode('ascii')
+
+def _deobfuscate(text):
+    if not text:
+        return ''
+    if text.startswith(_OBF_PREFIX):
+        return base64.b64decode(text[len(_OBF_PREFIX):]).decode('utf-8')
+    return text  # Legacy: plain text password
+
 
 def load_settings():
-    """Load email settings from JSON file"""
+    """Load email settings from JSON file (password is deobfuscated)"""
     if os.path.exists(SETTINGS_FILE):
         with open(SETTINGS_FILE, 'r', encoding='utf-8') as f:
-            return json.load(f)
+            settings = json.load(f)
+        # Deobfuscate password for internal use
+        if 'password' in settings:
+            settings['password'] = _deobfuscate(settings['password'])
+        return settings
     return {
         'configured': False,
         'email': '',
         'username': '',
         'password': '',
-        'server': '',  # e.g. mail.bank.ir or exchange.bank.ir
-        'folder_name': 'Inbox',  # Which folder to monitor
-        'sender_filters': [],  # List of sender emails to filter
+        'server': '',
+        'folder_name': 'Inbox',
+        'sender_filters': [],
         'use_autodiscover': True,
-        'verify_ssl': False  # Bank internal servers often use self-signed certs
+        'verify_ssl': False
     }
 
 
 def save_settings(settings):
-    """Save email settings to JSON file"""
+    """Save email settings to JSON file (password is obfuscated)"""
+    to_save = dict(settings)
+    if 'password' in to_save and to_save['password']:
+        to_save['password'] = _obfuscate(to_save['password'])
     with open(SETTINGS_FILE, 'w', encoding='utf-8') as f:
-        json.dump(settings, f, ensure_ascii=False, indent=2)
+        json.dump(to_save, f, ensure_ascii=False, indent=2)
 
 
 def get_exchange_account(settings=None):
