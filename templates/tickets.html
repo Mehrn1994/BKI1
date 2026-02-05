@@ -692,6 +692,14 @@
             location.href = '/login';
         }
 
+        // ============ SECURITY: HTML ESCAPE ============
+        function escapeHtml(str) {
+            if (!str) return '';
+            const div = document.createElement('div');
+            div.textContent = str;
+            return div.innerHTML;
+        }
+
         // ============ STATE ============
         let currentTicket = null;
         let selectedIp = null;
@@ -901,16 +909,16 @@
                 }
 
                 container.innerHTML = available.map(e => `
-                    <div class="email-card" onclick="pickupTicket('${e.id}')">
+                    <div class="email-card" onclick="pickupTicket('${escapeHtml(e.id)}')">
                         <div class="email-header">
-                            <div class="subject">📩 ${e.subject}</div>
-                            <div class="date">${e.date}</div>
+                            <div class="subject">📩 ${escapeHtml(e.subject)}</div>
+                            <div class="date">${escapeHtml(e.date)}</div>
                         </div>
                         <div style="display: flex; justify-content: space-between; align-items: center;">
-                            <div class="sender">از: ${e.sender}${e.sender_email ? ' (' + e.sender_email + ')' : ''}</div>
+                            <div class="sender">از: ${escapeHtml(e.sender)}${e.sender_email ? ' (' + escapeHtml(e.sender_email) + ')' : ''}</div>
                             <span style="font-size:12px; color: var(--accent-blue); font-weight:600;">برداشتن تیکت ✋</span>
                         </div>
-                        <div class="body-preview">${e.body}</div>
+                        <div class="body-preview">${escapeHtml(e.body)}</div>
                     </div>
                 `).join('');
             } catch (err) {
@@ -988,9 +996,9 @@
                                     <span class="badge ${badgeClass}">${badgeText}</span>
                                 </div>
                             </div>
-                            <div class="ticket-subject">${t.email_subject || 'بدون موضوع'}</div>
+                            <div class="ticket-subject">${escapeHtml(t.email_subject) || 'بدون موضوع'}</div>
                             <div class="ticket-meta">
-                                <span>📧 ${t.email_sender || '-'}</span>
+                                <span>📧 ${escapeHtml(t.email_sender) || '-'}</span>
                                 <span>📅 ${t.created_at || '-'}</span>
                                 ${t.assigned_ip ? `<span>🌐 ${t.assigned_ip}</span>` : ''}
                                 ${t.config_type ? `<span>⚙️ ${t.config_type === 'apn_int' ? 'APN غیرمالی' : 'APN مالی'}</span>` : ''}
@@ -1060,12 +1068,12 @@
             // Email preview
             html += `
                 <div class="email-preview">
-                    <div class="ep-subject">📧 ${t.email_subject}</div>
+                    <div class="ep-subject">📧 ${escapeHtml(t.email_subject)}</div>
                     <div class="ep-meta">
-                        <span>از: ${t.email_sender}</span>
-                        <span>تاریخ: ${t.email_date}</span>
+                        <span>از: ${escapeHtml(t.email_sender)}</span>
+                        <span>تاریخ: ${escapeHtml(t.email_date)}</span>
                     </div>
-                    <div class="ep-body">${t.email_body}</div>
+                    <div class="ep-body">${escapeHtml(t.email_body)}</div>
                 </div>
             `;
 
@@ -1384,12 +1392,12 @@
 
                 <h4 style="margin-bottom: 14px;">نوع کانفیگ را انتخاب کنید:</h4>
                 <div class="choice-cards">
-                    <div class="choice-card" onclick="showConfigForm('apn_int')">
+                    <div class="choice-card" onclick="showConfigForm('apn_int', event)">
                         <div class="cc-icon">🟣</div>
                         <div class="cc-title">APN غیرمالی</div>
                         <div class="cc-desc">APN-INT to HUB ASR + Tunnel200</div>
                     </div>
-                    <div class="choice-card" onclick="showConfigForm('apn_mali')">
+                    <div class="choice-card" onclick="showConfigForm('apn_mali', event)">
                         <div class="cc-icon">🟢</div>
                         <div class="cc-title">APN مالی</div>
                         <div class="cc-desc">ISR-APN-RO + Financial APN</div>
@@ -1402,9 +1410,9 @@
             `;
         }
 
-        async function showConfigForm(type) {
+        async function showConfigForm(type, ev) {
             document.querySelectorAll('.choice-card').forEach(c => c.classList.remove('selected'));
-            event.target.closest('.choice-card').classList.add('selected');
+            if (ev && ev.target) ev.target.closest('.choice-card').classList.add('selected');
 
             const area = document.getElementById('configFormArea');
             area.style.display = 'block';
@@ -2117,7 +2125,9 @@ end`;
         }
 
         function copyText(btn) {
-            const box = btn.closest('div').nextElementSibling || btn.parentElement.nextElementSibling;
+            const wrapper = btn.closest('[style*="margin-bottom: 16px"]') || btn.closest('div').parentElement;
+            const box = wrapper ? wrapper.querySelector('.config-box') : null;
+            if (!box) return;
             navigator.clipboard.writeText(box.textContent).then(() => {
                 const orig = btn.textContent;
                 btn.textContent = '✅ کپی شد';
@@ -2146,8 +2156,8 @@ end`;
                     <div class="reply-preview">
                         <h4>📧 ویرایش و ارسال ریپلای:</h4>
                         <div style="margin-top: 10px; font-size: 13px; color: var(--text-secondary);">
-                            <div style="margin-bottom:8px;"><strong>To:</strong> ${t.email_sender}</div>
-                            <div style="margin-bottom:12px;"><strong>Subject:</strong> Re: ${t.email_subject}</div>
+                            <div style="margin-bottom:8px;"><strong>To:</strong> ${escapeHtml(t.email_sender)}</div>
+                            <div style="margin-bottom:12px;"><strong>Subject:</strong> Re: ${escapeHtml(t.email_subject)}</div>
                             <label style="font-size:12px; color:var(--text-muted); display:block; margin-bottom:6px;">متن ایمیل (قابل ویرایش):</label>
                             <textarea id="replyText" style="width:100%; min-height:180px; padding:12px; border:1px solid var(--input-border); border-radius:8px; background:var(--input-bg); color:var(--text-primary); font-size:14px; font-family:inherit; line-height:1.8; resize:vertical; direction:rtl; box-sizing:border-box;">${defaultReply}</textarea>
                         </div>
