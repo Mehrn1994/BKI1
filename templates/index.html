@@ -1573,28 +1573,32 @@
         });
 
         // ============ NETWORK MAP ============
-        // Iran province approximate coordinates (percentage-based for responsive)
+        // Iran province center coordinates (percentage-based, mapped to real geography)
+        // ViewBox: Iran spans roughly 44°E-63°E longitude, 25°N-40°N latitude
+        // Mapped to 0-100% x (left=63°E=east, right=44°E=west due to RTL flip)
+        // y: 0% = 40°N (north), 100% = 25°N (south)
         const PROVINCE_COORDS = {
-            'تهران': {x: 54, y: 28}, 'اصفهان': {x: 52, y: 42},
-            'فارس': {x: 52, y: 60}, 'خراسان رضوی': {x: 77, y: 25},
-            'خوزستان': {x: 38, y: 50}, 'آذربایجان شرقی': {x: 35, y: 12},
-            'آذربایجان غربی': {x: 27, y: 12}, 'مازندران': {x: 55, y: 18},
-            'گیلان': {x: 42, y: 16}, 'کرمان': {x: 68, y: 55},
-            'کرمانشاه': {x: 30, y: 30}, 'سیستان و بلوچستان': {x: 82, y: 60},
-            'هرمزگان': {x: 62, y: 72}, 'لرستان': {x: 38, y: 38},
-            'همدان': {x: 38, y: 28}, 'گلستان': {x: 65, y: 15},
-            'کردستان': {x: 28, y: 26}, 'مرکزی': {x: 46, y: 32},
-            'قزوین': {x: 44, y: 22}, 'زنجان': {x: 38, y: 20},
-            'بوشهر': {x: 48, y: 65}, 'اردبیل': {x: 36, y: 8},
-            'قم': {x: 48, y: 32}, 'یزد': {x: 60, y: 44},
-            'چهارمحال و بختیاری': {x: 46, y: 44}, 'ایلام': {x: 30, y: 38},
-            'سمنان': {x: 62, y: 25}, 'کهگیلویه و بویراحمد': {x: 44, y: 54},
-            'خراسان شمالی': {x: 75, y: 15}, 'خراسان جنوبی': {x: 78, y: 40},
-            'البرز': {x: 50, y: 25}, 'آذربايجان شرقي': {x: 35, y: 12},
-            'آذربايجان غربي': {x: 27, y: 12}, 'سيستان و بلوچستان': {x: 82, y: 60},
-            'چهارمحال وبختياري': {x: 46, y: 44}, 'كرمان': {x: 68, y: 55},
-            'كرمانشاه': {x: 30, y: 30}, 'كردستان': {x: 28, y: 26},
-            'كهگيلويه و بويراحمد': {x: 44, y: 54}
+            'آذربایجان غربی': {x:79, y:10}, 'آذربایجان شرقی': {x:72, y:10},
+            'اردبیل': {x:68, y:8}, 'گیلان': {x:62, y:12}, 'مازندران': {x:52, y:14},
+            'گلستان': {x:42, y:12}, 'خراسان شمالی': {x:30, y:12},
+            'خراسان رضوی': {x:24, y:24}, 'خراسان جنوبی': {x:22, y:38},
+            'زنجان': {x:68, y:18}, 'قزوین': {x:62, y:20}, 'البرز': {x:57, y:20},
+            'تهران': {x:54, y:22}, 'سمنان': {x:42, y:22},
+            'کردستان': {x:74, y:24}, 'همدان': {x:68, y:26},
+            'مرکزی': {x:60, y:28}, 'قم': {x:55, y:28},
+            'کرمانشاه': {x:76, y:28}, 'ایلام': {x:78, y:34},
+            'لرستان': {x:70, y:34}, 'اصفهان': {x:52, y:38},
+            'یزد': {x:40, y:40}, 'خوزستان': {x:70, y:44},
+            'چهارمحال و بختیاری': {x:60, y:40},
+            'کهگیلویه و بویراحمد': {x:62, y:50},
+            'فارس': {x:50, y:56}, 'کرمان': {x:32, y:52},
+            'بوشهر': {x:58, y:60}, 'هرمزگان': {x:40, y:68},
+            'سیستان و بلوچستان': {x:18, y:60},
+            // Arabic/alternate spellings
+            'آذربايجان شرقي': {x:72, y:10}, 'آذربايجان غربي': {x:79, y:10},
+            'سيستان و بلوچستان': {x:18, y:60}, 'چهارمحال وبختياري': {x:60, y:40},
+            'كرمان': {x:32, y:52}, 'كرمانشاه': {x:76, y:28},
+            'كردستان': {x:74, y:24}, 'كهگيلويه و بويراحمد': {x:62, y:50}
         };
 
         async function loadNetworkMap() {
@@ -1611,10 +1615,35 @@
                 const maxLan = Math.max(...provinces.map(p => p.lan_total));
                 let html = '';
 
-                // Draw Iran outline (simplified SVG)
-                html += `<svg viewBox="0 0 100 85" style="position:absolute; inset:0; width:100%; height:100%; opacity:0.15;">
-                    <path d="M30,5 L38,3 L42,8 L48,6 L55,10 L60,8 L68,10 L75,8 L82,12 L85,18 L80,22 L82,28 L78,35 L82,42 L85,50 L82,58 L78,65 L72,70 L65,75 L58,78 L50,72 L45,68 L40,62 L35,55 L32,48 L28,42 L25,35 L22,28 L25,20 L28,12 Z"
-                    fill="none" stroke="var(--accent-blue)" stroke-width="0.5"/>
+                // Draw Iran outline (realistic SVG based on actual border shape)
+                html += `<svg viewBox="0 0 100 80" preserveAspectRatio="xMidYMid meet" style="position:absolute; inset:0; width:100%; height:100%; opacity:0.12;">
+                    <path d="
+                        M 80,5 L 77,4 L 74,3 L 72,5 L 69,3 L 67,5 L 65,4 L 63,6
+                        L 60,8 L 58,7 L 55,9 L 52,8 L 50,10 L 48,9 L 46,11 L 44,10
+                        L 42,9 L 40,10 L 38,9 L 35,10 L 33,9 L 30,10 L 28,11
+                        L 26,13 L 24,12 L 22,14 L 20,16 L 19,19
+                        L 18,22 L 17,25 L 16,28 L 15,31 L 14,34
+                        L 13,37 L 12,40 L 11,43 L 10,46 L 9,49
+                        L 10,52 L 12,54 L 14,56 L 16,58 L 18,59
+                        L 20,61 L 22,62 L 25,63 L 28,65 L 30,66
+                        L 33,67 L 36,68 L 38,70 L 40,71 L 43,72
+                        L 46,71 L 48,70 L 50,68 L 52,66 L 54,64
+                        L 56,62 L 58,60 L 60,58 L 62,56 L 63,54
+                        L 64,51 L 65,48 L 66,46 L 68,44 L 70,42
+                        L 72,40 L 73,38 L 74,36 L 76,34 L 77,32
+                        L 78,29 L 79,27 L 80,25 L 82,23 L 83,20
+                        L 84,18 L 85,16 L 84,13 L 83,11 L 82,9
+                        L 81,7 Z
+                    "
+                    fill="var(--accent-blue)" fill-opacity="0.08" stroke="var(--accent-blue)" stroke-width="0.4"/>
+
+                    <!-- Caspian Sea (north) -->
+                    <ellipse cx="58" cy="12" rx="10" ry="4" fill="var(--accent-blue)" fill-opacity="0.06" stroke="var(--accent-blue)" stroke-width="0.2" stroke-dasharray="1,1"/>
+                    <text x="58" y="13" text-anchor="middle" fill="var(--accent-blue)" font-size="2.5" opacity="0.3">دریای خزر</text>
+
+                    <!-- Persian Gulf (south) -->
+                    <path d="M 40,72 Q 45,76 55,73 Q 60,70 65,68" fill="none" stroke="var(--accent-blue)" stroke-width="0.3" stroke-dasharray="1,1"/>
+                    <text x="50" y="76" text-anchor="middle" fill="var(--accent-blue)" font-size="2.2" opacity="0.3">خلیج فارس</text>
                 </svg>`;
 
                 provinces.forEach(p => {
