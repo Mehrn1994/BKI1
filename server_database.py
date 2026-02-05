@@ -16,6 +16,19 @@ import hashlib
 import pandas as pd
 import time
 import threading
+try:
+    from email_service import (
+        load_settings as load_email_settings,
+        save_settings as save_email_settings,
+        test_connection as test_email_connection,
+        fetch_emails as fetch_exchange_emails,
+        send_reply as send_exchange_reply
+    )
+    EWS_AVAILABLE = True
+except ImportError:
+    EWS_AVAILABLE = False
+    print("⚠️ exchangelib not installed. Ticket system will use demo mode.")
+    print("   Install with: pip install exchangelib")
 
 app = Flask(__name__)
 CORS(app, origins=["http://localhost:*", "http://127.0.0.1:*"])
@@ -235,6 +248,21 @@ def init_tables():
         reply_sent INTEGER DEFAULT 0,
         assigned_user TEXT,
         created_at TEXT,
+        updated_at TEXT
+    )""")
+
+    # Email settings table (stores per-user Exchange connection settings)
+    cursor.execute("""CREATE TABLE IF NOT EXISTS email_settings (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        username TEXT UNIQUE,
+        email TEXT,
+        exchange_username TEXT,
+        exchange_server TEXT,
+        folder_name TEXT DEFAULT 'Inbox',
+        sender_filters TEXT DEFAULT '[]',
+        use_autodiscover INTEGER DEFAULT 1,
+        verify_ssl INTEGER DEFAULT 0,
+        is_connected INTEGER DEFAULT 0,
         updated_at TEXT
     )""")
 
@@ -2273,8 +2301,8 @@ def export_reservations():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-# ==================== TICKET SYSTEM (DEMO) ====================
-# Mock emails for demo - simulates Outlook inbox
+# ==================== TICKET SYSTEM ====================
+# Mock emails for demo fallback (when exchangelib not installed)
 MOCK_EMAILS = [
     {
         "id": "email_001",
@@ -2310,20 +2338,120 @@ MOCK_EMAILS = [
     }
 ]
 
+# ---------- Email Settings API ----------
+@app.route('/api/email-settings', methods=['GET'])
+def get_email_settings():
+    """Get current email connection settings (password not returned)"""
+    if EWS_AVAILABLE:
+        settings = load_email_settings()
+        # Never send password to frontend
+        safe = {k: v for k, v in settings.items() if k != 'password'}
+        safe['has_password'] = bool(settings.get('password'))
+        safe['ews_available'] = True
+        return jsonify(safe)
+    else:
+        return jsonify({
+            'configured': False,
+            'ews_available': False,
+            'message': 'exchangelib نصب نشده. از حالت دمو استفاده می‌شود.'
+        })
+
+@app.route('/api/email-settings', methods=['POST'])
+def update_email_settings():
+    """Save email connection settings"""
+    if not EWS_AVAILABLE:
+        return jsonify({'error': 'exchangelib نصب نشده است. ابتدا نصب کنید: pip install exchangelib'}), 400
+
+    data = request.json
+    settings = load_email_settings()
+
+    settings['email'] = data.get('email', settings.get('email', ''))
+    settings['username'] = data.get('username', settings.get('username', ''))
+    if data.get('password'):  # Only update password if provided
+        settings['password'] = data['password']
+    settings['server'] = data.get('server', settings.get('server', ''))
+    settings['folder_name'] = data.get('folder_name', settings.get('folder_name', 'Inbox'))
+    settings['use_autodiscover'] = data.get('use_autodiscover', settings.get('use_autodiscover', True))
+    settings['verify_ssl'] = data.get('verify_ssl', settings.get('verify_ssl', False))
+    settings['configured'] = True
+
+    save_email_settings(settings)
+    log_activity('success', 'تنظیمات ایمیل', 'تنظیمات اتصال به Exchange ذخیره شد', data.get('portal_user', 'System'))
+    return jsonify({'success': True, 'message': 'تنظیمات ذخیره شد'})
+
+@app.route('/api/email-settings/test', methods=['POST'])
+def test_email_settings():
+    """Test Exchange connection"""
+    if not EWS_AVAILABLE:
+        return jsonify({'success': False, 'message': 'exchangelib نصب نشده است'}), 400
+
+    data = request.json
+    settings = load_email_settings()
+
+    # Use provided values or fall back to saved
+    test_settings = {
+        'email': data.get('email', settings.get('email', '')),
+        'username': data.get('username', settings.get('username', '')),
+        'password': data.get('password', settings.get('password', '')),
+        'server': data.get('server', settings.get('server', '')),
+        'use_autodiscover': data.get('use_autodiscover', settings.get('use_autodiscover', True)),
+        'verify_ssl': data.get('verify_ssl', settings.get('verify_ssl', False)),
+        'configured': True
+    }
+
+    success, message = test_email_connection(test_settings)
+    return jsonify({'success': success, 'message': message})
+
+@app.route('/api/email-settings/senders', methods=['GET'])
+def get_sender_filters():
+    """Get sender filter list"""
+    if EWS_AVAILABLE:
+        settings = load_email_settings()
+        return jsonify({'sender_filters': settings.get('sender_filters', [])})
+    return jsonify({'sender_filters': []})
+
+@app.route('/api/email-settings/senders', methods=['POST'])
+def update_sender_filters():
+    """Update sender filter list"""
+    if not EWS_AVAILABLE:
+        return jsonify({'error': 'exchangelib نصب نشده'}), 400
+
+    data = request.json
+    settings = load_email_settings()
+    settings['sender_filters'] = data.get('sender_filters', [])
+    save_email_settings(settings)
+
+    filter_text = ', '.join(settings['sender_filters']) if settings['sender_filters'] else 'همه'
+    log_activity('success', 'فیلتر فرستنده', f'فیلتر فرستنده ایمیل تغییر کرد: {filter_text}', data.get('portal_user', 'System'))
+    return jsonify({'success': True, 'sender_filters': settings['sender_filters']})
+
+# ---------- Ticket Emails API (Real + Demo fallback) ----------
 @app.route('/api/tickets/emails', methods=['GET'])
-def get_mock_emails():
-    """Get mock inbox emails (simulates Outlook folder)"""
-    # Check which emails already have tickets
+def get_ticket_emails():
+    """Get emails from Exchange or mock data as fallback"""
     conn = get_db()
     cursor = conn.cursor()
     cursor.execute("SELECT email_id FROM tickets")
     existing = {row['email_id'] for row in cursor.fetchall()}
     conn.close()
 
+    # Try real Exchange first
+    if EWS_AVAILABLE:
+        settings = load_email_settings()
+        if settings.get('configured'):
+            emails, error = fetch_exchange_emails(
+                max_count=50,
+                existing_email_ids=existing
+            )
+            if error:
+                return jsonify({'emails': [], 'error': error, 'mode': 'error'})
+            return jsonify({'emails': emails, 'mode': 'exchange'})
+
+    # Fallback to mock
     emails = []
     for e in MOCK_EMAILS:
         emails.append({**e, 'has_ticket': e['id'] in existing})
-    return jsonify(emails)
+    return jsonify({'emails': emails, 'mode': 'demo'})
 
 @app.route('/api/tickets', methods=['GET'])
 def get_tickets():
@@ -2492,8 +2620,9 @@ def ticket_generate_config(ticket_id):
 
 @app.route('/api/tickets/<int:ticket_id>/send-reply', methods=['POST'])
 def ticket_send_reply(ticket_id):
-    """Stage 3: Mark reply as sent (in demo mode, just simulates)"""
+    """Stage 3: Send reply via Exchange or simulate in demo mode"""
     data = request.json
+    reply_text = data.get('reply_text', '')
 
     conn = get_db()
     cursor = conn.cursor()
@@ -2502,6 +2631,22 @@ def ticket_send_reply(ticket_id):
     if not ticket:
         conn.close()
         return jsonify({'error': 'تیکت یافت نشد'}), 404
+
+    ticket_dict = dict(ticket)
+    reply_mode = 'demo'
+    reply_message = 'پاسخ با موفقیت ارسال شد (حالت دمو)'
+
+    # Try to send via Exchange
+    if EWS_AVAILABLE:
+        settings = load_email_settings()
+        if settings.get('configured') and ticket_dict.get('email_sender'):
+            success, msg = send_exchange_reply(ticket_dict, reply_text)
+            if success:
+                reply_mode = 'exchange'
+                reply_message = msg
+            else:
+                conn.close()
+                return jsonify({'error': f'خطا در ارسال ایمیل: {msg}'}), 500
 
     now = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
     cursor.execute("""
@@ -2512,8 +2657,8 @@ def ticket_send_reply(ticket_id):
     conn.commit()
     conn.close()
 
-    log_activity('success', 'ارسال پاسخ تیکت', f'تیکت #{ticket_id}: ریپلای ارسال شد (دمو)', data.get('username', 'System'))
-    return jsonify({'success': True, 'message': 'پاسخ با موفقیت ارسال شد (حالت دمو)'})
+    log_activity('success', 'ارسال پاسخ تیکت', f'تیکت #{ticket_id}: ریپلای ارسال شد ({reply_mode})', data.get('username', 'System'))
+    return jsonify({'success': True, 'message': reply_message, 'mode': reply_mode})
 
 # ==================== MAIN ====================
 if __name__ == '__main__':

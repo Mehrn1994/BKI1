@@ -444,6 +444,99 @@
             font-size: 13px;
             color: var(--accent-orange);
         }
+        .demo-banner.connected {
+            background: linear-gradient(135deg, rgba(16,185,129,0.15), rgba(16,185,129,0.05));
+            border-color: rgba(16,185,129,0.3);
+            color: var(--accent-green);
+        }
+
+        /* Settings Panel */
+        .settings-panel {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 14px;
+            margin-bottom: 20px;
+            overflow: hidden;
+            display: none;
+        }
+        .settings-panel.open { display: block; }
+        .settings-header {
+            padding: 16px 22px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+        }
+        .settings-header:hover { background: rgba(255,255,255,0.02); }
+        .settings-body { padding: 22px; }
+        .settings-section {
+            background: rgba(255,255,255,0.02);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            padding: 18px;
+            margin-bottom: 16px;
+        }
+        .settings-section h4 {
+            font-size: 14px;
+            color: var(--accent-blue);
+            margin-bottom: 14px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        /* Sender filter tags */
+        .sender-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 10px;
+        }
+        .sender-tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(139,92,246,0.15);
+            border: 1px solid rgba(139,92,246,0.3);
+            color: var(--accent-purple);
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+        .sender-tag .remove-tag {
+            cursor: pointer;
+            font-size: 14px;
+            line-height: 1;
+            opacity: 0.7;
+        }
+        .sender-tag .remove-tag:hover { opacity: 1; color: #ef4444; }
+        .add-sender-row {
+            display: flex;
+            gap: 8px;
+            margin-top: 10px;
+        }
+        .add-sender-row input { flex: 1; }
+
+        .status-dot {
+            display: inline-block;
+            width: 8px; height: 8px;
+            border-radius: 50%;
+            margin-left: 6px;
+        }
+        .status-dot.green { background: var(--accent-green); }
+        .status-dot.orange { background: var(--accent-orange); }
+        .status-dot.red { background: #ef4444; }
+
+        .test-result {
+            margin-top: 10px;
+            padding: 10px 14px;
+            border-radius: 8px;
+            font-size: 13px;
+            display: none;
+        }
+        .test-result.success { display: block; background: rgba(16,185,129,0.1); border: 1px solid rgba(16,185,129,0.3); color: var(--accent-green); }
+        .test-result.error { display: block; background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.3); color: #ef4444; }
     </style>
 </head>
 <body>
@@ -457,16 +550,74 @@
         </div>
         <div class="header-left">
             <span>👤 <span id="currentUser">کاربر</span></span>
+            <button onclick="toggleSettings()" id="settingsBtn">⚙️ تنظیمات ایمیل</button>
             <a href="/">🏠 داشبورد</a>
             <button class="logout-btn" onclick="logout()">خروج</button>
         </div>
     </header>
 
     <div class="container">
-        <div class="demo-banner">
+        <div class="demo-banner" id="connectionBanner">
             <span style="font-size: 24px;">🧪</span>
             <div>
-                <strong>حالت دمو</strong> - ایمیل‌ها شبیه‌سازی شده‌اند. در نسخه نهایی، ایمیل‌ها از فولدر Outlook از طریق Microsoft Graph API دریافت می‌شوند.
+                <strong>حالت دمو</strong> - ایمیل‌ها شبیه‌سازی شده‌اند. برای اتصال به Outlook روی «تنظیمات ایمیل» کلیک کنید.
+            </div>
+        </div>
+
+        <!-- Settings Panel (hidden by default) -->
+        <div class="settings-panel" id="settingsPanel">
+            <div class="settings-body">
+                <!-- Connection Settings -->
+                <div class="settings-section">
+                    <h4>📧 اتصال به Exchange Server</h4>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>آدرس ایمیل شما</label>
+                            <input type="email" id="setEmail" placeholder="you@bank.ir" style="direction:ltr; text-align:left;">
+                        </div>
+                        <div class="form-group">
+                            <label>نام کاربری (Domain\\Username)</label>
+                            <input type="text" id="setUsername" placeholder="DOMAIN\\username" style="direction:ltr; text-align:left;">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>رمز عبور</label>
+                            <input type="password" id="setPassword" placeholder="رمز ایمیل شما">
+                        </div>
+                        <div class="form-group">
+                            <label>آدرس سرور Exchange (اختیاری)</label>
+                            <input type="text" id="setServer" placeholder="mail.bank.ir (خالی = Autodiscover)" style="direction:ltr; text-align:left;">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>نام فولدر</label>
+                            <input type="text" id="setFolder" value="Inbox" placeholder="Inbox" style="direction:ltr; text-align:left;">
+                        </div>
+                        <div class="form-group" style="display:flex; align-items:flex-end; gap:10px; padding-bottom:2px;">
+                            <button class="btn btn-primary" onclick="testEmailConnection()" id="testBtn">🔌 تست اتصال</button>
+                            <button class="btn btn-success" onclick="saveEmailSettings()">💾 ذخیره</button>
+                        </div>
+                    </div>
+                    <div class="test-result" id="testResult"></div>
+                </div>
+
+                <!-- Sender Filter -->
+                <div class="settings-section">
+                    <h4>🔍 فیلتر فرستنده ایمیل</h4>
+                    <p style="font-size:13px; color:var(--text-muted); margin-bottom:10px;">
+                        فقط ایمیل‌های دریافتی از آدرس‌های زیر وارد سامانه تیکتینگ می‌شوند. اگر خالی باشد، همه ایمیل‌ها نمایش داده می‌شوند.
+                    </p>
+                    <div class="sender-tags" id="senderTags">
+                        <!-- Tags rendered dynamically -->
+                    </div>
+                    <div class="add-sender-row">
+                        <input type="email" id="newSenderInput" placeholder="مثال: network-requests@bank.ir" style="direction:ltr; text-align:left;"
+                               onkeypress="if(event.key==='Enter')addSenderFilter()">
+                        <button class="btn btn-purple" onclick="addSenderFilter()">+ افزودن</button>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -523,7 +674,7 @@
     </div>
 
     <footer class="footer">
-        <p>🏢 Network Configuration Portal - Ticket System (Demo)</p>
+        <p>🏢 Network Configuration Portal - Ticket System</p>
     </footer>
 
     <script>
@@ -545,6 +696,153 @@
         let currentTicket = null;
         let selectedIp = null;
         let provincesCache = [];
+        let emailMode = 'demo'; // 'demo' or 'exchange'
+        let senderFilters = [];
+
+        // ============ EMAIL SETTINGS ============
+        function toggleSettings() {
+            const panel = document.getElementById('settingsPanel');
+            panel.classList.toggle('open');
+            if (panel.classList.contains('open')) loadEmailSettings();
+        }
+
+        async function loadEmailSettings() {
+            try {
+                const res = await fetch('/api/email-settings');
+                const data = await res.json();
+                if (data.email) document.getElementById('setEmail').value = data.email;
+                if (data.username) document.getElementById('setUsername').value = data.username;
+                if (data.server) document.getElementById('setServer').value = data.server;
+                if (data.folder_name) document.getElementById('setFolder').value = data.folder_name;
+
+                // Load sender filters
+                const sRes = await fetch('/api/email-settings/senders');
+                const sData = await sRes.json();
+                senderFilters = sData.sender_filters || [];
+                renderSenderTags();
+
+                if (!data.ews_available) {
+                    document.getElementById('testResult').className = 'test-result error';
+                    document.getElementById('testResult').textContent = 'exchangelib نصب نشده. ابتدا: pip install exchangelib';
+                }
+            } catch(e) { console.error(e); }
+        }
+
+        async function testEmailConnection() {
+            const btn = document.getElementById('testBtn');
+            const result = document.getElementById('testResult');
+            btn.disabled = true;
+            btn.textContent = '⏳ در حال تست...';
+            result.className = 'test-result';
+            result.style.display = 'none';
+
+            try {
+                const res = await fetch('/api/email-settings/test', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        email: document.getElementById('setEmail').value,
+                        username: document.getElementById('setUsername').value,
+                        password: document.getElementById('setPassword').value,
+                        server: document.getElementById('setServer').value,
+                        use_autodiscover: !document.getElementById('setServer').value
+                    })
+                });
+                const data = await res.json();
+                result.className = data.success ? 'test-result success' : 'test-result error';
+                result.textContent = data.message;
+            } catch(e) {
+                result.className = 'test-result error';
+                result.textContent = 'خطا در اتصال به سرور';
+            }
+            btn.disabled = false;
+            btn.textContent = '🔌 تست اتصال';
+        }
+
+        async function saveEmailSettings() {
+            const server = document.getElementById('setServer').value;
+            try {
+                const res = await fetch('/api/email-settings', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        email: document.getElementById('setEmail').value,
+                        username: document.getElementById('setUsername').value,
+                        password: document.getElementById('setPassword').value,
+                        server: server,
+                        folder_name: document.getElementById('setFolder').value,
+                        use_autodiscover: !server,
+                        portal_user: currentUser
+                    })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    alert('تنظیمات ذخیره شد. ایمیل‌ها بارگذاری می‌شوند...');
+                    document.getElementById('settingsPanel').classList.remove('open');
+                    loadEmails();
+                    updateConnectionBanner();
+                } else {
+                    alert(data.error || 'خطا');
+                }
+            } catch(e) { alert('خطا در اتصال'); }
+        }
+
+        function renderSenderTags() {
+            const container = document.getElementById('senderTags');
+            if (senderFilters.length === 0) {
+                container.innerHTML = '<span style="color:var(--text-muted); font-size:12px;">همه فرستنده‌ها (بدون فیلتر)</span>';
+                return;
+            }
+            container.innerHTML = senderFilters.map((s, i) => `
+                <span class="sender-tag">
+                    ${s}
+                    <span class="remove-tag" onclick="removeSenderFilter(${i})">×</span>
+                </span>
+            `).join('');
+        }
+
+        async function addSenderFilter() {
+            const input = document.getElementById('newSenderInput');
+            const email = input.value.trim();
+            if (!email) return;
+            if (senderFilters.includes(email)) { input.value = ''; return; }
+
+            senderFilters.push(email);
+            input.value = '';
+            renderSenderTags();
+            await saveSenderFilters();
+        }
+
+        async function removeSenderFilter(index) {
+            senderFilters.splice(index, 1);
+            renderSenderTags();
+            await saveSenderFilters();
+        }
+
+        async function saveSenderFilters() {
+            try {
+                await fetch('/api/email-settings/senders', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ sender_filters: senderFilters, portal_user: currentUser })
+                });
+                // Reload emails after filter change
+                loadEmails();
+            } catch(e) { console.error(e); }
+        }
+
+        async function updateConnectionBanner() {
+            try {
+                const res = await fetch('/api/email-settings');
+                const data = await res.json();
+                const banner = document.getElementById('connectionBanner');
+                if (data.configured && data.ews_available) {
+                    banner.className = 'demo-banner connected';
+                    banner.innerHTML = `<span style="font-size:24px;">📡</span><div><strong>متصل به Exchange</strong> - ایمیل‌ها از Outlook دریافت می‌شوند. (${data.email || ''})</div>`;
+                    emailMode = 'exchange';
+                }
+            } catch(e) {}
+        }
 
         // ============ TABS ============
         function switchTab(tab) {
@@ -567,11 +865,32 @@
         }
 
         // ============ LOAD EMAILS (Only unassigned) ============
+        let cachedEmails = [];
         async function loadEmails() {
             try {
                 const res = await fetch('/api/tickets/emails');
-                const emails = await res.json();
+                const data = await res.json();
                 const container = document.getElementById('emailList');
+
+                // Handle new API format: {emails: [...], mode: 'demo'|'exchange'}
+                const emails = data.emails || data;
+                emailMode = data.mode || 'demo';
+                cachedEmails = emails;
+
+                if (data.error) {
+                    container.innerHTML = `<div class="empty-state"><div class="icon">⚠️</div><div class="text">${data.error}</div></div>`;
+                    return;
+                }
+
+                // Update banner based on mode
+                const banner = document.getElementById('connectionBanner');
+                if (emailMode === 'exchange') {
+                    banner.className = 'demo-banner connected';
+                    banner.innerHTML = '<span style="font-size:24px;">📡</span><div><strong>متصل به Exchange</strong> - ایمیل‌ها از Outlook دریافت می‌شوند.</div>';
+                } else if (emailMode === 'demo') {
+                    banner.className = 'demo-banner';
+                    banner.innerHTML = '<span style="font-size:24px;">🧪</span><div><strong>حالت دمو</strong> - ایمیل‌ها شبیه‌سازی شده‌اند. برای اتصال به Outlook روی «تنظیمات ایمیل» کلیک کنید.</div>';
+                }
 
                 // Only show emails without tickets
                 const available = emails.filter(e => !e.has_ticket);
@@ -588,7 +907,7 @@
                             <div class="date">${e.date}</div>
                         </div>
                         <div style="display: flex; justify-content: space-between; align-items: center;">
-                            <div class="sender">از: ${e.sender}</div>
+                            <div class="sender">از: ${e.sender}${e.sender_email ? ' (' + e.sender_email + ')' : ''}</div>
                             <span style="font-size:12px; color: var(--accent-blue); font-weight:600;">برداشتن تیکت ✋</span>
                         </div>
                         <div class="body-preview">${e.body}</div>
@@ -603,8 +922,13 @@
         async function pickupTicket(emailId) {
             if (!confirm('آیا این تیکت را برمی‌دارید؟ تیکت به صندوق شما منتقل می‌شود.')) return;
 
-            const emails = await (await fetch('/api/tickets/emails')).json();
-            const email = emails.find(e => e.id === emailId);
+            // Use cached emails first, fallback to re-fetch
+            let email = cachedEmails.find(e => e.id === emailId);
+            if (!email) {
+                const data = await (await fetch('/api/tickets/emails')).json();
+                const emails = data.emails || data;
+                email = emails.find(e => e.id === emailId);
+            }
             if (!email) return;
 
             try {
@@ -1890,6 +2214,7 @@ end`;
         }
 
         // ============ INIT ============
+        updateConnectionBanner();
         loadEmails();
     </script>
 </body>
