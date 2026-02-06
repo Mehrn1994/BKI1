@@ -1,14 +1,24 @@
 """
 Remote Connection Module - SSH/Telnet/RDP
 WebSocket-based terminal for SSH/Telnet + RDP file generation
+
+Requirements: pip install paramiko flask-socketio
 """
 
-import paramiko
-import telnetlib
 import threading
 import uuid
 import time
 from flask import Blueprint, render_template, request, jsonify, Response
+
+try:
+    import paramiko
+except ImportError:
+    paramiko = None
+
+try:
+    import telnetlib
+except ImportError:
+    telnetlib = None
 
 # Temporary session tokens (token -> connection params)
 _sessions = {}
@@ -142,8 +152,20 @@ def register_socketio_handlers(socketio):
 
         try:
             if protocol == 'ssh':
+                if not paramiko:
+                    socketio.emit('output',
+                                  '\r\n\x1b[1;31mSSH not available: paramiko not installed.\r\nRun: pip install paramiko\x1b[0m\r\n',
+                                  namespace='/terminal', to=sid)
+                    socketio.emit('session_end', {}, namespace='/terminal', to=sid)
+                    return
                 _start_ssh(socketio, sid, host, port, username, password)
             elif protocol == 'telnet':
+                if not telnetlib:
+                    socketio.emit('output',
+                                  '\r\n\x1b[1;31mTelnet not available on this Python version.\x1b[0m\r\n',
+                                  namespace='/terminal', to=sid)
+                    socketio.emit('session_end', {}, namespace='/terminal', to=sid)
+                    return
                 _start_telnet(socketio, sid, host, port, username, password)
             else:
                 socketio.emit('output',

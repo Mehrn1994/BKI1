@@ -5,7 +5,6 @@ All APIs fixed + DB Manager only for Sahebdel
 
 from flask import Flask, jsonify, request, render_template, Response
 from flask_cors import CORS
-from flask_socketio import SocketIO
 import sqlite3
 import os
 import subprocess
@@ -21,12 +20,22 @@ import threading
 
 app = Flask(__name__)
 CORS(app, origins=["http://localhost:5000", "http://127.0.0.1:5000"])
-socketio = SocketIO(app, cors_allowed_origins="*", async_mode='threading')
 
-# Register remote connection module (SSH/Telnet/RDP)
-from remote_connect import remote_bp, register_socketio_handlers
-app.register_blueprint(remote_bp)
-register_socketio_handlers(socketio)
+# Optional: Remote connection module (SSH/Telnet/RDP)
+# Requires: pip install flask-socketio paramiko eventlet
+socketio = None
+REMOTE_ENABLED = False
+try:
+    from flask_socketio import SocketIO
+    socketio = SocketIO(app, cors_allowed_origins="*", async_mode='threading')
+    from remote_connect import remote_bp, register_socketio_handlers
+    app.register_blueprint(remote_bp)
+    register_socketio_handlers(socketio)
+    REMOTE_ENABLED = True
+    print("✅ Remote Connection module loaded (SSH/Telnet/RDP)")
+except ImportError as e:
+    print(f"⚠️  Remote Connection module disabled - missing package: {e}")
+    print("   Install with: pip install flask-socketio paramiko eventlet")
 
 # ==================== RATE LIMITING ====================
 login_attempts = {}  # {ip: [timestamp, timestamp, ...]}
@@ -2528,6 +2537,54 @@ def generate_pdf_report():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+# ==================== PING API ====================
+@app.route('/api/ping', methods=['POST'])
+def ping_host():
+    """Ping a host and return reachability + latency"""
+    data = request.json
+    if not data or not data.get('host'):
+        return jsonify({'error': 'Host is required'}), 400
+
+    host = data['host'].strip()
+
+    # Validate: only allow IPs and hostnames (prevent command injection)
+    import re
+    if not re.match(r'^[a-zA-Z0-9._:-]+$', host):
+        return jsonify({'error': 'Invalid host format'}), 400
+
+    try:
+        count_flag = '-n' if platform.system().lower() == 'windows' else '-c'
+        timeout_flag = '-w' if platform.system().lower() == 'windows' else '-W'
+        timeout_val = '3000' if platform.system().lower() == 'windows' else '3'
+
+        result = subprocess.run(
+            ['ping', count_flag, '3', timeout_flag, timeout_val, host],
+            capture_output=True, text=True, timeout=15
+        )
+
+        output = result.stdout + result.stderr
+        reachable = result.returncode == 0
+
+        # Extract average latency
+        avg_ms = None
+        if reachable:
+            avg_match = re.search(r'Average\s*=\s*(\d+)', output)
+            if not avg_match:
+                avg_match = re.search(r'avg[^=]*=\s*[\d.]+/([\d.]+)', output)
+            if avg_match:
+                avg_ms = float(avg_match.group(1))
+
+        return jsonify({
+            'reachable': reachable,
+            'host': host,
+            'avg_ms': avg_ms,
+            'output': output.strip()
+        })
+    except subprocess.TimeoutExpired:
+        return jsonify({'reachable': False, 'host': host, 'avg_ms': None, 'output': 'Ping timed out'})
+    except Exception as e:
+        return jsonify({'reachable': False, 'host': host, 'avg_ms': None, 'output': str(e)})
+
 # ==================== MAIN ====================
 if __name__ == '__main__':
     print("=" * 70)
@@ -2542,4 +2599,9 @@ if __name__ == '__main__':
     # Start auto-release thread for expired reservations
     start_auto_release_thread()
     
-    socketio.run(app, host='0.0.0.0', port=5000, debug=False, use_reloader=False)
+    if socketio and REMOTE_ENABLED:
+        print("🔌 WebSocket enabled (SSH/Telnet/RDP)")
+        socketio.run(app, host='0.0.0.0', port=5000, debug=False, use_reloader=False)
+    else:
+        print("📡 Running without WebSocket (SSH/Telnet/RDP disabled)")
+        app.run(host='0.0.0.0', port=5000, debug=False, use_reloader=False)

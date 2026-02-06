@@ -309,6 +309,72 @@
             cursor: pointer;
             font-family: inherit;
         }
+
+        /* ===== CONFIG PASTE OVERLAY ===== */
+        .paste-overlay {
+            position: fixed; inset: 0; z-index: 100;
+            background: rgba(0,0,0,0.7); backdrop-filter: blur(4px);
+            display: none; align-items: center; justify-content: center;
+        }
+        .paste-overlay.show { display: flex; }
+
+        .paste-card {
+            background: var(--bg-card); border: 1px solid var(--border);
+            border-radius: 14px; padding: 24px; width: 90%; max-width: 650px;
+            max-height: 80vh; display: flex; flex-direction: column;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+        }
+
+        .paste-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+        .paste-header h3 { font-size: 16px; color: var(--accent); display: flex; align-items: center; gap: 8px; }
+        .paste-header .paste-close {
+            width: 32px; height: 32px; background: rgba(255,255,255,0.06);
+            border: 1px solid var(--border); border-radius: 8px; color: var(--text-muted);
+            cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 16px;
+        }
+        .paste-header .paste-close:hover { background: rgba(239,68,68,0.15); color: var(--red); }
+
+        .paste-info { font-size: 12px; color: var(--text-muted); margin-bottom: 12px; }
+        .paste-info strong { color: var(--orange); }
+
+        .paste-preview {
+            flex: 1; overflow: auto; background: #060a12; border: 1px solid var(--border);
+            border-radius: 8px; padding: 12px; font-family: 'JetBrains Mono', monospace;
+            font-size: 12px; line-height: 1.5; color: #a5f3a8; white-space: pre;
+            max-height: 45vh; margin-bottom: 16px;
+        }
+        .paste-preview::-webkit-scrollbar { width: 5px; }
+        .paste-preview::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 3px; }
+
+        .paste-btns { display: flex; gap: 10px; justify-content: flex-end; }
+        .paste-btn-send {
+            padding: 10px 24px; background: linear-gradient(135deg, var(--accent), #059669);
+            color: #fff; border: none; border-radius: 8px; font-size: 13px;
+            font-weight: 600; cursor: pointer; font-family: inherit;
+            display: flex; align-items: center; gap: 6px;
+        }
+        .paste-btn-send:hover { filter: brightness(1.1); }
+        .paste-btn-send:disabled { opacity: 0.5; cursor: not-allowed; }
+        .paste-btn-cancel {
+            padding: 10px 18px; background: rgba(255,255,255,0.06);
+            border: 1px solid var(--border); color: var(--text-muted);
+            border-radius: 8px; font-size: 13px; cursor: pointer; font-family: inherit;
+        }
+
+        .paste-progress {
+            display: none; margin-bottom: 12px;
+        }
+        .paste-progress.show { display: block; }
+        .paste-progress-bar {
+            height: 4px; background: rgba(255,255,255,0.1); border-radius: 2px; overflow: hidden;
+        }
+        .paste-progress-fill {
+            height: 100%; background: var(--accent); border-radius: 2px;
+            transition: width 0.2s ease; width: 0%;
+        }
+        .paste-progress-text {
+            font-size: 11px; color: var(--text-muted); margin-top: 6px; text-align: center;
+        }
     </style>
 </head>
 <body>
@@ -386,6 +452,34 @@
     <!-- Terminal -->
     <div class="terminal-wrapper" id="terminalWrapper">
         <div id="terminal"></div>
+    </div>
+
+    <!-- Config Paste Confirmation -->
+    <div class="paste-overlay" id="pasteOverlay">
+        <div class="paste-card">
+            <div class="paste-header">
+                <h3>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1"/></svg>
+                    Deploy Config to Device
+                </h3>
+                <button class="paste-close" onclick="cancelPaste()">&times;</button>
+            </div>
+            <div class="paste-info">
+                Sending <strong id="pasteLineCount">0</strong> lines to the connected device. Review the config below before confirming.
+            </div>
+            <div class="paste-progress" id="pasteProgress">
+                <div class="paste-progress-bar"><div class="paste-progress-fill" id="pasteProgressFill"></div></div>
+                <div class="paste-progress-text" id="pasteProgressText">Sending...</div>
+            </div>
+            <div class="paste-preview" id="pastePreview"></div>
+            <div class="paste-btns" id="pasteBtns">
+                <button class="paste-btn-cancel" onclick="cancelPaste()">Cancel</button>
+                <button class="paste-btn-send" id="pasteSendBtn" onclick="confirmPaste()">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+                    Confirm &amp; Send
+                </button>
+            </div>
+        </div>
     </div>
 
     <!-- Reconnect Banner -->
@@ -548,6 +642,7 @@
             socket.on('session_start', (data) => {
                 setStatus('connected', 'Connected');
                 document.title = 'Terminal - ' + data.host;
+                notifyParent('connected');
                 term.focus();
                 if (fitAddon) {
                     fitAddon.fit();
@@ -561,6 +656,7 @@
 
             socket.on('session_end', () => {
                 setStatus('error', 'Disconnected');
+                notifyParent('disconnected');
                 document.getElementById('reconnectBanner').classList.add('show');
                 document.getElementById('disconnectBtn').style.display = 'none';
             });
@@ -609,6 +705,77 @@
             setStatus('', 'Disconnected');
             document.title = 'Terminal';
             document.getElementById('host').focus();
+        }
+
+        // ===== CONFIG PASTE VIA postMessage =====
+        let pendingPasteLines = [];
+        let pasteInProgress = false;
+
+        window.addEventListener('message', function(event) {
+            if (event.data && event.data.type === 'paste_config') {
+                const text = event.data.text || '';
+                const title = event.data.title || 'Config';
+                if (!text.trim()) return;
+
+                pendingPasteLines = text.split('\n').filter(l => l.trim() !== '');
+                document.getElementById('pasteLineCount').textContent = pendingPasteLines.length;
+                document.getElementById('pastePreview').textContent = text;
+                document.getElementById('pasteOverlay').classList.add('show');
+                document.getElementById('pasteProgress').classList.remove('show');
+                document.getElementById('pasteBtns').style.display = 'flex';
+                document.getElementById('pasteSendBtn').disabled = false;
+                document.title = 'Terminal - Deploying: ' + title;
+            }
+        });
+
+        function cancelPaste() {
+            document.getElementById('pasteOverlay').classList.remove('show');
+            pendingPasteLines = [];
+            pasteInProgress = false;
+            if (term) term.focus();
+        }
+
+        async function confirmPaste() {
+            if (!socket || !socket.connected || pendingPasteLines.length === 0) return;
+
+            pasteInProgress = true;
+            const btn = document.getElementById('pasteSendBtn');
+            btn.disabled = true;
+            btn.innerHTML = 'Sending...';
+
+            const progress = document.getElementById('pasteProgress');
+            const fill = document.getElementById('pasteProgressFill');
+            const ptext = document.getElementById('pasteProgressText');
+            progress.classList.add('show');
+
+            const total = pendingPasteLines.length;
+            const LINE_DELAY = 80; // ms between lines
+
+            for (let i = 0; i < total; i++) {
+                if (!pasteInProgress) break;
+                socket.emit('input', pendingPasteLines[i] + '\n');
+                const pct = Math.round(((i + 1) / total) * 100);
+                fill.style.width = pct + '%';
+                ptext.textContent = `Sent ${i + 1} / ${total} lines (${pct}%)`;
+                await new Promise(r => setTimeout(r, LINE_DELAY));
+            }
+
+            fill.style.width = '100%';
+            ptext.textContent = `Done! All ${total} lines sent.`;
+            pasteInProgress = false;
+
+            setTimeout(() => {
+                document.getElementById('pasteOverlay').classList.remove('show');
+                pendingPasteLines = [];
+                if (term) term.focus();
+            }, 1200);
+        }
+
+        // Notify parent window when connected
+        function notifyParent(state) {
+            if (window.opener) {
+                window.opener.postMessage({ type: 'terminal_state', state: state }, '*');
+            }
         }
 
         // Auto-connect if token provided
