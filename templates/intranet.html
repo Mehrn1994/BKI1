@@ -634,6 +634,17 @@ document.addEventListener('DOMContentLoaded', function() {
     </main>
 
     <script>
+        // Session timeout: 8 hours
+        const SESSION_TIMEOUT = 8 * 60 * 60 * 1000;
+        (function() {
+            const sessionStart = localStorage.getItem('sessionStart');
+            if (sessionStart && (Date.now() - parseInt(sessionStart)) > SESSION_TIMEOUT) {
+                localStorage.clear(); sessionStorage.clear();
+                alert('جلسه شما منقضی شده است. لطفاً دوباره وارد شوید.');
+                location.href = '/login';
+            }
+        })();
+
         // Get username from storage
         let currentUsername = localStorage.getItem('currentUser') ||
                               localStorage.getItem('username') ||
@@ -644,6 +655,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         if (currentUsername === 'unknown') {
             console.warn('No username found in storage. User may need to login again.');
+            location.href = '/login';
         }
 
         function copyConfig(id) {
@@ -916,7 +928,7 @@ do wr
             document.getElementById('wan2Config').value   = wan2Cfg;
 
             generateBtn.disabled = false;
-            generateBtn.textText = 'Generate Configs';
+            generateBtn.textContent = 'Generate Configs';
 
             console.log('✓ Configuration generated successfully');
         });

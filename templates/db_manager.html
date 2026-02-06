@@ -1227,8 +1227,24 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         };
         
+        // Session timeout: 8 hours
+        const SESSION_TIMEOUT = 8 * 60 * 60 * 1000;
+        function checkSessionTimeout() {
+            const sessionStart = localStorage.getItem('sessionStart');
+            if (sessionStart && (Date.now() - parseInt(sessionStart)) > SESSION_TIMEOUT) {
+                localStorage.clear(); sessionStorage.clear();
+                alert('جلسه شما منقضی شده است. لطفاً دوباره وارد شوید.');
+                location.href = '/login';
+                return true;
+            }
+            return false;
+        }
+
         // ============ Initialization ============
         document.addEventListener('DOMContentLoaded', function() {
+            // Check session timeout
+            if (checkSessionTimeout()) return;
+
             // Check authentication
             const username = localStorage.getItem('currentUser') || localStorage.getItem('username') || sessionStorage.getItem('username');
             if (!username) {

@@ -740,6 +740,17 @@ document.addEventListener('DOMContentLoaded', function() {
 </div>
 
 <script>
+// Session timeout: 8 hours
+const SESSION_TIMEOUT = 8 * 60 * 60 * 1000;
+(function() {
+    const sessionStart = localStorage.getItem('sessionStart');
+    if (sessionStart && (Date.now() - parseInt(sessionStart)) > SESSION_TIMEOUT) {
+        localStorage.clear(); sessionStorage.clear();
+        alert('جلسه شما منقضی شده است. لطفاً دوباره وارد شوید.');
+        location.href = '/login';
+    }
+})();
+
 // Auto-login check
 const currentUsername = localStorage.getItem('currentUser') ||
 localStorage.getItem('username') || sessionStorage.getItem('username');

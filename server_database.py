@@ -2097,6 +2097,9 @@ def get_activity():
 @app.route('/api/db/preview-excel', methods=['POST'])
 def preview_excel():
     try:
+        username = request.form.get('username', '')
+        if username != DB_ADMIN_USER:
+            return jsonify({'error': 'فقط مدیر سیستم دسترسی دارد'}), 403
         file = request.files.get('file')
         if not file:
             return jsonify({'error': 'فایل انتخاب نشده'}), 400
@@ -2148,9 +2151,13 @@ def import_excel():
 @app.route('/api/db/backup', methods=['POST'])
 def create_backup():
     try:
+        data = request.json or {}
+        username = data.get('username', '')
+        if username != DB_ADMIN_USER:
+            return jsonify({'error': 'فقط مدیر سیستم می‌تواند بکاپ بگیرد'}), 403
         fname = f'backup_{datetime.now().strftime("%Y%m%d_%H%M%S")}.db'
         shutil.copy2(DB_PATH, os.path.join(BACKUP_DIR, fname))
-        log_activity('backup', 'Backup', fname)
+        log_activity('backup', 'Backup', fname, username)
         return jsonify({'success': True, 'filename': fname})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
