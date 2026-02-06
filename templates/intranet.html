@@ -503,14 +503,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 <span id="currentUser" style="font-size:14px; font-weight:bold; color:var(--text-primary, #0f172a);">Loading...</span>
             </div>
             <div style="display: flex; align-items: center; gap: 8px;">
-                <button onclick="openRemoteModal('ssh')" title="SSH / Telnet Terminal" style="background:linear-gradient(135deg,#3b82f6,#2563eb); color:#fff; border:none; border-radius:6px; padding:6px 12px; font-size:12px; font-weight:600; cursor:pointer; display:flex; align-items:center; gap:5px; font-family:inherit;">
-                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>
-                  SSH / Telnet
-                </button>
-                <button onclick="openRemoteModal('rdp')" title="Remote Desktop (RDP)" style="background:linear-gradient(135deg,#8b5cf6,#7c3aed); color:#fff; border:none; border-radius:6px; padding:6px 12px; font-size:12px; font-weight:600; cursor:pointer; display:flex; align-items:center; gap:5px; font-family:inherit;">
-                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
-                  RDP
-                </button>
                 <button class="theme-toggle" onclick="toggleTheme()" title="تغییر تم"><span id="themeIcon">🌙</span></button>
                 <a href="/"
                    style="
@@ -609,8 +601,42 @@ document.addEventListener('DOMContentLoaded', function() {
 
             <div id="statusMessage"></div>
 
-            <button class="primary" id="generateBtn">Generate Configs</button>
+            <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-top:6px;">
+              <button class="primary" id="generateBtn">Generate Configs</button>
+              <div style="width:1px; height:28px; background:var(--border-color, rgba(255,255,255,0.15)); margin:0 4px;"></div>
+              <button type="button" onclick="openRemoteModal('ssh')" style="background:linear-gradient(135deg,#3b82f6,#2563eb); color:#fff; border:none; border-radius:8px; padding:8px 14px; font-size:12px; font-weight:600; cursor:pointer; display:flex; align-items:center; gap:5px; font-family:inherit;">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>
+                SSH / Telnet
+              </button>
+              <button type="button" onclick="openRemoteModal('rdp')" style="background:linear-gradient(135deg,#8b5cf6,#7c3aed); color:#fff; border:none; border-radius:8px; padding:8px 14px; font-size:12px; font-weight:600; cursor:pointer; display:flex; align-items:center; gap:5px; font-family:inherit;">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+                RDP
+              </button>
+            </div>
         </section>
+
+        <!-- Deploy Config to Device Panel -->
+        <div id="deployPanel" style="display:none; margin-top:20px; background:linear-gradient(135deg,rgba(59,130,246,0.08),rgba(99,102,241,0.05)); border:1px solid rgba(59,130,246,0.3); border-radius:14px; padding:18px 20px;">
+          <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:14px;">
+            <div style="display:flex; align-items:center; gap:8px; color:#3b82f6; font-weight:700; font-size:15px;">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1"/></svg>
+              Deploy Config to Device
+            </div>
+            <span id="deployStatus" style="font-size:12px; color:#94a3b8;">Terminal not connected</span>
+          </div>
+          <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
+            <select id="configSelect" style="flex:1; min-width:200px; padding:9px 12px; background:#020617; border:1px solid #374151; border-radius:8px; color:#e5e7eb; font-size:13px;">
+              <option value="">-- Select Config --</option>
+              <option value="branchConfig">Branch Router</option>
+              <option value="wan1Config">WAN-INTR1 Router</option>
+              <option value="wan2Config">WAN-INTR2 Router</option>
+            </select>
+            <button type="button" onclick="sendConfigToTerminal()" style="background:linear-gradient(135deg,#3b82f6,#2563eb); color:#fff; border:none; border-radius:999px; padding:10px 20px; display:flex; align-items:center; gap:6px; font-weight:600; cursor:pointer; font-family:inherit;">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+              Send to Device
+            </button>
+          </div>
+        </div>
 
         <section class="card">
             <h2>Generated Config</h2>
@@ -1005,6 +1031,19 @@ do wr
     cursor:pointer; font-family:inherit;
 }
 .rc-btn-cancel:hover { background:rgba(255,255,255,0.05); }
+.rc-ping-btn {
+    padding:7px 14px; background:rgba(16,185,129,0.15); border:1px solid rgba(16,185,129,0.3);
+    border-radius:8px; color:#34d399; font-size:12px; font-weight:600; cursor:pointer;
+    font-family:inherit; display:flex; align-items:center; gap:5px;
+}
+.rc-ping-btn:hover { background:rgba(16,185,129,0.25); }
+.rc-ping-result {
+    margin-top:-4px; margin-bottom:14px; padding:8px 12px; border-radius:8px; font-size:12px; display:none;
+}
+.rc-ping-result.show { display:flex; align-items:center; gap:8px; }
+.rc-ping-result.ok { background:rgba(16,185,129,0.12); color:#6ee7b7; border:1px solid rgba(16,185,129,0.2); }
+.rc-ping-result.fail { background:rgba(239,68,68,0.12); color:#fca5a5; border:1px solid rgba(239,68,68,0.2); }
+.rc-ping-result.loading { background:rgba(251,191,36,0.1); color:#fcd34d; border:1px solid rgba(251,191,36,0.2); }
 </style>
 
 <div class="rc-overlay" id="rcOverlay" onclick="if(event.target===this)closeRemoteModal()">
@@ -1030,8 +1069,12 @@ do wr
       </div>
       <div class="rc-group">
         <label>Host / IP Address</label>
-        <input type="text" id="rcHost" placeholder="e.g. 10.250.1.1">
+        <div style="display:flex; gap:8px;">
+          <input type="text" id="rcHost" placeholder="e.g. 10.250.1.1" style="flex:1;">
+          <button type="button" class="rc-ping-btn" onclick="pingHost('rcHost','sshPingResult')">📡 Ping</button>
+        </div>
       </div>
+      <div class="rc-ping-result" id="sshPingResult"></div>
       <div class="rc-row">
         <div class="rc-group">
           <label>Username</label>
@@ -1058,8 +1101,12 @@ do wr
       <p class="rc-sub">Generate and download an .rdp file to connect via Windows Remote Desktop</p>
       <div class="rc-group">
         <label>Host / IP Address</label>
-        <input type="text" id="rdpHost" placeholder="e.g. 192.168.1.100">
+        <div style="display:flex; gap:8px;">
+          <input type="text" id="rdpHost" placeholder="e.g. 192.168.1.100" style="flex:1;">
+          <button type="button" class="rc-ping-btn" onclick="pingHost('rdpHost','rdpPingResult')">📡 Ping</button>
+        </div>
       </div>
+      <div class="rc-ping-result" id="rdpPingResult"></div>
       <div class="rc-row">
         <div class="rc-group">
           <label>Username (optional)</label>
@@ -1086,6 +1133,9 @@ do wr
 </div>
 
 <script>
+let terminalWindow = null;
+let terminalConnected = false;
+
 function openRemoteModal(type) {
     document.getElementById('rcOverlay').classList.add('show');
     document.getElementById('rcSSH').style.display = type === 'ssh' ? 'block' : 'none';
@@ -1096,6 +1146,34 @@ function openRemoteModal(type) {
 function closeRemoteModal() {
     document.getElementById('rcOverlay').classList.remove('show');
 }
+
+// Ping
+async function pingHost(inputId, resultId) {
+    const host = document.getElementById(inputId).value.trim();
+    if (!host) { document.getElementById(inputId).focus(); return; }
+    const el = document.getElementById(resultId);
+    el.className = 'rc-ping-result show loading';
+    el.innerHTML = '⏳ Pinging ' + host + '...';
+    try {
+        const res = await fetch('/api/ping', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({host: host})
+        });
+        const data = await res.json();
+        if (data.reachable) {
+            el.className = 'rc-ping-result show ok';
+            el.innerHTML = '✅ ' + host + ' is reachable' + (data.avg_ms ? ' (avg: ' + data.avg_ms + 'ms)' : '');
+        } else {
+            el.className = 'rc-ping-result show fail';
+            el.innerHTML = '❌ ' + host + ' is unreachable';
+        }
+    } catch (e) {
+        el.className = 'rc-ping-result show fail';
+        el.innerHTML = '❌ Ping failed: ' + e.message;
+    }
+}
+
 async function connectSSH() {
     const host = document.getElementById('rcHost').value.trim();
     if (!host) { document.getElementById('rcHost').focus(); return; }
@@ -1114,12 +1192,14 @@ async function connectSSH() {
         });
         const data = await res.json();
         if (data.token) {
-            window.open('/terminal?token=' + data.token, '_blank',
+            terminalWindow = window.open('/terminal?token=' + data.token, 'terminalWindow',
                 'width=1000,height=600,menubar=no,toolbar=no,location=no,status=no');
             closeRemoteModal();
+            showDeployPanel();
         }
     } catch (e) { alert('Error: ' + e.message); }
 }
+
 async function connectRDP() {
     const host = document.getElementById('rdpHost').value.trim();
     if (!host) { document.getElementById('rdpHost').focus(); return; }
@@ -1144,6 +1224,54 @@ async function connectRDP() {
         closeRemoteModal();
     } catch (e) { alert('Error: ' + e.message); }
 }
+
+// Deploy panel
+function showDeployPanel() {
+    document.getElementById('deployPanel').style.display = 'block';
+    updateDeployStatus();
+}
+
+function updateDeployStatus() {
+    const el = document.getElementById('deployStatus');
+    if (terminalWindow && !terminalWindow.closed) {
+        el.innerHTML = '<span style="color:#10b981;">● Terminal open</span>';
+    } else {
+        el.innerHTML = '<span style="color:#94a3b8;">○ Terminal not connected</span>';
+        terminalConnected = false;
+    }
+}
+
+// Listen for terminal state messages
+window.addEventListener('message', function(event) {
+    if (event.data && event.data.type === 'terminal_state') {
+        terminalConnected = event.data.state === 'connected';
+        updateDeployStatus();
+    }
+});
+
+function sendConfigToTerminal() {
+    const selectEl = document.getElementById('configSelect');
+    const configId = selectEl.value;
+    if (!configId) { alert('Please select a config to send'); return; }
+    if (!terminalWindow || terminalWindow.closed) {
+        alert('Terminal is not open. Please connect via SSH/Telnet first.');
+        return;
+    }
+    const configEl = document.getElementById(configId);
+    if (!configEl) return;
+    const text = configEl.value || configEl.textContent || configEl.innerText;
+    if (!text || text.trim() === '' || text.trim() === 'Branch configuration will appear here...' || text.trim() === 'WAN-INTR1 configuration will appear here...' || text.trim() === 'WAN-INTR2 configuration will appear here...') {
+        alert('Config is empty. Generate config first.');
+        return;
+    }
+    const title = selectEl.options[selectEl.selectedIndex].text;
+    terminalWindow.postMessage({ type: 'paste_config', text: text, title: title }, '*');
+    terminalWindow.focus();
+}
+
+// Periodically check terminal window status
+setInterval(updateDeployStatus, 3000);
+
 document.addEventListener('keydown', function(e) {
     if (e.key === 'Escape' && document.getElementById('rcOverlay').classList.contains('show')) {
         closeRemoteModal();

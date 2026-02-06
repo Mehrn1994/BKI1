@@ -2537,6 +2537,54 @@ def generate_pdf_report():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+# ==================== PING API ====================
+@app.route('/api/ping', methods=['POST'])
+def ping_host():
+    """Ping a host and return reachability + latency"""
+    data = request.json
+    if not data or not data.get('host'):
+        return jsonify({'error': 'Host is required'}), 400
+
+    host = data['host'].strip()
+
+    # Validate: only allow IPs and hostnames (prevent command injection)
+    import re
+    if not re.match(r'^[a-zA-Z0-9._:-]+$', host):
+        return jsonify({'error': 'Invalid host format'}), 400
+
+    try:
+        count_flag = '-n' if platform.system().lower() == 'windows' else '-c'
+        timeout_flag = '-w' if platform.system().lower() == 'windows' else '-W'
+        timeout_val = '3000' if platform.system().lower() == 'windows' else '3'
+
+        result = subprocess.run(
+            ['ping', count_flag, '3', timeout_flag, timeout_val, host],
+            capture_output=True, text=True, timeout=15
+        )
+
+        output = result.stdout + result.stderr
+        reachable = result.returncode == 0
+
+        # Extract average latency
+        avg_ms = None
+        if reachable:
+            avg_match = re.search(r'Average\s*=\s*(\d+)', output)
+            if not avg_match:
+                avg_match = re.search(r'avg[^=]*=\s*[\d.]+/([\d.]+)', output)
+            if avg_match:
+                avg_ms = float(avg_match.group(1))
+
+        return jsonify({
+            'reachable': reachable,
+            'host': host,
+            'avg_ms': avg_ms,
+            'output': output.strip()
+        })
+    except subprocess.TimeoutExpired:
+        return jsonify({'reachable': False, 'host': host, 'avg_ms': None, 'output': 'Ping timed out'})
+    except Exception as e:
+        return jsonify({'reachable': False, 'host': host, 'avg_ms': None, 'output': str(e)})
+
 # ==================== MAIN ====================
 if __name__ == '__main__':
     print("=" * 70)
