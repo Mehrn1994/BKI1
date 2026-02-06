@@ -161,7 +161,7 @@
                 <div class="info-box">🔐 اولین ورود - رمز عبور تعیین کنید</div>
                 <div class="form-group">
                     <label>رمز عبور جدید</label>
-                    <input type="password" id="newPassword" placeholder="حداقل 4 کاراکتر">
+                    <input type="password" id="newPassword" placeholder="حداقل ۸ کاراکتر">
                 </div>
                 <div class="form-group">
                     <label>تکرار رمز عبور</label>
@@ -184,7 +184,14 @@
 
     <script>
         let selectedUser = null;
-        
+
+        // HTML escape function for XSS prevention
+        function escapeHtml(text) {
+            if (!text) return '';
+            const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' };
+            return String(text).replace(/[&<>"']/g, m => map[m]);
+        }
+
         // Debug logging
         function log(message, type = 'info') {
             console.log(`[${type.toUpperCase()}] ${message}`);
@@ -229,15 +236,17 @@
                     throw new Error('لیست کاربران خالی است');
                 }
                 
-                document.getElementById('usersGrid').innerHTML = data.users.map(user => `
-                    <div class="user-btn" onclick="selectUser('${user.name}', ${user.registered})">
-                        <div class="avatar">${user.name[0]}</div>
+                document.getElementById('usersGrid').innerHTML = data.users.map(user => {
+                    const safeName = escapeHtml(user.name);
+                    return `
+                    <div class="user-btn" onclick="selectUser('${safeName}', ${user.registered})">
+                        <div class="avatar">${safeName[0]}</div>
                         <div>
-                            <div class="name">${user.name}</div>
+                            <div class="name">${safeName}</div>
                             <div class="status ${user.registered ? '' : 'new'}">${user.registered ? '✓ ثبت شده' : '● جدید'}</div>
                         </div>
                     </div>
-                `).join('');
+                `}).join('');
                 
             } catch (error) {
                 log(`خطا: ${error.message}`, 'error');
@@ -313,7 +322,7 @@
             const p1 = document.getElementById('newPassword').value;
             const p2 = document.getElementById('confirmPassword').value;
             
-            if (p1.length < 4) { showError('رمز باید حداقل 4 کاراکتر باشد'); return; }
+            if (p1.length < 8) { showError('رمز باید حداقل ۸ کاراکتر باشد'); return; }
             if (p1 !== p2) { showError('رمزها مطابقت ندارند'); return; }
             
             setLoading('registerBtn', true);

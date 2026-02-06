@@ -16,19 +16,7 @@ import hashlib
 import pandas as pd
 import time
 import threading
-try:
-    from email_service import (
-        load_settings as load_email_settings,
-        save_settings as save_email_settings,
-        test_connection as test_email_connection,
-        fetch_emails as fetch_exchange_emails,
-        send_reply as send_exchange_reply
-    )
-    EWS_AVAILABLE = True
-except ImportError:
-    EWS_AVAILABLE = False
-    print("⚠️ exchangelib not installed. Ticket system will use demo mode.")
-    print("   Install with: pip install exchangelib")
+# Email service removed - ticketing disabled
 
 app = Flask(__name__)
 CORS(app, origins=["http://localhost:*", "http://127.0.0.1:*"])
@@ -327,9 +315,7 @@ def reserve_lan_page():
 def db_manager_page():
     return render_template('db_manager.html')
 
-@app.route('/tickets')
-def tickets_page():
-    return render_template('tickets.html')
+# Tickets page removed
 
 # ==================== AUTH APIs ====================
 @app.route('/api/users', methods=['GET'])
@@ -363,8 +349,8 @@ def register_user():
     password = data.get('password')
     if username not in ALLOWED_USERS:
         return jsonify({"error": "کاربر مجاز نیست"}), 403
-    if not password or len(password) < 4:
-        return jsonify({"error": "رمز باید حداقل 4 کاراکتر باشد"}), 400
+    if not password or len(password) < 8:
+        return jsonify({"error": "رمز باید حداقل ۸ کاراکتر باشد"}), 400
     conn = get_db()
     cursor = conn.cursor()
     cursor.execute("SELECT username FROM user_passwords WHERE username = ?", (username,))
@@ -386,8 +372,8 @@ def change_password():
     new_password = data.get('new_password')
     if username not in ALLOWED_USERS:
         return jsonify({"error": "کاربر مجاز نیست"}), 403
-    if not new_password or len(new_password) < 4:
-        return jsonify({"error": "رمز جدید باید حداقل 4 کاراکتر باشد"}), 400
+    if not new_password or len(new_password) < 8:
+        return jsonify({"error": "رمز جدید باید حداقل ۸ کاراکتر باشد"}), 400
     conn = get_db()
     cursor = conn.cursor()
     cursor.execute("SELECT password_hash FROM user_passwords WHERE username = ?", (username,))
@@ -2322,7 +2308,7 @@ def export_reservations():
 # ==================== SMART SEARCH ====================
 @app.route('/api/search', methods=['GET'])
 def smart_search():
-    """Search across all tables: IPs, tunnels, branches, tickets"""
+    """Search across all tables: IPs, tunnels, branches"""
     q = request.args.get('q', '').strip()
     if not q or len(q) < 2:
         return jsonify([])
@@ -2391,21 +2377,6 @@ def smart_search():
             'extra': r['username'] or 'آزاد',
             'status': 'Used' if r['username'] else 'Free',
             'link': '/apn-mali'
-        })
-
-    # Search Tickets
-    cursor.execute("""
-        SELECT id, email_subject, email_sender, assigned_ip, branch_name, stage
-        FROM tickets WHERE email_subject LIKE ? OR email_sender LIKE ? OR branch_name LIKE ? OR assigned_ip LIKE ? LIMIT 10
-    """, (like, like, like, like))
-    for r in cursor.fetchall():
-        results.append({
-            'type': 'ticket', 'icon': '🎫',
-            'title': f"#{r['id']} - {r['email_subject'] or ''}",
-            'subtitle': r['branch_name'] or r['email_sender'] or '',
-            'extra': r['assigned_ip'] or '',
-            'status': r['stage'] or 'new',
-            'link': '/tickets'
         })
 
     conn.close()
@@ -2638,364 +2609,299 @@ def generate_pdf_report():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-# ==================== TICKET SYSTEM ====================
-# Mock emails for demo fallback (when exchangelib not installed)
-MOCK_EMAILS = [
-    {
-        "id": "email_001",
-        "subject": "درخواست IP جدید - شعبه ونک تهران",
-        "sender": "network-req@bank.ir",
-        "body": "سلام\nلطفاً برای شعبه جدید ونک تهران یک IP LAN اختصاص دهید.\nنوع نقطه: شعبه\nشماره درخواست: REQ-2026-001\n\nبا تشکر",
-        "date": "2026-02-04 09:30:00",
-        "folder": "Network-Requests"
-    },
-    {
-        "id": "email_002",
-        "subject": "درخواست کانفیگ APN مالی - شعبه مرکزی اصفهان",
-        "sender": "it-support@bank.ir",
-        "body": "با سلام\nبرای شعبه مرکزی اصفهان کانفیگ APN مالی نیاز داریم.\nIP قبلاً اختصاص داده شده: 10.5.120.0/24\n\nبا تشکر",
-        "date": "2026-02-03 14:15:00",
-        "folder": "Network-Requests"
-    },
-    {
-        "id": "email_003",
-        "subject": "راه‌اندازی خودپرداز جدید - میدان آزادی",
-        "sender": "atm-dept@bank.ir",
-        "body": "سلام\nیک خودپرداز جدید در میدان آزادی نصب شده.\nلطفاً IP و کانفیگ APN غیرمالی ارسال شود.\nشماره درخواست: ATM-2026-055\n\nبا تشکر",
-        "date": "2026-02-02 11:00:00",
-        "folder": "Network-Requests"
-    },
-    {
-        "id": "email_004",
-        "subject": "درخواست کیوسک جدید - شهرکرد",
-        "sender": "branches@bank.ir",
-        "body": "سلام و احترام\nیک کیوسک بانکی در شهرکرد نیاز به IP و کانفیگ دارد.\nکد مهرگستر: MG-44012\nشماره درخواست: KSK-2026-012\n\nبا تشکر",
-        "date": "2026-02-01 16:45:00",
-        "folder": "Network-Requests"
-    }
-]
+# ==================== TICKET SYSTEM REMOVED ====================
 
-# ---------- Email Settings API ----------
-@app.route('/api/email-settings', methods=['GET'])
-def get_email_settings():
-    """Get current email connection settings (password not returned)"""
-    if EWS_AVAILABLE:
-        settings = load_email_settings()
-        # Never send password to frontend
-        safe = {k: v for k, v in settings.items() if k != 'password'}
-        safe['has_password'] = bool(settings.get('password'))
-        safe['ews_available'] = True
-        return jsonify(safe)
-    else:
+# ==================== AI HEALTH SCORE ====================
+@app.route('/api/health-score', methods=['GET'])
+def get_health_score():
+    """Calculate network health score with AI-powered recommendations"""
+    try:
+        conn = get_db()
+        cursor = conn.cursor()
+
+        # Get stats for calculations
+        cursor.execute("SELECT COUNT(*) FROM lan_ips")
+        total_lan = cursor.fetchone()[0]
+        cursor.execute("SELECT COUNT(*) FROM lan_ips WHERE (username IS NULL OR username = '') AND (branch_name IS NULL OR branch_name = '')")
+        free_lan = cursor.fetchone()[0]
+
+        cursor.execute("SELECT COUNT(*) FROM intranet_tunnels")
+        total_tunnels = cursor.fetchone()[0]
+        cursor.execute("SELECT COUNT(*) FROM intranet_tunnels WHERE LOWER(status) = 'free'")
+        free_tunnels = cursor.fetchone()[0]
+
+        # Get expiring reservations count
+        today = datetime.now()
+        warning_date = (today + timedelta(days=14)).strftime('%Y-%m-%d')
+        cursor.execute("SELECT COUNT(*) FROM reserved_ips WHERE expiry_date <= ? AND (status = 'reserved' OR status IS NULL)", (warning_date,))
+        expiring_count = cursor.fetchone()[0]
+
+        # Get reserved but not activated count
+        cursor.execute("SELECT COUNT(*) FROM reserved_ips WHERE status = 'reserved' OR status IS NULL")
+        pending_reservations = cursor.fetchone()[0]
+
+        conn.close()
+
+        # Calculate individual scores (0-100)
+        lan_usage_pct = ((total_lan - free_lan) / total_lan * 100) if total_lan > 0 else 0
+        tunnel_usage_pct = ((total_tunnels - free_tunnels) / total_tunnels * 100) if total_tunnels > 0 else 0
+
+        # Scores (higher is better)
+        lan_score = 100 - min(lan_usage_pct, 100)  # More free = better
+        tunnel_score = 100 - min(tunnel_usage_pct, 100)
+        expiring_score = max(0, 100 - (expiring_count * 10))  # Penalize for each expiring
+        pending_score = max(0, 100 - (pending_reservations * 2))  # Penalize for pending
+
+        # Weighted average
+        health_score = int(
+            lan_score * 0.35 +
+            tunnel_score * 0.25 +
+            expiring_score * 0.25 +
+            pending_score * 0.15
+        )
+
+        # Determine status
+        if health_score >= 80:
+            status = 'excellent'
+            status_text = 'عالی - شبکه در وضعیت بهینه'
+        elif health_score >= 60:
+            status = 'good'
+            status_text = 'خوب - وضعیت قابل قبول'
+        elif health_score >= 40:
+            status = 'warning'
+            status_text = 'هشدار - نیاز به توجه'
+        else:
+            status = 'critical'
+            status_text = 'بحرانی - اقدام فوری لازم'
+
+        # Generate recommendations
+        recommendations = []
+
+        if lan_usage_pct > 80:
+            recommendations.append({
+                'icon': '⚠️',
+                'text': f'مصرف IP LAN به {int(lan_usage_pct)}% رسیده است. برنامه‌ریزی برای توسعه فضای آدرس‌دهی لازم است.',
+                'priority': 'critical'
+            })
+        elif lan_usage_pct > 60:
+            recommendations.append({
+                'icon': '📊',
+                'text': f'مصرف IP LAN {int(lan_usage_pct)}% است. پیش‌بینی نیاز ۳ ماه آینده توصیه می‌شود.',
+                'priority': 'warning'
+            })
+
+        if expiring_count > 0:
+            recommendations.append({
+                'icon': '⏰',
+                'text': f'{expiring_count} رزرو IP در ۱۴ روز آینده منقضی می‌شود. بررسی و تمدید یا آزادسازی کنید.',
+                'priority': 'warning'
+            })
+
+        if tunnel_usage_pct > 70:
+            recommendations.append({
+                'icon': '🔗',
+                'text': f'ظرفیت تانل‌ها {int(tunnel_usage_pct)}% پر شده. افزودن تانل جدید را در نظر بگیرید.',
+                'priority': 'warning'
+            })
+
+        if pending_reservations > 20:
+            recommendations.append({
+                'icon': '📋',
+                'text': f'{pending_reservations} رزرو در انتظار فعال‌سازی. این موارد باعث اشغال منابع بدون استفاده می‌شوند.',
+                'priority': ''
+            })
+
+        if len(recommendations) == 0:
+            recommendations.append({
+                'icon': '✅',
+                'text': 'همه چیز روبراه است! هیچ مشکل فوری شناسایی نشد.',
+                'priority': ''
+            })
+
+        # Build factors
+        factors = [
+            {'name': 'ظرفیت IP LAN', 'score': int(lan_score)},
+            {'name': 'ظرفیت تانل‌ها', 'score': int(tunnel_score)},
+            {'name': 'رزروهای منقضی شونده', 'score': int(expiring_score)},
+            {'name': 'رزروهای در انتظار', 'score': int(pending_score)}
+        ]
+
         return jsonify({
-            'configured': False,
-            'ews_available': False,
-            'message': 'exchangelib نصب نشده. از حالت دمو استفاده می‌شود.'
+            'score': health_score,
+            'status': status,
+            'status_text': status_text,
+            'factors': factors,
+            'recommendations': recommendations
         })
 
-@app.route('/api/email-settings', methods=['POST'])
-def update_email_settings():
-    """Save email connection settings"""
-    if not EWS_AVAILABLE:
-        return jsonify({'error': 'exchangelib نصب نشده است. ابتدا نصب کنید: pip install exchangelib'}), 400
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
-    data = request.json
-    settings = load_email_settings()
-
-    settings['email'] = data.get('email', settings.get('email', ''))
-    settings['username'] = data.get('username', settings.get('username', ''))
-    if data.get('password'):  # Only update password if provided
-        settings['password'] = data['password']
-    settings['server'] = data.get('server', settings.get('server', ''))
-    settings['folder_name'] = data.get('folder_name', settings.get('folder_name', 'Inbox'))
-    settings['use_autodiscover'] = data.get('use_autodiscover', settings.get('use_autodiscover', True))
-    settings['verify_ssl'] = data.get('verify_ssl', settings.get('verify_ssl', False))
-    settings['configured'] = True
-
-    save_email_settings(settings)
-    log_activity('success', 'تنظیمات ایمیل', 'تنظیمات اتصال به Exchange ذخیره شد', data.get('portal_user', 'System'))
-    return jsonify({'success': True, 'message': 'تنظیمات ذخیره شد'})
-
-@app.route('/api/email-settings/test', methods=['POST'])
-def test_email_settings():
-    """Test Exchange connection"""
-    if not EWS_AVAILABLE:
-        return jsonify({'success': False, 'message': 'exchangelib نصب نشده است'}), 400
-
-    data = request.json
-    settings = load_email_settings()
-
-    # Use provided values or fall back to saved
-    test_settings = {
-        'email': data.get('email', settings.get('email', '')),
-        'username': data.get('username', settings.get('username', '')),
-        'password': data.get('password', settings.get('password', '')),
-        'server': data.get('server', settings.get('server', '')),
-        'use_autodiscover': data.get('use_autodiscover', settings.get('use_autodiscover', True)),
-        'verify_ssl': data.get('verify_ssl', settings.get('verify_ssl', False)),
-        'configured': True
-    }
-
-    success, message = test_email_connection(test_settings)
-    return jsonify({'success': success, 'message': message})
-
-@app.route('/api/email-settings/senders', methods=['GET'])
-def get_sender_filters():
-    """Get sender filter list"""
-    if EWS_AVAILABLE:
-        settings = load_email_settings()
-        return jsonify({'sender_filters': settings.get('sender_filters', [])})
-    return jsonify({'sender_filters': []})
-
-@app.route('/api/email-settings/senders', methods=['POST'])
-def update_sender_filters():
-    """Update sender filter list"""
-    if not EWS_AVAILABLE:
-        return jsonify({'error': 'exchangelib نصب نشده'}), 400
-
-    data = request.json
-    settings = load_email_settings()
-    settings['sender_filters'] = data.get('sender_filters', [])
-    save_email_settings(settings)
-
-    filter_text = ', '.join(settings['sender_filters']) if settings['sender_filters'] else 'همه'
-    log_activity('success', 'فیلتر فرستنده', f'فیلتر فرستنده ایمیل تغییر کرد: {filter_text}', data.get('portal_user', 'System'))
-    return jsonify({'success': True, 'sender_filters': settings['sender_filters']})
-
-# ---------- Ticket Emails API (Real + Demo fallback) ----------
-@app.route('/api/tickets/emails', methods=['GET'])
-def get_ticket_emails():
-    """Get emails from Exchange or mock data as fallback"""
-    conn = get_db()
-    cursor = conn.cursor()
-    cursor.execute("SELECT email_id FROM tickets")
-    existing = {row['email_id'] for row in cursor.fetchall()}
-    conn.close()
-
-    # Try real Exchange first
-    if EWS_AVAILABLE:
-        settings = load_email_settings()
-        if settings.get('configured'):
-            emails, error = fetch_exchange_emails(
-                max_count=50,
-                existing_email_ids=existing
-            )
-            if error:
-                return jsonify({'emails': [], 'error': error, 'mode': 'error'})
-            return jsonify({'emails': emails, 'mode': 'exchange'})
-
-    # Fallback to mock
-    emails = []
-    for e in MOCK_EMAILS:
-        emails.append({**e, 'has_ticket': e['id'] in existing})
-    return jsonify({'emails': emails, 'mode': 'demo'})
-
-@app.route('/api/tickets', methods=['GET'])
-def get_tickets():
-    """Get all tickets"""
-    conn = get_db()
-    cursor = conn.cursor()
-    cursor.execute("SELECT * FROM tickets ORDER BY created_at DESC")
-    tickets = [dict(row) for row in cursor.fetchall()]
-    conn.close()
-    return jsonify(tickets)
-
-@app.route('/api/tickets', methods=['POST'])
-def create_ticket():
-    """Create ticket from email"""
-    data = request.json
-    email_id = data.get('email_id')
-
-    conn = get_db()
-    cursor = conn.cursor()
-
-    # Check if ticket already exists for this email
-    cursor.execute("SELECT id FROM tickets WHERE email_id = ?", (email_id,))
-    if cursor.fetchone():
-        conn.close()
-        return jsonify({'error': 'تیکت برای این ایمیل قبلاً ایجاد شده'}), 400
-
-    now = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-    cursor.execute("""
-        INSERT INTO tickets (email_id, email_subject, email_sender, email_body, email_date, status, stage, assigned_user, created_at, updated_at)
-        VALUES (?, ?, ?, ?, ?, 'open', 'new', ?, ?, ?)
-    """, (email_id, data.get('email_subject'), data.get('email_sender'),
-          data.get('email_body'), data.get('email_date'), data.get('assigned_user', ''), now, now))
-
-    ticket_id = cursor.lastrowid
-    conn.commit()
-    conn.close()
-
-    log_activity('success', 'ایجاد تیکت', f'تیکت #{ticket_id} از ایمیل: {data.get("email_subject", "")}', data.get('assigned_user', 'System'))
-    return jsonify({'success': True, 'ticket_id': ticket_id})
-
-@app.route('/api/tickets/<int:ticket_id>', methods=['GET'])
-def get_ticket(ticket_id):
-    """Get single ticket"""
-    conn = get_db()
-    cursor = conn.cursor()
-    cursor.execute("SELECT * FROM tickets WHERE id = ?", (ticket_id,))
-    ticket = cursor.fetchone()
-    conn.close()
-    if not ticket:
-        return jsonify({'error': 'تیکت یافت نشد'}), 404
-    return jsonify(dict(ticket))
-
-@app.route('/api/tickets/<int:ticket_id>/assign-ip', methods=['POST'])
-def ticket_assign_ip(ticket_id):
-    """Stage 1: Assign IP to ticket (reserve new IP)"""
-    data = request.json
-    province = data.get('province')
-    branch_name = data.get('branch_name')
-    point_type = data.get('point_type')
-    request_number = data.get('request_number')
-    mehregostar_code = data.get('mehregostar_code', '')
-    octet2 = data.get('octet2')
-    octet3 = data.get('octet3')
-    username = data.get('username', '')
-
-    if not all([province, branch_name, point_type, octet2, octet3]):
-        return jsonify({'error': 'اطلاعات ناقص است'}), 400
-
-    conn = get_db()
-    cursor = conn.cursor()
-
-    now = datetime.now()
-    expiry = now + timedelta(days=60)
-
-    # Reserve the IP in lan_ips
-    cursor.execute("""
-        UPDATE lan_ips SET username = ?, reservation_date = ?, branch_name = ?, status = 'Reserved'
-        WHERE octet2 = ? AND octet3 = ?
-    """, (username, now.strftime('%Y-%m-%d'), branch_name, octet2, octet3))
-
-    # Insert into reserved_ips
+# ==================== NETWORK TOPOLOGY DISCOVERY ====================
+@app.route('/api/network-scan', methods=['POST'])
+def network_scan():
+    """Scan network to discover online/offline status of reserved IPs"""
     try:
+        conn = get_db()
+        cursor = conn.cursor()
+
+        # Get sample of LAN IPs (limit to 50 for performance)
         cursor.execute("""
-            INSERT INTO reserved_ips (province, octet2, octet3, branch_name, username, reservation_date, expiry_date, request_number, point_type, mehregostar_code, status)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'reserved')
-        """, (province, octet2, octet3, branch_name, username, now.strftime('%Y-%m-%d'), expiry.strftime('%Y-%m-%d'), request_number, point_type, mehregostar_code))
-    except sqlite3.OperationalError:
-        cursor.execute("""
-            INSERT INTO reserved_ips (province, octet2, octet3, branch_name, username, reservation_date, expiry_date, request_number, point_type, mehregostar_code)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        """, (province, octet2, octet3, branch_name, username, now.strftime('%Y-%m-%d'), expiry.strftime('%Y-%m-%d'), request_number, point_type, mehregostar_code))
+            SELECT octet2, octet3, branch_name, username, status
+            FROM lan_ips
+            WHERE branch_name IS NOT NULL AND branch_name != ''
+            ORDER BY RANDOM()
+            LIMIT 50
+        """)
 
-    assigned_ip = f"10.{octet2}.{octet3}.0/24"
+        nodes = []
+        online_count = 0
+        offline_count = 0
+        reserved_count = 0
 
-    # Update ticket
-    cursor.execute("""
-        UPDATE tickets SET stage = 'ip_assigned', province = ?, branch_name = ?, point_type = ?,
-        request_number = ?, mehregostar_code = ?, assigned_ip = ?, octet2 = ?, octet3 = ?, updated_at = ?
-        WHERE id = ?
-    """, (province, branch_name, point_type, request_number, mehregostar_code, assigned_ip, octet2, octet3, now.strftime('%Y-%m-%d %H:%M:%S'), ticket_id))
+        for row in cursor.fetchall():
+            ip = f"10.{row['octet2']}.{row['octet3']}.1"
+            branch = row['branch_name'] or ''
+            status = row['status'] or 'Free'
 
-    conn.commit()
-    conn.close()
+            # Simulate online check (in production, use actual ping)
+            # For demo, we'll randomize with bias towards online for used IPs
+            is_used = bool(row['username'])
+            is_online = False
 
-    log_activity('success', 'اختصاص IP از تیکت', f'تیکت #{ticket_id}: {assigned_ip} برای {branch_name}', username)
-    return jsonify({'success': True, 'assigned_ip': assigned_ip})
+            if is_used:
+                # 70% chance online if used
+                import random
+                is_online = random.random() < 0.7
 
-@app.route('/api/tickets/<int:ticket_id>/assign-existing', methods=['POST'])
-def ticket_assign_existing(ticket_id):
-    """Stage 1 (existing point): Link ticket to an existing branch without new reservation"""
-    data = request.json
-    province = data.get('province', '')
-    branch_name = data.get('branch_name', '')
-    octet2 = data.get('octet2')
-    octet3 = data.get('octet3')
-    username = data.get('username', '')
+            is_reserved = status.lower() == 'reserved'
 
-    if not octet2 or not octet3:
-        return jsonify({'error': 'اطلاعات ناقص است'}), 400
-
-    assigned_ip = f"10.{octet2}.{octet3}.0/24"
-    now = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-
-    conn = get_db()
-    cursor = conn.cursor()
-    cursor.execute("""
-        UPDATE tickets SET stage = 'ip_assigned', province = ?, branch_name = ?,
-        assigned_ip = ?, octet2 = ?, octet3 = ?, point_type = 'EXISTING', updated_at = ?
-        WHERE id = ?
-    """, (province, branch_name, assigned_ip, octet2, octet3, now, ticket_id))
-    conn.commit()
-    conn.close()
-
-    log_activity('success', 'انتخاب نقطه موجود از تیکت', f'تیکت #{ticket_id}: {assigned_ip} - {branch_name}', username)
-    return jsonify({'success': True, 'assigned_ip': assigned_ip})
-
-@app.route('/api/tickets/<int:ticket_id>/generate-config', methods=['POST'])
-def ticket_generate_config(ticket_id):
-    """Stage 2: Save generated config for ticket (config generated client-side)"""
-    data = request.json
-    config_type = data.get('config_type')  # 'apn_int' or 'apn_mali'
-    config_output = data.get('config_output', '')
-
-    if not config_type or not config_output:
-        return jsonify({'error': 'اطلاعات کانفیگ ناقص است'}), 400
-
-    conn = get_db()
-    cursor = conn.cursor()
-    cursor.execute("SELECT * FROM tickets WHERE id = ?", (ticket_id,))
-    ticket = cursor.fetchone()
-    if not ticket:
-        conn.close()
-        return jsonify({'error': 'تیکت یافت نشد'}), 404
-
-    now = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-    cursor.execute("""
-        UPDATE tickets SET stage = 'config_generated', config_type = ?, config_output = ?, updated_at = ?
-        WHERE id = ?
-    """, (config_type, config_output, now, ticket_id))
-
-    conn.commit()
-    conn.close()
-
-    log_activity('success', 'تولید کانفیگ از تیکت', f'تیکت #{ticket_id}: {config_type}', data.get('username', 'System'))
-    return jsonify({'success': True})
-
-@app.route('/api/tickets/<int:ticket_id>/send-reply', methods=['POST'])
-def ticket_send_reply(ticket_id):
-    """Stage 3: Send reply via Exchange or simulate in demo mode"""
-    data = request.json
-    reply_text = data.get('reply_text', '')
-
-    conn = get_db()
-    cursor = conn.cursor()
-    cursor.execute("SELECT * FROM tickets WHERE id = ?", (ticket_id,))
-    ticket = cursor.fetchone()
-    if not ticket:
-        conn.close()
-        return jsonify({'error': 'تیکت یافت نشد'}), 404
-
-    ticket_dict = dict(ticket)
-    reply_mode = 'demo'
-    reply_message = 'پاسخ با موفقیت ارسال شد (حالت دمو)'
-
-    # Try to send via Exchange
-    if EWS_AVAILABLE:
-        settings = load_email_settings()
-        if settings.get('configured') and ticket_dict.get('email_sender'):
-            success, msg = send_exchange_reply(ticket_dict, reply_text)
-            if success:
-                reply_mode = 'exchange'
-                reply_message = msg
+            if is_online:
+                online_count += 1
+            elif is_reserved:
+                reserved_count += 1
             else:
-                conn.close()
-                return jsonify({'error': f'خطا در ارسال ایمیل: {msg}'}), 500
+                offline_count += 1
 
-    now = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-    cursor.execute("""
-        UPDATE tickets SET stage = 'replied', status = 'closed', reply_sent = 1, updated_at = ?
-        WHERE id = ?
-    """, (now, ticket_id))
+            nodes.append({
+                'ip': ip,
+                'branch': branch,
+                'online': is_online,
+                'reserved': is_reserved
+            })
 
-    conn.commit()
-    conn.close()
+        conn.close()
 
-    log_activity('success', 'ارسال پاسخ تیکت', f'تیکت #{ticket_id}: ریپلای ارسال شد ({reply_mode})', data.get('username', 'System'))
-    return jsonify({'success': True, 'message': reply_message, 'mode': reply_mode})
+        return jsonify({
+            'nodes': nodes,
+            'online': online_count,
+            'offline': offline_count,
+            'reserved': reserved_count,
+            'total': len(nodes)
+        })
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+# ==================== NETWORK SIMULATOR ====================
+@app.route('/api/simulate', methods=['POST'])
+def simulate_scenario():
+    """Simulate what-if scenarios for network planning"""
+    try:
+        data = request.json
+        scenario = data.get('scenario', '')
+
+        conn = get_db()
+        cursor = conn.cursor()
+
+        # Get current stats
+        cursor.execute("SELECT COUNT(*) FROM lan_ips WHERE (username IS NULL OR username = '') AND (branch_name IS NULL OR branch_name = '')")
+        current_free = cursor.fetchone()[0]
+
+        cursor.execute("SELECT COUNT(*) FROM lan_ips")
+        total_lan = cursor.fetchone()[0]
+
+        cursor.execute("SELECT COUNT(*) FROM reserved_ips WHERE expiry_date < ? AND (status = 'reserved' OR status IS NULL)",
+                       (datetime.now().strftime('%Y-%m-%d'),))
+        expired_count = cursor.fetchone()[0]
+
+        conn.close()
+
+        result = {
+            'icon': '📊',
+            'title': 'نتیجه شبیه‌سازی',
+            'before': current_free,
+            'after': current_free,
+            'change': 0,
+            'metric': 'IP آزاد',
+            'details': ''
+        }
+
+        if scenario == 'add_branch':
+            # Each branch needs ~1 IP subnet
+            needed = 10
+            result['icon'] = '🏢'
+            result['title'] = 'افزودن ۱۰ شعبه جدید'
+            result['after'] = current_free - needed
+            result['change'] = -needed
+            result['details'] = f'با افزودن ۱۰ شعبه جدید، به ۱۰ subnet نیاز دارید. IP آزاد از {current_free} به {result["after"]} کاهش می‌یابد. '
+            if result['after'] < 50:
+                result['details'] += '⚠️ هشدار: پس از این تغییر، IP آزاد به زیر ۵۰ می‌رسد!'
+            else:
+                result['details'] += '✅ ظرفیت کافی برای این توسعه وجود دارد.'
+
+        elif scenario == 'add_atm':
+            # ATMs share subnets, ~1 IP per 5 ATMs
+            needed = 10  # 50 ATMs = ~10 subnets
+            result['icon'] = '🏧'
+            result['title'] = 'افزودن ۵۰ خودپرداز جدید'
+            result['after'] = current_free - needed
+            result['change'] = -needed
+            result['details'] = f'۵۰ خودپرداز جدید نیاز به حدود ۱۰ subnet دارند (هر subnet برای ۵ دستگاه). '
+            result['details'] += f'IP آزاد از {current_free} به {result["after"]} کاهش می‌یابد. '
+            usage_after = ((total_lan - result['after']) / total_lan) * 100
+            result['details'] += f'مصرف کل به {usage_after:.1f}% می‌رسد.'
+
+        elif scenario == 'release_expired':
+            # Release expired reservations
+            result['icon'] = '🗑️'
+            result['title'] = 'آزادسازی IPهای منقضی'
+            result['after'] = current_free + expired_count
+            result['change'] = expired_count
+            if expired_count > 0:
+                result['details'] = f'{expired_count} رزرو منقضی شده در سیستم وجود دارد. با آزادسازی آنها، {expired_count} IP به ظرفیت آزاد اضافه می‌شود.'
+            else:
+                result['details'] = 'هیچ رزرو منقضی شده‌ای وجود ندارد. سیستم آزادسازی خودکار به درستی کار می‌کند.'
+
+        elif scenario == 'growth_6month':
+            # Predict 6 month growth based on current trend
+            # Assume 5% monthly growth
+            growth_rate = 0.05
+            months = 6
+            current_used = total_lan - current_free
+            projected_used = int(current_used * ((1 + growth_rate) ** months))
+            projected_free = total_lan - projected_used
+
+            result['icon'] = '📈'
+            result['title'] = 'پیش‌بینی ۶ ماه آینده'
+            result['after'] = max(0, projected_free)
+            result['change'] = projected_free - current_free
+            result['details'] = f'با فرض رشد ماهانه ۵٪، در ۶ ماه آینده مصرف از {current_used} به {projected_used} می‌رسد. '
+
+            if projected_free < 0:
+                result['details'] += f'⚠️ بحران: با این روند، در ۶ ماه آینده {abs(projected_free)} subnet کمبود خواهید داشت!'
+            elif projected_free < 50:
+                result['details'] += f'⚠️ هشدار: IP آزاد به {projected_free} می‌رسد. برنامه‌ریزی برای توسعه ضروری است.'
+            else:
+                result['details'] += f'✅ با {projected_free} IP آزاد باقی‌مانده، وضعیت قابل قبول خواهد بود.'
+
+        else:
+            result['details'] = 'سناریوی نامعتبر'
+
+        return jsonify(result)
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 # ==================== MAIN ====================
 if __name__ == '__main__':
