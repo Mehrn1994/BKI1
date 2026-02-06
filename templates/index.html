@@ -591,6 +591,341 @@
             pointer-events: none;
         }
 
+        /* ========== AI HEALTH SCORE ========== */
+        .health-score-card .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .btn-refresh {
+            background: transparent;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 6px 12px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+        .btn-refresh:hover { background: var(--card-hover); }
+
+        .health-score-container {
+            display: grid;
+            grid-template-columns: 280px 1fr;
+            gap: 30px;
+            align-items: start;
+        }
+        .health-score-main { text-align: center; }
+        .health-circle {
+            position: relative;
+            width: 200px;
+            height: 200px;
+            margin: 0 auto 20px;
+        }
+        .health-circle svg { width: 100%; height: 100%; }
+        .health-score-value {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+        }
+        .health-score-value span:first-child {
+            font-size: 52px;
+            font-weight: 800;
+            background: linear-gradient(135deg, #10b981, #3b82f6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .health-label {
+            display: block;
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-top: 4px;
+        }
+        .health-status {
+            font-size: 16px;
+            font-weight: 600;
+            padding: 8px 20px;
+            border-radius: 20px;
+            display: inline-block;
+        }
+        .health-status.excellent { background: rgba(16,185,129,0.15); color: #10b981; }
+        .health-status.good { background: rgba(59,130,246,0.15); color: #3b82f6; }
+        .health-status.warning { background: rgba(245,158,11,0.15); color: #f59e0b; }
+        .health-status.critical { background: rgba(239,68,68,0.15); color: #ef4444; }
+
+        .health-factors {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+        .factor-item {
+            background: var(--bg-secondary);
+            border-radius: 12px;
+            padding: 14px;
+            border: 1px solid var(--border-color);
+        }
+        .factor-item .factor-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+        .factor-item .factor-name { font-size: 12px; color: var(--text-muted); }
+        .factor-item .factor-score { font-weight: 700; font-size: 16px; }
+        .factor-item .factor-bar {
+            height: 6px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 3px;
+            overflow: hidden;
+        }
+        .factor-item .factor-fill {
+            height: 100%;
+            border-radius: 3px;
+            transition: width 1s ease;
+        }
+        .loading-placeholder {
+            background: linear-gradient(90deg, var(--bg-secondary) 25%, var(--card-hover) 50%, var(--bg-secondary) 75%);
+            background-size: 200% 100%;
+            animation: shimmer 1.5s infinite;
+            height: 70px;
+        }
+        @keyframes shimmer {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+
+        .ai-recommendations h4 {
+            font-size: 14px;
+            margin-bottom: 12px;
+            color: var(--text-secondary);
+        }
+        .recommendations-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .recommendation-item {
+            display: flex;
+            gap: 12px;
+            align-items: flex-start;
+            padding: 12px;
+            background: var(--bg-secondary);
+            border-radius: 10px;
+            border-right: 3px solid var(--accent-blue);
+        }
+        .recommendation-item.warning { border-right-color: #f59e0b; }
+        .recommendation-item.critical { border-right-color: #ef4444; }
+        .recommendation-item .rec-icon { font-size: 20px; }
+        .recommendation-item .rec-text { font-size: 13px; line-height: 1.5; }
+
+        /* ========== NETWORK TOPOLOGY ========== */
+        .topology-card .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .topology-controls {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .btn-scan {
+            background: linear-gradient(135deg, #3b82f6, #2563eb);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+        .btn-scan:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(59,130,246,0.4); }
+        .btn-scan:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+        .scan-status { font-size: 12px; color: var(--text-muted); }
+
+        .topology-container { padding: 10px 0; }
+        .topology-legend {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+        .legend-item { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-muted); }
+        .legend-item .dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+        }
+        .dot.online { background: #10b981; box-shadow: 0 0 8px #10b981; }
+        .dot.offline { background: #ef4444; }
+        .dot.reserved { background: #f59e0b; }
+
+        .topology-graph {
+            min-height: 300px;
+            background: radial-gradient(ellipse at center, rgba(59,130,246,0.05), transparent 70%);
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+            position: relative;
+            overflow: hidden;
+        }
+        .topology-placeholder {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 300px;
+            color: var(--text-muted);
+            font-size: 14px;
+        }
+        .topology-stats {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 12px;
+            margin-top: 20px;
+        }
+        .topo-stat {
+            text-align: center;
+            padding: 15px;
+            background: var(--bg-secondary);
+            border-radius: 10px;
+            border: 1px solid var(--border-color);
+        }
+        .topo-stat .stat-value { font-size: 28px; font-weight: 700; }
+        .topo-stat .stat-label { font-size: 11px; color: var(--text-muted); margin-top: 4px; }
+        .topo-stat.online .stat-value { color: #10b981; }
+        .topo-stat.offline .stat-value { color: #ef4444; }
+        .topo-stat.reserved .stat-value { color: #f59e0b; }
+        .topo-stat.total .stat-value { color: #3b82f6; }
+
+        .topo-node {
+            position: absolute;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .topo-node:hover { transform: scale(1.8); z-index: 10; }
+        .topo-node.online { background: #10b981; box-shadow: 0 0 10px #10b981; }
+        .topo-node.offline { background: #ef4444; }
+        .topo-node.reserved { background: #f59e0b; }
+        .topo-node-tooltip {
+            position: absolute;
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-size: 11px;
+            white-space: nowrap;
+            z-index: 100;
+            pointer-events: none;
+            box-shadow: 0 4px 12px var(--shadow-color);
+        }
+
+        /* ========== NETWORK SIMULATOR ========== */
+        .simulator-container {
+            display: grid;
+            grid-template-columns: 300px 1fr;
+            gap: 24px;
+            align-items: start;
+        }
+        .simulator-input h4 {
+            font-size: 14px;
+            color: var(--text-secondary);
+            margin-bottom: 16px;
+        }
+        .scenario-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .scenario-btn {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 14px 16px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-align: right;
+        }
+        .scenario-btn:hover {
+            border-color: var(--accent-blue);
+            background: rgba(59,130,246,0.1);
+            transform: translateX(-4px);
+        }
+        .scenario-btn .icon { font-size: 24px; }
+        .scenario-btn span:last-child { font-size: 13px; font-weight: 500; }
+
+        .simulator-output {
+            background: var(--bg-secondary);
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+            min-height: 280px;
+            padding: 20px;
+        }
+        .simulator-placeholder {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 240px;
+            color: var(--text-muted);
+            text-align: center;
+        }
+        .simulator-placeholder p { margin-top: 12px; font-size: 14px; }
+
+        .sim-result-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid var(--border-color);
+        }
+        .sim-result-header .icon { font-size: 32px; }
+        .sim-result-header h3 { font-size: 16px; font-weight: 600; }
+
+        .sim-comparison {
+            display: grid;
+            grid-template-columns: 1fr auto 1fr;
+            gap: 20px;
+            align-items: center;
+        }
+        .sim-state {
+            text-align: center;
+            padding: 20px;
+            background: var(--bg-card);
+            border-radius: 10px;
+        }
+        .sim-state h4 {
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-bottom: 10px;
+        }
+        .sim-state .value {
+            font-size: 28px;
+            font-weight: 700;
+        }
+        .sim-state.before .value { color: var(--text-secondary); }
+        .sim-state.after .value { color: #10b981; }
+        .sim-state.after.negative .value { color: #ef4444; }
+        .sim-arrow { font-size: 28px; color: var(--accent-blue); }
+
+        .sim-details {
+            margin-top: 20px;
+            padding: 15px;
+            background: rgba(59,130,246,0.1);
+            border-radius: 10px;
+            border-right: 3px solid var(--accent-blue);
+        }
+        .sim-details p { font-size: 13px; line-height: 1.7; }
+
         /* Footer */
         .footer {
             text-align: center;
@@ -768,7 +1103,7 @@
         <div class="search-wrapper">
             <span class="search-icon">🔍</span>
             <input type="text" class="search-input" id="globalSearch"
-                   placeholder="جستجو در IP، شعبه، استان، تانل، تیکت..."
+                   placeholder="جستجو در IP، شعبه، استان، تانل..."
                    autocomplete="off" oninput="handleSearch(this.value)">
             <div class="search-results" id="searchResults"></div>
         </div>
@@ -873,12 +1208,6 @@
                             <div class="desc">رزرو IP با انقضای 60 روزه</div>
                         </a>
                         
-                        <a href="/tickets" class="module-card" style="border-right: 4px solid #06b6d4;">
-                            <div class="icon">🎫</div>
-                            <div class="title">سیستم تیکت</div>
-                            <div class="desc">مدیریت درخواست‌ها از ایمیل تا کانفیگ</div>
-                        </a>
-
                         <a href="/db-manager" class="module-card db-manager" style="display: none;" id="dbManagerLink">
                             <div class="icon">📊</div>
                             <div class="title">مدیریت دیتابیس</div>
@@ -1128,6 +1457,112 @@
                 }
             </style>
             
+            <!-- AI Health Score Card -->
+            <div class="card health-score-card" style="grid-column: span 2;">
+                <div class="card-header">
+                    <h2>🧠 مشاور هوشمند شبکه</h2>
+                    <button onclick="refreshHealthScore()" class="btn-refresh" title="بروزرسانی">🔄</button>
+                </div>
+                <div class="card-body">
+                    <div class="health-score-container">
+                        <div class="health-score-main">
+                            <div class="health-circle" id="healthCircle">
+                                <svg viewBox="0 0 200 200">
+                                    <circle cx="100" cy="100" r="85" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="15"/>
+                                    <circle id="healthArc" cx="100" cy="100" r="85" fill="none" stroke="url(#healthGradient)" stroke-width="15"
+                                            stroke-dasharray="0 534" stroke-linecap="round" transform="rotate(-90 100 100)"/>
+                                    <defs>
+                                        <linearGradient id="healthGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                                            <stop offset="0%" style="stop-color:#10b981"/>
+                                            <stop offset="50%" style="stop-color:#f59e0b"/>
+                                            <stop offset="100%" style="stop-color:#ef4444"/>
+                                        </linearGradient>
+                                    </defs>
+                                </svg>
+                                <div class="health-score-value">
+                                    <span id="healthScoreNumber">--</span>
+                                    <span class="health-label">امتیاز سلامت</span>
+                                </div>
+                            </div>
+                            <div class="health-status" id="healthStatus">در حال تحلیل...</div>
+                        </div>
+                        <div class="health-details">
+                            <div class="health-factors" id="healthFactors">
+                                <div class="factor-item loading-placeholder"></div>
+                                <div class="factor-item loading-placeholder"></div>
+                                <div class="factor-item loading-placeholder"></div>
+                            </div>
+                            <div class="ai-recommendations" id="aiRecommendations">
+                                <h4>💡 پیشنهادات هوشمند</h4>
+                                <div class="recommendations-list">در حال بارگذاری...</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Network Topology Discovery Card -->
+            <div class="card topology-card" style="grid-column: span 2;">
+                <div class="card-header">
+                    <h2>🔗 توپولوژی شبکه</h2>
+                    <div class="topology-controls">
+                        <button onclick="startNetworkScan()" class="btn-scan" id="scanBtn">🔍 اسکن شبکه</button>
+                        <span class="scan-status" id="scanStatus"></span>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="topology-container" id="topologyContainer">
+                        <div class="topology-legend">
+                            <span class="legend-item"><span class="dot online"></span> آنلاین</span>
+                            <span class="legend-item"><span class="dot offline"></span> آفلاین</span>
+                            <span class="legend-item"><span class="dot reserved"></span> رزرو شده</span>
+                        </div>
+                        <div class="topology-graph" id="topologyGraph">
+                            <div class="topology-placeholder">برای مشاهده وضعیت آنلاین/آفلاین، دکمه اسکن را بزنید</div>
+                        </div>
+                        <div class="topology-stats" id="topologyStats"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Network Simulator Card -->
+            <div class="card simulator-card" style="grid-column: span 2;">
+                <div class="card-header">
+                    <h2>🎮 شبیه‌ساز شبکه</h2>
+                </div>
+                <div class="card-body">
+                    <div class="simulator-container">
+                        <div class="simulator-input">
+                            <h4>سناریو را انتخاب کنید:</h4>
+                            <div class="scenario-buttons">
+                                <button onclick="simulateScenario('add_branch')" class="scenario-btn">
+                                    <span class="icon">🏢</span>
+                                    <span>افزودن ۱۰ شعبه جدید</span>
+                                </button>
+                                <button onclick="simulateScenario('add_atm')" class="scenario-btn">
+                                    <span class="icon">🏧</span>
+                                    <span>افزودن ۵۰ خودپرداز</span>
+                                </button>
+                                <button onclick="simulateScenario('release_expired')" class="scenario-btn">
+                                    <span class="icon">🗑️</span>
+                                    <span>آزادسازی IPهای منقضی</span>
+                                </button>
+                                <button onclick="simulateScenario('growth_6month')" class="scenario-btn">
+                                    <span class="icon">📈</span>
+                                    <span>پیش‌بینی ۶ ماه آینده</span>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="simulator-output" id="simulatorOutput">
+                            <div class="simulator-placeholder">
+                                <span style="font-size: 48px;">🎯</span>
+                                <p>یک سناریو انتخاب کنید تا نتیجه شبیه‌سازی نمایش داده شود</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <!-- Activity Card -->
             <div class="card" style="grid-column: span 2;">
                 <div class="card-header">
@@ -1675,6 +2110,216 @@
         function hideProvTooltip() {
             document.getElementById('mapTooltip').style.display = 'none';
         }
+
+        // ============ AI HEALTH SCORE ============
+        async function loadHealthScore() {
+            try {
+                const res = await fetch('/api/health-score');
+                const data = await res.json();
+
+                // Update score circle
+                const score = data.score || 0;
+                const arc = document.getElementById('healthArc');
+                const circumference = 2 * Math.PI * 85;
+                arc.style.strokeDasharray = `${(score / 100) * circumference} ${circumference}`;
+
+                // Update score number with animation
+                animateCounter('healthScoreNumber', score, 1500);
+
+                // Update status
+                const statusEl = document.getElementById('healthStatus');
+                statusEl.textContent = data.status_text || '';
+                statusEl.className = 'health-status ' + (data.status || 'good');
+
+                // Update factors
+                const factorsEl = document.getElementById('healthFactors');
+                factorsEl.innerHTML = (data.factors || []).map(f => `
+                    <div class="factor-item">
+                        <div class="factor-header">
+                            <span class="factor-name">${f.name}</span>
+                            <span class="factor-score" style="color: ${f.score > 70 ? '#10b981' : f.score > 40 ? '#f59e0b' : '#ef4444'}">${f.score}%</span>
+                        </div>
+                        <div class="factor-bar">
+                            <div class="factor-fill" style="width: ${f.score}%; background: ${f.score > 70 ? '#10b981' : f.score > 40 ? '#f59e0b' : '#ef4444'}"></div>
+                        </div>
+                    </div>
+                `).join('');
+
+                // Update recommendations
+                const recsEl = document.getElementById('aiRecommendations');
+                recsEl.innerHTML = `
+                    <h4>💡 پیشنهادات هوشمند</h4>
+                    <div class="recommendations-list">
+                        ${(data.recommendations || []).map(r => `
+                            <div class="recommendation-item ${r.priority || ''}">
+                                <span class="rec-icon">${r.icon || '💡'}</span>
+                                <span class="rec-text">${r.text}</span>
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+
+            } catch (e) {
+                console.error('Health score error:', e);
+            }
+        }
+
+        function refreshHealthScore() {
+            document.getElementById('healthScoreNumber').textContent = '--';
+            document.getElementById('healthStatus').textContent = 'در حال تحلیل...';
+            loadHealthScore();
+        }
+
+        // ============ NETWORK TOPOLOGY DISCOVERY ============
+        let scanInProgress = false;
+
+        async function startNetworkScan() {
+            if (scanInProgress) return;
+            scanInProgress = true;
+
+            const btn = document.getElementById('scanBtn');
+            const status = document.getElementById('scanStatus');
+            const graph = document.getElementById('topologyGraph');
+            const stats = document.getElementById('topologyStats');
+
+            btn.disabled = true;
+            btn.textContent = '⏳ در حال اسکن...';
+            status.textContent = 'شروع اسکن شبکه...';
+            graph.innerHTML = '<div class="topology-placeholder"><div class="loading"></div></div>';
+
+            try {
+                const res = await fetch('/api/network-scan', { method: 'POST' });
+                const data = await res.json();
+
+                if (data.error) {
+                    throw new Error(data.error);
+                }
+
+                // Render nodes on graph
+                renderTopologyGraph(data.nodes || []);
+
+                // Update stats
+                stats.innerHTML = `
+                    <div class="topo-stat online">
+                        <div class="stat-value">${data.online || 0}</div>
+                        <div class="stat-label">آنلاین</div>
+                    </div>
+                    <div class="topo-stat offline">
+                        <div class="stat-value">${data.offline || 0}</div>
+                        <div class="stat-label">آفلاین</div>
+                    </div>
+                    <div class="topo-stat reserved">
+                        <div class="stat-value">${data.reserved || 0}</div>
+                        <div class="stat-label">رزرو شده</div>
+                    </div>
+                    <div class="topo-stat total">
+                        <div class="stat-value">${data.total || 0}</div>
+                        <div class="stat-label">کل</div>
+                    </div>
+                `;
+
+                status.textContent = `✓ ${data.total || 0} نقطه اسکن شد`;
+
+            } catch (e) {
+                graph.innerHTML = `<div class="topology-placeholder" style="color: #ef4444;">❌ خطا: ${e.message}</div>`;
+                status.textContent = 'خطا در اسکن';
+            }
+
+            btn.disabled = false;
+            btn.textContent = '🔍 اسکن شبکه';
+            scanInProgress = false;
+        }
+
+        function renderTopologyGraph(nodes) {
+            const graph = document.getElementById('topologyGraph');
+            const width = graph.offsetWidth;
+            const height = 300;
+
+            let html = '';
+            nodes.forEach((node, i) => {
+                // Distribute nodes in a grid pattern
+                const cols = Math.ceil(Math.sqrt(nodes.length));
+                const row = Math.floor(i / cols);
+                const col = i % cols;
+                const x = 30 + (col / cols) * (width - 60);
+                const y = 30 + (row / Math.ceil(nodes.length / cols)) * (height - 60);
+
+                const statusClass = node.online ? 'online' : (node.reserved ? 'reserved' : 'offline');
+
+                html += `<div class="topo-node ${statusClass}"
+                    style="left: ${x}px; top: ${y}px;"
+                    onmouseenter="showTopoTooltip(event, '${node.ip}', '${node.branch || ''}', '${statusClass}')"
+                    onmouseleave="hideTopoTooltip()"></div>`;
+            });
+
+            html += '<div class="topo-node-tooltip" id="topoTooltip" style="display:none;"></div>';
+            graph.innerHTML = html;
+        }
+
+        function showTopoTooltip(event, ip, branch, status) {
+            const tip = document.getElementById('topoTooltip');
+            const statusText = status === 'online' ? '🟢 آنلاین' : (status === 'reserved' ? '🟡 رزرو شده' : '🔴 آفلاین');
+            tip.innerHTML = `<strong>${ip}</strong><br>${branch || 'بدون نام'}<br>${statusText}`;
+            tip.style.display = 'block';
+            tip.style.left = (event.offsetX + 15) + 'px';
+            tip.style.top = (event.offsetY - 10) + 'px';
+        }
+
+        function hideTopoTooltip() {
+            document.getElementById('topoTooltip').style.display = 'none';
+        }
+
+        // ============ NETWORK SIMULATOR ============
+        async function simulateScenario(scenario) {
+            const output = document.getElementById('simulatorOutput');
+            output.innerHTML = '<div class="simulator-placeholder"><div class="loading"></div></div>';
+
+            try {
+                const res = await fetch('/api/simulate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ scenario })
+                });
+                const data = await res.json();
+
+                if (data.error) {
+                    throw new Error(data.error);
+                }
+
+                output.innerHTML = `
+                    <div class="sim-result-header">
+                        <span class="icon">${data.icon || '📊'}</span>
+                        <h3>${data.title || 'نتیجه شبیه‌سازی'}</h3>
+                    </div>
+                    <div class="sim-comparison">
+                        <div class="sim-state before">
+                            <h4>وضعیت فعلی</h4>
+                            <div class="value">${formatNumber(data.before || 0)}</div>
+                            <div style="font-size: 12px; color: var(--text-muted);">${data.metric || 'IP آزاد'}</div>
+                        </div>
+                        <div class="sim-arrow">→</div>
+                        <div class="sim-state after ${data.change < 0 ? 'negative' : ''}">
+                            <h4>پس از اجرا</h4>
+                            <div class="value">${formatNumber(data.after || 0)}</div>
+                            <div style="font-size: 12px; color: var(--text-muted);">${data.change > 0 ? '+' : ''}${formatNumber(data.change || 0)}</div>
+                        </div>
+                    </div>
+                    <div class="sim-details">
+                        <p>${data.details || ''}</p>
+                    </div>
+                `;
+
+            } catch (e) {
+                output.innerHTML = `<div class="simulator-placeholder" style="color: #ef4444;">❌ خطا: ${e.message}</div>`;
+            }
+        }
+
+        // Load new features on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            setTimeout(() => {
+                loadHealthScore();
+            }, 500);
+        });
     </script>
 </body>
 </html>
