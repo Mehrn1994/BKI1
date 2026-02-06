@@ -2369,8 +2369,6 @@ def generate_pdf_report():
                 (SELECT COUNT(*) FROM apn_ips WHERE username IS NULL OR username = '') as free_apn,
                 (SELECT COUNT(*) FROM apn_mali) as total_mali,
                 (SELECT COUNT(*) FROM apn_mali WHERE username IS NULL OR username = '') as free_mali,
-                (SELECT COUNT(*) FROM tickets) as total_tickets,
-                (SELECT COUNT(*) FROM tickets WHERE stage = 'replied') as closed_tickets,
                 (SELECT COUNT(*) FROM reserved_ips WHERE status = 'reserved') as active_reservations
         """)
         s = cursor.fetchone()
@@ -2499,7 +2497,6 @@ def generate_pdf_report():
         html += f"""
 <div class="section"><h2>خلاصه</h2>
 <table>
-<tr><td><strong>تعداد تیکت‌ها</strong></td><td>{s['total_tickets']} (بسته شده: {s['closed_tickets']})</td></tr>
 <tr><td><strong>رزروهای فعال</strong></td><td>{s['active_reservations']}</td></tr>
 <tr><td><strong>درصد مصرف LAN</strong></td><td>{int(((s['total_lan']-s['free_lan'])/s['total_lan'])*100) if s['total_lan'] else 0}%</td></tr>
 <tr><td><strong>درصد مصرف Tunnel</strong></td><td>{int(((s['total_tun']-s['free_tun'])/s['total_tun'])*100) if s['total_tun'] else 0}%</td></tr>
