@@ -568,28 +568,17 @@
         .map-container {
             position: relative;
             width: 100%;
-            aspect-ratio: 1.2;
-            background: radial-gradient(ellipse at center, rgba(59,130,246,0.05), transparent 70%);
+            aspect-ratio: 1.1;
+            background: radial-gradient(ellipse at center, rgba(59,130,246,0.03), transparent 70%);
             border-radius: 12px;
             overflow: hidden;
         }
-        .map-dot {
-            position: absolute;
-            width: 12px;
-            height: 12px;
-            border-radius: 50%;
-            background: var(--accent-green);
-            border: 2px solid rgba(255,255,255,0.3);
-            cursor: pointer;
-            transition: all 0.2s;
-            z-index: 2;
+        .map-container svg path:hover {
+            stroke-width: 1.5;
+            stroke-opacity: 1;
+            filter: brightness(1.3);
         }
-        .map-dot:hover { transform: scale(1.8); z-index: 10; }
-        .map-dot.hot { background: #ef4444; }
-        .map-dot.warm { background: var(--accent-orange); }
-        .map-dot.cool { background: var(--accent-green); }
         .map-tooltip {
-            display: none;
             position: absolute;
             background: var(--bg-secondary);
             border: 1px solid var(--border-color);
@@ -601,8 +590,6 @@
             box-shadow: 0 8px 24px var(--shadow-color);
             pointer-events: none;
         }
-        .map-dot:hover + .map-tooltip,
-        .map-dot:hover ~ .map-tooltip[data-for] { display: block; }
 
         /* Footer */
         .footer {
@@ -1572,134 +1559,121 @@
             }
         });
 
-        // ============ NETWORK MAP ============
-        // Iran province center coordinates (percentage-based, mapped to real geography)
-        // ViewBox: Iran spans roughly 44°E-63°E longitude, 25°N-40°N latitude
-        // Mapped to 0-100% x (left=63°E=east, right=44°E=west due to RTL flip)
-        // y: 0% = 40°N (north), 100% = 25°N (south)
-        const PROVINCE_COORDS = {
-            'آذربایجان غربی': {x:79, y:10}, 'آذربایجان شرقی': {x:72, y:10},
-            'اردبیل': {x:68, y:8}, 'گیلان': {x:62, y:12}, 'مازندران': {x:52, y:14},
-            'گلستان': {x:42, y:12}, 'خراسان شمالی': {x:30, y:12},
-            'خراسان رضوی': {x:24, y:24}, 'خراسان جنوبی': {x:22, y:38},
-            'زنجان': {x:68, y:18}, 'قزوین': {x:62, y:20}, 'البرز': {x:57, y:20},
-            'تهران': {x:54, y:22}, 'سمنان': {x:42, y:22},
-            'کردستان': {x:74, y:24}, 'همدان': {x:68, y:26},
-            'مرکزی': {x:60, y:28}, 'قم': {x:55, y:28},
-            'کرمانشاه': {x:76, y:28}, 'ایلام': {x:78, y:34},
-            'لرستان': {x:70, y:34}, 'اصفهان': {x:52, y:38},
-            'یزد': {x:40, y:40}, 'خوزستان': {x:70, y:44},
-            'چهارمحال و بختیاری': {x:60, y:40},
-            'کهگیلویه و بویراحمد': {x:62, y:50},
-            'فارس': {x:50, y:56}, 'کرمان': {x:32, y:52},
-            'بوشهر': {x:58, y:60}, 'هرمزگان': {x:40, y:68},
-            'سیستان و بلوچستان': {x:18, y:60},
-            // Arabic/alternate spellings
-            'آذربايجان شرقي': {x:72, y:10}, 'آذربايجان غربي': {x:79, y:10},
-            'سيستان و بلوچستان': {x:18, y:60}, 'چهارمحال وبختياري': {x:60, y:40},
-            'كرمان': {x:32, y:52}, 'كرمانشاه': {x:76, y:28},
-            'كردستان': {x:74, y:24}, 'كهگيلويه و بويراحمد': {x:62, y:50}
+        // ============ NETWORK MAP (Real SVG Province Paths) ============
+        // Name mapping: DB province names → JSON keys
+        const PROVINCE_KEY_MAP = {
+            'آذربایجان شرقی': 'WAz', 'آذربایجان غربی': 'EAz', 'آذربايجان شرقي': 'WAz', 'آذربايجان غربي': 'EAz',
+            'اردبیل': 'Ard', 'اصفهان': 'Esf', 'البرز': 'Alb', 'ایلام': 'Ilm',
+            'بوشهر': 'Bsh', 'تهران': 'Teh', 'چهارمحال و بختیاری': 'CMB', 'چهارمحال وبختياري': 'CMB', 'چهار محال بختیاری': 'CMB',
+            'خراسان جنوبی': 'SKh', 'خراسان رضوی': 'RKh', 'خراسان شمالی': 'NKh',
+            'خوزستان': 'Khz', 'زنجان': 'Zan', 'سمنان': 'Sem',
+            'سیستان و بلوچستان': 'SnB', 'سيستان و بلوچستان': 'SnB',
+            'فارس': 'Far', 'قزوین': 'Qaz', 'قم': 'Qom',
+            'کردستان': 'Krd', 'كردستان': 'Krd', 'کرمان': 'Krn', 'كرمان': 'Krn',
+            'کرمانشاه': 'Krm', 'كرمانشاه': 'Krm',
+            'کهگیلویه و بویراحمد': 'KBA', 'كهگيلويه و بويراحمد': 'KBA', 'کهگلویه و بویر احمد': 'KBA',
+            'گلستان': 'Gol', 'گیلان': 'Gil', 'لرستان': 'Lor',
+            'مازندران': 'Maz', 'مرکزی': 'Mar', 'هرمزگان': 'Hor', 'همدان': 'Ham', 'یزد': 'Yzd'
         };
+
+        let mapData = null; // SVG paths loaded from JSON
 
         async function loadNetworkMap() {
             const container = document.getElementById('networkMap');
             try {
-                const res = await fetch('/api/province-map');
-                const provinces = await res.json();
+                // Load real SVG paths + province stats in parallel
+                const [mapRes, statsRes] = await Promise.all([
+                    fetch('/static/iran_map.json'),
+                    fetch('/api/province-map')
+                ]);
+                mapData = await mapRes.json();
+                const provinces = await statsRes.json();
 
-                if (provinces.length === 0) {
-                    container.innerHTML = '<div style="text-align:center; padding:40px; color:var(--text-muted);">داده‌ای برای نمایش نقشه وجود ندارد</div>';
-                    return;
-                }
-
-                const maxLan = Math.max(...provinces.map(p => p.lan_total));
-                let html = '';
-
-                // Draw Iran outline (realistic SVG based on actual border shape)
-                html += `<svg viewBox="0 0 100 80" preserveAspectRatio="xMidYMid meet" style="position:absolute; inset:0; width:100%; height:100%; opacity:0.12;">
-                    <path d="
-                        M 80,5 L 77,4 L 74,3 L 72,5 L 69,3 L 67,5 L 65,4 L 63,6
-                        L 60,8 L 58,7 L 55,9 L 52,8 L 50,10 L 48,9 L 46,11 L 44,10
-                        L 42,9 L 40,10 L 38,9 L 35,10 L 33,9 L 30,10 L 28,11
-                        L 26,13 L 24,12 L 22,14 L 20,16 L 19,19
-                        L 18,22 L 17,25 L 16,28 L 15,31 L 14,34
-                        L 13,37 L 12,40 L 11,43 L 10,46 L 9,49
-                        L 10,52 L 12,54 L 14,56 L 16,58 L 18,59
-                        L 20,61 L 22,62 L 25,63 L 28,65 L 30,66
-                        L 33,67 L 36,68 L 38,70 L 40,71 L 43,72
-                        L 46,71 L 48,70 L 50,68 L 52,66 L 54,64
-                        L 56,62 L 58,60 L 60,58 L 62,56 L 63,54
-                        L 64,51 L 65,48 L 66,46 L 68,44 L 70,42
-                        L 72,40 L 73,38 L 74,36 L 76,34 L 77,32
-                        L 78,29 L 79,27 L 80,25 L 82,23 L 83,20
-                        L 84,18 L 85,16 L 84,13 L 83,11 L 82,9
-                        L 81,7 Z
-                    "
-                    fill="var(--accent-blue)" fill-opacity="0.08" stroke="var(--accent-blue)" stroke-width="0.4"/>
-
-                    <!-- Caspian Sea (north) -->
-                    <ellipse cx="58" cy="12" rx="10" ry="4" fill="var(--accent-blue)" fill-opacity="0.06" stroke="var(--accent-blue)" stroke-width="0.2" stroke-dasharray="1,1"/>
-                    <text x="58" y="13" text-anchor="middle" fill="var(--accent-blue)" font-size="2.5" opacity="0.3">دریای خزر</text>
-
-                    <!-- Persian Gulf (south) -->
-                    <path d="M 40,72 Q 45,76 55,73 Q 60,70 65,68" fill="none" stroke="var(--accent-blue)" stroke-width="0.3" stroke-dasharray="1,1"/>
-                    <text x="50" y="76" text-anchor="middle" fill="var(--accent-blue)" font-size="2.2" opacity="0.3">خلیج فارس</text>
-                </svg>`;
-
+                // Build stats lookup by JSON key
+                const statsMap = {};
                 provinces.forEach(p => {
-                    const coords = PROVINCE_COORDS[p.name];
-                    if (!coords) return;
-
-                    const usagePct = p.lan_total > 0 ? (p.lan_used / p.lan_total) * 100 : 0;
-                    let dotClass = 'cool';
-                    if (usagePct > 80) dotClass = 'hot';
-                    else if (usagePct > 50) dotClass = 'warm';
-
-                    const size = Math.max(8, Math.min(20, (p.lan_total / maxLan) * 20));
-
-                    html += `<div class="map-dot ${dotClass}"
-                        style="left:${coords.x}%; top:${coords.y}%; width:${size}px; height:${size}px;"
-                        onclick="showMapTooltip(event, '${p.name}', ${p.lan_total}, ${p.lan_used}, ${p.lan_free}, ${p.tunnels})"
-                        title="${p.name}: ${p.lan_used}/${p.lan_total} IP"></div>`;
+                    const key = PROVINCE_KEY_MAP[p.name];
+                    if (key) statsMap[key] = p;
                 });
 
-                // Legend
-                html += `<div style="position:absolute; bottom:10px; right:10px; display:flex; gap:12px; font-size:11px; color:var(--text-muted); background:var(--bg-card); padding:6px 12px; border-radius:8px; border:1px solid var(--border-color);">
-                    <span><span style="display:inline-block; width:8px; height:8px; border-radius:50%; background:var(--accent-green); margin-left:4px;"></span>زیر ۵۰٪</span>
-                    <span><span style="display:inline-block; width:8px; height:8px; border-radius:50%; background:var(--accent-orange); margin-left:4px;"></span>۵۰-۸۰٪</span>
-                    <span><span style="display:inline-block; width:8px; height:8px; border-radius:50%; background:#ef4444; margin-left:4px;"></span>بالای ۸۰٪</span>
-                </div>`;
+                // Build SVG with real province shapes
+                let paths = '';
+                for (const [key, prov] of Object.entries(mapData)) {
+                    const stats = statsMap[key];
+                    let fillColor = 'var(--accent-blue)';
+                    let fillOpacity = '0.12';
+                    let usagePct = 0;
 
-                // Floating tooltip
-                html += `<div class="map-tooltip" id="mapTooltip"></div>`;
+                    if (stats && stats.lan_total > 0) {
+                        usagePct = (stats.lan_used / stats.lan_total) * 100;
+                        if (usagePct > 80) { fillColor = '#ef4444'; fillOpacity = '0.35'; }
+                        else if (usagePct > 50) { fillColor = '#f59e0b'; fillOpacity = '0.3'; }
+                        else { fillColor = '#10b981'; fillOpacity = '0.25'; }
+                    }
 
-                container.innerHTML = html;
+                    const title = stats
+                        ? `${prov.name_fa}: ${stats.lan_used}/${stats.lan_total} IP (${Math.round(usagePct)}%)`
+                        : prov.name_fa;
 
+                    paths += `<path d="${prov.path}"
+                        fill="${fillColor}" fill-opacity="${fillOpacity}"
+                        stroke="var(--accent-blue)" stroke-width="0.8" stroke-opacity="0.5"
+                        data-key="${key}" data-name="${prov.name_fa}"
+                        data-total="${stats?.lan_total||0}" data-used="${stats?.lan_used||0}"
+                        data-free="${stats?.lan_free||0}" data-tunnels="${stats?.tunnels||0}"
+                        style="cursor:pointer; transition: fill-opacity 0.2s;"
+                        onmouseenter="this.style.fillOpacity='0.6'; showProvTooltip(event,this)"
+                        onmouseleave="this.style.fillOpacity='${fillOpacity}'; hideProvTooltip()">
+                        <title>${title}</title>
+                    </path>`;
+                }
+
+                container.innerHTML = `
+                    <svg viewBox="0 0 798 724" preserveAspectRatio="xMidYMid meet"
+                         style="width:100%; height:100%;">
+                        ${paths}
+                    </svg>
+                    <div style="position:absolute; bottom:10px; right:10px; display:flex; gap:12px; font-size:11px; color:var(--text-muted); background:var(--bg-card); padding:6px 12px; border-radius:8px; border:1px solid var(--border-color);">
+                        <span><span style="display:inline-block; width:8px; height:8px; border-radius:50%; background:var(--accent-green); margin-left:4px;"></span>زیر ۵۰٪</span>
+                        <span><span style="display:inline-block; width:8px; height:8px; border-radius:50%; background:var(--accent-orange); margin-left:4px;"></span>۵۰-۸۰٪</span>
+                        <span><span style="display:inline-block; width:8px; height:8px; border-radius:50%; background:#ef4444; margin-left:4px;"></span>بالای ۸۰٪</span>
+                    </div>
+                    <div class="map-tooltip" id="mapTooltip" style="display:none;"></div>
+                `;
             } catch(e) {
+                console.error('Map error:', e);
                 container.innerHTML = '<div style="text-align:center; padding:40px; color:var(--text-muted);">خطا در بارگذاری نقشه</div>';
             }
         }
 
-        function showMapTooltip(event, name, total, used, free, tunnels) {
+        function showProvTooltip(event, el) {
             const tip = document.getElementById('mapTooltip');
+            const name = el.dataset.name;
+            const total = parseInt(el.dataset.total) || 0;
+            const used = parseInt(el.dataset.used) || 0;
+            const free = parseInt(el.dataset.free) || 0;
+            const tunnels = parseInt(el.dataset.tunnels) || 0;
             const pct = total > 0 ? Math.round((used/total)*100) : 0;
+
             tip.innerHTML = `
                 <div style="font-weight:700; font-size:14px; margin-bottom:6px; color:var(--accent-blue);">${name}</div>
                 <div>IP کل: <strong>${total}</strong></div>
                 <div style="color:var(--accent-green);">آزاد: ${free}</div>
                 <div style="color:#ef4444;">مصرفی: ${used} (${pct}%)</div>
-                <div>تانل: ${tunnels}</div>
+                ${tunnels ? '<div>تانل: ' + tunnels + '</div>' : ''}
                 <div style="margin-top:4px; height:4px; background:rgba(255,255,255,0.1); border-radius:2px;">
                     <div style="height:100%; width:${pct}%; background:${pct > 80 ? '#ef4444' : pct > 50 ? 'var(--accent-orange)' : 'var(--accent-green)'}; border-radius:2px;"></div>
                 </div>
             `;
             tip.style.display = 'block';
-            const rect = event.target.getBoundingClientRect();
-            const mapRect = document.getElementById('networkMap').getBoundingClientRect();
-            tip.style.left = (rect.left - mapRect.left + 20) + 'px';
-            tip.style.top = (rect.top - mapRect.top - 10) + 'px';
 
-            setTimeout(() => { tip.style.display = 'none'; }, 3000);
+            const mapRect = document.getElementById('networkMap').getBoundingClientRect();
+            tip.style.left = (event.clientX - mapRect.left + 15) + 'px';
+            tip.style.top = (event.clientY - mapRect.top - 10) + 'px';
+        }
+
+        function hideProvTooltip() {
+            document.getElementById('mapTooltip').style.display = 'none';
         }
     </script>
 </body>
