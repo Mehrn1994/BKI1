@@ -143,17 +143,17 @@
         }
 
         .logo-container {
-            width: 220px;
-            height: 220px;
-            background: rgba(255, 255, 255, 0.15);
+            width: 200px;
+            height: 200px;
+            background: rgba(255, 255, 255, 0.85);
             backdrop-filter: blur(15px);
             -webkit-backdrop-filter: blur(15px);
-            border-radius: 40px;
+            border-radius: 36px;
             display: flex;
             align-items: center;
             justify-content: center;
             margin: 0 auto 30px;
-            border: 2px solid rgba(255, 255, 255, 0.3);
+            border: 2px solid rgba(255, 255, 255, 0.5);
             box-shadow: 0 15px 40px rgba(0, 0, 0, 0.2);
             animation: pulse-glow 3s ease-in-out infinite;
         }
@@ -164,10 +164,11 @@
         }
 
         .logo-container img {
-            width: 190px;
-            height: 190px;
+            width: 170px;
+            height: 170px;
             object-fit: contain;
-            filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.15));
+            image-rendering: -webkit-optimize-contrast;
+            image-rendering: crisp-edges;
         }
 
         .brand-title {
@@ -190,9 +191,9 @@
             backdrop-filter: blur(20px);
             -webkit-backdrop-filter: blur(20px);
             border-radius: 32px;
-            padding: 45px;
+            padding: 40px 35px;
             width: 100%;
-            max-width: 550px;
+            max-width: 520px;
             border: 1px solid rgba(255, 255, 255, 0.2);
             box-shadow: 0 25px 50px rgba(0, 0, 0, 0.25),
                         inset 0 1px 1px rgba(255, 255, 255, 0.1);
@@ -207,14 +208,14 @@
             margin-bottom: 30px;
         }
 
-        /* Users Grid */
+        /* Users Grid - 2 Column Layout */
         .users-grid {
-            display: flex;
-            flex-direction: column;
-            gap: 14px;
-            max-height: 450px;
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 16px;
+            max-height: 480px;
             overflow-y: auto;
-            padding-left: 8px;
+            padding: 5px;
         }
 
         .users-grid::-webkit-scrollbar {
@@ -231,19 +232,22 @@
             border-radius: 3px;
         }
 
-        /* User Button - Glass Style */
+        /* User Card - New Design */
         .user-btn {
             display: flex;
+            flex-direction: column;
             align-items: center;
-            gap: 20px;
-            padding: 20px 24px;
-            background: rgba(255, 255, 255, 0.15);
-            border: 1px solid rgba(255, 255, 255, 0.25);
-            border-radius: 18px;
+            justify-content: center;
+            gap: 12px;
+            padding: 24px 16px;
+            background: rgba(255, 255, 255, 0.12);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 20px;
             cursor: pointer;
             transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
             position: relative;
             overflow: hidden;
+            text-align: center;
         }
 
         .user-btn::before {
@@ -253,7 +257,7 @@
             left: -100%;
             width: 100%;
             height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.15), transparent);
             transition: left 0.5s ease;
         }
 
@@ -262,64 +266,76 @@
         }
 
         .user-btn:hover {
-            background: rgba(255, 255, 255, 0.25);
+            background: rgba(255, 255, 255, 0.22);
             border-color: rgba(255, 255, 255, 0.4);
-            transform: translateX(-8px) scale(1.02);
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            transform: translateY(-5px) scale(1.03);
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.25);
         }
 
         .user-btn:active {
-            transform: translateX(-8px) scale(0.98);
+            transform: translateY(-2px) scale(1.01);
         }
 
         .user-btn .avatar {
-            width: 60px;
-            height: 60px;
+            width: 70px;
+            height: 70px;
             background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
-            border-radius: 16px;
+            border-radius: 20px;
             display: flex;
             align-items: center;
             justify-content: center;
             color: white;
-            font-size: 1.6rem;
+            font-size: 1.8rem;
             font-weight: 700;
-            box-shadow: 0 4px 15px rgba(0, 188, 212, 0.4);
+            box-shadow: 0 8px 20px rgba(0, 188, 212, 0.4);
             transition: all 0.3s ease;
-            flex-shrink: 0;
         }
 
         .user-btn:hover .avatar {
-            transform: rotate(-5deg) scale(1.1);
-            box-shadow: 0 6px 20px rgba(0, 188, 212, 0.5);
+            transform: scale(1.1) rotate(-3deg);
+            box-shadow: 0 12px 30px rgba(0, 188, 212, 0.5);
         }
 
         .user-btn .user-info {
-            flex: 1;
-            min-width: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
         }
 
         .user-btn .name {
-            font-size: 1.1rem;
-            font-weight: 600;
+            font-size: 1.15rem;
+            font-weight: 700;
             color: white;
-            margin-bottom: 4px;
-            text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
         }
 
+        /* Status Badge */
         .user-btn .status {
-            font-size: 0.85rem;
-            color: rgba(255, 255, 255, 0.85);
-            display: flex;
+            display: inline-flex;
             align-items: center;
             gap: 5px;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
         }
 
         .user-btn .status.registered {
-            color: #10b981;
+            background: rgba(16, 185, 129, 0.25);
+            color: #34d399;
+            border: 1px solid rgba(16, 185, 129, 0.4);
         }
 
         .user-btn .status.new {
-            color: #fbbf24;
+            background: rgba(251, 191, 36, 0.25);
+            color: #fcd34d;
+            border: 1px solid rgba(251, 191, 36, 0.4);
+        }
+
+        /* Hide arrow in new design */
+        .user-btn .arrow {
+            display: none;
         }
 
         .user-btn .arrow {
@@ -743,18 +759,26 @@
 
                 document.getElementById('usersGrid').innerHTML = data.users.map((user, index) => {
                     const safeName = escapeHtml(user.name);
-                    const colors = ['#667eea', '#764ba2', '#06d6a0', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#14b8a6'];
-                    const color = colors[index % colors.length];
+                    const colors = [
+                        ['#00bcd4', '#0097a7'], // Cyan
+                        ['#e91e63', '#c2185b'], // Pink
+                        ['#9c27b0', '#7b1fa2'], // Purple
+                        ['#ff9800', '#f57c00'], // Orange
+                        ['#4caf50', '#388e3c'], // Green
+                        ['#2196f3', '#1976d2'], // Blue
+                        ['#f44336', '#d32f2f'], // Red
+                        ['#00bcd4', '#00838f']  // Teal
+                    ];
+                    const [c1, c2] = colors[index % colors.length];
                     return `
-                    <div class="user-btn" onclick="selectUser('${safeName}', ${user.registered})" style="animation: fadeInUp 0.5s ease-out ${index * 0.05}s both;">
-                        <div class="avatar" style="background: linear-gradient(135deg, ${color} 0%, ${color}99 100%);">${safeName[0]}</div>
+                    <div class="user-btn" onclick="selectUser('${safeName}', ${user.registered})" style="animation: fadeInUp 0.4s ease-out ${index * 0.06}s both;">
+                        <div class="avatar" style="background: linear-gradient(135deg, ${c1} 0%, ${c2} 100%);">${safeName[0]}</div>
                         <div class="user-info">
                             <div class="name">${safeName}</div>
                             <div class="status ${user.registered ? 'registered' : 'new'}">
-                                ${user.registered ? '✓ ثبت شده' : '● جدید'}
+                                ${user.registered ? '✓ فعال' : '● جدید'}
                             </div>
                         </div>
-                        <span class="arrow">←</span>
                     </div>
                 `}).join('');
 
