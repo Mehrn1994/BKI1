@@ -19,7 +19,7 @@ import threading
 # Email service removed - ticketing disabled
 
 app = Flask(__name__)
-CORS(app, origins=["http://localhost:*", "http://127.0.0.1:*"])
+CORS(app, origins=["http://localhost:5000", "http://127.0.0.1:5000"])
 
 # ==================== RATE LIMITING ====================
 login_attempts = {}  # {ip: [timestamp, timestamp, ...]}
@@ -171,7 +171,7 @@ def get_db():
     conn.row_factory = sqlite3.Row
     return conn
 
-SALT_KEY = 'BKI-Network-Portal-2026'
+SALT_KEY = os.environ.get('BKI_SALT_KEY', 'BKI-Network-Portal-2026')
 
 def hash_password(password, use_salt=True):
     if use_salt:
@@ -227,46 +227,7 @@ def init_tables():
     except Exception as e:
         print(f"⚠️ Index creation: {e}")
     
-    # Tickets table for email-based workflow
-    cursor.execute("""CREATE TABLE IF NOT EXISTS tickets (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        email_id TEXT,
-        email_subject TEXT,
-        email_sender TEXT,
-        email_body TEXT,
-        email_date TEXT,
-        status TEXT DEFAULT 'new',
-        stage TEXT DEFAULT 'new',
-        province TEXT,
-        branch_name TEXT,
-        point_type TEXT,
-        request_number TEXT,
-        mehregostar_code TEXT,
-        assigned_ip TEXT,
-        octet2 INTEGER,
-        octet3 INTEGER,
-        config_type TEXT,
-        config_output TEXT,
-        reply_sent INTEGER DEFAULT 0,
-        assigned_user TEXT,
-        created_at TEXT,
-        updated_at TEXT
-    )""")
-
-    # Email settings table (stores per-user Exchange connection settings)
-    cursor.execute("""CREATE TABLE IF NOT EXISTS email_settings (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        username TEXT UNIQUE,
-        email TEXT,
-        exchange_username TEXT,
-        exchange_server TEXT,
-        folder_name TEXT DEFAULT 'Inbox',
-        sender_filters TEXT DEFAULT '[]',
-        use_autodiscover INTEGER DEFAULT 1,
-        verify_ssl INTEGER DEFAULT 0,
-        is_connected INTEGER DEFAULT 0,
-        updated_at TEXT
-    )""")
+    # Tickets and Email tables removed - ticketing system disabled
 
     conn.commit()
     conn.close()
@@ -2250,10 +2211,13 @@ def reset_users():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-# ==================== EXPORT CSV ====================
+# ==================== EXPORT CSV (Admin Only) ====================
 @app.route('/api/export/lan-ips', methods=['GET'])
 def export_lan_ips():
-    """Export all LAN IPs as CSV"""
+    """Export all LAN IPs as CSV - Admin only"""
+    username = request.args.get('username', '')
+    if username != DB_ADMIN_USER:
+        return jsonify({'error': 'دسترسی فقط برای ادمین مجاز است'}), 403
     try:
         conn = get_db()
         cursor = conn.cursor()
@@ -2282,7 +2246,10 @@ def export_lan_ips():
 
 @app.route('/api/export/reservations', methods=['GET'])
 def export_reservations():
-    """Export all reservations as CSV"""
+    """Export all reservations as CSV - Admin only"""
+    username = request.args.get('username', '')
+    if username != DB_ADMIN_USER:
+        return jsonify({'error': 'دسترسی فقط برای ادمین مجاز است'}), 403
     try:
         conn = get_db()
         cursor = conn.cursor()
@@ -2564,4 +2531,4 @@ if __name__ == '__main__':
     # Start auto-release thread for expired reservations
     start_auto_release_thread()
     
-    app.run(host='0.0.0.0', port=5000, debug=True, use_reloader=False)
+    app.run(host='0.0.0.0', port=5000, debug=False, use_reloader=False)

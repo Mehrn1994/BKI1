@@ -1191,7 +1191,7 @@
             const errEl = document.getElementById('cpError');
             errEl.style.display = 'none';
             if (!oldPass) { errEl.textContent = 'رمز فعلی را وارد کنید'; errEl.style.display = 'block'; return; }
-            if (newPass.length < 4) { errEl.textContent = 'رمز جدید باید حداقل ۴ کاراکتر باشد'; errEl.style.display = 'block'; return; }
+            if (newPass.length < 8) { errEl.textContent = 'رمز جدید باید حداقل ۸ کاراکتر باشد'; errEl.style.display = 'block'; return; }
             if (newPass !== confirm) { errEl.textContent = 'رمز جدید و تکرار آن مطابقت ندارند'; errEl.style.display = 'block'; return; }
             try {
                 const res = await fetch('/api/change-password', {

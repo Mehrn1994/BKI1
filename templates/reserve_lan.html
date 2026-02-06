@@ -781,9 +781,9 @@ document.addEventListener('DOMContentLoaded', function() {
                     <h1 style="margin:0;">🔖 رزرو IP LAN</h1>
                     <p style="color: #666; margin-bottom: 0; margin-top:5px;">رزرو IP برای نقاط جدید (قبل از پیکربندی)</p>
                 </div>
-                <div style="display:flex; gap:8px;">
-                    <a href="/api/export/reservations" style="background:#10b981; color:white; padding:8px 14px; border-radius:8px; text-decoration:none; font-size:12px; font-weight:600;">📥 خروجی رزروها (CSV)</a>
-                    <a href="/api/export/lan-ips" style="background:#3b82f6; color:white; padding:8px 14px; border-radius:8px; text-decoration:none; font-size:12px; font-weight:600;">📥 خروجی IP ها (CSV)</a>
+                <div id="exportBtns" style="display:none; gap:8px;">
+                    <a id="exportReservationsBtn" href="#" style="background:#10b981; color:white; padding:8px 14px; border-radius:8px; text-decoration:none; font-size:12px; font-weight:600;">📥 خروجی رزروها (CSV)</a>
+                    <a id="exportLanIpsBtn" href="#" style="background:#3b82f6; color:white; padding:8px 14px; border-radius:8px; text-decoration:none; font-size:12px; font-weight:600;">📥 خروجی IP ها (CSV)</a>
                 </div>
             </div>
 
@@ -929,6 +929,13 @@ document.addEventListener('DOMContentLoaded', function() {
         // Check if user is logged in
         if (!localStorage.getItem('currentUser') && !sessionStorage.getItem('username') && !localStorage.getItem('username')) {
             window.location.href = '/login';
+        }
+
+        // Show export buttons only for admin (Sahebdel)
+        if (username === 'Sahebdel') {
+            document.getElementById('exportBtns').style.display = 'flex';
+            document.getElementById('exportReservationsBtn').href = '/api/export/reservations?username=' + username;
+            document.getElementById('exportLanIpsBtn').href = '/api/export/lan-ips?username=' + username;
         }
 
         let selectedProvince = '';
