@@ -5,6 +5,7 @@ All APIs fixed + DB Manager only for Sahebdel
 
 from flask import Flask, jsonify, request, render_template, Response
 from flask_cors import CORS
+from flask_socketio import SocketIO
 import sqlite3
 import os
 import subprocess
@@ -20,6 +21,12 @@ import threading
 
 app = Flask(__name__)
 CORS(app, origins=["http://localhost:5000", "http://127.0.0.1:5000"])
+socketio = SocketIO(app, cors_allowed_origins="*", async_mode='threading')
+
+# Register remote connection module (SSH/Telnet/RDP)
+from remote_connect import remote_bp, register_socketio_handlers
+app.register_blueprint(remote_bp)
+register_socketio_handlers(socketio)
 
 # ==================== RATE LIMITING ====================
 login_attempts = {}  # {ip: [timestamp, timestamp, ...]}
@@ -2535,4 +2542,4 @@ if __name__ == '__main__':
     # Start auto-release thread for expired reservations
     start_auto_release_thread()
     
-    app.run(host='0.0.0.0', port=5000, debug=False, use_reloader=False)
+    socketio.run(app, host='0.0.0.0', port=5000, debug=False, use_reloader=False)
