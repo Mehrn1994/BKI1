@@ -921,8 +921,22 @@ document.addEventListener('DOMContentLoaded', function() {
 
     <script>
         // ============================================================================
+        // Session timeout: 8 hours
+        const SESSION_TIMEOUT = 8 * 60 * 60 * 1000;
+        function checkSessionTimeout() {
+            const sessionStart = localStorage.getItem('sessionStart');
+            if (sessionStart && (Date.now() - parseInt(sessionStart)) > SESSION_TIMEOUT) {
+                localStorage.clear(); sessionStorage.clear();
+                alert('جلسه شما منقضی شده است. لطفاً دوباره وارد شوید.');
+                location.href = '/login';
+                return true;
+            }
+            return false;
+        }
+
         // FIX: Get username from sessionStorage (set during login)
         // ============================================================================
+        if (checkSessionTimeout()) { /* redirected */ }
         const username = localStorage.getItem('currentUser') || sessionStorage.getItem('username') || localStorage.getItem('username') || 'Unknown';
         document.getElementById('currentUser').textContent = username;
 
