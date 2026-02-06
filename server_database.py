@@ -19,7 +19,7 @@ import threading
 # Email service removed - ticketing disabled
 
 app = Flask(__name__)
-CORS(app, origins=["http://localhost:*", "http://127.0.0.1:*"])
+CORS(app, origins=["http://localhost:5000", "http://127.0.0.1:5000"])
 
 # ==================== RATE LIMITING ====================
 login_attempts = {}  # {ip: [timestamp, timestamp, ...]}
@@ -171,7 +171,7 @@ def get_db():
     conn.row_factory = sqlite3.Row
     return conn
 
-SALT_KEY = 'BKI-Network-Portal-2026'
+SALT_KEY = os.environ.get('BKI_SALT_KEY', 'BKI-Network-Portal-2026')
 
 def hash_password(password, use_salt=True):
     if use_salt:
@@ -227,46 +227,7 @@ def init_tables():
     except Exception as e:
         print(f"⚠️ Index creation: {e}")
     
-    # Tickets table for email-based workflow
-    cursor.execute("""CREATE TABLE IF NOT EXISTS tickets (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        email_id TEXT,
-        email_subject TEXT,
-        email_sender TEXT,
-        email_body TEXT,
-        email_date TEXT,
-        status TEXT DEFAULT 'new',
-        stage TEXT DEFAULT 'new',
-        province TEXT,
-        branch_name TEXT,
-        point_type TEXT,
-        request_number TEXT,
-        mehregostar_code TEXT,
-        assigned_ip TEXT,
-        octet2 INTEGER,
-        octet3 INTEGER,
-        config_type TEXT,
-        config_output TEXT,
-        reply_sent INTEGER DEFAULT 0,
-        assigned_user TEXT,
-        created_at TEXT,
-        updated_at TEXT
-    )""")
-
-    # Email settings table (stores per-user Exchange connection settings)
-    cursor.execute("""CREATE TABLE IF NOT EXISTS email_settings (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        username TEXT UNIQUE,
-        email TEXT,
-        exchange_username TEXT,
-        exchange_server TEXT,
-        folder_name TEXT DEFAULT 'Inbox',
-        sender_filters TEXT DEFAULT '[]',
-        use_autodiscover INTEGER DEFAULT 1,
-        verify_ssl INTEGER DEFAULT 0,
-        is_connected INTEGER DEFAULT 0,
-        updated_at TEXT
-    )""")
+    # Tickets and Email tables removed - ticketing system disabled
 
     conn.commit()
     conn.close()
@@ -2250,10 +2211,13 @@ def reset_users():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-# ==================== EXPORT CSV ====================
+# ==================== EXPORT CSV (Admin Only) ====================
 @app.route('/api/export/lan-ips', methods=['GET'])
 def export_lan_ips():
-    """Export all LAN IPs as CSV"""
+    """Export all LAN IPs as CSV - Admin only"""
+    username = request.args.get('username', '')
+    if username != DB_ADMIN_USER:
+        return jsonify({'error': 'دسترسی فقط برای ادمین مجاز است'}), 403
     try:
         conn = get_db()
         cursor = conn.cursor()
@@ -2282,7 +2246,10 @@ def export_lan_ips():
 
 @app.route('/api/export/reservations', methods=['GET'])
 def export_reservations():
-    """Export all reservations as CSV"""
+    """Export all reservations as CSV - Admin only"""
+    username = request.args.get('username', '')
+    if username != DB_ADMIN_USER:
+        return jsonify({'error': 'دسترسی فقط برای ادمین مجاز است'}), 403
     try:
         conn = get_db()
         cursor = conn.cursor()
@@ -2382,65 +2349,6 @@ def smart_search():
     conn.close()
     return jsonify(results[:30])
 
-# ==================== PROVINCE MAP DATA ====================
-@app.route('/api/province-map', methods=['GET'])
-def province_map_data():
-    """Get province stats for map visualization"""
-    conn = get_db()
-    cursor = conn.cursor()
-
-    province_stats = {}
-
-    # LAN IPs per province
-    cursor.execute("""
-        SELECT province, COUNT(*) as total,
-        SUM(CASE WHEN (username IS NULL OR username = '') AND (branch_name IS NULL OR branch_name = '') THEN 1 ELSE 0 END) as free
-        FROM lan_ips WHERE province IS NOT NULL AND province != ''
-        GROUP BY province
-    """)
-    for r in cursor.fetchall():
-        p = r['province']
-        if p not in province_stats:
-            province_stats[p] = {'lan_total': 0, 'lan_free': 0, 'tunnels': 0, 'apn': 0, 'tickets': 0}
-        province_stats[p]['lan_total'] = r['total']
-        province_stats[p]['lan_free'] = r['free']
-
-    # Tunnels per province
-    cursor.execute("""
-        SELECT province, COUNT(*) as total FROM intranet_tunnels
-        WHERE province IS NOT NULL AND province != '' GROUP BY province
-    """)
-    for r in cursor.fetchall():
-        p = r['province']
-        if p not in province_stats:
-            province_stats[p] = {'lan_total': 0, 'lan_free': 0, 'tunnels': 0, 'apn': 0, 'tickets': 0}
-        province_stats[p]['tunnels'] = r['total']
-
-    # Tickets per province
-    cursor.execute("""
-        SELECT province, COUNT(*) as total FROM tickets
-        WHERE province IS NOT NULL AND province != '' GROUP BY province
-    """)
-    for r in cursor.fetchall():
-        p = r['province']
-        if p in province_stats:
-            province_stats[p]['tickets'] = r['total']
-
-    conn.close()
-
-    result = []
-    for province, stats in province_stats.items():
-        result.append({
-            'name': province,
-            'lan_total': stats['lan_total'],
-            'lan_free': stats['lan_free'],
-            'lan_used': stats['lan_total'] - stats['lan_free'],
-            'tunnels': stats['tunnels'],
-            'tickets': stats['tickets']
-        })
-
-    result.sort(key=lambda x: x['lan_total'], reverse=True)
-    return jsonify(result)
 
 # ==================== PDF REPORT ====================
 @app.route('/api/report/pdf', methods=['GET'])
@@ -2461,8 +2369,6 @@ def generate_pdf_report():
                 (SELECT COUNT(*) FROM apn_ips WHERE username IS NULL OR username = '') as free_apn,
                 (SELECT COUNT(*) FROM apn_mali) as total_mali,
                 (SELECT COUNT(*) FROM apn_mali WHERE username IS NULL OR username = '') as free_mali,
-                (SELECT COUNT(*) FROM tickets) as total_tickets,
-                (SELECT COUNT(*) FROM tickets WHERE stage = 'replied') as closed_tickets,
                 (SELECT COUNT(*) FROM reserved_ips WHERE status = 'reserved') as active_reservations
         """)
         s = cursor.fetchone()
@@ -2591,7 +2497,6 @@ def generate_pdf_report():
         html += f"""
 <div class="section"><h2>خلاصه</h2>
 <table>
-<tr><td><strong>تعداد تیکت‌ها</strong></td><td>{s['total_tickets']} (بسته شده: {s['closed_tickets']})</td></tr>
 <tr><td><strong>رزروهای فعال</strong></td><td>{s['active_reservations']}</td></tr>
 <tr><td><strong>درصد مصرف LAN</strong></td><td>{int(((s['total_lan']-s['free_lan'])/s['total_lan'])*100) if s['total_lan'] else 0}%</td></tr>
 <tr><td><strong>درصد مصرف Tunnel</strong></td><td>{int(((s['total_tun']-s['free_tun'])/s['total_tun'])*100) if s['total_tun'] else 0}%</td></tr>
@@ -2605,104 +2510,6 @@ def generate_pdf_report():
 
         log_activity('success', 'تهیه گزارش PDF', f'گزارش وضعیت شبکه تهیه شد', username)
         return Response(html, mimetype='text/html')
-
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
-
-# ==================== TICKET SYSTEM REMOVED ====================
-
-# ==================== NETWORK TOPOLOGY - VISIO STYLE ====================
-@app.route('/api/network-topology', methods=['GET'])
-def get_network_topology():
-    """Get full network topology for Visio-style visualization"""
-    try:
-        conn = get_db()
-        cursor = conn.cursor()
-
-        # Get all provinces with their branches
-        cursor.execute("""
-            SELECT DISTINCT province FROM lan_ips
-            WHERE province IS NOT NULL AND province != ''
-            ORDER BY province
-        """)
-        province_names = [row['province'] for row in cursor.fetchall()]
-
-        provinces = []
-        total_branches = 0
-        total_connections = 0
-
-        for prov_name in province_names:
-            # Get branches in this province
-            cursor.execute("""
-                SELECT
-                    branch_name,
-                    octet2,
-                    octet3,
-                    username,
-                    status,
-                    CASE
-                        WHEN branch_name LIKE '%خودپرداز%' OR branch_name LIKE '%ATM%' THEN 'خودپرداز'
-                        WHEN branch_name LIKE '%کیوسک%' THEN 'کیوسک'
-                        WHEN branch_name LIKE '%مدیریت%' THEN 'مدیریت'
-                        ELSE 'شعبه'
-                    END as type
-                FROM lan_ips
-                WHERE province = ? AND branch_name IS NOT NULL AND branch_name != ''
-                ORDER BY branch_name
-            """, (prov_name,))
-
-            branches = []
-            for row in cursor.fetchall():
-                ip = f"10.{row['octet2']}.{row['octet3']}.0/24"
-
-                # Try to find associated tunnel
-                tunnel_name = None
-                cursor.execute("""
-                    SELECT tunnel_name FROM intranet_tunnels
-                    WHERE description LIKE ? OR description LIKE ?
-                    LIMIT 1
-                """, (f"%{row['branch_name']}%", f"%{row['octet2']}.{row['octet3']}%"))
-                tunnel_row = cursor.fetchone()
-                if tunnel_row:
-                    tunnel_name = tunnel_row['tunnel_name']
-
-                branches.append({
-                    'name': row['branch_name'],
-                    'ip': ip,
-                    'type': row['type'],
-                    'status': row['status'] or 'active',
-                    'tunnel': tunnel_name
-                })
-
-            total_branches += len(branches)
-            total_connections += len(branches) + 1  # +1 for province-to-core
-
-            # Calculate IP range for this province
-            cursor.execute("""
-                SELECT MIN(octet2) as min2, MAX(octet2) as max2
-                FROM lan_ips WHERE province = ?
-            """, (prov_name,))
-            range_row = cursor.fetchone()
-            ip_range = f"10.{range_row['min2']}-{range_row['max2']}.x.0/24" if range_row else "-"
-
-            provinces.append({
-                'name': prov_name,
-                'branches': branches,
-                'ip_range': ip_range,
-                'branch_count': len(branches)
-            })
-
-        conn.close()
-
-        return jsonify({
-            'provinces': provinces,
-            'total_branches': total_branches,
-            'total_connections': total_connections,
-            'core': {
-                'name': 'دیتاسنتر مرکزی',
-                'ip': '10.0.0.0/8'
-            }
-        })
 
     except Exception as e:
         return jsonify({'error': str(e)}), 500
@@ -2721,4 +2528,4 @@ if __name__ == '__main__':
     # Start auto-release thread for expired reservations
     start_auto_release_thread()
     
-    app.run(host='0.0.0.0', port=5000, debug=True, use_reloader=False)
+    app.run(host='0.0.0.0', port=5000, debug=False, use_reloader=False)
