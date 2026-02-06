@@ -143,15 +143,15 @@
         }
 
         .logo-container {
-            width: 160px;
-            height: 160px;
+            width: 220px;
+            height: 220px;
             background: rgba(255, 255, 255, 0.95);
             backdrop-filter: blur(10px);
-            border-radius: 32px;
+            border-radius: 40px;
             display: flex;
             align-items: center;
             justify-content: center;
-            margin: 0 auto 25px;
+            margin: 0 auto 30px;
             border: 3px solid rgba(255, 255, 255, 0.5);
             box-shadow: 0 15px 40px rgba(0, 0, 0, 0.25);
             animation: pulse-glow 3s ease-in-out infinite;
@@ -163,8 +163,8 @@
         }
 
         .logo-container img {
-            width: 130px;
-            height: 130px;
+            width: 190px;
+            height: 190px;
             object-fit: contain;
         }
 
@@ -187,10 +187,10 @@
             background: rgba(255, 255, 255, 0.12);
             backdrop-filter: blur(20px);
             -webkit-backdrop-filter: blur(20px);
-            border-radius: 28px;
-            padding: 40px;
+            border-radius: 32px;
+            padding: 45px;
             width: 100%;
-            max-width: 500px;
+            max-width: 550px;
             border: 1px solid rgba(255, 255, 255, 0.2);
             box-shadow: 0 25px 50px rgba(0, 0, 0, 0.25),
                         inset 0 1px 1px rgba(255, 255, 255, 0.1);
@@ -229,20 +229,19 @@
             border-radius: 3px;
         }
 
-        /* User Button */
+        /* User Button - Glass Style */
         .user-btn {
             display: flex;
             align-items: center;
-            gap: 18px;
-            padding: 16px 20px;
-            background: rgba(255, 255, 255, 0.92);
-            border: 2px solid rgba(255, 255, 255, 0.95);
-            border-radius: 16px;
+            gap: 20px;
+            padding: 20px 24px;
+            background: rgba(255, 255, 255, 0.15);
+            border: 1px solid rgba(255, 255, 255, 0.25);
+            border-radius: 18px;
             cursor: pointer;
             transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
             position: relative;
             overflow: hidden;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
         }
 
         .user-btn::before {
@@ -252,7 +251,7 @@
             left: -100%;
             width: 100%;
             height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(0, 188, 212, 0.15), transparent);
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
             transition: left 0.5s ease;
         }
 
@@ -261,10 +260,10 @@
         }
 
         .user-btn:hover {
-            background: rgba(255, 255, 255, 1);
-            border-color: var(--primary);
+            background: rgba(255, 255, 255, 0.25);
+            border-color: rgba(255, 255, 255, 0.4);
             transform: translateX(-8px) scale(1.02);
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
         }
 
         .user-btn:active {
@@ -272,15 +271,15 @@
         }
 
         .user-btn .avatar {
-            width: 52px;
-            height: 52px;
+            width: 60px;
+            height: 60px;
             background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
-            border-radius: 14px;
+            border-radius: 16px;
             display: flex;
             align-items: center;
             justify-content: center;
             color: white;
-            font-size: 1.4rem;
+            font-size: 1.6rem;
             font-weight: 700;
             box-shadow: 0 4px 15px rgba(0, 188, 212, 0.4);
             transition: all 0.3s ease;
@@ -298,18 +297,19 @@
         }
 
         .user-btn .name {
-            font-size: 1.15rem;
+            font-size: 1.3rem;
             font-weight: 700;
-            color: #1e293b;
-            margin-bottom: 4px;
+            color: white;
+            margin-bottom: 6px;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
         }
 
         .user-btn .status {
-            font-size: 0.9rem;
-            color: #64748b;
+            font-size: 1rem;
+            color: rgba(255, 255, 255, 0.8);
             display: flex;
             align-items: center;
-            gap: 5px;
+            gap: 6px;
         }
 
         .user-btn .status.registered {
@@ -317,17 +317,17 @@
         }
 
         .user-btn .status.new {
-            color: #f59e0b;
+            color: #fbbf24;
         }
 
         .user-btn .arrow {
-            color: #94a3b8;
-            font-size: 1.2rem;
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 1.4rem;
             transition: all 0.3s ease;
         }
 
         .user-btn:hover .arrow {
-            color: var(--primary);
+            color: white;
             transform: translateX(-5px);
         }
 
