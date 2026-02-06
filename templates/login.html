@@ -3,186 +3,711 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ورود به سیستم</title>
+    <title>پورتال مدیریت شبکه - بانک کشاورزی</title>
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;600;700;800&display=swap');
+
         * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        :root {
+            --primary: #667eea;
+            --primary-dark: #5a67d8;
+            --secondary: #764ba2;
+            --accent: #06d6a0;
+            --glass-bg: rgba(255, 255, 255, 0.1);
+            --glass-border: rgba(255, 255, 255, 0.2);
+        }
+
         body {
-            font-family: 'Segoe UI', Tahoma, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-family: 'Vazirmatn', 'Segoe UI', Tahoma, sans-serif;
             min-height: 100vh;
             display: flex;
             align-items: center;
             justify-content: center;
+            overflow: hidden;
+            position: relative;
         }
-        .login-container {
-            background: rgba(255,255,255,0.95);
-            border-radius: 20px;
-            padding: 40px;
+
+        /* Animated Background */
+        .bg-layer {
+            position: fixed;
+            top: 0;
+            left: 0;
             width: 100%;
-            max-width: 450px;
-            box-shadow: 0 25px 50px rgba(0,0,0,0.3);
+            height: 100%;
+            z-index: -3;
+            background: url('/static/background.jpg') center/cover no-repeat;
         }
-        .logo { text-align: center; margin-bottom: 30px; }
-        .logo .icon { font-size: 4rem; }
-        .logo h1 { font-size: 1.8rem; color: #1e293b; margin-top: 10px; }
-        .users-grid { display: grid; grid-template-columns: 1fr; gap: 12px; }
+
+        .bg-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -2;
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.85) 0%, rgba(118, 75, 162, 0.85) 100%);
+        }
+
+        /* Floating Orbs */
+        .orb {
+            position: fixed;
+            border-radius: 50%;
+            filter: blur(80px);
+            z-index: -1;
+            animation: float 20s ease-in-out infinite;
+        }
+
+        .orb-1 {
+            width: 600px;
+            height: 600px;
+            background: rgba(102, 126, 234, 0.4);
+            top: -200px;
+            right: -200px;
+            animation-delay: 0s;
+        }
+
+        .orb-2 {
+            width: 500px;
+            height: 500px;
+            background: rgba(118, 75, 162, 0.4);
+            bottom: -150px;
+            left: -150px;
+            animation-delay: -5s;
+        }
+
+        .orb-3 {
+            width: 300px;
+            height: 300px;
+            background: rgba(6, 214, 160, 0.3);
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            animation-delay: -10s;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            25% { transform: translate(50px, -50px) scale(1.1); }
+            50% { transform: translate(-30px, 30px) scale(0.95); }
+            75% { transform: translate(40px, 40px) scale(1.05); }
+        }
+
+        /* Particles */
+        .particles {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            overflow: hidden;
+        }
+
+        .particle {
+            position: absolute;
+            width: 6px;
+            height: 6px;
+            background: rgba(255, 255, 255, 0.5);
+            border-radius: 50%;
+            animation: rise 15s ease-in-out infinite;
+        }
+
+        @keyframes rise {
+            0% { transform: translateY(100vh) rotate(0deg); opacity: 0; }
+            10% { opacity: 1; }
+            90% { opacity: 1; }
+            100% { transform: translateY(-100vh) rotate(720deg); opacity: 0; }
+        }
+
+        /* Main Container */
+        .login-wrapper {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 30px;
+            padding: 20px;
+            animation: fadeInUp 0.8s ease-out;
+        }
+
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(40px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Logo Section */
+        .logo-section {
+            text-align: center;
+            animation: fadeInUp 0.8s ease-out 0.2s both;
+        }
+
+        .logo-container {
+            width: 100px;
+            height: 100px;
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(10px);
+            border-radius: 25px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 20px;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+            animation: pulse-glow 3s ease-in-out infinite;
+        }
+
+        @keyframes pulse-glow {
+            0%, 100% { box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2), 0 0 0 0 rgba(102, 126, 234, 0.4); }
+            50% { box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2), 0 0 30px 10px rgba(102, 126, 234, 0.2); }
+        }
+
+        .logo-container img {
+            width: 70px;
+            height: 70px;
+            object-fit: contain;
+            filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.2));
+        }
+
+        .brand-title {
+            font-size: 2rem;
+            font-weight: 700;
+            color: white;
+            text-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+            margin-bottom: 8px;
+        }
+
+        .brand-subtitle {
+            font-size: 1rem;
+            color: rgba(255, 255, 255, 0.8);
+            font-weight: 400;
+        }
+
+        /* Glass Card */
+        .login-card {
+            background: rgba(255, 255, 255, 0.12);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-radius: 24px;
+            padding: 35px;
+            width: 100%;
+            max-width: 420px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.25),
+                        inset 0 1px 1px rgba(255, 255, 255, 0.1);
+            animation: fadeInUp 0.8s ease-out 0.4s both;
+        }
+
+        .section-title {
+            text-align: center;
+            color: white;
+            font-size: 1.1rem;
+            font-weight: 500;
+            margin-bottom: 25px;
+            opacity: 0.9;
+        }
+
+        /* Users Grid */
+        .users-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            max-height: 400px;
+            overflow-y: auto;
+            padding-left: 5px;
+        }
+
+        .users-grid::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .users-grid::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 3px;
+        }
+
+        .users-grid::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 3px;
+        }
+
+        /* User Button */
         .user-btn {
-            display: flex; align-items: center; gap: 15px;
-            padding: 15px 20px; background: #f8fafc;
-            border: 2px solid #e2e8f0; border-radius: 12px;
-            cursor: pointer; transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding: 14px 18px;
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 16px;
+            cursor: pointer;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            position: relative;
+            overflow: hidden;
         }
-        .user-btn:hover { border-color: #667eea; background: #eef2ff; transform: translateX(-5px); }
+
+        .user-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: left 0.5s ease;
+        }
+
+        .user-btn:hover::before {
+            left: 100%;
+        }
+
+        .user-btn:hover {
+            background: rgba(255, 255, 255, 0.18);
+            border-color: rgba(255, 255, 255, 0.35);
+            transform: translateX(-8px) scale(1.02);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+
+        .user-btn:active {
+            transform: translateX(-8px) scale(0.98);
+        }
+
         .user-btn .avatar {
-            width: 50px; height: 50px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            border-radius: 50%; display: flex; align-items: center;
-            justify-content: center; color: white; font-size: 1.3rem; font-weight: bold;
-        }
-        .user-btn .name { font-size: 1.1rem; font-weight: 600; color: #1e293b; }
-        .user-btn .status { font-size: 0.85rem; color: #64748b; margin-top: 3px; }
-        .user-btn .status.new { color: #f59e0b; }
-        .password-section { display: none; }
-        .password-section.show { display: block; }
-        .selected-user {
-            display: flex; align-items: center; gap: 15px;
-            padding: 20px; background: #f1f5f9;
-            border-radius: 12px; margin-bottom: 20px;
-        }
-        .selected-user .avatar {
-            width: 60px; height: 60px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            border-radius: 50%; display: flex; align-items: center;
-            justify-content: center; color: white; font-size: 1.5rem; font-weight: bold;
-        }
-        .selected-user .info h3 { color: #1e293b; font-size: 1.3rem; }
-        .selected-user .info p { color: #64748b; font-size: 0.9rem; }
-        .selected-user .change-user {
-            margin-right: auto; background: none;
-            border: none; color: #667eea; cursor: pointer;
-            font-size: 0.9rem; padding: 8px 12px;
-        }
-        .selected-user .change-user:hover { text-decoration: underline; }
-        .form-group { margin-bottom: 20px; }
-        .form-group label { display: block; margin-bottom: 8px; color: #334155; font-weight: 600; }
-        .form-group input {
-            width: 100%; padding: 14px 18px;
-            border: 2px solid #e2e8f0; border-radius: 10px;
-            font-size: 1rem; transition: all 0.3s ease;
-        }
-        .form-group input:focus { outline: none; border-color: #667eea; box-shadow: 0 0 0 3px rgba(102,126,234,0.1); }
-        .btn {
-            width: 100%; padding: 16px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white; border: none; border-radius: 10px;
-            font-size: 1.1rem; font-weight: 600; cursor: pointer;
+            width: 48px;
+            height: 48px;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 1.3rem;
+            font-weight: 700;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
             transition: all 0.3s ease;
         }
-        .btn:hover { transform: translateY(-2px); box-shadow: 0 10px 20px rgba(102,126,234,0.3); }
-        .btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+
+        .user-btn:hover .avatar {
+            transform: rotate(-5deg) scale(1.1);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.5);
+        }
+
+        .user-btn .user-info {
+            flex: 1;
+        }
+
+        .user-btn .name {
+            font-size: 1.05rem;
+            font-weight: 600;
+            color: white;
+            margin-bottom: 3px;
+        }
+
+        .user-btn .status {
+            font-size: 0.8rem;
+            color: rgba(255, 255, 255, 0.6);
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .user-btn .status.registered {
+            color: var(--accent);
+        }
+
+        .user-btn .status.new {
+            color: #fbbf24;
+        }
+
+        .user-btn .arrow {
+            color: rgba(255, 255, 255, 0.4);
+            font-size: 1.2rem;
+            transition: all 0.3s ease;
+        }
+
+        .user-btn:hover .arrow {
+            color: white;
+            transform: translateX(-5px);
+        }
+
+        /* Password Section */
+        .password-section {
+            display: none;
+            animation: slideIn 0.4s ease-out;
+        }
+
+        .password-section.show {
+            display: block;
+        }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateX(30px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        .selected-user {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            margin-bottom: 25px;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+        }
+
+        .selected-user .avatar {
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            border-radius: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 1.6rem;
+            font-weight: 700;
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+        }
+
+        .selected-user .info h3 {
+            color: white;
+            font-size: 1.3rem;
+            font-weight: 600;
+        }
+
+        .selected-user .info p {
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 0.9rem;
+            margin-top: 4px;
+        }
+
+        .selected-user .change-user {
+            margin-right: auto;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: white;
+            cursor: pointer;
+            font-size: 0.85rem;
+            padding: 8px 14px;
+            border-radius: 10px;
+            transition: all 0.3s ease;
+        }
+
+        .selected-user .change-user:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        /* Form Elements */
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 10px;
+            color: rgba(255, 255, 255, 0.9);
+            font-weight: 500;
+            font-size: 0.95rem;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 16px 20px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 14px;
+            font-size: 1rem;
+            color: white;
+            font-family: inherit;
+            transition: all 0.3s ease;
+        }
+
+        .form-group input::placeholder {
+            color: rgba(255, 255, 255, 0.4);
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: var(--accent);
+            background: rgba(255, 255, 255, 0.15);
+            box-shadow: 0 0 0 4px rgba(6, 214, 160, 0.15);
+        }
+
+        /* Buttons */
+        .btn {
+            width: 100%;
+            padding: 16px;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            color: white;
+            border: none;
+            border-radius: 14px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+            font-family: inherit;
+        }
+
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+            transition: left 0.5s ease;
+        }
+
+        .btn:hover::before {
+            left: 100%;
+        }
+
+        .btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 15px 35px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn:active {
+            transform: translateY(-1px);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+
+        /* Messages */
         .error-msg {
-            background: #fee2e2; color: #dc2626;
-            padding: 12px 16px; border-radius: 8px;
-            margin-bottom: 15px; display: none;
-            border: 1px solid #fca5a5;
+            background: rgba(239, 68, 68, 0.2);
+            color: #fca5a5;
+            padding: 14px 18px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            display: none;
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            animation: shake 0.5s ease;
         }
-        .error-msg.show { display: block; }
+
+        .error-msg.show {
+            display: block;
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            20%, 60% { transform: translateX(-5px); }
+            40%, 80% { transform: translateX(5px); }
+        }
+
         .info-box {
-            background: #dbeafe; color: #1e40af;
-            padding: 12px 16px; border-radius: 8px;
-            margin-bottom: 20px; border: 1px solid #93c5fd;
+            background: rgba(6, 214, 160, 0.15);
+            color: var(--accent);
+            padding: 14px 18px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            border: 1px solid rgba(6, 214, 160, 0.3);
+            display: flex;
+            align-items: center;
+            gap: 10px;
         }
+
+        /* Loading */
         .loading {
             display: inline-block;
-            width: 20px; height: 20px;
-            border: 2px solid #fff;
-            border-top-color: transparent;
+            width: 20px;
+            height: 20px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-top-color: white;
             border-radius: 50%;
             animation: spin 0.8s linear infinite;
-            margin-left: 10px;
+            margin-right: 10px;
             vertical-align: middle;
         }
-        @keyframes spin { to { transform: rotate(360deg); } }
-        .debug-panel {
-            margin-top: 20px;
-            padding: 15px;
-            background: #1e293b;
-            border-radius: 10px;
-            font-size: 12px;
-            color: #94a3b8;
-            display: none;
-            max-height: 200px;
-            overflow-y: auto;
-            font-family: monospace;
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
         }
-        .debug-panel.show { display: block; }
-        .debug-panel .log { margin: 4px 0; padding: 4px 0; border-bottom: 1px solid #334155; }
-        .debug-panel .error { color: #ef4444; }
-        .debug-panel .success { color: #10b981; }
-        .debug-panel .info { color: #3b82f6; }
+
+        .loading-container {
+            text-align: center;
+            padding: 40px 20px;
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .loading-container .spinner {
+            width: 50px;
+            height: 50px;
+            border: 3px solid rgba(255, 255, 255, 0.2);
+            border-top-color: var(--accent);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        /* Retry Button */
         .retry-btn {
-            margin-top: 15px; padding: 10px 20px;
-            background: #667eea; color: white;
-            border: none; border-radius: 8px; cursor: pointer;
+            margin-top: 20px;
+            padding: 12px 24px;
+            background: rgba(255, 255, 255, 0.15);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 10px;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 0.95rem;
+            transition: all 0.3s ease;
         }
-        .retry-btn:hover { background: #5a67d8; }
+
+        .retry-btn:hover {
+            background: rgba(255, 255, 255, 0.25);
+        }
+
+        /* Footer */
+        .footer {
+            text-align: center;
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 0.85rem;
+            margin-top: 20px;
+            animation: fadeInUp 0.8s ease-out 0.6s both;
+        }
+
+        .footer a {
+            color: rgba(255, 255, 255, 0.7);
+            text-decoration: none;
+            transition: color 0.3s ease;
+        }
+
+        .footer a:hover {
+            color: white;
+        }
+
+        /* Responsive */
+        @media (max-width: 480px) {
+            .login-card {
+                padding: 25px;
+                margin: 0 15px;
+            }
+
+            .brand-title {
+                font-size: 1.6rem;
+            }
+
+            .logo-container {
+                width: 80px;
+                height: 80px;
+            }
+
+            .logo-container img {
+                width: 55px;
+                height: 55px;
+            }
+        }
     </style>
 </head>
 <body>
-    <div class="login-container">
-        <div class="logo">
-            <span class="icon">🌐</span>
-            <h1>پورتال مدیریت شبکه</h1>
+    <!-- Background Layers -->
+    <div class="bg-layer"></div>
+    <div class="bg-overlay"></div>
+
+    <!-- Floating Orbs -->
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+    <div class="orb orb-3"></div>
+
+    <!-- Particles -->
+    <div class="particles" id="particles"></div>
+
+    <!-- Main Content -->
+    <div class="login-wrapper">
+        <!-- Logo Section -->
+        <div class="logo-section">
+            <div class="logo-container">
+                <img src="/static/logo.png" alt="Logo" onerror="this.style.display='none'; this.parentElement.innerHTML='<span style=\'font-size:2.5rem\'>🌐</span>'">
+            </div>
+            <h1 class="brand-title">پورتال مدیریت شبکه</h1>
+            <p class="brand-subtitle">بانک کشاورزی ایران</p>
         </div>
-        
-        <div id="userSelection">
-            <p style="text-align: center; color: #64748b; margin-bottom: 20px;">کاربر خود را انتخاب کنید</p>
-            <div class="users-grid" id="usersGrid">
-                <div style="text-align: center; padding: 30px; color: #64748b;">
-                    <div class="loading" style="border-color: #667eea; border-top-color: transparent; width: 30px; height: 30px;"></div>
-                    <p style="margin-top: 15px;">در حال بارگذاری...</p>
+
+        <!-- Login Card -->
+        <div class="login-card">
+            <div id="userSelection">
+                <p class="section-title">کاربر خود را انتخاب کنید</p>
+                <div class="users-grid" id="usersGrid">
+                    <div class="loading-container">
+                        <div class="spinner"></div>
+                        <p>در حال بارگذاری...</p>
+                    </div>
+                </div>
+            </div>
+
+            <div id="passwordSection" class="password-section">
+                <div class="selected-user">
+                    <div class="avatar" id="selectedAvatar">Y</div>
+                    <div class="info">
+                        <h3 id="selectedName">کاربر</h3>
+                        <p id="selectedStatus">ورود به سیستم</p>
+                    </div>
+                    <button class="change-user" onclick="changeUser()">← تغییر</button>
+                </div>
+
+                <div class="error-msg" id="errorMsg"></div>
+
+                <div id="registerForm" style="display: none;">
+                    <div class="info-box">
+                        <span>🔐</span>
+                        <span>اولین ورود - لطفاً رمز عبور تعیین کنید</span>
+                    </div>
+                    <div class="form-group">
+                        <label>رمز عبور جدید</label>
+                        <input type="password" id="newPassword" placeholder="حداقل ۸ کاراکتر">
+                    </div>
+                    <div class="form-group">
+                        <label>تکرار رمز عبور</label>
+                        <input type="password" id="confirmPassword" placeholder="تکرار رمز عبور">
+                    </div>
+                    <button class="btn" id="registerBtn" onclick="register()">
+                        ثبت رمز و ورود
+                    </button>
+                </div>
+
+                <div id="loginForm" style="display: none;">
+                    <div class="form-group">
+                        <label>رمز عبور</label>
+                        <input type="password" id="password" placeholder="رمز عبور خود را وارد کنید">
+                    </div>
+                    <button class="btn" id="loginBtn" onclick="login()">
+                        ورود به سیستم
+                    </button>
                 </div>
             </div>
         </div>
-        
-        <div id="passwordSection" class="password-section">
-            <div class="selected-user">
-                <div class="avatar" id="selectedAvatar">Y</div>
-                <div class="info">
-                    <h3 id="selectedName">Yarian</h3>
-                    <p id="selectedStatus">ورود</p>
-                </div>
-                <button class="change-user" onclick="changeUser()">تغییر کاربر</button>
-            </div>
-            
-            <div class="error-msg" id="errorMsg"></div>
-            
-            <div id="registerForm" style="display: none;">
-                <div class="info-box">🔐 اولین ورود - رمز عبور تعیین کنید</div>
-                <div class="form-group">
-                    <label>رمز عبور جدید</label>
-                    <input type="password" id="newPassword" placeholder="حداقل ۸ کاراکتر">
-                </div>
-                <div class="form-group">
-                    <label>تکرار رمز عبور</label>
-                    <input type="password" id="confirmPassword" placeholder="تکرار رمز عبور">
-                </div>
-                <button class="btn" id="registerBtn" onclick="register()">ثبت رمز و ورود</button>
-            </div>
-            
-            <div id="loginForm" style="display: none;">
-                <div class="form-group">
-                    <label>رمز عبور</label>
-                    <input type="password" id="password" placeholder="رمز عبور خود را وارد کنید">
-                </div>
-                <button class="btn" id="loginBtn" onclick="login()">ورود</button>
-            </div>
+
+        <div class="footer">
+            طراحی و توسعه توسط <a href="#">تیم فناوری اطلاعات</a>
         </div>
-        
-        <div class="debug-panel" id="debugPanel"></div>
     </div>
 
     <script>
+        // Create particles
+        function createParticles() {
+            const container = document.getElementById('particles');
+            for (let i = 0; i < 30; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'particle';
+                particle.style.left = Math.random() * 100 + '%';
+                particle.style.animationDuration = (Math.random() * 10 + 10) + 's';
+                particle.style.animationDelay = Math.random() * 15 + 's';
+                particle.style.width = (Math.random() * 6 + 2) + 'px';
+                particle.style.height = particle.style.width;
+                particle.style.opacity = Math.random() * 0.5 + 0.3;
+                container.appendChild(particle);
+            }
+        }
+        createParticles();
+
         let selectedUser = null;
 
         // HTML escape function for XSS prevention
@@ -192,69 +717,49 @@
             return String(text).replace(/[&<>"']/g, m => map[m]);
         }
 
-        // Debug logging
-        function log(message, type = 'info') {
-            console.log(`[${type.toUpperCase()}] ${message}`);
-            const panel = document.getElementById('debugPanel');
-            const time = new Date().toLocaleTimeString();
-            panel.innerHTML += `<div class="log ${type}">[${time}] ${message}</div>`;
-            panel.scrollTop = panel.scrollHeight;
-        }
-
-        // Toggle debug panel (triple-click logo)
-        let clickCount = 0;
-        document.querySelector('.logo').addEventListener('click', () => {
-            clickCount++;
-            setTimeout(() => clickCount = 0, 500);
-            if (clickCount >= 3) {
-                document.getElementById('debugPanel').classList.toggle('show');
-            }
-        });
-
         // Page load
         document.addEventListener('DOMContentLoaded', function() {
-            log('صفحه بارگذاری شد', 'info');
             loadUsers();
         });
 
         // Load users
         async function loadUsers() {
-            log('درخواست لیست کاربران...', 'info');
-            
             try {
                 const response = await fetch('/api/users');
-                log(`پاسخ سرور: ${response.status}`, response.ok ? 'success' : 'error');
-                
+
                 if (!response.ok) {
                     throw new Error(`HTTP Error: ${response.status}`);
                 }
-                
+
                 const data = await response.json();
-                log(`${data.users?.length || 0} کاربر دریافت شد`, 'success');
-                
+
                 if (!data.users || data.users.length === 0) {
                     throw new Error('لیست کاربران خالی است');
                 }
-                
-                document.getElementById('usersGrid').innerHTML = data.users.map(user => {
+
+                document.getElementById('usersGrid').innerHTML = data.users.map((user, index) => {
                     const safeName = escapeHtml(user.name);
+                    const colors = ['#667eea', '#764ba2', '#06d6a0', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#14b8a6'];
+                    const color = colors[index % colors.length];
                     return `
-                    <div class="user-btn" onclick="selectUser('${safeName}', ${user.registered})">
-                        <div class="avatar">${safeName[0]}</div>
-                        <div>
+                    <div class="user-btn" onclick="selectUser('${safeName}', ${user.registered})" style="animation: fadeInUp 0.5s ease-out ${index * 0.05}s both;">
+                        <div class="avatar" style="background: linear-gradient(135deg, ${color} 0%, ${color}99 100%);">${safeName[0]}</div>
+                        <div class="user-info">
                             <div class="name">${safeName}</div>
-                            <div class="status ${user.registered ? '' : 'new'}">${user.registered ? '✓ ثبت شده' : '● جدید'}</div>
+                            <div class="status ${user.registered ? 'registered' : 'new'}">
+                                ${user.registered ? '✓ ثبت شده' : '● جدید'}
+                            </div>
                         </div>
+                        <span class="arrow">←</span>
                     </div>
                 `}).join('');
-                
+
             } catch (error) {
-                log(`خطا: ${error.message}`, 'error');
                 document.getElementById('usersGrid').innerHTML = `
-                    <div style="text-align: center; padding: 30px; color: #dc2626;">
-                        <p style="font-size: 2rem; margin-bottom: 10px;">❌</p>
-                        <p><strong>خطا در اتصال به سرور</strong></p>
-                        <p style="font-size: 0.85rem; margin-top: 10px; color: #64748b;">${error.message}</p>
+                    <div class="loading-container">
+                        <p style="font-size: 2.5rem; margin-bottom: 15px;">😕</p>
+                        <p style="font-weight: 600; margin-bottom: 8px;">خطا در اتصال به سرور</p>
+                        <p style="font-size: 0.85rem; opacity: 0.7;">${error.message}</p>
                         <button class="retry-btn" onclick="loadUsers()">🔄 تلاش مجدد</button>
                     </div>
                 `;
@@ -263,15 +768,14 @@
 
         // Select user
         function selectUser(username, hasPassword) {
-            log(`کاربر انتخاب شد: ${username}`, 'info');
             selectedUser = username;
-            
+
             document.getElementById('userSelection').style.display = 'none';
             document.getElementById('passwordSection').classList.add('show');
             document.getElementById('selectedAvatar').textContent = username[0];
             document.getElementById('selectedName').textContent = username;
             document.getElementById('errorMsg').classList.remove('show');
-            
+
             if (hasPassword) {
                 document.getElementById('selectedStatus').textContent = 'ورود به سیستم';
                 document.getElementById('registerForm').style.display = 'none';
@@ -298,7 +802,6 @@
 
         // Show error
         function showError(msg) {
-            log(`خطا: ${msg}`, 'error');
             const el = document.getElementById('errorMsg');
             el.textContent = msg;
             el.classList.add('show');
@@ -310,7 +813,7 @@
             if (loading) {
                 btn.disabled = true;
                 btn.dataset.originalText = btn.innerHTML;
-                btn.innerHTML = 'لطفا صبر کنید... <span class="loading"></span>';
+                btn.innerHTML = '<span class="loading"></span> لطفاً صبر کنید...';
             } else {
                 btn.disabled = false;
                 btn.innerHTML = btn.dataset.originalText || btn.innerHTML;
@@ -321,23 +824,21 @@
         async function register() {
             const p1 = document.getElementById('newPassword').value;
             const p2 = document.getElementById('confirmPassword').value;
-            
+
             if (p1.length < 8) { showError('رمز باید حداقل ۸ کاراکتر باشد'); return; }
             if (p1 !== p2) { showError('رمزها مطابقت ندارند'); return; }
-            
+
             setLoading('registerBtn', true);
-            
+
             try {
-                log('ارسال درخواست ثبت نام...', 'info');
                 const response = await fetch('/api/register', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ username: selectedUser, password: p1 })
                 });
-                
+
                 const data = await response.json();
-                log(`نتیجه: ${JSON.stringify(data)}`, data.success ? 'success' : 'error');
-                
+
                 if (data.success) {
                     localStorage.setItem('currentUser', selectedUser);
                     localStorage.setItem('sessionStart', Date.now().toString());
@@ -346,7 +847,6 @@
                     showError(data.error || 'خطا در ثبت نام');
                 }
             } catch (error) {
-                log(`خطای شبکه: ${error.message}`, 'error');
                 showError('خطا در اتصال به سرور: ' + error.message);
             } finally {
                 setLoading('registerBtn', false);
@@ -356,22 +856,20 @@
         // Login
         async function login() {
             const password = document.getElementById('password').value;
-            
+
             if (!password) { showError('رمز را وارد کنید'); return; }
-            
+
             setLoading('loginBtn', true);
-            
+
             try {
-                log('ارسال درخواست ورود...', 'info');
                 const response = await fetch('/api/login', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ username: selectedUser, password: password })
                 });
-                
+
                 const data = await response.json();
-                log(`نتیجه: ${JSON.stringify(data)}`, data.success ? 'success' : 'error');
-                
+
                 if (data.success) {
                     localStorage.setItem('currentUser', selectedUser);
                     localStorage.setItem('sessionStart', Date.now().toString());
@@ -380,7 +878,6 @@
                     showError(data.message || 'رمز اشتباه است');
                 }
             } catch (error) {
-                log(`خطای شبکه: ${error.message}`, 'error');
                 showError('خطا در اتصال به سرور: ' + error.message);
             } finally {
                 setLoading('loginBtn', false);
