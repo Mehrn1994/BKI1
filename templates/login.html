@@ -10,13 +10,12 @@
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
         :root {
-            /* Company Colors from Logo */
-            --primary: #00bcd4;      /* Teal/Cyan */
+            --primary: #00bcd4;
             --primary-dark: #00acc1;
-            --secondary: #e91e63;    /* Pink/Magenta */
-            --accent: #00e5ff;       /* Bright Cyan */
-            --glass-bg: rgba(255, 255, 255, 0.1);
-            --glass-border: rgba(255, 255, 255, 0.2);
+            --secondary: #e91e63;
+            --accent: #00e5ff;
+            --glass-bg: rgba(255, 255, 255, 0.08);
+            --glass-border: rgba(255, 255, 255, 0.15);
         }
 
         body {
@@ -32,20 +31,16 @@
         /* Animated Background */
         .bg-layer {
             position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
             z-index: -3;
             background: url('/static/background.jpg') center/cover no-repeat;
         }
 
         .bg-overlay {
             position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
             z-index: -2;
             background: linear-gradient(135deg, rgba(0, 188, 212, 0.8) 0%, rgba(233, 30, 99, 0.7) 100%);
         }
@@ -60,29 +55,22 @@
         }
 
         .orb-1 {
-            width: 600px;
-            height: 600px;
+            width: 600px; height: 600px;
             background: rgba(0, 188, 212, 0.4);
-            top: -200px;
-            right: -200px;
-            animation-delay: 0s;
+            top: -200px; right: -200px;
         }
 
         .orb-2 {
-            width: 500px;
-            height: 500px;
+            width: 500px; height: 500px;
             background: rgba(233, 30, 99, 0.4);
-            bottom: -150px;
-            left: -150px;
+            bottom: -150px; left: -150px;
             animation-delay: -5s;
         }
 
         .orb-3 {
-            width: 300px;
-            height: 300px;
+            width: 300px; height: 300px;
             background: rgba(0, 229, 255, 0.3);
-            top: 50%;
-            left: 50%;
+            top: 50%; left: 50%;
             transform: translate(-50%, -50%);
             animation-delay: -10s;
         }
@@ -97,18 +85,15 @@
         /* Particles */
         .particles {
             position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
             z-index: -1;
             overflow: hidden;
         }
 
         .particle {
             position: absolute;
-            width: 6px;
-            height: 6px;
+            width: 6px; height: 6px;
             background: rgba(255, 255, 255, 0.5);
             border-radius: 50%;
             animation: rise 15s ease-in-out infinite;
@@ -121,320 +106,423 @@
             100% { transform: translateY(-100vh) rotate(720deg); opacity: 0; }
         }
 
-        /* Main Container */
-        .login-wrapper {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 30px;
-            padding: 20px;
-            animation: fadeInUp 0.8s ease-out;
-        }
-
         @keyframes fadeInUp {
             from { opacity: 0; transform: translateY(40px); }
             to { opacity: 1; transform: translateY(0); }
         }
 
-        /* Logo Section */
+        @keyframes pulse-glow {
+            0%, 100% { box-shadow: 0 15px 50px rgba(0, 188, 212, 0.3), 0 0 0 0 rgba(0, 229, 255, 0.3); }
+            50% { box-shadow: 0 15px 50px rgba(0, 188, 212, 0.3), 0 0 60px 15px rgba(0, 229, 255, 0.15); }
+        }
+
+        @keyframes shimmer {
+            0% { background-position: -200% center; }
+            100% { background-position: 200% center; }
+        }
+
+        /* Main Container */
+        .login-wrapper {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 35px;
+            padding: 20px;
+            animation: fadeInUp 0.8s ease-out;
+        }
+
+        /* Logo Section - Glassmorphism */
         .logo-section {
             text-align: center;
             animation: fadeInUp 0.8s ease-out 0.2s both;
         }
 
         .logo-container {
-            width: 200px;
-            height: 200px;
-            background: rgba(255, 255, 255, 0.85);
-            backdrop-filter: blur(15px);
-            -webkit-backdrop-filter: blur(15px);
-            border-radius: 36px;
+            width: 180px;
+            height: 180px;
+            background: rgba(0, 188, 212, 0.12);
+            backdrop-filter: blur(24px) saturate(1.4);
+            -webkit-backdrop-filter: blur(24px) saturate(1.4);
+            border-radius: 40px;
             display: flex;
             align-items: center;
             justify-content: center;
             margin: 0 auto 30px;
-            border: 2px solid rgba(255, 255, 255, 0.5);
-            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.2);
-            animation: pulse-glow 3s ease-in-out infinite;
+            border: 1.5px solid rgba(255, 255, 255, 0.18);
+            animation: pulse-glow 4s ease-in-out infinite;
+            position: relative;
+            overflow: hidden;
         }
 
-        @keyframes pulse-glow {
-            0%, 100% { box-shadow: 0 15px 40px rgba(0, 0, 0, 0.2), 0 0 0 0 rgba(0, 188, 212, 0.4); }
-            50% { box-shadow: 0 15px 40px rgba(0, 0, 0, 0.2), 0 0 50px 20px rgba(0, 188, 212, 0.3); }
+        .logo-container::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            border-radius: 40px;
+            background: linear-gradient(135deg, rgba(0, 229, 255, 0.1) 0%, rgba(233, 30, 99, 0.05) 100%);
+            pointer-events: none;
         }
 
         .logo-container img {
-            width: 170px;
-            height: 170px;
+            width: 140px;
+            height: 140px;
             object-fit: contain;
-            image-rendering: -webkit-optimize-contrast;
-            image-rendering: crisp-edges;
+            image-rendering: auto;
+            filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.15));
         }
 
         .brand-title {
-            font-size: 2.4rem;
+            font-size: 2.6rem;
             font-weight: 800;
             color: white;
-            text-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+            text-shadow: 0 4px 25px rgba(0, 0, 0, 0.3);
             margin-bottom: 10px;
+            letter-spacing: -0.5px;
         }
 
         .brand-subtitle {
             font-size: 1.1rem;
-            color: rgba(255, 255, 255, 0.9);
-            font-weight: 500;
+            color: rgba(255, 255, 255, 0.85);
+            font-weight: 400;
+            letter-spacing: 0.5px;
         }
 
-        /* Glass Card */
-        .login-card {
+        /* Select User Button */
+        .select-user-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 14px;
+            padding: 18px 48px;
             background: rgba(255, 255, 255, 0.12);
             backdrop-filter: blur(20px);
             -webkit-backdrop-filter: blur(20px);
-            border-radius: 32px;
-            padding: 40px 35px;
-            width: 100%;
-            max-width: 520px;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.25),
-                        inset 0 1px 1px rgba(255, 255, 255, 0.1);
-            animation: fadeInUp 0.8s ease-out 0.4s both;
-        }
-
-        .section-title {
-            text-align: center;
+            border: 1.5px solid rgba(255, 255, 255, 0.25);
+            border-radius: 60px;
             color: white;
-            font-size: 1.25rem;
+            font-size: 1.2rem;
             font-weight: 600;
-            margin-bottom: 30px;
-        }
-
-        /* Users Grid - 2 Column Layout */
-        .users-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 16px;
-            max-height: 480px;
-            overflow-y: auto;
-            padding: 5px;
-        }
-
-        .users-grid::-webkit-scrollbar {
-            width: 6px;
-        }
-
-        .users-grid::-webkit-scrollbar-track {
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 3px;
-        }
-
-        .users-grid::-webkit-scrollbar-thumb {
-            background: rgba(255, 255, 255, 0.3);
-            border-radius: 3px;
-        }
-
-        /* User Card - New Design */
-        .user-btn {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            gap: 12px;
-            padding: 24px 16px;
-            background: rgba(255, 255, 255, 0.12);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            border-radius: 20px;
             cursor: pointer;
             transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            font-family: inherit;
             position: relative;
             overflow: hidden;
-            text-align: center;
+            animation: fadeInUp 0.8s ease-out 0.5s both;
         }
 
-        .user-btn::before {
+        .select-user-btn::before {
             content: '';
             position: absolute;
-            top: 0;
-            left: -100%;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.15), transparent);
-            transition: left 0.5s ease;
+            inset: 0;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.12), transparent);
+            background-size: 200% 100%;
+            animation: shimmer 3s ease-in-out infinite;
+            border-radius: 60px;
         }
 
-        .user-btn:hover::before {
-            left: 100%;
+        .select-user-btn .btn-icon {
+            width: 44px;
+            height: 44px;
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.3rem;
+            box-shadow: 0 4px 15px rgba(0, 188, 212, 0.4);
+            transition: all 0.3s ease;
+            flex-shrink: 0;
         }
 
-        .user-btn:hover {
-            background: rgba(255, 255, 255, 0.22);
+        .select-user-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
             border-color: rgba(255, 255, 255, 0.4);
-            transform: translateY(-5px) scale(1.03);
-            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.25);
+            transform: translateY(-4px) scale(1.03);
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.25);
         }
 
-        .user-btn:active {
+        .select-user-btn:hover .btn-icon {
+            transform: scale(1.1);
+            box-shadow: 0 6px 20px rgba(0, 188, 212, 0.5);
+        }
+
+        .select-user-btn:active {
             transform: translateY(-2px) scale(1.01);
         }
 
-        .user-btn .avatar {
-            width: 70px;
-            height: 70px;
-            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
-            border-radius: 20px;
+        /* ============ MODAL OVERLAY ============ */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.4s ease;
+        }
+
+        .modal-overlay.show {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .modal-backdrop {
+            position: absolute;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+        }
+
+        /* ============ USER SELECT MODAL ============ */
+        .modal-glass {
+            position: relative;
+            z-index: 1;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(30px) saturate(1.5);
+            -webkit-backdrop-filter: blur(30px) saturate(1.5);
+            border-radius: 28px;
+            border: 1px solid rgba(255, 255, 255, 0.18);
+            box-shadow: 0 30px 80px rgba(0, 0, 0, 0.35),
+                        inset 0 1px 0 rgba(255, 255, 255, 0.1);
+            padding: 40px;
+            width: 90%;
+            max-width: 780px;
+            max-height: 85vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            transform: translateY(30px) scale(0.95);
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .modal-overlay.show .modal-glass {
+            transform: translateY(0) scale(1);
+        }
+
+        .modal-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 30px;
+            flex-shrink: 0;
+        }
+
+        .modal-header-content {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .modal-title {
+            color: white;
+            font-size: 1.5rem;
+            font-weight: 700;
+        }
+
+        .modal-subtitle {
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 0.9rem;
+            font-weight: 400;
+        }
+
+        .modal-close {
+            width: 42px;
+            height: 42px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 12px;
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 1.3rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+        }
+
+        .modal-close:hover {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            transform: rotate(90deg);
+        }
+
+        /* Users Grid - Team Card Style */
+        .team-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 18px;
+            overflow-y: auto;
+            padding: 4px;
+            flex: 1;
+        }
+
+        .team-grid::-webkit-scrollbar {
+            width: 5px;
+        }
+
+        .team-grid::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 3px;
+        }
+
+        .team-grid::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 3px;
+        }
+
+        /* Individual User Card - Team Style */
+        .team-card {
+            background: rgba(255, 255, 255, 0.07);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 18px;
+            padding: 28px 16px 22px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            position: relative;
+        }
+
+        .team-card::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            border-radius: 18px;
+            background: linear-gradient(135deg, rgba(0, 229, 255, 0.08) 0%, rgba(233, 30, 99, 0.04) 100%);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .team-card:hover {
+            background: rgba(255, 255, 255, 0.14);
+            border-color: rgba(255, 255, 255, 0.3);
+            transform: translateY(-6px);
+            box-shadow: 0 18px 40px rgba(0, 0, 0, 0.25);
+        }
+
+        .team-card:hover::after {
+            opacity: 1;
+        }
+
+        .team-card:active {
+            transform: translateY(-3px);
+        }
+
+        /* Circular Avatar */
+        .team-avatar {
+            width: 76px;
+            height: 76px;
+            border-radius: 50%;
+            margin: 0 auto 16px;
             display: flex;
             align-items: center;
             justify-content: center;
             color: white;
-            font-size: 1.8rem;
+            font-size: 2rem;
             font-weight: 700;
-            box-shadow: 0 8px 20px rgba(0, 188, 212, 0.4);
+            position: relative;
+            z-index: 1;
             transition: all 0.3s ease;
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
         }
 
-        .user-btn:hover .avatar {
-            transform: scale(1.1) rotate(-3deg);
-            box-shadow: 0 12px 30px rgba(0, 188, 212, 0.5);
+        .team-card:hover .team-avatar {
+            transform: scale(1.08);
+            box-shadow: 0 8px 28px rgba(0, 0, 0, 0.3);
         }
 
-        .user-btn .user-info {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 6px;
-        }
-
-        .user-btn .name {
-            font-size: 1.15rem;
-            font-weight: 700;
+        .team-name {
+            font-size: 1.05rem;
+            font-weight: 600;
             color: white;
-            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+            margin-bottom: 8px;
+            position: relative;
+            z-index: 1;
         }
 
-        /* Status Badge */
-        .user-btn .status {
+        .team-status {
             display: inline-flex;
             align-items: center;
             gap: 5px;
-            padding: 4px 12px;
+            padding: 4px 14px;
             border-radius: 20px;
-            font-size: 0.8rem;
+            font-size: 0.75rem;
             font-weight: 600;
+            position: relative;
+            z-index: 1;
         }
 
-        .user-btn .status.registered {
-            background: rgba(16, 185, 129, 0.25);
-            color: #34d399;
-            border: 1px solid rgba(16, 185, 129, 0.4);
+        .team-status.registered {
+            background: rgba(16, 185, 129, 0.2);
+            color: #6ee7b7;
+            border: 1px solid rgba(16, 185, 129, 0.3);
         }
 
-        .user-btn .status.new {
-            background: rgba(251, 191, 36, 0.25);
+        .team-status.new {
+            background: rgba(251, 191, 36, 0.2);
             color: #fcd34d;
-            border: 1px solid rgba(251, 191, 36, 0.4);
+            border: 1px solid rgba(251, 191, 36, 0.3);
         }
 
-        /* Hide arrow in new design */
-        .user-btn .arrow {
-            display: none;
+        /* ============ PASSWORD MODAL ============ */
+        .password-modal .modal-glass {
+            max-width: 460px;
+            padding: 36px;
         }
 
-        .user-btn .arrow {
-            color: rgba(255, 255, 255, 0.5);
-            font-size: 1.4rem;
-            transition: all 0.3s ease;
-        }
-
-        .user-btn:hover .arrow {
-            color: white;
-            transform: translateX(-5px);
-        }
-
-        /* Password Section */
-        .password-section {
-            display: none;
-            animation: slideIn 0.4s ease-out;
-        }
-
-        .password-section.show {
-            display: block;
-        }
-
-        @keyframes slideIn {
-            from { opacity: 0; transform: translateX(30px); }
-            to { opacity: 1; transform: translateX(0); }
-        }
-
-        .selected-user {
+        .selected-user-display {
             display: flex;
+            flex-direction: column;
             align-items: center;
-            gap: 15px;
-            padding: 20px;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 16px;
-            margin-bottom: 25px;
-            border: 1px solid rgba(255, 255, 255, 0.15);
+            gap: 14px;
+            margin-bottom: 28px;
+            padding-bottom: 24px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
         }
 
-        .selected-user .avatar {
-            width: 60px;
-            height: 60px;
-            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
-            border-radius: 18px;
+        .selected-user-display .avatar-large {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
             color: white;
-            font-size: 1.6rem;
+            font-size: 2.2rem;
             font-weight: 700;
-            box-shadow: 0 8px 25px rgba(0, 188, 212, 0.4);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.25);
         }
 
-        .selected-user .info h3 {
+        .selected-user-display .user-name {
+            font-size: 1.4rem;
+            font-weight: 700;
             color: white;
-            font-size: 1.3rem;
-            font-weight: 600;
         }
 
-        .selected-user .info p {
-            color: rgba(255, 255, 255, 0.6);
+        .selected-user-display .user-status-text {
             font-size: 0.9rem;
-            margin-top: 4px;
-        }
-
-        .selected-user .change-user {
-            margin-right: auto;
-            background: rgba(255, 255, 255, 0.1);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            color: white;
-            cursor: pointer;
-            font-size: 0.85rem;
-            padding: 8px 14px;
-            border-radius: 10px;
-            transition: all 0.3s ease;
-        }
-
-        .selected-user .change-user:hover {
-            background: rgba(255, 255, 255, 0.2);
+            color: rgba(255, 255, 255, 0.6);
         }
 
         /* Form Elements */
         .form-group {
-            margin-bottom: 20px;
+            margin-bottom: 18px;
         }
 
         .form-group label {
             display: block;
-            margin-bottom: 10px;
-            color: rgba(255, 255, 255, 0.9);
+            margin-bottom: 8px;
+            color: rgba(255, 255, 255, 0.85);
             font-weight: 500;
-            font-size: 0.95rem;
+            font-size: 0.9rem;
         }
 
         .form-group input {
             width: 100%;
-            padding: 16px 20px;
-            background: rgba(255, 255, 255, 0.1);
-            border: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 15px 18px;
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.15);
             border-radius: 14px;
             font-size: 1rem;
             color: white;
@@ -443,25 +531,25 @@
         }
 
         .form-group input::placeholder {
-            color: rgba(255, 255, 255, 0.4);
+            color: rgba(255, 255, 255, 0.35);
         }
 
         .form-group input:focus {
             outline: none;
             border-color: var(--accent);
-            background: rgba(255, 255, 255, 0.15);
-            box-shadow: 0 0 0 4px rgba(6, 214, 160, 0.15);
+            background: rgba(255, 255, 255, 0.12);
+            box-shadow: 0 0 0 3px rgba(0, 229, 255, 0.12);
         }
 
         /* Buttons */
         .btn {
             width: 100%;
-            padding: 16px;
+            padding: 15px;
             background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
             color: white;
             border: none;
             border-radius: 14px;
-            font-size: 1.1rem;
+            font-size: 1.05rem;
             font-weight: 600;
             cursor: pointer;
             transition: all 0.3s ease;
@@ -477,22 +565,18 @@
             left: -100%;
             width: 100%;
             height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.25), transparent);
             transition: left 0.5s ease;
         }
 
-        .btn:hover::before {
-            left: 100%;
-        }
+        .btn:hover::before { left: 100%; }
 
         .btn:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 15px 35px rgba(0, 188, 212, 0.4);
+            transform: translateY(-2px);
+            box-shadow: 0 12px 30px rgba(0, 188, 212, 0.4);
         }
 
-        .btn:active {
-            transform: translateY(-1px);
-        }
+        .btn:active { transform: translateY(-1px); }
 
         .btn:disabled {
             opacity: 0.6;
@@ -500,21 +584,40 @@
             transform: none !important;
         }
 
-        /* Messages */
-        .error-msg {
-            background: rgba(239, 68, 68, 0.2);
-            color: #fca5a5;
-            padding: 14px 18px;
+        .btn-back {
+            width: 100%;
+            padding: 12px;
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            color: rgba(255, 255, 255, 0.7);
             border-radius: 12px;
-            margin-bottom: 20px;
-            display: none;
-            border: 1px solid rgba(239, 68, 68, 0.3);
-            animation: shake 0.5s ease;
+            font-size: 0.9rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-family: inherit;
+            margin-top: 12px;
         }
 
-        .error-msg.show {
-            display: block;
+        .btn-back:hover {
+            background: rgba(255, 255, 255, 0.15);
+            color: white;
         }
+
+        /* Messages */
+        .error-msg {
+            background: rgba(239, 68, 68, 0.18);
+            color: #fca5a5;
+            padding: 13px 16px;
+            border-radius: 12px;
+            margin-bottom: 18px;
+            display: none;
+            border: 1px solid rgba(239, 68, 68, 0.25);
+            animation: shake 0.5s ease;
+            font-size: 0.9rem;
+        }
+
+        .error-msg.show { display: block; }
 
         @keyframes shake {
             0%, 100% { transform: translateX(0); }
@@ -523,106 +626,147 @@
         }
 
         .info-box {
-            background: rgba(6, 214, 160, 0.15);
+            background: rgba(0, 229, 255, 0.1);
             color: var(--accent);
-            padding: 14px 18px;
+            padding: 13px 16px;
             border-radius: 12px;
-            margin-bottom: 20px;
-            border: 1px solid rgba(6, 214, 160, 0.3);
+            margin-bottom: 18px;
+            border: 1px solid rgba(0, 229, 255, 0.2);
             display: flex;
             align-items: center;
             gap: 10px;
+            font-size: 0.9rem;
         }
 
         /* Loading */
         .loading {
             display: inline-block;
-            width: 20px;
-            height: 20px;
+            width: 18px; height: 18px;
             border: 2px solid rgba(255, 255, 255, 0.3);
             border-top-color: white;
             border-radius: 50%;
             animation: spin 0.8s linear infinite;
-            margin-right: 10px;
+            margin-right: 8px;
             vertical-align: middle;
         }
 
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
+        @keyframes spin { to { transform: rotate(360deg); } }
 
         .loading-container {
             text-align: center;
             padding: 40px 20px;
             color: rgba(255, 255, 255, 0.7);
+            grid-column: 1 / -1;
         }
 
         .loading-container .spinner {
-            width: 50px;
-            height: 50px;
-            border: 3px solid rgba(255, 255, 255, 0.2);
+            width: 44px; height: 44px;
+            border: 3px solid rgba(255, 255, 255, 0.15);
             border-top-color: var(--accent);
             border-radius: 50%;
             animation: spin 1s linear infinite;
-            margin: 0 auto 20px;
+            margin: 0 auto 16px;
         }
 
-        /* Retry Button */
         .retry-btn {
-            margin-top: 20px;
-            padding: 12px 24px;
-            background: rgba(255, 255, 255, 0.15);
+            margin-top: 16px;
+            padding: 10px 22px;
+            background: rgba(255, 255, 255, 0.12);
             color: white;
-            border: 1px solid rgba(255, 255, 255, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.2);
             border-radius: 10px;
             cursor: pointer;
             font-family: inherit;
-            font-size: 0.95rem;
+            font-size: 0.9rem;
             transition: all 0.3s ease;
         }
 
         .retry-btn:hover {
-            background: rgba(255, 255, 255, 0.25);
+            background: rgba(255, 255, 255, 0.2);
         }
 
         /* Footer */
         .footer {
             text-align: center;
-            color: rgba(255, 255, 255, 0.5);
+            color: rgba(255, 255, 255, 0.45);
             font-size: 0.85rem;
-            margin-top: 20px;
+            margin-top: 10px;
             animation: fadeInUp 0.8s ease-out 0.6s both;
         }
 
         .footer a {
-            color: rgba(255, 255, 255, 0.7);
+            color: rgba(255, 255, 255, 0.65);
             text-decoration: none;
             transition: color 0.3s ease;
         }
 
-        .footer a:hover {
-            color: white;
-        }
+        .footer a:hover { color: white; }
 
         /* Responsive */
-        @media (max-width: 480px) {
-            .login-card {
-                padding: 25px;
-                margin: 0 15px;
+        @media (max-width: 768px) {
+            .team-grid {
+                grid-template-columns: repeat(3, 1fr);
+                gap: 14px;
+            }
+
+            .modal-glass {
+                padding: 28px 20px;
+                margin: 0 10px;
+                border-radius: 22px;
+            }
+
+            .team-avatar {
+                width: 64px;
+                height: 64px;
+                font-size: 1.7rem;
+            }
+
+            .team-card {
+                padding: 22px 12px 18px;
+            }
+        }
+
+        @media (max-width: 520px) {
+            .team-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 12px;
             }
 
             .brand-title {
-                font-size: 1.6rem;
+                font-size: 1.8rem;
+            }
+
+            .brand-subtitle {
+                font-size: 0.95rem;
             }
 
             .logo-container {
-                width: 80px;
-                height: 80px;
+                width: 120px;
+                height: 120px;
+                border-radius: 28px;
             }
 
             .logo-container img {
-                width: 55px;
-                height: 55px;
+                width: 90px;
+                height: 90px;
+            }
+
+            .select-user-btn {
+                padding: 14px 36px;
+                font-size: 1.05rem;
+            }
+
+            .select-user-btn .btn-icon {
+                width: 38px;
+                height: 38px;
+            }
+
+            .modal-title {
+                font-size: 1.2rem;
+            }
+
+            .password-modal .modal-glass {
+                padding: 28px 22px;
             }
         }
     </style>
@@ -642,7 +786,6 @@
 
     <!-- Main Content -->
     <div class="login-wrapper">
-        <!-- Logo Section -->
         <div class="logo-section">
             <div class="logo-container">
                 <img src="/static/logo.png" alt="Logo" onerror="this.style.display='none'; this.parentElement.innerHTML='<span style=\'font-size:2.5rem\'>🌐</span>'">
@@ -651,62 +794,90 @@
             <p class="brand-subtitle">شرکت گسترش فن آوری های نوین</p>
         </div>
 
-        <!-- Login Card -->
-        <div class="login-card">
-            <div id="userSelection">
-                <p class="section-title">کاربر خود را انتخاب کنید</p>
-                <div class="users-grid" id="usersGrid">
-                    <div class="loading-container">
-                        <div class="spinner"></div>
-                        <p>در حال بارگذاری...</p>
-                    </div>
-                </div>
-            </div>
-
-            <div id="passwordSection" class="password-section">
-                <div class="selected-user">
-                    <div class="avatar" id="selectedAvatar">Y</div>
-                    <div class="info">
-                        <h3 id="selectedName">کاربر</h3>
-                        <p id="selectedStatus">ورود به سیستم</p>
-                    </div>
-                    <button class="change-user" onclick="changeUser()">← تغییر</button>
-                </div>
-
-                <div class="error-msg" id="errorMsg"></div>
-
-                <div id="registerForm" style="display: none;">
-                    <div class="info-box">
-                        <span>🔐</span>
-                        <span>اولین ورود - لطفاً رمز عبور تعیین کنید</span>
-                    </div>
-                    <div class="form-group">
-                        <label>رمز عبور جدید</label>
-                        <input type="password" id="newPassword" placeholder="حداقل ۸ کاراکتر">
-                    </div>
-                    <div class="form-group">
-                        <label>تکرار رمز عبور</label>
-                        <input type="password" id="confirmPassword" placeholder="تکرار رمز عبور">
-                    </div>
-                    <button class="btn" id="registerBtn" onclick="register()">
-                        ثبت رمز و ورود
-                    </button>
-                </div>
-
-                <div id="loginForm" style="display: none;">
-                    <div class="form-group">
-                        <label>رمز عبور</label>
-                        <input type="password" id="password" placeholder="رمز عبور خود را وارد کنید">
-                    </div>
-                    <button class="btn" id="loginBtn" onclick="login()">
-                        ورود به سیستم
-                    </button>
-                </div>
-            </div>
-        </div>
+        <button class="select-user-btn" onclick="openUserModal()">
+            <span class="btn-icon">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                    <circle cx="12" cy="7" r="4"/>
+                </svg>
+            </span>
+            <span>Select User</span>
+        </button>
 
         <div class="footer">
             طراحی و توسعه توسط <a href="#">گروه گسترده شبکه</a>
+        </div>
+    </div>
+
+    <!-- ============ USER SELECT MODAL ============ -->
+    <div class="modal-overlay" id="userModal">
+        <div class="modal-backdrop" onclick="closeUserModal()"></div>
+        <div class="modal-glass">
+            <div class="modal-header">
+                <div class="modal-header-content">
+                    <h2 class="modal-title">Select User</h2>
+                    <p class="modal-subtitle">Choose your account to sign in</p>
+                </div>
+                <button class="modal-close" onclick="closeUserModal()">&times;</button>
+            </div>
+            <div class="team-grid" id="usersGrid">
+                <div class="loading-container">
+                    <div class="spinner"></div>
+                    <p>در حال بارگذاری...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============ PASSWORD MODAL ============ -->
+    <div class="modal-overlay password-modal" id="passwordModal">
+        <div class="modal-backdrop" onclick="closePasswordModal()"></div>
+        <div class="modal-glass">
+            <div class="modal-header">
+                <div class="modal-header-content">
+                    <h2 class="modal-title">ورود به سیستم</h2>
+                    <p class="modal-subtitle" id="passwordModalSubtitle">رمز عبور خود را وارد کنید</p>
+                </div>
+                <button class="modal-close" onclick="closePasswordModal()">&times;</button>
+            </div>
+
+            <div class="selected-user-display">
+                <div class="avatar-large" id="selectedAvatar">Y</div>
+                <div class="user-name" id="selectedName">User</div>
+                <div class="user-status-text" id="selectedStatus">ورود به سیستم</div>
+            </div>
+
+            <div class="error-msg" id="errorMsg"></div>
+
+            <div id="registerForm" style="display: none;">
+                <div class="info-box">
+                    <span>🔐</span>
+                    <span>اولین ورود - لطفاً رمز عبور تعیین کنید</span>
+                </div>
+                <div class="form-group">
+                    <label>رمز عبور جدید</label>
+                    <input type="password" id="newPassword" placeholder="حداقل ۸ کاراکتر">
+                </div>
+                <div class="form-group">
+                    <label>تکرار رمز عبور</label>
+                    <input type="password" id="confirmPassword" placeholder="تکرار رمز عبور">
+                </div>
+                <button class="btn" id="registerBtn" onclick="register()">
+                    ثبت رمز و ورود
+                </button>
+            </div>
+
+            <div id="loginForm" style="display: none;">
+                <div class="form-group">
+                    <label>رمز عبور</label>
+                    <input type="password" id="password" placeholder="رمز عبور خود را وارد کنید">
+                </div>
+                <button class="btn" id="loginBtn" onclick="login()">
+                    ورود به سیستم
+                </button>
+            </div>
+
+            <button class="btn-back" onclick="backToUserSelect()">← بازگشت به انتخاب کاربر</button>
         </div>
     </div>
 
@@ -729,6 +900,20 @@
         createParticles();
 
         let selectedUser = null;
+        let selectedUserColor = '';
+
+        // Color palettes for avatars
+        const avatarColors = [
+            'linear-gradient(135deg, #f59e0b, #d97706)',   // Amber
+            'linear-gradient(135deg, #60a5fa, #3b82f6)',   // Blue
+            'linear-gradient(135deg, #34d399, #10b981)',   // Emerald
+            'linear-gradient(135deg, #a78bfa, #8b5cf6)',   // Violet
+            'linear-gradient(135deg, #f472b6, #ec4899)',   // Pink
+            'linear-gradient(135deg, #fb923c, #f97316)',   // Orange
+            'linear-gradient(135deg, #38bdf8, #0ea5e9)',   // Sky
+            'linear-gradient(135deg, #4ade80, #22c55e)',   // Green
+            'linear-gradient(135deg, #e879f9, #d946ef)',   // Fuchsia
+        ];
 
         // HTML escape function for XSS prevention
         function escapeHtml(text) {
@@ -742,13 +927,44 @@
             loadUsers();
         });
 
+        // Modal control
+        function openUserModal() {
+            document.getElementById('userModal').classList.add('show');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeUserModal() {
+            document.getElementById('userModal').classList.remove('show');
+            document.body.style.overflow = '';
+        }
+
+        function openPasswordModal() {
+            document.getElementById('passwordModal').classList.add('show');
+        }
+
+        function closePasswordModal() {
+            document.getElementById('passwordModal').classList.remove('show');
+            document.getElementById('errorMsg').classList.remove('show');
+            document.body.style.overflow = '';
+            selectedUser = null;
+        }
+
+        function backToUserSelect() {
+            document.getElementById('passwordModal').classList.remove('show');
+            document.getElementById('errorMsg').classList.remove('show');
+            selectedUser = null;
+            setTimeout(() => {
+                document.getElementById('userModal').classList.add('show');
+            }, 200);
+        }
+
         // Load users
         async function loadUsers() {
             try {
                 const response = await fetch('/api/users');
 
                 if (!response.ok) {
-                    throw new Error(`HTTP Error: ${response.status}`);
+                    throw new Error('HTTP Error: ' + response.status);
                 }
 
                 const data = await response.json();
@@ -759,25 +975,13 @@
 
                 document.getElementById('usersGrid').innerHTML = data.users.map((user, index) => {
                     const safeName = escapeHtml(user.name);
-                    const colors = [
-                        ['#00bcd4', '#0097a7'], // Cyan
-                        ['#e91e63', '#c2185b'], // Pink
-                        ['#9c27b0', '#7b1fa2'], // Purple
-                        ['#ff9800', '#f57c00'], // Orange
-                        ['#4caf50', '#388e3c'], // Green
-                        ['#2196f3', '#1976d2'], // Blue
-                        ['#f44336', '#d32f2f'], // Red
-                        ['#00bcd4', '#00838f']  // Teal
-                    ];
-                    const [c1, c2] = colors[index % colors.length];
+                    const bgColor = avatarColors[index % avatarColors.length];
                     return `
-                    <div class="user-btn" onclick="selectUser('${safeName}', ${user.registered})" style="animation: fadeInUp 0.4s ease-out ${index * 0.06}s both;">
-                        <div class="avatar" style="background: linear-gradient(135deg, ${c1} 0%, ${c2} 100%);">${safeName[0]}</div>
-                        <div class="user-info">
-                            <div class="name">${safeName}</div>
-                            <div class="status ${user.registered ? 'registered' : 'new'}">
-                                ${user.registered ? '✓ فعال' : '● جدید'}
-                            </div>
+                    <div class="team-card" onclick="selectUser('${safeName}', ${user.registered}, '${bgColor.replace(/'/g, "\\'")}')" style="animation: fadeInUp 0.4s ease-out ${index * 0.05}s both;">
+                        <div class="team-avatar" style="background: ${bgColor};">${safeName[0]}</div>
+                        <div class="team-name">${safeName}</div>
+                        <div class="team-status ${user.registered ? 'registered' : 'new'}">
+                            ${user.registered ? '✓ Active' : '● New'}
                         </div>
                     </div>
                 `}).join('');
@@ -787,7 +991,7 @@
                     <div class="loading-container">
                         <p style="font-size: 2.5rem; margin-bottom: 15px;">😕</p>
                         <p style="font-weight: 600; margin-bottom: 8px;">خطا در اتصال به سرور</p>
-                        <p style="font-size: 0.85rem; opacity: 0.7;">${error.message}</p>
+                        <p style="font-size: 0.85rem; opacity: 0.7;">${escapeHtml(error.message)}</p>
                         <button class="retry-btn" onclick="loadUsers()">🔄 تلاش مجدد</button>
                     </div>
                 `;
@@ -795,37 +999,38 @@
         }
 
         // Select user
-        function selectUser(username, hasPassword) {
+        function selectUser(username, hasPassword, colorGradient) {
             selectedUser = username;
+            selectedUserColor = colorGradient;
 
-            document.getElementById('userSelection').style.display = 'none';
-            document.getElementById('passwordSection').classList.add('show');
-            document.getElementById('selectedAvatar').textContent = username[0];
-            document.getElementById('selectedName').textContent = username;
-            document.getElementById('errorMsg').classList.remove('show');
+            // Close user modal, open password modal
+            document.getElementById('userModal').classList.remove('show');
 
-            if (hasPassword) {
-                document.getElementById('selectedStatus').textContent = 'ورود به سیستم';
-                document.getElementById('registerForm').style.display = 'none';
-                document.getElementById('loginForm').style.display = 'block';
-                document.getElementById('password').value = '';
-                setTimeout(() => document.getElementById('password').focus(), 100);
-            } else {
-                document.getElementById('selectedStatus').textContent = 'کاربر جدید - تعیین رمز';
-                document.getElementById('registerForm').style.display = 'block';
-                document.getElementById('loginForm').style.display = 'none';
-                document.getElementById('newPassword').value = '';
-                document.getElementById('confirmPassword').value = '';
-                setTimeout(() => document.getElementById('newPassword').focus(), 100);
-            }
-        }
+            setTimeout(() => {
+                document.getElementById('selectedAvatar').textContent = username[0];
+                document.getElementById('selectedAvatar').style.background = colorGradient;
+                document.getElementById('selectedName').textContent = username;
+                document.getElementById('errorMsg').classList.remove('show');
 
-        // Change user
-        function changeUser() {
-            document.getElementById('userSelection').style.display = 'block';
-            document.getElementById('passwordSection').classList.remove('show');
-            document.getElementById('errorMsg').classList.remove('show');
-            selectedUser = null;
+                if (hasPassword) {
+                    document.getElementById('selectedStatus').textContent = 'ورود به سیستم';
+                    document.getElementById('passwordModalSubtitle').textContent = 'رمز عبور خود را وارد کنید';
+                    document.getElementById('registerForm').style.display = 'none';
+                    document.getElementById('loginForm').style.display = 'block';
+                    document.getElementById('password').value = '';
+                    openPasswordModal();
+                    setTimeout(() => document.getElementById('password').focus(), 300);
+                } else {
+                    document.getElementById('selectedStatus').textContent = 'کاربر جدید - تعیین رمز';
+                    document.getElementById('passwordModalSubtitle').textContent = 'لطفاً رمز عبور جدید تعیین کنید';
+                    document.getElementById('registerForm').style.display = 'block';
+                    document.getElementById('loginForm').style.display = 'none';
+                    document.getElementById('newPassword').value = '';
+                    document.getElementById('confirmPassword').value = '';
+                    openPasswordModal();
+                    setTimeout(() => document.getElementById('newPassword').focus(), 300);
+                }
+            }, 200);
         }
 
         // Show error
@@ -915,10 +1120,23 @@
         // Enter key
         document.addEventListener('keypress', function(e) {
             if (e.key === 'Enter') {
-                if (document.getElementById('loginForm').style.display !== 'none') {
+                if (document.getElementById('loginForm').style.display !== 'none' &&
+                    document.getElementById('passwordModal').classList.contains('show')) {
                     login();
-                } else if (document.getElementById('registerForm').style.display !== 'none') {
+                } else if (document.getElementById('registerForm').style.display !== 'none' &&
+                    document.getElementById('passwordModal').classList.contains('show')) {
                     register();
+                }
+            }
+        });
+
+        // Escape key to close modals
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                if (document.getElementById('passwordModal').classList.contains('show')) {
+                    closePasswordModal();
+                } else if (document.getElementById('userModal').classList.contains('show')) {
+                    closeUserModal();
                 }
             }
         });
