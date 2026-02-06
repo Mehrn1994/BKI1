@@ -145,27 +145,29 @@
         .logo-container {
             width: 220px;
             height: 220px;
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(10px);
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
             border-radius: 40px;
             display: flex;
             align-items: center;
             justify-content: center;
             margin: 0 auto 30px;
-            border: 3px solid rgba(255, 255, 255, 0.5);
-            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.25);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.2);
             animation: pulse-glow 3s ease-in-out infinite;
         }
 
         @keyframes pulse-glow {
-            0%, 100% { box-shadow: 0 15px 40px rgba(0, 0, 0, 0.25), 0 0 0 0 rgba(0, 188, 212, 0.4); }
-            50% { box-shadow: 0 15px 40px rgba(0, 0, 0, 0.25), 0 0 50px 20px rgba(0, 188, 212, 0.3); }
+            0%, 100% { box-shadow: 0 15px 40px rgba(0, 0, 0, 0.2), 0 0 0 0 rgba(0, 188, 212, 0.4); }
+            50% { box-shadow: 0 15px 40px rgba(0, 0, 0, 0.2), 0 0 50px 20px rgba(0, 188, 212, 0.3); }
         }
 
         .logo-container img {
             width: 190px;
             height: 190px;
             object-fit: contain;
+            filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.15));
         }
 
         .brand-title {
@@ -297,19 +299,19 @@
         }
 
         .user-btn .name {
-            font-size: 1.3rem;
-            font-weight: 700;
+            font-size: 1.1rem;
+            font-weight: 600;
             color: white;
-            margin-bottom: 6px;
-            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+            margin-bottom: 4px;
+            text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
         }
 
         .user-btn .status {
-            font-size: 1rem;
-            color: rgba(255, 255, 255, 0.8);
+            font-size: 0.85rem;
+            color: rgba(255, 255, 255, 0.85);
             display: flex;
             align-items: center;
-            gap: 6px;
+            gap: 5px;
         }
 
         .user-btn .status.registered {
