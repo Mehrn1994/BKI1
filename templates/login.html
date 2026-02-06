@@ -3,17 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>پورتال مدیریت شبکه - بانک کشاورزی</title>
+    <title>پورتال مدیریت شبکه - گسترش فن آوری های نوین</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;600;700;800&display=swap');
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
         :root {
-            --primary: #667eea;
-            --primary-dark: #5a67d8;
-            --secondary: #764ba2;
-            --accent: #06d6a0;
+            /* Company Colors from Logo */
+            --primary: #00bcd4;      /* Teal/Cyan */
+            --primary-dark: #00acc1;
+            --secondary: #e91e63;    /* Pink/Magenta */
+            --accent: #00e5ff;       /* Bright Cyan */
             --glass-bg: rgba(255, 255, 255, 0.1);
             --glass-border: rgba(255, 255, 255, 0.2);
         }
@@ -46,7 +47,7 @@
             width: 100%;
             height: 100%;
             z-index: -2;
-            background: linear-gradient(135deg, rgba(102, 126, 234, 0.85) 0%, rgba(118, 75, 162, 0.85) 100%);
+            background: linear-gradient(135deg, rgba(0, 188, 212, 0.8) 0%, rgba(233, 30, 99, 0.7) 100%);
         }
 
         /* Floating Orbs */
@@ -61,7 +62,7 @@
         .orb-1 {
             width: 600px;
             height: 600px;
-            background: rgba(102, 126, 234, 0.4);
+            background: rgba(0, 188, 212, 0.4);
             top: -200px;
             right: -200px;
             animation-delay: 0s;
@@ -70,7 +71,7 @@
         .orb-2 {
             width: 500px;
             height: 500px;
-            background: rgba(118, 75, 162, 0.4);
+            background: rgba(233, 30, 99, 0.4);
             bottom: -150px;
             left: -150px;
             animation-delay: -5s;
@@ -79,7 +80,7 @@
         .orb-3 {
             width: 300px;
             height: 300px;
-            background: rgba(6, 214, 160, 0.3);
+            background: rgba(0, 229, 255, 0.3);
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
@@ -142,44 +143,44 @@
         }
 
         .logo-container {
-            width: 100px;
-            height: 100px;
-            background: rgba(255, 255, 255, 0.15);
+            width: 140px;
+            height: 140px;
+            background: rgba(255, 255, 255, 0.2);
             backdrop-filter: blur(10px);
-            border-radius: 25px;
+            border-radius: 30px;
             display: flex;
             align-items: center;
             justify-content: center;
-            margin: 0 auto 20px;
-            border: 1px solid rgba(255, 255, 255, 0.3);
+            margin: 0 auto 25px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
             box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
             animation: pulse-glow 3s ease-in-out infinite;
         }
 
         @keyframes pulse-glow {
-            0%, 100% { box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2), 0 0 0 0 rgba(102, 126, 234, 0.4); }
-            50% { box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2), 0 0 30px 10px rgba(102, 126, 234, 0.2); }
+            0%, 100% { box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2), 0 0 0 0 rgba(0, 188, 212, 0.4); }
+            50% { box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2), 0 0 40px 15px rgba(0, 188, 212, 0.3); }
         }
 
         .logo-container img {
-            width: 70px;
-            height: 70px;
+            width: 110px;
+            height: 110px;
             object-fit: contain;
             filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.2));
         }
 
         .brand-title {
-            font-size: 2rem;
-            font-weight: 700;
+            font-size: 2.4rem;
+            font-weight: 800;
             color: white;
             text-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
-            margin-bottom: 8px;
+            margin-bottom: 10px;
         }
 
         .brand-subtitle {
-            font-size: 1rem;
-            color: rgba(255, 255, 255, 0.8);
-            font-weight: 400;
+            font-size: 1.1rem;
+            color: rgba(255, 255, 255, 0.9);
+            font-weight: 500;
         }
 
         /* Glass Card */
@@ -187,10 +188,10 @@
             background: rgba(255, 255, 255, 0.12);
             backdrop-filter: blur(20px);
             -webkit-backdrop-filter: blur(20px);
-            border-radius: 24px;
-            padding: 35px;
+            border-radius: 28px;
+            padding: 40px;
             width: 100%;
-            max-width: 420px;
+            max-width: 500px;
             border: 1px solid rgba(255, 255, 255, 0.2);
             box-shadow: 0 25px 50px rgba(0, 0, 0, 0.25),
                         inset 0 1px 1px rgba(255, 255, 255, 0.1);
@@ -200,20 +201,19 @@
         .section-title {
             text-align: center;
             color: white;
-            font-size: 1.1rem;
-            font-weight: 500;
-            margin-bottom: 25px;
-            opacity: 0.9;
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 30px;
         }
 
         /* Users Grid */
         .users-grid {
             display: flex;
             flex-direction: column;
-            gap: 12px;
-            max-height: 400px;
+            gap: 14px;
+            max-height: 450px;
             overflow-y: auto;
-            padding-left: 5px;
+            padding-left: 8px;
         }
 
         .users-grid::-webkit-scrollbar {
@@ -234,11 +234,11 @@
         .user-btn {
             display: flex;
             align-items: center;
-            gap: 15px;
-            padding: 14px 18px;
-            background: rgba(255, 255, 255, 0.08);
-            border: 1px solid rgba(255, 255, 255, 0.15);
-            border-radius: 16px;
+            gap: 18px;
+            padding: 18px 22px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 18px;
             cursor: pointer;
             transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
             position: relative;
@@ -261,8 +261,8 @@
         }
 
         .user-btn:hover {
-            background: rgba(255, 255, 255, 0.18);
-            border-color: rgba(255, 255, 255, 0.35);
+            background: rgba(255, 255, 255, 0.2);
+            border-color: rgba(255, 255, 255, 0.4);
             transform: translateX(-8px) scale(1.02);
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
         }
@@ -272,23 +272,23 @@
         }
 
         .user-btn .avatar {
-            width: 48px;
-            height: 48px;
+            width: 56px;
+            height: 56px;
             background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
-            border-radius: 14px;
+            border-radius: 16px;
             display: flex;
             align-items: center;
             justify-content: center;
             color: white;
-            font-size: 1.3rem;
+            font-size: 1.5rem;
             font-weight: 700;
-            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+            box-shadow: 0 4px 15px rgba(0, 188, 212, 0.4);
             transition: all 0.3s ease;
         }
 
         .user-btn:hover .avatar {
             transform: rotate(-5deg) scale(1.1);
-            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.5);
+            box-shadow: 0 6px 20px rgba(0, 188, 212, 0.5);
         }
 
         .user-btn .user-info {
@@ -296,15 +296,15 @@
         }
 
         .user-btn .name {
-            font-size: 1.05rem;
-            font-weight: 600;
+            font-size: 1.2rem;
+            font-weight: 700;
             color: white;
-            margin-bottom: 3px;
+            margin-bottom: 5px;
         }
 
         .user-btn .status {
-            font-size: 0.8rem;
-            color: rgba(255, 255, 255, 0.6);
+            font-size: 0.95rem;
+            color: rgba(255, 255, 255, 0.7);
             display: flex;
             align-items: center;
             gap: 5px;
@@ -366,7 +366,7 @@
             color: white;
             font-size: 1.6rem;
             font-weight: 700;
-            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+            box-shadow: 0 8px 25px rgba(0, 188, 212, 0.4);
         }
 
         .selected-user .info h3 {
@@ -467,7 +467,7 @@
 
         .btn:hover {
             transform: translateY(-3px);
-            box-shadow: 0 15px 35px rgba(102, 126, 234, 0.4);
+            box-shadow: 0 15px 35px rgba(0, 188, 212, 0.4);
         }
 
         .btn:active {
@@ -628,7 +628,7 @@
                 <img src="/static/logo.png" alt="Logo" onerror="this.style.display='none'; this.parentElement.innerHTML='<span style=\'font-size:2.5rem\'>🌐</span>'">
             </div>
             <h1 class="brand-title">پورتال مدیریت شبکه</h1>
-            <p class="brand-subtitle">بانک کشاورزی ایران</p>
+            <p class="brand-subtitle">شرکت گسترش فن آوری های نوین</p>
         </div>
 
         <!-- Login Card -->
@@ -686,7 +686,7 @@
         </div>
 
         <div class="footer">
-            طراحی و توسعه توسط <a href="#">تیم فناوری اطلاعات</a>
+            طراحی و توسعه توسط <a href="#">گروه گسترده شبکه</a>
         </div>
     </div>
 
