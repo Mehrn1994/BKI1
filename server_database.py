@@ -2611,294 +2611,98 @@ def generate_pdf_report():
 
 # ==================== TICKET SYSTEM REMOVED ====================
 
-# ==================== AI HEALTH SCORE ====================
-@app.route('/api/health-score', methods=['GET'])
-def get_health_score():
-    """Calculate network health score with AI-powered recommendations"""
+# ==================== NETWORK TOPOLOGY - VISIO STYLE ====================
+@app.route('/api/network-topology', methods=['GET'])
+def get_network_topology():
+    """Get full network topology for Visio-style visualization"""
     try:
         conn = get_db()
         cursor = conn.cursor()
 
-        # Get stats for calculations
-        cursor.execute("SELECT COUNT(*) FROM lan_ips")
-        total_lan = cursor.fetchone()[0]
-        cursor.execute("SELECT COUNT(*) FROM lan_ips WHERE (username IS NULL OR username = '') AND (branch_name IS NULL OR branch_name = '')")
-        free_lan = cursor.fetchone()[0]
-
-        cursor.execute("SELECT COUNT(*) FROM intranet_tunnels")
-        total_tunnels = cursor.fetchone()[0]
-        cursor.execute("SELECT COUNT(*) FROM intranet_tunnels WHERE LOWER(status) = 'free'")
-        free_tunnels = cursor.fetchone()[0]
-
-        # Get expiring reservations count
-        today = datetime.now()
-        warning_date = (today + timedelta(days=14)).strftime('%Y-%m-%d')
-        cursor.execute("SELECT COUNT(*) FROM reserved_ips WHERE expiry_date <= ? AND (status = 'reserved' OR status IS NULL)", (warning_date,))
-        expiring_count = cursor.fetchone()[0]
-
-        # Get reserved but not activated count
-        cursor.execute("SELECT COUNT(*) FROM reserved_ips WHERE status = 'reserved' OR status IS NULL")
-        pending_reservations = cursor.fetchone()[0]
-
-        conn.close()
-
-        # Calculate individual scores (0-100)
-        lan_usage_pct = ((total_lan - free_lan) / total_lan * 100) if total_lan > 0 else 0
-        tunnel_usage_pct = ((total_tunnels - free_tunnels) / total_tunnels * 100) if total_tunnels > 0 else 0
-
-        # Scores (higher is better)
-        lan_score = 100 - min(lan_usage_pct, 100)  # More free = better
-        tunnel_score = 100 - min(tunnel_usage_pct, 100)
-        expiring_score = max(0, 100 - (expiring_count * 10))  # Penalize for each expiring
-        pending_score = max(0, 100 - (pending_reservations * 2))  # Penalize for pending
-
-        # Weighted average
-        health_score = int(
-            lan_score * 0.35 +
-            tunnel_score * 0.25 +
-            expiring_score * 0.25 +
-            pending_score * 0.15
-        )
-
-        # Determine status
-        if health_score >= 80:
-            status = 'excellent'
-            status_text = 'عالی - شبکه در وضعیت بهینه'
-        elif health_score >= 60:
-            status = 'good'
-            status_text = 'خوب - وضعیت قابل قبول'
-        elif health_score >= 40:
-            status = 'warning'
-            status_text = 'هشدار - نیاز به توجه'
-        else:
-            status = 'critical'
-            status_text = 'بحرانی - اقدام فوری لازم'
-
-        # Generate recommendations
-        recommendations = []
-
-        if lan_usage_pct > 80:
-            recommendations.append({
-                'icon': '⚠️',
-                'text': f'مصرف IP LAN به {int(lan_usage_pct)}% رسیده است. برنامه‌ریزی برای توسعه فضای آدرس‌دهی لازم است.',
-                'priority': 'critical'
-            })
-        elif lan_usage_pct > 60:
-            recommendations.append({
-                'icon': '📊',
-                'text': f'مصرف IP LAN {int(lan_usage_pct)}% است. پیش‌بینی نیاز ۳ ماه آینده توصیه می‌شود.',
-                'priority': 'warning'
-            })
-
-        if expiring_count > 0:
-            recommendations.append({
-                'icon': '⏰',
-                'text': f'{expiring_count} رزرو IP در ۱۴ روز آینده منقضی می‌شود. بررسی و تمدید یا آزادسازی کنید.',
-                'priority': 'warning'
-            })
-
-        if tunnel_usage_pct > 70:
-            recommendations.append({
-                'icon': '🔗',
-                'text': f'ظرفیت تانل‌ها {int(tunnel_usage_pct)}% پر شده. افزودن تانل جدید را در نظر بگیرید.',
-                'priority': 'warning'
-            })
-
-        if pending_reservations > 20:
-            recommendations.append({
-                'icon': '📋',
-                'text': f'{pending_reservations} رزرو در انتظار فعال‌سازی. این موارد باعث اشغال منابع بدون استفاده می‌شوند.',
-                'priority': ''
-            })
-
-        if len(recommendations) == 0:
-            recommendations.append({
-                'icon': '✅',
-                'text': 'همه چیز روبراه است! هیچ مشکل فوری شناسایی نشد.',
-                'priority': ''
-            })
-
-        # Build factors
-        factors = [
-            {'name': 'ظرفیت IP LAN', 'score': int(lan_score)},
-            {'name': 'ظرفیت تانل‌ها', 'score': int(tunnel_score)},
-            {'name': 'رزروهای منقضی شونده', 'score': int(expiring_score)},
-            {'name': 'رزروهای در انتظار', 'score': int(pending_score)}
-        ]
-
-        return jsonify({
-            'score': health_score,
-            'status': status,
-            'status_text': status_text,
-            'factors': factors,
-            'recommendations': recommendations
-        })
-
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
-
-# ==================== NETWORK TOPOLOGY DISCOVERY ====================
-@app.route('/api/network-scan', methods=['POST'])
-def network_scan():
-    """Scan network to discover online/offline status of reserved IPs"""
-    try:
-        conn = get_db()
-        cursor = conn.cursor()
-
-        # Get sample of LAN IPs (limit to 50 for performance)
+        # Get all provinces with their branches
         cursor.execute("""
-            SELECT octet2, octet3, branch_name, username, status
-            FROM lan_ips
-            WHERE branch_name IS NOT NULL AND branch_name != ''
-            ORDER BY RANDOM()
-            LIMIT 50
+            SELECT DISTINCT province FROM lan_ips
+            WHERE province IS NOT NULL AND province != ''
+            ORDER BY province
         """)
+        province_names = [row['province'] for row in cursor.fetchall()]
 
-        nodes = []
-        online_count = 0
-        offline_count = 0
-        reserved_count = 0
+        provinces = []
+        total_branches = 0
+        total_connections = 0
 
-        for row in cursor.fetchall():
-            ip = f"10.{row['octet2']}.{row['octet3']}.1"
-            branch = row['branch_name'] or ''
-            status = row['status'] or 'Free'
+        for prov_name in province_names:
+            # Get branches in this province
+            cursor.execute("""
+                SELECT
+                    branch_name,
+                    octet2,
+                    octet3,
+                    username,
+                    status,
+                    CASE
+                        WHEN branch_name LIKE '%خودپرداز%' OR branch_name LIKE '%ATM%' THEN 'خودپرداز'
+                        WHEN branch_name LIKE '%کیوسک%' THEN 'کیوسک'
+                        WHEN branch_name LIKE '%مدیریت%' THEN 'مدیریت'
+                        ELSE 'شعبه'
+                    END as type
+                FROM lan_ips
+                WHERE province = ? AND branch_name IS NOT NULL AND branch_name != ''
+                ORDER BY branch_name
+            """, (prov_name,))
 
-            # Simulate online check (in production, use actual ping)
-            # For demo, we'll randomize with bias towards online for used IPs
-            is_used = bool(row['username'])
-            is_online = False
+            branches = []
+            for row in cursor.fetchall():
+                ip = f"10.{row['octet2']}.{row['octet3']}.0/24"
 
-            if is_used:
-                # 70% chance online if used
-                import random
-                is_online = random.random() < 0.7
+                # Try to find associated tunnel
+                tunnel_name = None
+                cursor.execute("""
+                    SELECT tunnel_name FROM intranet_tunnels
+                    WHERE description LIKE ? OR description LIKE ?
+                    LIMIT 1
+                """, (f"%{row['branch_name']}%", f"%{row['octet2']}.{row['octet3']}%"))
+                tunnel_row = cursor.fetchone()
+                if tunnel_row:
+                    tunnel_name = tunnel_row['tunnel_name']
 
-            is_reserved = status.lower() == 'reserved'
+                branches.append({
+                    'name': row['branch_name'],
+                    'ip': ip,
+                    'type': row['type'],
+                    'status': row['status'] or 'active',
+                    'tunnel': tunnel_name
+                })
 
-            if is_online:
-                online_count += 1
-            elif is_reserved:
-                reserved_count += 1
-            else:
-                offline_count += 1
+            total_branches += len(branches)
+            total_connections += len(branches) + 1  # +1 for province-to-core
 
-            nodes.append({
-                'ip': ip,
-                'branch': branch,
-                'online': is_online,
-                'reserved': is_reserved
+            # Calculate IP range for this province
+            cursor.execute("""
+                SELECT MIN(octet2) as min2, MAX(octet2) as max2
+                FROM lan_ips WHERE province = ?
+            """, (prov_name,))
+            range_row = cursor.fetchone()
+            ip_range = f"10.{range_row['min2']}-{range_row['max2']}.x.0/24" if range_row else "-"
+
+            provinces.append({
+                'name': prov_name,
+                'branches': branches,
+                'ip_range': ip_range,
+                'branch_count': len(branches)
             })
 
         conn.close()
 
         return jsonify({
-            'nodes': nodes,
-            'online': online_count,
-            'offline': offline_count,
-            'reserved': reserved_count,
-            'total': len(nodes)
+            'provinces': provinces,
+            'total_branches': total_branches,
+            'total_connections': total_connections,
+            'core': {
+                'name': 'دیتاسنتر مرکزی',
+                'ip': '10.0.0.0/8'
+            }
         })
-
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
-
-# ==================== NETWORK SIMULATOR ====================
-@app.route('/api/simulate', methods=['POST'])
-def simulate_scenario():
-    """Simulate what-if scenarios for network planning"""
-    try:
-        data = request.json
-        scenario = data.get('scenario', '')
-
-        conn = get_db()
-        cursor = conn.cursor()
-
-        # Get current stats
-        cursor.execute("SELECT COUNT(*) FROM lan_ips WHERE (username IS NULL OR username = '') AND (branch_name IS NULL OR branch_name = '')")
-        current_free = cursor.fetchone()[0]
-
-        cursor.execute("SELECT COUNT(*) FROM lan_ips")
-        total_lan = cursor.fetchone()[0]
-
-        cursor.execute("SELECT COUNT(*) FROM reserved_ips WHERE expiry_date < ? AND (status = 'reserved' OR status IS NULL)",
-                       (datetime.now().strftime('%Y-%m-%d'),))
-        expired_count = cursor.fetchone()[0]
-
-        conn.close()
-
-        result = {
-            'icon': '📊',
-            'title': 'نتیجه شبیه‌سازی',
-            'before': current_free,
-            'after': current_free,
-            'change': 0,
-            'metric': 'IP آزاد',
-            'details': ''
-        }
-
-        if scenario == 'add_branch':
-            # Each branch needs ~1 IP subnet
-            needed = 10
-            result['icon'] = '🏢'
-            result['title'] = 'افزودن ۱۰ شعبه جدید'
-            result['after'] = current_free - needed
-            result['change'] = -needed
-            result['details'] = f'با افزودن ۱۰ شعبه جدید، به ۱۰ subnet نیاز دارید. IP آزاد از {current_free} به {result["after"]} کاهش می‌یابد. '
-            if result['after'] < 50:
-                result['details'] += '⚠️ هشدار: پس از این تغییر، IP آزاد به زیر ۵۰ می‌رسد!'
-            else:
-                result['details'] += '✅ ظرفیت کافی برای این توسعه وجود دارد.'
-
-        elif scenario == 'add_atm':
-            # ATMs share subnets, ~1 IP per 5 ATMs
-            needed = 10  # 50 ATMs = ~10 subnets
-            result['icon'] = '🏧'
-            result['title'] = 'افزودن ۵۰ خودپرداز جدید'
-            result['after'] = current_free - needed
-            result['change'] = -needed
-            result['details'] = f'۵۰ خودپرداز جدید نیاز به حدود ۱۰ subnet دارند (هر subnet برای ۵ دستگاه). '
-            result['details'] += f'IP آزاد از {current_free} به {result["after"]} کاهش می‌یابد. '
-            usage_after = ((total_lan - result['after']) / total_lan) * 100
-            result['details'] += f'مصرف کل به {usage_after:.1f}% می‌رسد.'
-
-        elif scenario == 'release_expired':
-            # Release expired reservations
-            result['icon'] = '🗑️'
-            result['title'] = 'آزادسازی IPهای منقضی'
-            result['after'] = current_free + expired_count
-            result['change'] = expired_count
-            if expired_count > 0:
-                result['details'] = f'{expired_count} رزرو منقضی شده در سیستم وجود دارد. با آزادسازی آنها، {expired_count} IP به ظرفیت آزاد اضافه می‌شود.'
-            else:
-                result['details'] = 'هیچ رزرو منقضی شده‌ای وجود ندارد. سیستم آزادسازی خودکار به درستی کار می‌کند.'
-
-        elif scenario == 'growth_6month':
-            # Predict 6 month growth based on current trend
-            # Assume 5% monthly growth
-            growth_rate = 0.05
-            months = 6
-            current_used = total_lan - current_free
-            projected_used = int(current_used * ((1 + growth_rate) ** months))
-            projected_free = total_lan - projected_used
-
-            result['icon'] = '📈'
-            result['title'] = 'پیش‌بینی ۶ ماه آینده'
-            result['after'] = max(0, projected_free)
-            result['change'] = projected_free - current_free
-            result['details'] = f'با فرض رشد ماهانه ۵٪، در ۶ ماه آینده مصرف از {current_used} به {projected_used} می‌رسد. '
-
-            if projected_free < 0:
-                result['details'] += f'⚠️ بحران: با این روند، در ۶ ماه آینده {abs(projected_free)} subnet کمبود خواهید داشت!'
-            elif projected_free < 50:
-                result['details'] += f'⚠️ هشدار: IP آزاد به {projected_free} می‌رسد. برنامه‌ریزی برای توسعه ضروری است.'
-            else:
-                result['details'] += f'✅ با {projected_free} IP آزاد باقی‌مانده، وضعیت قابل قبول خواهد بود.'
-
-        else:
-            result['details'] = 'سناریوی نامعتبر'
-
-        return jsonify(result)
 
     except Exception as e:
         return jsonify({'error': str(e)}), 500
