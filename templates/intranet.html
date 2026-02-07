@@ -207,8 +207,8 @@ body { transition: background 0.3s ease, color 0.3s ease; }
     gap: 8px;
 }
 .auto-field-item {
-    background: rgba(255,255,255,0.06);
-    border: 1px solid rgba(255,255,255,0.08);
+    background: #f0f7ff;
+    border: 1px solid #bfdbfe;
     border-radius: 8px;
     padding: 8px 12px;
 }
@@ -217,22 +217,16 @@ body { transition: background 0.3s ease, color 0.3s ease; }
     font-size: 10px;
     text-transform: uppercase;
     letter-spacing: 0.5px;
-    color: var(--text-muted, #64748b);
+    color: #64748b;
+    font-weight: 600;
     margin-bottom: 3px;
 }
 .auto-field-value {
     display: block;
-    font-size: 13px;
-    font-weight: 600;
-    color: var(--text-primary, #e2e8f0);
-    font-family: 'Consolas', 'JetBrains Mono', monospace;
-}
-[data-theme="light"] .auto-field-item {
-    background: rgba(0,0,0,0.03);
-    border-color: rgba(0,0,0,0.08);
-}
-[data-theme="light"] .auto-field-value {
+    font-size: 14px;
+    font-weight: 700;
     color: #0f172a;
+    font-family: 'Consolas', 'JetBrains Mono', monospace;
 }
 
         body {
@@ -627,7 +621,7 @@ document.addEventListener('DOMContentLoaded', function() {
             <input type="text" id="branchNameEn" placeholder="e.g. KhomeyniShahr" oninput="updateTunnelDesc()">
             <div id="autoDescPanel" style="display:none; margin:8px 0 16px 0; background:rgba(139,92,246,0.06); border:1px solid rgba(139,92,246,0.2); border-radius:10px; padding:12px 16px;">
                 <div style="font-size:11px; text-transform:uppercase; letter-spacing:0.5px; color:#8b5cf6; font-weight:700; margin-bottom:6px;">WAN-INTR Tunnel Description</div>
-                <span class="auto-field-value" id="autoTunnelDesc" style="color:#c4b5fd;">-</span>
+                <span class="auto-field-value" id="autoTunnelDesc" style="color:#5b21b6;">-</span>
             </div>
             <input type="hidden" id="wantunneldesc">
 
