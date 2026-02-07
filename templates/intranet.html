@@ -858,9 +858,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 const loopback = `10.210.${x}.${y}`;
                 const intnat = `10.${x}.${y}.0`;
                 const ospfArea = x;
-                // Add zero after X if single digit to avoid duplicates (e.g. X=3,Y=16 → Tunnel3016)
-                const tunnelNum = parseInt(x) < 10 ? x + '0' + y : x + '' + y;
-                const tunnelName = `Tunnel${tunnelNum}`;
+                // Pad Y with leading zero if single digit (e.g. X=3,Y=6 → Tunnel306)
+                const yPadded = parseInt(y) < 10 ? '0' + y : y;
+                const tunnelName = `Tunnel${x}${yPadded}`;
 
                 // Set hidden inputs (same IDs used by config generation)
                 document.getElementById('loopbackip').value = loopback;
@@ -928,12 +928,16 @@ document.addEventListener('DOMContentLoaded', function() {
             if (manual) {
                 document.getElementById('wantunnelname').value = manual;
                 document.getElementById('autoTunnelName').textContent = manual + ' (manual)';
+                // Check DB for manual name
+                checkTunnelName(manual);
             } else if (selectedBranchData) {
                 // Restore auto-generated name
-                const num = parseInt(selectedBranchData.x) < 10 ? selectedBranchData.x + '0' + selectedBranchData.y : selectedBranchData.x + '' + selectedBranchData.y;
-                const autoName = `Tunnel${num}`;
+                const yPad = parseInt(selectedBranchData.y) < 10 ? '0' + selectedBranchData.y : selectedBranchData.y;
+                const autoName = `Tunnel${selectedBranchData.x}${yPad}`;
                 document.getElementById('wantunnelname').value = autoName;
                 document.getElementById('autoTunnelName').textContent = autoName;
+                // Check DB for restored auto name
+                checkTunnelName(autoName);
             }
         }
 
