@@ -593,10 +593,21 @@ document.addEventListener('DOMContentLoaded', function() {
                         <span class="auto-field-label">Branch OSPF Area</span>
                         <span class="auto-field-value" id="autoOspf">-</span>
                     </div>
-                    <div class="auto-field-item">
+                    <div class="auto-field-item" id="tunnelNameField">
                         <span class="auto-field-label">WAN-INTR Tunnel Name</span>
                         <span class="auto-field-value" id="autoTunnelName">-</span>
                     </div>
+                </div>
+                <!-- Tunnel name duplicate warning -->
+                <div id="tunnelDuplicateWarning" style="display:none; margin-top:10px; background:#fef3c7; border:1px solid #f59e0b; border-radius:8px; padding:10px 14px;">
+                    <div style="font-size:12px; font-weight:700; color:#92400e; margin-bottom:6px;">
+                        ⚠ Tunnel name already used!
+                    </div>
+                    <div id="tunnelDuplicateInfo" style="font-size:11px; color:#78350f; margin-bottom:8px;"></div>
+                    <label style="font-size:11px; font-weight:600; color:#92400e; margin:0 0 4px 0;">Enter a custom Tunnel Name:</label>
+                    <input type="text" id="manualTunnelName" placeholder="e.g. Tunnel1317"
+                           oninput="onManualTunnelName()"
+                           style="background:#fff; border:1px solid #f59e0b; color:#0f172a; padding:7px 10px; font-size:13px; font-weight:600; font-family:Consolas,monospace; margin-top:0;">
                 </div>
             </div>
             <!-- Hidden inputs to keep same IDs for config generation -->
@@ -847,7 +858,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 const loopback = `10.210.${x}.${y}`;
                 const intnat = `10.${x}.${y}.0`;
                 const ospfArea = x;
-                const tunnelName = `Tunnel${x}${y}`;
+                // Add zero after X if single digit to avoid duplicates (e.g. X=3,Y=16 → Tunnel3016)
+                const tunnelNum = parseInt(x) < 10 ? x + '0' + y : x + '' + y;
+                const tunnelName = `Tunnel${tunnelNum}`;
 
                 // Set hidden inputs (same IDs used by config generation)
                 document.getElementById('loopbackip').value = loopback;
@@ -866,10 +879,63 @@ document.addEventListener('DOMContentLoaded', function() {
                 // Show panel
                 document.getElementById('autoFieldsPanel').style.display = 'block';
 
+                // Reset manual override
+                document.getElementById('tunnelDuplicateWarning').style.display = 'none';
+                document.getElementById('manualTunnelName').value = '';
+
+                // Check if tunnel name already exists in DB
+                checkTunnelName(tunnelName);
+
                 // Update tunnel description if branch name is already entered
                 updateTunnelDesc();
             }
         });
+
+        // ==================== TUNNEL NAME DUPLICATE CHECK ====================
+        async function checkTunnelName(tunnelName) {
+            try {
+                const res = await fetch('/api/check-tunnel-name', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({tunnel_name: tunnelName})
+                });
+                const data = await res.json();
+                const warningDiv = document.getElementById('tunnelDuplicateWarning');
+                const tunnelField = document.getElementById('tunnelNameField');
+
+                if (data.exists) {
+                    // Show warning
+                    let info = `"${tunnelName}" is already reserved`;
+                    if (data.description) info += ` — ${data.description}`;
+                    if (data.province) info += ` (${data.province})`;
+                    if (data.reserved_by) info += ` by ${data.reserved_by}`;
+                    document.getElementById('tunnelDuplicateInfo').textContent = info;
+                    warningDiv.style.display = 'block';
+                    tunnelField.style.borderColor = '#f59e0b';
+                    tunnelField.style.background = '#fffbeb';
+                } else {
+                    warningDiv.style.display = 'none';
+                    tunnelField.style.borderColor = '';
+                    tunnelField.style.background = '';
+                }
+            } catch (e) {
+                console.error('Tunnel check error:', e);
+            }
+        }
+
+        function onManualTunnelName() {
+            const manual = document.getElementById('manualTunnelName').value.trim();
+            if (manual) {
+                document.getElementById('wantunnelname').value = manual;
+                document.getElementById('autoTunnelName').textContent = manual + ' (manual)';
+            } else if (selectedBranchData) {
+                // Restore auto-generated name
+                const num = parseInt(selectedBranchData.x) < 10 ? selectedBranchData.x + '0' + selectedBranchData.y : selectedBranchData.x + '' + selectedBranchData.y;
+                const autoName = `Tunnel${num}`;
+                document.getElementById('wantunnelname').value = autoName;
+                document.getElementById('autoTunnelName').textContent = autoName;
+            }
+        }
 
         // ==================== TUNNEL DESCRIPTION ====================
         function updateTunnelDesc() {

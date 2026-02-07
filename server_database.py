@@ -913,6 +913,34 @@ def reserve_tunnel():
         print(f"❌ Reserve tunnel error: {e}")
         return jsonify({'status': 'error', 'error': str(e)}), 500
 
+@app.route('/api/check-tunnel-name', methods=['POST'])
+def check_tunnel_name():
+    """Check if a tunnel name is already used (reserved) in intranet_tunnels"""
+    data = request.json
+    tunnel_name = data.get('tunnel_name', '').strip()
+    if not tunnel_name:
+        return jsonify({'exists': False})
+
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("""
+        SELECT tunnel_name, description, province, reserved_by
+        FROM intranet_tunnels
+        WHERE tunnel_name = ? AND LOWER(status) != 'free'
+    """, (tunnel_name,))
+    row = cursor.fetchone()
+    conn.close()
+
+    if row:
+        return jsonify({
+            'exists': True,
+            'tunnel_name': row['tunnel_name'],
+            'description': row['description'] or '',
+            'province': row['province'] or '',
+            'reserved_by': row['reserved_by'] or ''
+        })
+    return jsonify({'exists': False})
+
 # ==================== TUNNEL200 IPs ====================
 @app.route('/api/tunnel200-ips', methods=['GET'])
 def get_tunnel200_ips():
