@@ -1870,14 +1870,20 @@ async function connectSSH() {
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify(params)
         });
+        if (!res.ok) {
+            alert('ماژول SSH/Telnet روی سرور فعال نیست.\nنصب کنید: python -m pip install flask-socketio paramiko eventlet');
+            return;
+        }
         const data = await res.json();
         if (data.token) {
             terminalWindow = window.open('/terminal?token=' + data.token, 'terminalWindow',
                 'width=1000,height=600,menubar=no,toolbar=no,location=no,status=no');
             closeRemoteModal();
             showDeployPanel();
+        } else if (data.error) {
+            alert('خطا: ' + data.error);
         }
-    } catch (e) { alert('Error: ' + e.message); }
+    } catch (e) { alert('خطا: ' + e.message); }
 }
 
 async function connectRDP() {
@@ -1894,6 +1900,10 @@ async function connectRDP() {
                 domain: document.getElementById('rdpDomain').value.trim()
             })
         });
+        if (!res.ok) {
+            alert('ماژول RDP روی سرور فعال نیست.\nنصب کنید: python -m pip install flask-socketio paramiko eventlet');
+            return;
+        }
         const blob = await res.blob();
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
@@ -1902,7 +1912,7 @@ async function connectRDP() {
         a.click();
         URL.revokeObjectURL(url);
         closeRemoteModal();
-    } catch (e) { alert('Error: ' + e.message); }
+    } catch (e) { alert('خطا: ' + e.message); }
 }
 
 // Deploy panel
