@@ -200,6 +200,41 @@ body { transition: background 0.3s ease, color 0.3s ease; }
 .theme-toggle:hover { transform: scale(1.1); }
 /* ========== END THEME ========== */
 
+/* Auto-fill fields styling */
+.auto-fields-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+}
+.auto-field-item {
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 8px;
+    padding: 8px 12px;
+}
+.auto-field-label {
+    display: block;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--text-muted, #64748b);
+    margin-bottom: 3px;
+}
+.auto-field-value {
+    display: block;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-primary, #e2e8f0);
+    font-family: 'Consolas', 'JetBrains Mono', monospace;
+}
+[data-theme="light"] .auto-field-item {
+    background: rgba(0,0,0,0.03);
+    border-color: rgba(0,0,0,0.08);
+}
+[data-theme="light"] .auto-field-value {
+    color: #0f172a;
+}
+
         body {
             font-family: monospace;
             background: #f5faff;
@@ -265,7 +300,6 @@ body { transition: background 0.3s ease, color 0.3s ease; }
         button.primary {
             background: #0284c7;
             color: #fff;
-            width: 100%;
         }
         button.primary:hover {
             background: #0369a1;
@@ -538,6 +572,46 @@ document.addEventListener('DOMContentLoaded', function() {
                 👤 User: <span id="currentUser2">Loading...</span>
             </div>
 
+            <!-- Branch Selection -->
+            <label>Select Branch</label>
+            <input id="branchName" type="text" list="branchList"
+                   placeholder="Type branch name or select from list..."
+                   autocomplete="off">
+            <datalist id="branchList"></datalist>
+
+            <!-- Auto-filled fields panel -->
+            <div id="autoFieldsPanel" style="display:none; margin:12px 0 16px 0; background:rgba(59,130,246,0.06); border:1px solid rgba(59,130,246,0.2); border-radius:10px; padding:14px 16px;">
+                <div style="font-size:11px; text-transform:uppercase; letter-spacing:0.5px; color:#3b82f6; font-weight:700; margin-bottom:10px;">Auto-filled from branch</div>
+                <div class="auto-fields-grid">
+                    <div class="auto-field-item">
+                        <span class="auto-field-label">Province</span>
+                        <span class="auto-field-value" id="autoProvince">-</span>
+                    </div>
+                    <div class="auto-field-item">
+                        <span class="auto-field-label">Loopback IP (Branch)</span>
+                        <span class="auto-field-value" id="autoLoopback">-</span>
+                    </div>
+                    <div class="auto-field-item">
+                        <span class="auto-field-label">intnat Subnet</span>
+                        <span class="auto-field-value" id="autoIntnat">-</span>
+                    </div>
+                    <div class="auto-field-item">
+                        <span class="auto-field-label">Branch OSPF Area</span>
+                        <span class="auto-field-value" id="autoOspf">-</span>
+                    </div>
+                    <div class="auto-field-item">
+                        <span class="auto-field-label">WAN-INTR Tunnel Name</span>
+                        <span class="auto-field-value" id="autoTunnelName">-</span>
+                    </div>
+                </div>
+            </div>
+            <!-- Hidden inputs to keep same IDs for config generation -->
+            <input type="hidden" id="loopbackip">
+            <input type="hidden" id="intnatsubnet">
+            <input type="hidden" id="ospfareabranch">
+            <input type="hidden" id="wantunnelname">
+            <input type="hidden" id="province">
+
             <label>Choose a FREE /31 range</label>
             <select id="tunnelSelect"></select>
             <div class="tunnel-info">
@@ -545,59 +619,17 @@ document.addEventListener('DOMContentLoaded', function() {
             </div>
             <button class="reload-btn" onclick="loadTunnels()">🔄 Reload list</button>
 
-            <label>Loopback IP (Branch)</label>
-            <input type="text" id="loopbackip" placeholder="e.g. 10.210.27.24">
-
             <label>Branch Tunnel Source</label>
             <input type="text" id="tunnelsourcebranch" placeholder="e.g. 10.126.5.125">
 
-            <label>intnat Subnet</label>
-            <input type="text" id="intnatsubnet" placeholder="e.g. 10.27.24.0">
-
-            <label>Branch OSPF Area</label>
-            <input type="text" id="ospfareabranch" placeholder="e.g. 27">
-
-            <label>WAN-INTR Tunnel Name</label>
-            <input type="text" id="wantunnelname" placeholder="e.g. Tunnel305">
-
-            <label>WAN-INTR Tunnel Description</label>
-            <input type="text" id="wantunneldesc" placeholder="e.g. QZV-ZiaAbad">
-
-            <label>Province</label>
-            <select id="province">
-                <option value="">-- Select Province --</option>
-                <option>Alborz</option>
-                <option>Ardabil</option>
-                <option>Bushehr</option>
-                <option>Chaharmahal and Bakhtiari</option>
-                <option>East Azerbaijan</option>
-                <option>Fars</option>
-                <option>Gilan</option>
-                <option>Golestan</option>
-                <option>Hamadan</option>
-                <option>Hormozgan</option>
-                <option>Ilam</option>
-                <option>Isfahan</option>
-                <option>Kerman</option>
-                <option>Kermanshah</option>
-                <option>Khuzestan</option>
-                <option>Kohgiluyeh and Boyer-Ahmad</option>
-                <option>Kurdistan</option>
-                <option>Lorestan</option>
-                <option>Markazi</option>
-                <option>Mazandaran</option>
-                <option>North Khorasan</option>
-                <option>Qazvin</option>
-                <option>Qom</option>
-                <option>Razavi Khorasan</option>
-                <option>Semnan</option>
-                <option>Sistan and Baluchestan</option>
-                <option>South Khorasan</option>
-                <option>Tehran</option>
-                <option>West Azerbaijan</option>
-                <option>Yazd</option>
-                <option>Zanjan</option>
-            </select>
+            <!-- Branch name in English for tunnel description -->
+            <label>Branch Name (English)</label>
+            <input type="text" id="branchNameEn" placeholder="e.g. KhomeyniShahr" oninput="updateTunnelDesc()">
+            <div id="autoDescPanel" style="display:none; margin:8px 0 16px 0; background:rgba(139,92,246,0.06); border:1px solid rgba(139,92,246,0.2); border-radius:10px; padding:12px 16px;">
+                <div style="font-size:11px; text-transform:uppercase; letter-spacing:0.5px; color:#8b5cf6; font-weight:700; margin-bottom:6px;">WAN-INTR Tunnel Description</div>
+                <span class="auto-field-value" id="autoTunnelDesc" style="color:#c4b5fd;">-</span>
+            </div>
+            <input type="hidden" id="wantunneldesc">
 
             <div id="statusMessage"></div>
 
@@ -742,6 +774,124 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
 
+        // ==================== PROVINCE MAPPING ====================
+        const provinceMapping = {
+            'تهران بزرگ': { en: 'Tehran', abbr: 'TEHB' },
+            'تهران': { en: 'Tehran', abbr: 'TEH' },
+            'البرز': { en: 'Alborz', abbr: 'KRJ' },
+            'آذربایجان شرقی': { en: 'East Azerbaijan', abbr: 'AZSH' },
+            'آذربایجان غربی': { en: 'West Azerbaijan', abbr: 'AZGH' },
+            'کردستان': { en: 'Kurdistan', abbr: 'KRD' },
+            'اصفهان': { en: 'Isfahan', abbr: 'ESF' },
+            'خراسان رضوی': { en: 'Razavi Khorasan', abbr: 'KHR' },
+            'فارس': { en: 'Fars', abbr: 'FRS' },
+            'کرمان': { en: 'Kerman', abbr: 'KRM' },
+            'خوزستان': { en: 'Khuzestan', abbr: 'KHZ' },
+            'لرستان': { en: 'Lorestan', abbr: 'LOR' },
+            'گیلان': { en: 'Gilan', abbr: 'GIL' },
+            'گلستان': { en: 'Golestan', abbr: 'GLS' },
+            'مازندران': { en: 'Mazandaran', abbr: 'MAZ' },
+            'سیستان و بلوچستان': { en: 'Sistan and Baluchestan', abbr: 'SNB' },
+            'یزد': { en: 'Yazd', abbr: 'YZD' },
+            'زنجان': { en: 'Zanjan', abbr: 'ZNJ' },
+            'سمنان': { en: 'Semnan', abbr: 'SMN' },
+            'مرکزی': { en: 'Markazi', abbr: 'MRZ' },
+            'همدان': { en: 'Hamadan', abbr: 'HMD' },
+            'قزوین': { en: 'Qazvin', abbr: 'QZV' },
+            'قم': { en: 'Qom', abbr: 'QOM' },
+            'اردبیل': { en: 'Ardabil', abbr: 'ARD' },
+            'ایلام': { en: 'Ilam', abbr: 'ILM' },
+            'بوشهر': { en: 'Bushehr', abbr: 'BSH' },
+            'چهارمحال و بختیاری': { en: 'Chaharmahal and Bakhtiari', abbr: 'CHB' },
+            'هرمزگان': { en: 'Hormozgan', abbr: 'HMZ' },
+            'کرمانشاه': { en: 'Kermanshah', abbr: 'KRMSH' },
+            'کهگیلویه و بویراحمد': { en: 'Kohgiluyeh and Boyer-Ahmad', abbr: 'KHB' },
+            'خراسان شمالی': { en: 'North Khorasan', abbr: 'KHSH' },
+            'خراسان جنوبی': { en: 'South Khorasan', abbr: 'KHRJ' }
+        };
+
+        // Selected branch data
+        let selectedBranchData = null;
+
+        // ==================== LOAD BRANCHES ====================
+        async function loadBranches() {
+            try {
+                const res = await fetch('/api/branches');
+                const branches = await res.json();
+                const datalist = document.getElementById('branchList');
+                datalist.innerHTML = '';
+                branches.forEach(b => {
+                    const opt = document.createElement('option');
+                    opt.value = `${b.name} - [${b.province}] (10.${b.x}.${b.y}.0)`;
+                    opt.setAttribute('data-x', b.x);
+                    opt.setAttribute('data-y', b.y);
+                    opt.setAttribute('data-province', b.province);
+                    opt.setAttribute('data-name', b.name);
+                    datalist.appendChild(opt);
+                });
+                console.log(`✓ Loaded ${branches.length} branches`);
+            } catch (err) {
+                console.error('Error loading branches:', err);
+            }
+        }
+
+        // ==================== BRANCH SELECTION HANDLER ====================
+        document.getElementById('branchName').addEventListener('input', function() {
+            const val = this.value.trim();
+            // Match pattern: NAME - [PROVINCE] (10.X.Y.0)
+            const match = val.match(/\[([^\]]+)\]\s*\(10\.(\d+)\.(\d+)\.0\)/);
+            if (match) {
+                const provincePersian = match[1];
+                const x = match[2];
+                const y = match[3];
+
+                const prov = provinceMapping[provincePersian] || { en: provincePersian, abbr: provincePersian };
+
+                selectedBranchData = { x, y, provincePersian, provinceEn: prov.en, provinceAbbr: prov.abbr };
+
+                // Auto-fill values
+                const loopback = `10.210.${x}.${y}`;
+                const intnat = `10.${x}.${y}.0`;
+                const ospfArea = x;
+                const tunnelName = `Tunnel${x}${y}`;
+
+                // Set hidden inputs (same IDs used by config generation)
+                document.getElementById('loopbackip').value = loopback;
+                document.getElementById('intnatsubnet').value = intnat;
+                document.getElementById('ospfareabranch').value = ospfArea;
+                document.getElementById('wantunnelname').value = tunnelName;
+                document.getElementById('province').value = prov.en;
+
+                // Display auto-filled values
+                document.getElementById('autoProvince').textContent = prov.en + ' (' + prov.abbr + ')';
+                document.getElementById('autoLoopback').textContent = loopback;
+                document.getElementById('autoIntnat').textContent = intnat;
+                document.getElementById('autoOspf').textContent = ospfArea;
+                document.getElementById('autoTunnelName').textContent = tunnelName;
+
+                // Show panel
+                document.getElementById('autoFieldsPanel').style.display = 'block';
+
+                // Update tunnel description if branch name is already entered
+                updateTunnelDesc();
+            }
+        });
+
+        // ==================== TUNNEL DESCRIPTION ====================
+        function updateTunnelDesc() {
+            const branchNameEn = document.getElementById('branchNameEn').value.trim();
+            if (!selectedBranchData || !branchNameEn) {
+                document.getElementById('autoDescPanel').style.display = 'none';
+                document.getElementById('wantunneldesc').value = '';
+                return;
+            }
+
+            const desc = `** ${selectedBranchData.provinceAbbr}-${branchNameEn} **`;
+            document.getElementById('wantunneldesc').value = desc;
+            document.getElementById('autoTunnelDesc').textContent = desc;
+            document.getElementById('autoDescPanel').style.display = 'block';
+        }
+
         // Generate config button handler
         document.getElementById('generateBtn').addEventListener('click', async () => {
             const generateBtn = document.getElementById('generateBtn');
@@ -768,8 +918,16 @@ document.addEventListener('DOMContentLoaded', function() {
             let wanDesc = document.getElementById('wantunneldesc').value.trim();
             let province = document.getElementById('province').value;
 
-            if (!loopback || !srcBranch || !intnat || !area || !wanName || !wanDesc || !province) {
-                showStatus('⚠ Please fill all required fields!', true);
+            if (!loopback || !intnat || !area || !wanName || !province) {
+                showStatus('⚠ Please select a branch first!', true);
+                return;
+            }
+            if (!srcBranch) {
+                showStatus('⚠ Please enter Branch Tunnel Source!', true);
+                return;
+            }
+            if (!wanDesc) {
+                showStatus('⚠ Please enter Branch Name (English) for tunnel description!', true);
                 return;
             }
 
@@ -967,8 +1125,9 @@ do wr
             console.log('✓ Configuration generated successfully');
         });
 
-        // Load tunnels on page load
+        // Load tunnels and branches on page load
         loadTunnels();
+        loadBranches();
 
         // Warn before leaving page with unsaved form data
         let formModified = false;
