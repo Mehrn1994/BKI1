@@ -1881,43 +1881,6 @@ def reserve_mali_ips():
         return jsonify({'status': 'error', 'error': str(e)}), 500
 
 # ==================== PING ====================
-@app.route('/api/ping', methods=['POST'])
-def ping_ip():
-    try:
-        data = request.json
-        ip = data.get('ip')
-        
-        if not ip or not validate_ip(ip):
-            return jsonify({'success': False, 'error': 'IP نامعتبر است'})
-
-        # Cross-platform ping command
-        if platform.system().lower() == 'windows':
-            cmd = ['ping', '-n', '2', '-w', '2000', ip]
-        else:
-            cmd = ['ping', '-c', '2', '-W', '2', ip]
-        
-        result = subprocess.run(cmd, capture_output=True, text=True, timeout=10)
-        
-        # Parse response time from output
-        response_time = None
-        output = result.stdout
-        if 'time=' in output or 'time<' in output:
-            import re
-            match = re.search(r'time[=<](\d+)', output)
-            if match:
-                response_time = int(match.group(1))
-        
-        return jsonify({
-            'success': result.returncode == 0, 
-            'ip': ip, 
-            'output': output,
-            'response_time': response_time
-        })
-    except subprocess.TimeoutExpired:
-        return jsonify({'success': False, 'ip': ip, 'error': 'Timeout'})
-    except Exception as e:
-        return jsonify({'success': False, 'ip': ip, 'error': str(e)})
-
 @app.route('/api/ping-lan-ip', methods=['POST'])
 def ping_lan_ip():
     try:

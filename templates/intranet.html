@@ -1190,12 +1190,18 @@ async function connectSSH() {
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify(params)
         });
+        if (!res.ok) {
+            alert('SSH/Telnet module is not available on the server.\nInstall: python -m pip install flask-socketio paramiko eventlet');
+            return;
+        }
         const data = await res.json();
         if (data.token) {
             terminalWindow = window.open('/terminal?token=' + data.token, 'terminalWindow',
                 'width=1000,height=600,menubar=no,toolbar=no,location=no,status=no');
             closeRemoteModal();
             showDeployPanel();
+        } else if (data.error) {
+            alert('Error: ' + data.error);
         }
     } catch (e) { alert('Error: ' + e.message); }
 }
@@ -1214,6 +1220,10 @@ async function connectRDP() {
                 domain: document.getElementById('rdpDomain').value.trim()
             })
         });
+        if (!res.ok) {
+            alert('RDP module is not available on the server.\nInstall: python -m pip install flask-socketio paramiko eventlet');
+            return;
+        }
         const blob = await res.blob();
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
