@@ -1064,6 +1064,73 @@ def dns_forwarder_execute():
     except Exception as e:
         print(f"❌ DNS Forwarder WinRM error: {e}")
         return jsonify({'status': 'error', 'error': f'Connection failed: {str(e)}'}), 500
+
+@app.route('/api/dns-forwarder/test-connection', methods=['POST'])
+def dns_forwarder_test():
+    """Test WinRM connection and auto-detect Windows version"""
+    if not WINRM_AVAILABLE:
+        return jsonify({'status': 'error', 'error': 'WinRM module not installed. Install: pip install pywinrm'}), 400
+
+    data = request.json
+    host = data.get('host', '').strip()
+    username = data.get('username', '').strip()
+    password = data.get('password', '')
+
+    if not host or not username or not password:
+        return jsonify({'status': 'error', 'error': 'Host, username and password are required'}), 400
+
+    try:
+        session = winrm.Session(
+            f'http://{host}:5985/wsman',
+            auth=(username, password),
+            transport='ntlm',
+            server_cert_validation='ignore',
+            read_timeout_sec=15,
+            operation_timeout_sec=10
+        )
+
+        # Detect Windows version
+        r = session.run_cmd('wmic os get Caption /value')
+        output = r.std_out.decode('utf-8', errors='replace').strip()
+
+        os_name = ''
+        os_version = '2019'  # default
+        for line in output.split('\n'):
+            if 'Caption=' in line:
+                os_name = line.split('=', 1)[1].strip()
+                break
+
+        if '2003' in os_name:
+            os_version = '2003'
+        elif '2008' in os_name:
+            os_version = '2008'
+        elif '2012' in os_name:
+            os_version = '2012'
+        elif '2016' in os_name:
+            os_version = '2016'
+        elif '2019' in os_name:
+            os_version = '2019'
+        elif '2022' in os_name:
+            os_version = '2022'
+        elif '2025' in os_name:
+            os_version = '2025'
+
+        return jsonify({
+            'status': 'ok',
+            'os_name': os_name,
+            'os_version': os_version,
+            'message': f'Connected successfully. OS: {os_name}'
+        })
+
+    except Exception as e:
+        error_msg = str(e)
+        hint = ''
+        if 'refused' in error_msg.lower() or 'No route' in error_msg or 'timed out' in error_msg.lower() or 'WinRMTransport' in error_msg:
+            hint = ' — WinRM is not enabled on this server. Run "winrm quickconfig -y" on the server.'
+        elif '401' in error_msg or 'Unauthorized' in error_msg or 'auth' in error_msg.lower():
+            hint = ' — Username or password is incorrect.'
+        return jsonify({'status': 'error', 'error': f'Connection failed{hint}', 'detail': error_msg}), 400
+
 @app.route('/api/tunnel200-ips', methods=['GET'])
 def get_tunnel200_ips():
     """Get free Tunnel200 IPs for APN غیرمالی"""

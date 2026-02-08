@@ -724,11 +724,14 @@ document.addEventListener('DOMContentLoaded', function() {
                         </label>
                     </div>
                     <!-- WinRM Fields -->
-                    <div id="dnsWinrmFields" style="display:flex; gap:10px; flex-wrap:wrap;">
-                        <input type="text" id="dnsHost" placeholder="Server IP (e.g. 10.x.y.1)" style="flex:1; min-width:150px; padding:9px 12px; border-radius:8px; font-size:13px;">
+                    <div id="dnsWinrmFields" style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
+                        <input type="text" id="dnsHost" placeholder="Server IP (e.g. 10.x.y.1)" style="flex:2; min-width:150px; padding:9px 12px; border-radius:8px; font-size:13px;">
                         <input type="text" id="dnsUser" placeholder="Username" style="flex:1; min-width:120px; padding:9px 12px; border-radius:8px; font-size:13px;">
                         <input type="password" id="dnsPass" placeholder="Password" style="flex:1; min-width:120px; padding:9px 12px; border-radius:8px; font-size:13px;">
+                        <button type="button" id="dnsTestBtn" onclick="testDnsConnection()" style="background:linear-gradient(135deg,#6366f1,#4f46e5); color:#fff; border:none; border-radius:8px; padding:9px 16px; font-size:12px; font-weight:600; cursor:pointer; white-space:nowrap; font-family:inherit;">Test &amp; Detect OS</button>
                     </div>
+                    <!-- Connection Result -->
+                    <div id="dnsTestResult" style="display:none; margin-top:10px; padding:10px 14px; border-radius:8px; font-size:13px;"></div>
                     <!-- 2003 Notice -->
                     <div id="dns2003Notice" style="display:none; margin-top:12px; padding:10px 14px; background:rgba(245,158,11,0.1); border:1px solid rgba(245,158,11,0.3); border-radius:8px; color:#f59e0b; font-size:13px;">
                         Windows Server 2003 does not support WinRM. Copy the commands below and run them via RDP.
@@ -1288,6 +1291,69 @@ do wr
             btn.textContent = 'Copied!';
             btn.style.color = '#10b981';
             setTimeout(() => { btn.textContent = orig; btn.style.color = '#94a3b8'; }, 2000);
+        }
+
+        async function testDnsConnection() {
+            const host = document.getElementById('dnsHost').value.trim();
+            const username = document.getElementById('dnsUser').value.trim();
+            const password = document.getElementById('dnsPass').value;
+            const btn = document.getElementById('dnsTestBtn');
+            const resultDiv = document.getElementById('dnsTestResult');
+
+            if (!host || !username || !password) {
+                resultDiv.style.display = 'block';
+                resultDiv.style.background = 'rgba(239,68,68,0.1)';
+                resultDiv.style.border = '1px solid rgba(239,68,68,0.3)';
+                resultDiv.style.color = '#ef4444';
+                resultDiv.textContent = 'Please fill in Server IP, Username and Password.';
+                return;
+            }
+
+            btn.disabled = true;
+            btn.textContent = 'Testing...';
+            resultDiv.style.display = 'block';
+            resultDiv.style.background = 'rgba(59,130,246,0.1)';
+            resultDiv.style.border = '1px solid rgba(59,130,246,0.3)';
+            resultDiv.style.color = '#93c5fd';
+            resultDiv.textContent = 'Connecting to ' + host + '...';
+
+            try {
+                const res = await fetch('/api/dns-forwarder/test-connection', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({host, username, password})
+                });
+                const data = await res.json();
+
+                if (data.status === 'ok') {
+                    resultDiv.style.background = 'rgba(16,185,129,0.1)';
+                    resultDiv.style.border = '1px solid rgba(16,185,129,0.3)';
+                    resultDiv.style.color = '#10b981';
+                    resultDiv.textContent = 'Connected — ' + data.os_name;
+
+                    // Auto-select OS version
+                    const isOld = data.os_version === '2003' || data.os_version === '2008';
+                    const radioVal = isOld ? '2003' : '2019';
+                    document.querySelector(`input[name="dnsOsVersion"][value="${radioVal}"]`).checked = true;
+                    document.getElementById('dnsWinrmFields').style.display = isOld ? 'none' : 'flex';
+                    document.getElementById('dns2003Notice').style.display = isOld ? 'block' : 'none';
+                    document.getElementById('dnsExecuteBtn').style.display = isOld ? 'none' : 'flex';
+                    loadDnsCommands();
+                } else {
+                    resultDiv.style.background = 'rgba(239,68,68,0.1)';
+                    resultDiv.style.border = '1px solid rgba(239,68,68,0.3)';
+                    resultDiv.style.color = '#ef4444';
+                    resultDiv.innerHTML = data.error + (data.detail ? '<br><small style="opacity:0.7;">' + data.detail + '</small>' : '');
+                }
+            } catch (e) {
+                resultDiv.style.background = 'rgba(239,68,68,0.1)';
+                resultDiv.style.border = '1px solid rgba(239,68,68,0.3)';
+                resultDiv.style.color = '#ef4444';
+                resultDiv.textContent = 'Request failed: ' + e.message;
+            }
+
+            btn.disabled = false;
+            btn.textContent = 'Test & Detect OS';
         }
 
         async function executeDnsForwarder() {
