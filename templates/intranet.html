@@ -675,6 +675,60 @@ document.addEventListener('DOMContentLoaded', function() {
           </div>
         </div>
 
+        <!-- DNS Forwarder Panel -->
+        <div id="dnsForwarderPanel" style="display:none; margin-top:20px; background:linear-gradient(135deg,rgba(16,185,129,0.08),rgba(5,150,105,0.05)); border:1px solid rgba(16,185,129,0.3); border-radius:14px; padding:18px 20px;">
+          <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:14px;">
+            <div style="display:flex; align-items:center; gap:8px; color:#10b981; font-weight:700; font-size:15px;">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+              DNS Forwarder Setup
+            </div>
+            <span id="dnsStatus" style="font-size:12px; color:#94a3b8;">Step 2: Configure DNS on branch server</span>
+          </div>
+
+          <!-- OS Version Selection -->
+          <div style="display:flex; gap:10px; margin-bottom:14px; flex-wrap:wrap;">
+            <label style="display:flex; align-items:center; gap:6px; cursor:pointer; padding:8px 14px; border-radius:8px; border:1px solid #374151; background:#020617; color:#e5e7eb; font-size:13px;">
+              <input type="radio" name="dnsOsVersion" value="2019" checked style="accent-color:#10b981;"> Windows Server 2019/2022
+            </label>
+            <label style="display:flex; align-items:center; gap:6px; cursor:pointer; padding:8px 14px; border-radius:8px; border:1px solid #374151; background:#020617; color:#e5e7eb; font-size:13px;">
+              <input type="radio" name="dnsOsVersion" value="2003" style="accent-color:#10b981;"> Windows Server 2003
+            </label>
+          </div>
+
+          <!-- Connection Fields (for WinRM - 2019/2022) -->
+          <div id="dnsWinrmFields" style="display:flex; gap:10px; margin-bottom:14px; flex-wrap:wrap;">
+            <input type="text" id="dnsHost" placeholder="Server IP (e.g. 10.x.y.1)" style="flex:1; min-width:150px; padding:9px 12px; background:#020617; border:1px solid #374151; border-radius:8px; color:#e5e7eb; font-size:13px;">
+            <input type="text" id="dnsUser" placeholder="Username" style="flex:1; min-width:120px; padding:9px 12px; background:#020617; border:1px solid #374151; border-radius:8px; color:#e5e7eb; font-size:13px;">
+            <input type="password" id="dnsPass" placeholder="Password" style="flex:1; min-width:120px; padding:9px 12px; background:#020617; border:1px solid #374151; border-radius:8px; color:#e5e7eb; font-size:13px;">
+          </div>
+
+          <!-- 2003 Notice -->
+          <div id="dns2003Notice" style="display:none; margin-bottom:14px; padding:10px 14px; background:rgba(245,158,11,0.1); border:1px solid rgba(245,158,11,0.3); border-radius:8px; color:#f59e0b; font-size:13px;">
+            Windows Server 2003 does not support WinRM. Copy the commands below and run them via RDP.
+          </div>
+
+          <!-- Commands Preview -->
+          <div style="margin-bottom:14px;">
+            <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:6px;">
+              <span style="color:#94a3b8; font-size:12px; font-weight:600;">DNS Forwarder Commands Preview</span>
+              <button type="button" onclick="copyDnsCommands()" style="background:transparent; border:1px solid #374151; border-radius:6px; padding:4px 10px; color:#94a3b8; font-size:11px; cursor:pointer; font-family:inherit;">Copy All</button>
+            </div>
+            <textarea id="dnsCommandsPreview" readonly style="width:100%; min-height:120px; max-height:250px; padding:10px; background:#020617; border:1px solid #374151; border-radius:8px; color:#a3e635; font-family:'Courier New',monospace; font-size:12px; resize:vertical; box-sizing:border-box;"></textarea>
+          </div>
+
+          <!-- Action Buttons -->
+          <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
+            <button type="button" id="dnsExecuteBtn" onclick="executeDnsForwarder()" style="background:linear-gradient(135deg,#10b981,#059669); color:#fff; border:none; border-radius:999px; padding:10px 20px; display:flex; align-items:center; gap:6px; font-weight:600; cursor:pointer; font-family:inherit; font-size:13px;">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+              Execute via WinRM
+            </button>
+          </div>
+
+          <!-- Results -->
+          <div id="dnsResults" style="display:none; margin-top:14px; padding:12px 14px; border-radius:8px; font-size:13px; max-height:200px; overflow-y:auto;">
+          </div>
+        </div>
+
         <section class="card">
             <h2>Generated Config</h2>
 
@@ -1186,8 +1240,111 @@ do wr
             generateBtn.disabled = false;
             generateBtn.textContent = 'Generate Configs';
 
+            // Show DNS Forwarder panel after config generation
+            document.getElementById('dnsForwarderPanel').style.display = 'block';
+            loadDnsCommands();
+
             console.log('✓ Configuration generated successfully');
         });
+
+        // ==================== DNS FORWARDER FUNCTIONS ====================
+        // OS version toggle
+        document.querySelectorAll('input[name="dnsOsVersion"]').forEach(radio => {
+            radio.addEventListener('change', function() {
+                const is2003 = this.value === '2003';
+                document.getElementById('dnsWinrmFields').style.display = is2003 ? 'none' : 'flex';
+                document.getElementById('dns2003Notice').style.display = is2003 ? 'block' : 'none';
+                document.getElementById('dnsExecuteBtn').style.display = is2003 ? 'none' : 'flex';
+                loadDnsCommands();
+            });
+        });
+
+        async function loadDnsCommands() {
+            const osVersion = document.querySelector('input[name="dnsOsVersion"]:checked').value;
+            try {
+                const res = await fetch('/api/dns-forwarder/generate', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({os_version: osVersion})
+                });
+                const data = await res.json();
+                document.getElementById('dnsCommandsPreview').value = data.commands;
+            } catch (e) {
+                console.error('DNS commands load error:', e);
+            }
+        }
+
+        function copyDnsCommands() {
+            const el = document.getElementById('dnsCommandsPreview');
+            el.select();
+            document.execCommand('copy');
+            const btn = el.parentElement.querySelector('button');
+            const orig = btn.textContent;
+            btn.textContent = 'Copied!';
+            btn.style.color = '#10b981';
+            setTimeout(() => { btn.textContent = orig; btn.style.color = '#94a3b8'; }, 2000);
+        }
+
+        async function executeDnsForwarder() {
+            const host = document.getElementById('dnsHost').value.trim();
+            const username = document.getElementById('dnsUser').value.trim();
+            const password = document.getElementById('dnsPass').value;
+            const osVersion = document.querySelector('input[name="dnsOsVersion"]:checked').value;
+            const btn = document.getElementById('dnsExecuteBtn');
+            const resultsDiv = document.getElementById('dnsResults');
+
+            if (!host || !username || !password) {
+                resultsDiv.style.display = 'block';
+                resultsDiv.style.background = 'rgba(239,68,68,0.1)';
+                resultsDiv.style.border = '1px solid rgba(239,68,68,0.3)';
+                resultsDiv.style.color = '#ef4444';
+                resultsDiv.innerHTML = 'Please fill in Server IP, Username and Password.';
+                return;
+            }
+
+            btn.disabled = true;
+            btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="animation:spin 1s linear infinite"><path d="M21 12a9 9 0 11-6.219-8.56"/></svg> Connecting...';
+            resultsDiv.style.display = 'block';
+            resultsDiv.style.background = 'rgba(59,130,246,0.1)';
+            resultsDiv.style.border = '1px solid rgba(59,130,246,0.3)';
+            resultsDiv.style.color = '#93c5fd';
+            resultsDiv.innerHTML = 'Connecting to ' + host + ' via WinRM...';
+
+            try {
+                const res = await fetch('/api/dns-forwarder/execute', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({host, username, password, os_version: osVersion, by: currentUsername})
+                });
+                const data = await res.json();
+
+                if (data.status === 'ok') {
+                    resultsDiv.style.background = 'rgba(16,185,129,0.1)';
+                    resultsDiv.style.border = '1px solid rgba(16,185,129,0.3)';
+                    resultsDiv.style.color = '#a7f3d0';
+                    let html = `<div style="font-weight:700; margin-bottom:8px; color:#10b981;">DNS Forwarder Results: ${data.success}/${data.total} successful</div>`;
+                    data.results.forEach(r => {
+                        const icon = r.status === 'ok' ? '✅' : '❌';
+                        const color = r.status === 'ok' ? '#10b981' : '#ef4444';
+                        html += `<div style="padding:2px 0; color:${color}; font-size:12px;">${icon} ${r.zone} ${r.error ? '— ' + r.error : ''}</div>`;
+                    });
+                    resultsDiv.innerHTML = html;
+                } else {
+                    resultsDiv.style.background = 'rgba(239,68,68,0.1)';
+                    resultsDiv.style.border = '1px solid rgba(239,68,68,0.3)';
+                    resultsDiv.style.color = '#ef4444';
+                    resultsDiv.innerHTML = 'Error: ' + (data.error || 'Unknown error');
+                }
+            } catch (e) {
+                resultsDiv.style.background = 'rgba(239,68,68,0.1)';
+                resultsDiv.style.border = '1px solid rgba(239,68,68,0.3)';
+                resultsDiv.style.color = '#ef4444';
+                resultsDiv.innerHTML = 'Connection failed: ' + e.message;
+            }
+
+            btn.disabled = false;
+            btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg> Execute via WinRM';
+        }
 
         // Load tunnels and branches on page load
         loadTunnels();
@@ -1209,6 +1366,7 @@ do wr
 
 <!-- ========== REMOTE CONNECTION MODAL ========== -->
 <style>
+@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
 .rc-overlay {
     position:fixed; inset:0; z-index:9999;
     background:rgba(0,0,0,0.6); backdrop-filter:blur(6px);

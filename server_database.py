@@ -941,7 +941,129 @@ def check_tunnel_name():
         })
     return jsonify({'exists': False})
 
-# ==================== TUNNEL200 IPs ====================
+# ==================== DNS FORWARDER via WinRM ====================
+WINRM_AVAILABLE = False
+try:
+    import winrm
+    WINRM_AVAILABLE = True
+    print("✅ WinRM module loaded (DNS Forwarder available)")
+except ImportError:
+    print("⚠️  WinRM module disabled - missing package: pywinrm")
+    print("   Install with: pip install pywinrm")
+
+DNS_FORWARDER_ZONES = [
+    "in.agri-bank.com",
+    "auth.asanpardakht.net",
+    "bcms.ndf.ir",
+    "behpardakht.bki.ir",
+    "bkf1.irbroker.com",
+    "bkf2.irbroker.com",
+    "cms.ndf.ir",
+    "cs.sabka.ir",
+    "miras.csdiran.ir",
+    "mms.asanpardakht.ir",
+    "rahsepar.sep.ir",
+    "rrk.ir",
+    "sp.sep.ir",
+    "yekta.fanavacard.com",
+    "service.refahi.ir",
+    "eservice.hadafmandi.ir",
+]
+DNS_FORWARDER_IPS = "10.0.51.100 10.0.51.101"
+
+@app.route('/api/dns-forwarder/status', methods=['GET'])
+def dns_forwarder_status():
+    """Check if WinRM module is available"""
+    return jsonify({'available': WINRM_AVAILABLE})
+
+@app.route('/api/dns-forwarder/generate', methods=['POST'])
+def dns_forwarder_generate():
+    """Generate DNS forwarder commands for preview"""
+    data = request.json
+    os_version = data.get('os_version', '2019')  # '2003' or '2019'
+
+    lines = []
+    if os_version == '2003':
+        lines.append('net use Z: \\\\tsclient\\C')
+        lines.append('copy Z:\\TOOLS\\dnscmd.exe C:\\dnscmd.exe')
+        for zone in DNS_FORWARDER_ZONES:
+            lines.append(f'c:\\dnscmd localhost /zoneadd {zone} /forwarder {DNS_FORWARDER_IPS}')
+        lines.append('net use Z: /delete')
+        lines.append('PAUSE')
+    else:
+        for zone in DNS_FORWARDER_ZONES:
+            lines.append(f'dnscmd localhost /zoneadd {zone} /forwarder {DNS_FORWARDER_IPS}')
+
+    return jsonify({'commands': '\n'.join(lines), 'count': len(DNS_FORWARDER_ZONES)})
+
+@app.route('/api/dns-forwarder/execute', methods=['POST'])
+def dns_forwarder_execute():
+    """Execute DNS forwarder commands on remote Windows server via WinRM"""
+    if not WINRM_AVAILABLE:
+        return jsonify({'status': 'error', 'error': 'WinRM module not installed. Install: pip install pywinrm'}), 400
+
+    data = request.json
+    host = data.get('host', '').strip()
+    username = data.get('username', '').strip()
+    password = data.get('password', '')
+    os_version = data.get('os_version', '2019')
+
+    if not host or not username or not password:
+        return jsonify({'status': 'error', 'error': 'Host, username and password are required'}), 400
+
+    try:
+        session = winrm.Session(
+            f'http://{host}:5985/wsman',
+            auth=(username, password),
+            transport='ntlm',
+            server_cert_validation='ignore',
+            read_timeout_sec=30,
+            operation_timeout_sec=25
+        )
+
+        results = []
+        errors = []
+        success_count = 0
+
+        # Build commands based on OS version
+        if os_version == '2003':
+            # 2003 doesn't support WinRM - return error
+            return jsonify({
+                'status': 'error',
+                'error': 'Windows Server 2003 does not support WinRM. Please use RDP and run the BAT file manually.'
+            }), 400
+
+        # For 2019/2022 - execute each dnscmd
+        for zone in DNS_FORWARDER_ZONES:
+            cmd = f'dnscmd localhost /zoneadd {zone} /forwarder {DNS_FORWARDER_IPS}'
+            try:
+                r = session.run_cmd(cmd)
+                output = r.std_out.decode('utf-8', errors='replace').strip()
+                error = r.std_err.decode('utf-8', errors='replace').strip()
+                if r.status_code == 0:
+                    success_count += 1
+                    results.append({'zone': zone, 'status': 'ok', 'output': output})
+                else:
+                    errors.append({'zone': zone, 'status': 'error', 'error': error or output})
+                    results.append({'zone': zone, 'status': 'error', 'error': error or output})
+            except Exception as cmd_err:
+                errors.append({'zone': zone, 'status': 'error', 'error': str(cmd_err)})
+                results.append({'zone': zone, 'status': 'error', 'error': str(cmd_err)})
+
+        current_user = data.get('by', 'unknown')
+        log_activity('success', 'DNS Forwarder', f'{host} ({success_count}/{len(DNS_FORWARDER_ZONES)} zones)', current_user)
+
+        return jsonify({
+            'status': 'ok',
+            'total': len(DNS_FORWARDER_ZONES),
+            'success': success_count,
+            'failed': len(errors),
+            'results': results
+        })
+
+    except Exception as e:
+        print(f"❌ DNS Forwarder WinRM error: {e}")
+        return jsonify({'status': 'error', 'error': f'Connection failed: {str(e)}'}), 500
 @app.route('/api/tunnel200-ips', methods=['GET'])
 def get_tunnel200_ips():
     """Get free Tunnel200 IPs for APN غیرمالی"""
