@@ -941,15 +941,16 @@ def check_tunnel_name():
         })
     return jsonify({'exists': False})
 
-# ==================== DNS FORWARDER via WinRM ====================
-WINRM_AVAILABLE = False
+# ==================== DNS FORWARDER via SMB (PsExec) ====================
+# SMB (port 445) is enabled by default on all Windows servers - no setup needed!
+SMB_AVAILABLE = False
 try:
-    import winrm
-    WINRM_AVAILABLE = True
-    print("✅ WinRM module loaded (DNS Forwarder available)")
+    from pypsexec.client import Client as PsExecClient
+    SMB_AVAILABLE = True
+    print("✅ SMB/PsExec module loaded (DNS Forwarder available - no server setup needed)")
 except ImportError:
-    print("⚠️  WinRM module disabled - missing package: pywinrm")
-    print("   Install with: pip install pywinrm")
+    print("⚠️  SMB/PsExec module disabled - missing package: pypsexec")
+    print("   Install with: pip install pypsexec")
 
 DNS_FORWARDER_ZONES = [
     "in.agri-bank.com",
@@ -973,8 +974,8 @@ DNS_FORWARDER_IPS = "10.0.51.100 10.0.51.101"
 
 @app.route('/api/dns-forwarder/status', methods=['GET'])
 def dns_forwarder_status():
-    """Check if WinRM module is available"""
-    return jsonify({'available': WINRM_AVAILABLE})
+    """Check if SMB module is available"""
+    return jsonify({'available': SMB_AVAILABLE, 'method': 'SMB/PsExec'})
 
 @app.route('/api/dns-forwarder/generate', methods=['POST'])
 def dns_forwarder_generate():
@@ -996,11 +997,39 @@ def dns_forwarder_generate():
 
     return jsonify({'commands': '\n'.join(lines), 'count': len(DNS_FORWARDER_ZONES)})
 
+def _smb_connect(host, username, password):
+    """Create SMB/PsExec connection to remote Windows server"""
+    c = PsExecClient(host, username=username, password=password, port=445, encrypt=False)
+    c.connect()
+    c.create_service()
+    return c
+
+def _smb_disconnect(client):
+    """Safely disconnect SMB/PsExec client"""
+    try:
+        client.remove_service()
+        client.disconnect()
+    except Exception:
+        pass
+
+def _smb_run_cmd(client, cmd):
+    """Run a command via SMB/PsExec and return (stdout, stderr, return_code)"""
+    stdout, stderr, rc = client.run_executable(
+        "cmd.exe",
+        arguments=f"/c {cmd}",
+        timeout_seconds=30
+    )
+    return (
+        stdout.decode('utf-8', errors='replace').strip(),
+        stderr.decode('utf-8', errors='replace').strip(),
+        rc
+    )
+
 @app.route('/api/dns-forwarder/execute', methods=['POST'])
 def dns_forwarder_execute():
-    """Execute DNS forwarder commands on remote Windows server via WinRM"""
-    if not WINRM_AVAILABLE:
-        return jsonify({'status': 'error', 'error': 'WinRM module not installed. Install: pip install pywinrm'}), 400
+    """Execute DNS forwarder commands on remote Windows server via SMB"""
+    if not SMB_AVAILABLE:
+        return jsonify({'status': 'error', 'error': 'SMB module not installed. Install: pip install pypsexec'}), 400
 
     data = request.json
     host = data.get('host', '').strip()
@@ -1011,41 +1040,28 @@ def dns_forwarder_execute():
     if not host or not username or not password:
         return jsonify({'status': 'error', 'error': 'Host, username and password are required'}), 400
 
+    client = None
     try:
-        session = winrm.Session(
-            f'http://{host}:5985/wsman',
-            auth=(username, password),
-            transport='ntlm',
-            server_cert_validation='ignore',
-            read_timeout_sec=30,
-            operation_timeout_sec=25
-        )
+        client = _smb_connect(host, username, password)
 
         results = []
         errors = []
         success_count = 0
 
-        # Build commands based on OS version
-        if os_version == '2003':
-            # 2003 doesn't support WinRM - return error
-            return jsonify({
-                'status': 'error',
-                'error': 'Windows Server 2003 does not support WinRM. Please use RDP and run the BAT file manually.'
-            }), 400
+        # Build dnscmd prefix based on OS
+        cmd_prefix = 'c:\\dnscmd' if os_version == '2003' else 'dnscmd'
 
-        # For 2019/2022 - execute each dnscmd
         for zone in DNS_FORWARDER_ZONES:
-            cmd = f'dnscmd localhost /zoneadd {zone} /forwarder {DNS_FORWARDER_IPS}'
+            cmd = f'{cmd_prefix} localhost /zoneadd {zone} /forwarder {DNS_FORWARDER_IPS}'
             try:
-                r = session.run_cmd(cmd)
-                output = r.std_out.decode('utf-8', errors='replace').strip()
-                error = r.std_err.decode('utf-8', errors='replace').strip()
-                if r.status_code == 0:
+                stdout, stderr, rc = _smb_run_cmd(client, cmd)
+                if rc == 0:
                     success_count += 1
-                    results.append({'zone': zone, 'status': 'ok', 'output': output})
+                    results.append({'zone': zone, 'status': 'ok', 'output': stdout})
                 else:
-                    errors.append({'zone': zone, 'status': 'error', 'error': error or output})
-                    results.append({'zone': zone, 'status': 'error', 'error': error or output})
+                    err_msg = stderr or stdout or f'Exit code: {rc}'
+                    errors.append({'zone': zone, 'status': 'error', 'error': err_msg})
+                    results.append({'zone': zone, 'status': 'error', 'error': err_msg})
             except Exception as cmd_err:
                 errors.append({'zone': zone, 'status': 'error', 'error': str(cmd_err)})
                 results.append({'zone': zone, 'status': 'error', 'error': str(cmd_err)})
@@ -1062,14 +1078,25 @@ def dns_forwarder_execute():
         })
 
     except Exception as e:
-        print(f"❌ DNS Forwarder WinRM error: {e}")
-        return jsonify({'status': 'error', 'error': f'Connection failed: {str(e)}'}), 500
+        print(f"❌ DNS Forwarder SMB error: {e}")
+        error_msg = str(e)
+        hint = ''
+        if 'refused' in error_msg.lower() or 'timed out' in error_msg.lower() or 'unreachable' in error_msg.lower():
+            hint = ' — Cannot reach server. Check that port 445 (SMB) is accessible.'
+        elif 'STATUS_LOGON_FAILURE' in error_msg or 'auth' in error_msg.lower() or 'credential' in error_msg.lower():
+            hint = ' — Username or password is incorrect.'
+        elif 'STATUS_ACCESS_DENIED' in error_msg or 'ACCESS_DENIED' in error_msg:
+            hint = ' — Access denied. User must have admin privileges on the server.'
+        return jsonify({'status': 'error', 'error': f'Connection failed{hint}', 'detail': error_msg}), 500
+    finally:
+        if client:
+            _smb_disconnect(client)
 
 @app.route('/api/dns-forwarder/test-connection', methods=['POST'])
 def dns_forwarder_test():
-    """Test WinRM connection and auto-detect Windows version"""
-    if not WINRM_AVAILABLE:
-        return jsonify({'status': 'error', 'error': 'WinRM module not installed. Install: pip install pywinrm'}), 400
+    """Test SMB connection and auto-detect Windows version"""
+    if not SMB_AVAILABLE:
+        return jsonify({'status': 'error', 'error': 'SMB module not installed. Install: pip install pypsexec'}), 400
 
     data = request.json
     host = data.get('host', '').strip()
@@ -1079,23 +1106,16 @@ def dns_forwarder_test():
     if not host or not username or not password:
         return jsonify({'status': 'error', 'error': 'Host, username and password are required'}), 400
 
+    client = None
     try:
-        session = winrm.Session(
-            f'http://{host}:5985/wsman',
-            auth=(username, password),
-            transport='ntlm',
-            server_cert_validation='ignore',
-            read_timeout_sec=15,
-            operation_timeout_sec=10
-        )
+        client = _smb_connect(host, username, password)
 
         # Detect Windows version
-        r = session.run_cmd('wmic os get Caption /value')
-        output = r.std_out.decode('utf-8', errors='replace').strip()
+        stdout, stderr, rc = _smb_run_cmd(client, 'wmic os get Caption /value')
 
         os_name = ''
         os_version = '2019'  # default
-        for line in output.split('\n'):
+        for line in stdout.split('\n'):
             if 'Caption=' in line:
                 os_name = line.split('=', 1)[1].strip()
                 break
@@ -1125,11 +1145,16 @@ def dns_forwarder_test():
     except Exception as e:
         error_msg = str(e)
         hint = ''
-        if 'refused' in error_msg.lower() or 'No route' in error_msg or 'timed out' in error_msg.lower() or 'WinRMTransport' in error_msg:
-            hint = ' — WinRM is not enabled on this server. Run "winrm quickconfig -y" on the server.'
-        elif '401' in error_msg or 'Unauthorized' in error_msg or 'auth' in error_msg.lower():
+        if 'refused' in error_msg.lower() or 'timed out' in error_msg.lower() or 'unreachable' in error_msg.lower():
+            hint = ' — Cannot reach server. Check that port 445 (SMB) is accessible.'
+        elif 'STATUS_LOGON_FAILURE' in error_msg or 'auth' in error_msg.lower() or 'credential' in error_msg.lower():
             hint = ' — Username or password is incorrect.'
+        elif 'STATUS_ACCESS_DENIED' in error_msg or 'ACCESS_DENIED' in error_msg:
+            hint = ' — Access denied. User must have admin privileges on the server.'
         return jsonify({'status': 'error', 'error': f'Connection failed{hint}', 'detail': error_msg}), 400
+    finally:
+        if client:
+            _smb_disconnect(client)
 
 @app.route('/api/tunnel200-ips', methods=['GET'])
 def get_tunnel200_ips():

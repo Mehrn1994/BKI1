@@ -734,7 +734,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     <div id="dnsTestResult" style="display:none; margin-top:10px; padding:10px 14px; border-radius:8px; font-size:13px;"></div>
                     <!-- 2003 Notice -->
                     <div id="dns2003Notice" style="display:none; margin-top:12px; padding:10px 14px; background:rgba(245,158,11,0.1); border:1px solid rgba(245,158,11,0.3); border-radius:8px; color:#f59e0b; font-size:13px;">
-                        Windows Server 2003 does not support WinRM. Copy the commands below and run them via RDP.
+                        Windows Server 2003: For best results, copy the commands below and run via RDP.
                     </div>
                 </div>
             </div>
@@ -756,7 +756,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 <div style="padding:12px; background:var(--bg-input, #020617); border:1px solid var(--border-color, rgba(255,255,255,0.1)); border-radius:8px;">
                     <button type="button" id="dnsExecuteBtn" onclick="executeDnsForwarder()" style="background:linear-gradient(135deg,#10b981,#059669); color:#fff; border:none; border-radius:999px; padding:10px 24px; display:flex; align-items:center; gap:6px; font-weight:600; cursor:pointer; font-family:inherit; font-size:13px;">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-                        Execute via WinRM
+                        Execute on Server
                     </button>
                     <div id="dnsResults" style="display:none; margin-top:14px; padding:12px 14px; border-radius:8px; font-size:13px; max-height:250px; overflow-y:auto;">
                     </div>
@@ -1379,7 +1379,7 @@ do wr
             resultsDiv.style.background = 'rgba(59,130,246,0.1)';
             resultsDiv.style.border = '1px solid rgba(59,130,246,0.3)';
             resultsDiv.style.color = '#93c5fd';
-            resultsDiv.innerHTML = 'Connecting to ' + host + ' via WinRM...';
+            resultsDiv.innerHTML = 'Connecting to ' + host + ' via SMB...';
 
             try {
                 const res = await fetch('/api/dns-forwarder/execute', {
@@ -1414,7 +1414,7 @@ do wr
             }
 
             btn.disabled = false;
-            btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg> Execute via WinRM';
+            btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg> Execute on Server';
         }
 
         // Load tunnels and branches on page load
