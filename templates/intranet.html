@@ -683,7 +683,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     <span class="device-title">Branch Router</span>
                     <button class="copy-btn" onclick="copyConfig('branchConfig')">Copy</button>
                 </div>
-                <textarea id="branchConfig" readonly style="min-height:300px;">Branch configuration will appear here...</textarea>
+                <textarea id="branchConfig" readonly>Branch configuration will appear here...</textarea>
             </div>
 
             <div class="device-box">
@@ -691,7 +691,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     <span class="device-title">WAN-INTR1 Router</span>
                     <button class="copy-btn" onclick="copyConfig('wan1Config')">Copy</button>
                 </div>
-                <textarea id="wan1Config" readonly style="min-height:300px;">WAN-INTR1 configuration will appear here...</textarea>
+                <textarea id="wan1Config" readonly>WAN-INTR1 configuration will appear here...</textarea>
             </div>
 
             <div class="device-box">
@@ -699,71 +699,9 @@ document.addEventListener('DOMContentLoaded', function() {
                     <span class="device-title">WAN-INTR2 Router</span>
                     <button class="copy-btn" onclick="copyConfig('wan2Config')">Copy</button>
                 </div>
-                <textarea id="wan2Config" readonly style="min-height:300px;">WAN-INTR2 configuration will appear here...</textarea>
+                <textarea id="wan2Config" readonly>WAN-INTR2 configuration will appear here...</textarea>
             </div>
         </section>
-
-        <!-- DNS Forwarder Panel -->
-        <section id="dnsForwarderPanel" class="card" style="display:none; grid-column: 1 / -1;">
-            <h2>DNS Forwarder Setup</h2>
-
-            <!-- OS Version + Connection Info -->
-            <div class="device-box">
-                <div class="device-box-header">
-                    <span class="device-title">Server Connection</span>
-                    <span id="dnsStatus" style="font-size:11px; color:#94a3b8;">Step 2: Configure DNS on branch server</span>
-                </div>
-                <div style="padding:12px; background:var(--bg-input, #020617); border:1px solid var(--border-color, rgba(255,255,255,0.1)); border-radius:8px;">
-                    <!-- OS Selection -->
-                    <div style="display:flex; gap:16px; margin-bottom:14px; flex-wrap:wrap;">
-                        <label style="display:flex; align-items:center; gap:6px; cursor:pointer; font-size:13px;">
-                            <input type="radio" name="dnsOsVersion" value="2019" checked style="accent-color:#10b981;"> Windows Server 2019/2022
-                        </label>
-                        <label style="display:flex; align-items:center; gap:6px; cursor:pointer; font-size:13px;">
-                            <input type="radio" name="dnsOsVersion" value="2003" style="accent-color:#10b981;"> Windows Server 2003
-                        </label>
-                    </div>
-                    <!-- WinRM Fields -->
-                    <div id="dnsWinrmFields" style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
-                        <input type="text" id="dnsHost" placeholder="Server IP (e.g. 10.x.y.1)" style="flex:2; min-width:150px; padding:9px 12px; border-radius:8px; font-size:13px;">
-                        <input type="text" id="dnsUser" placeholder="Username" style="flex:1; min-width:120px; padding:9px 12px; border-radius:8px; font-size:13px;">
-                        <input type="password" id="dnsPass" placeholder="Password" style="flex:1; min-width:120px; padding:9px 12px; border-radius:8px; font-size:13px;">
-                        <button type="button" id="dnsTestBtn" onclick="testDnsConnection()" style="background:linear-gradient(135deg,#6366f1,#4f46e5); color:#fff; border:none; border-radius:8px; padding:9px 16px; font-size:12px; font-weight:600; cursor:pointer; white-space:nowrap; font-family:inherit;">Test &amp; Detect OS</button>
-                    </div>
-                    <!-- Connection Result -->
-                    <div id="dnsTestResult" style="display:none; margin-top:10px; padding:10px 14px; border-radius:8px; font-size:13px;"></div>
-                    <!-- 2003 Notice -->
-                    <div id="dns2003Notice" style="display:none; margin-top:12px; padding:10px 14px; background:rgba(245,158,11,0.1); border:1px solid rgba(245,158,11,0.3); border-radius:8px; color:#f59e0b; font-size:13px;">
-                        Windows Server 2003: For best results, copy the commands below and run via RDP.
-                    </div>
-                </div>
-            </div>
-
-            <!-- Commands Preview -->
-            <div class="device-box">
-                <div class="device-box-header">
-                    <span class="device-title">DNS Forwarder Commands</span>
-                    <button class="copy-btn" onclick="copyDnsCommands()">Copy All</button>
-                </div>
-                <textarea id="dnsCommandsPreview" readonly style="min-height:300px;">DNS Forwarder commands will appear here...</textarea>
-            </div>
-
-            <!-- Execute Button + Results -->
-            <div class="device-box">
-                <div class="device-box-header">
-                    <span class="device-title">Execute</span>
-                </div>
-                <div style="padding:12px; background:var(--bg-input, #020617); border:1px solid var(--border-color, rgba(255,255,255,0.1)); border-radius:8px;">
-                    <button type="button" id="dnsExecuteBtn" onclick="executeDnsForwarder()" style="background:linear-gradient(135deg,#10b981,#059669); color:#fff; border:none; border-radius:999px; padding:10px 24px; display:flex; align-items:center; gap:6px; font-weight:600; cursor:pointer; font-family:inherit; font-size:13px;">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-                        Execute on Server
-                    </button>
-                    <div id="dnsResults" style="display:none; margin-top:14px; padding:12px 14px; border-radius:8px; font-size:13px; max-height:250px; overflow-y:auto;">
-                    </div>
-                </div>
-            </div>
-        </section>
-
     </main>
 
     <script>
@@ -1248,174 +1186,8 @@ do wr
             generateBtn.disabled = false;
             generateBtn.textContent = 'Generate Configs';
 
-            // Show DNS Forwarder panel after config generation
-            document.getElementById('dnsForwarderPanel').style.display = 'block';
-            loadDnsCommands();
-
             console.log('✓ Configuration generated successfully');
         });
-
-        // ==================== DNS FORWARDER FUNCTIONS ====================
-        // OS version toggle
-        document.querySelectorAll('input[name="dnsOsVersion"]').forEach(radio => {
-            radio.addEventListener('change', function() {
-                const is2003 = this.value === '2003';
-                document.getElementById('dnsWinrmFields').style.display = is2003 ? 'none' : 'flex';
-                document.getElementById('dns2003Notice').style.display = is2003 ? 'block' : 'none';
-                document.getElementById('dnsExecuteBtn').style.display = is2003 ? 'none' : 'flex';
-                loadDnsCommands();
-            });
-        });
-
-        async function loadDnsCommands() {
-            const osVersion = document.querySelector('input[name="dnsOsVersion"]:checked').value;
-            try {
-                const res = await fetch('/api/dns-forwarder/generate', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({os_version: osVersion})
-                });
-                const data = await res.json();
-                document.getElementById('dnsCommandsPreview').value = data.commands;
-            } catch (e) {
-                console.error('DNS commands load error:', e);
-            }
-        }
-
-        function copyDnsCommands() {
-            const el = document.getElementById('dnsCommandsPreview');
-            el.select();
-            document.execCommand('copy');
-            const btn = el.parentElement.querySelector('button');
-            const orig = btn.textContent;
-            btn.textContent = 'Copied!';
-            btn.style.color = '#10b981';
-            setTimeout(() => { btn.textContent = orig; btn.style.color = '#94a3b8'; }, 2000);
-        }
-
-        async function testDnsConnection() {
-            const host = document.getElementById('dnsHost').value.trim();
-            const username = document.getElementById('dnsUser').value.trim();
-            const password = document.getElementById('dnsPass').value;
-            const btn = document.getElementById('dnsTestBtn');
-            const resultDiv = document.getElementById('dnsTestResult');
-
-            if (!host || !username || !password) {
-                resultDiv.style.display = 'block';
-                resultDiv.style.background = 'rgba(239,68,68,0.1)';
-                resultDiv.style.border = '1px solid rgba(239,68,68,0.3)';
-                resultDiv.style.color = '#ef4444';
-                resultDiv.textContent = 'Please fill in Server IP, Username and Password.';
-                return;
-            }
-
-            btn.disabled = true;
-            btn.textContent = 'Testing...';
-            resultDiv.style.display = 'block';
-            resultDiv.style.background = 'rgba(59,130,246,0.1)';
-            resultDiv.style.border = '1px solid rgba(59,130,246,0.3)';
-            resultDiv.style.color = '#93c5fd';
-            resultDiv.textContent = 'Connecting to ' + host + '...';
-
-            try {
-                const res = await fetch('/api/dns-forwarder/test-connection', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({host, username, password})
-                });
-                const data = await res.json();
-
-                if (data.status === 'ok') {
-                    resultDiv.style.background = 'rgba(16,185,129,0.1)';
-                    resultDiv.style.border = '1px solid rgba(16,185,129,0.3)';
-                    resultDiv.style.color = '#10b981';
-                    resultDiv.textContent = 'Connected — ' + data.os_name;
-
-                    // Auto-select OS version
-                    const isOld = data.os_version === '2003' || data.os_version === '2008';
-                    const radioVal = isOld ? '2003' : '2019';
-                    document.querySelector(`input[name="dnsOsVersion"][value="${radioVal}"]`).checked = true;
-                    document.getElementById('dnsWinrmFields').style.display = isOld ? 'none' : 'flex';
-                    document.getElementById('dns2003Notice').style.display = isOld ? 'block' : 'none';
-                    document.getElementById('dnsExecuteBtn').style.display = isOld ? 'none' : 'flex';
-                    loadDnsCommands();
-                } else {
-                    resultDiv.style.background = 'rgba(239,68,68,0.1)';
-                    resultDiv.style.border = '1px solid rgba(239,68,68,0.3)';
-                    resultDiv.style.color = '#ef4444';
-                    resultDiv.innerHTML = data.error + (data.detail ? '<br><small style="opacity:0.7;">' + data.detail + '</small>' : '');
-                }
-            } catch (e) {
-                resultDiv.style.background = 'rgba(239,68,68,0.1)';
-                resultDiv.style.border = '1px solid rgba(239,68,68,0.3)';
-                resultDiv.style.color = '#ef4444';
-                resultDiv.textContent = 'Request failed: ' + e.message;
-            }
-
-            btn.disabled = false;
-            btn.textContent = 'Test & Detect OS';
-        }
-
-        async function executeDnsForwarder() {
-            const host = document.getElementById('dnsHost').value.trim();
-            const username = document.getElementById('dnsUser').value.trim();
-            const password = document.getElementById('dnsPass').value;
-            const osVersion = document.querySelector('input[name="dnsOsVersion"]:checked').value;
-            const btn = document.getElementById('dnsExecuteBtn');
-            const resultsDiv = document.getElementById('dnsResults');
-
-            if (!host || !username || !password) {
-                resultsDiv.style.display = 'block';
-                resultsDiv.style.background = 'rgba(239,68,68,0.1)';
-                resultsDiv.style.border = '1px solid rgba(239,68,68,0.3)';
-                resultsDiv.style.color = '#ef4444';
-                resultsDiv.innerHTML = 'Please fill in Server IP, Username and Password.';
-                return;
-            }
-
-            btn.disabled = true;
-            btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="animation:spin 1s linear infinite"><path d="M21 12a9 9 0 11-6.219-8.56"/></svg> Connecting...';
-            resultsDiv.style.display = 'block';
-            resultsDiv.style.background = 'rgba(59,130,246,0.1)';
-            resultsDiv.style.border = '1px solid rgba(59,130,246,0.3)';
-            resultsDiv.style.color = '#93c5fd';
-            resultsDiv.innerHTML = 'Connecting to ' + host + ' via SMB...';
-
-            try {
-                const res = await fetch('/api/dns-forwarder/execute', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({host, username, password, os_version: osVersion, by: currentUsername})
-                });
-                const data = await res.json();
-
-                if (data.status === 'ok') {
-                    resultsDiv.style.background = 'rgba(16,185,129,0.1)';
-                    resultsDiv.style.border = '1px solid rgba(16,185,129,0.3)';
-                    resultsDiv.style.color = '#a7f3d0';
-                    let html = `<div style="font-weight:700; margin-bottom:8px; color:#10b981;">DNS Forwarder Results: ${data.success}/${data.total} successful</div>`;
-                    data.results.forEach(r => {
-                        const icon = r.status === 'ok' ? '✅' : '❌';
-                        const color = r.status === 'ok' ? '#10b981' : '#ef4444';
-                        html += `<div style="padding:2px 0; color:${color}; font-size:12px;">${icon} ${r.zone} ${r.error ? '— ' + r.error : ''}</div>`;
-                    });
-                    resultsDiv.innerHTML = html;
-                } else {
-                    resultsDiv.style.background = 'rgba(239,68,68,0.1)';
-                    resultsDiv.style.border = '1px solid rgba(239,68,68,0.3)';
-                    resultsDiv.style.color = '#ef4444';
-                    resultsDiv.innerHTML = 'Error: ' + (data.error || 'Unknown error');
-                }
-            } catch (e) {
-                resultsDiv.style.background = 'rgba(239,68,68,0.1)';
-                resultsDiv.style.border = '1px solid rgba(239,68,68,0.3)';
-                resultsDiv.style.color = '#ef4444';
-                resultsDiv.innerHTML = 'Connection failed: ' + e.message;
-            }
-
-            btn.disabled = false;
-            btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg> Execute on Server';
-        }
 
         // Load tunnels and branches on page load
         loadTunnels();
@@ -1437,7 +1209,6 @@ do wr
 
 <!-- ========== REMOTE CONNECTION MODAL ========== -->
 <style>
-@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
 .rc-overlay {
     position:fixed; inset:0; z-index:9999;
     background:rgba(0,0,0,0.6); backdrop-filter:blur(6px);
