@@ -1,0 +1,807 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<title>معماری فنی سامانه مدیریت شبکه</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;600;700;800;900&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Vazirmatn', 'Segoe UI', Tahoma, sans-serif;
+    background: #f8fafc;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 40px 20px;
+    min-height: 100vh;
+  }
+
+  .page-title {
+    font-size: 28px;
+    font-weight: 800;
+    color: #0f172a;
+    margin-bottom: 8px;
+    text-align: center;
+  }
+  .page-subtitle {
+    font-size: 14px;
+    color: #64748b;
+    margin-bottom: 40px;
+    text-align: center;
+  }
+
+  /* ===== ARCHITECTURE DIAGRAM ===== */
+  .arch-container {
+    width: 1000px;
+    position: relative;
+  }
+
+  /* Connector Lines */
+  .connector {
+    width: 4px;
+    background: linear-gradient(180deg, #3b82f6, #6366f1);
+    margin: 0 auto;
+    border-radius: 2px;
+    position: relative;
+  }
+  .connector::before {
+    content: '';
+    position: absolute;
+    top: -6px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 12px;
+    height: 12px;
+    background: #3b82f6;
+    border-radius: 50%;
+    border: 3px solid #fff;
+    box-shadow: 0 0 0 2px #3b82f6;
+  }
+  .connector.down::after {
+    content: '';
+    position: absolute;
+    bottom: -8px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 0;
+    height: 0;
+    border-left: 8px solid transparent;
+    border-right: 8px solid transparent;
+    border-top: 10px solid #6366f1;
+  }
+  .connector-short { height: 40px; }
+  .connector-med { height: 50px; }
+
+  /* Layer Card */
+  .layer {
+    border-radius: 20px;
+    padding: 24px 28px;
+    position: relative;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.06), 0 1px 3px rgba(0,0,0,0.04);
+    border: 1px solid rgba(255,255,255,0.8);
+  }
+
+  .layer-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 14px;
+  }
+  .layer-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+    flex-shrink: 0;
+  }
+  .layer-title {
+    font-size: 18px;
+    font-weight: 700;
+  }
+  .layer-title-en {
+    font-size: 12px;
+    font-weight: 400;
+    opacity: 0.7;
+    display: block;
+    margin-top: 2px;
+    direction: ltr;
+    text-align: right;
+  }
+
+  .layer-badge {
+    position: absolute;
+    top: -12px;
+    left: 24px;
+    background: #fff;
+    border: 2px solid;
+    border-radius: 20px;
+    padding: 3px 14px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+  }
+
+  /* Layer 1 - Users */
+  .layer-users {
+    background: linear-gradient(135deg, #eff6ff, #dbeafe);
+    border-color: #bfdbfe;
+  }
+  .layer-users .layer-icon { background: #3b82f6; color: #fff; }
+  .layer-users .layer-title { color: #1e40af; }
+  .layer-users .layer-badge { border-color: #3b82f6; color: #3b82f6; }
+
+  .users-grid {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .user-chip {
+    background: #fff;
+    border: 1px solid #bfdbfe;
+    border-radius: 10px;
+    padding: 8px 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    color: #1e40af;
+    font-weight: 500;
+  }
+  .user-chip svg { width: 16px; height: 16px; color: #3b82f6; }
+
+  /* Layer 2 - Web Server */
+  .layer-server {
+    background: linear-gradient(135deg, #faf5ff, #f3e8ff);
+    border-color: #e9d5ff;
+  }
+  .layer-server .layer-icon { background: #7c3aed; color: #fff; }
+  .layer-server .layer-title { color: #5b21b6; }
+  .layer-server .layer-badge { border-color: #7c3aed; color: #7c3aed; }
+
+  .server-stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+  }
+  .server-stat {
+    background: #fff;
+    border: 1px solid #e9d5ff;
+    border-radius: 12px;
+    padding: 14px;
+    text-align: center;
+  }
+  .server-stat-value {
+    font-size: 26px;
+    font-weight: 800;
+    color: #7c3aed;
+    display: block;
+  }
+  .server-stat-label {
+    font-size: 11px;
+    color: #6b7280;
+    margin-top: 4px;
+  }
+
+  /* Layer 3 - Modules */
+  .layer-modules {
+    background: linear-gradient(135deg, #ecfdf5, #d1fae5);
+    border-color: #a7f3d0;
+  }
+  .layer-modules .layer-icon { background: #059669; color: #fff; }
+  .layer-modules .layer-title { color: #065f46; }
+  .layer-modules .layer-badge { border-color: #059669; color: #059669; }
+
+  .modules-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+  }
+  .module-card {
+    background: #fff;
+    border: 1px solid #a7f3d0;
+    border-radius: 14px;
+    padding: 16px;
+    text-align: center;
+    transition: transform 0.2s;
+  }
+  .module-card:hover { transform: translateY(-2px); }
+  .module-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 8px;
+    font-size: 18px;
+  }
+  .module-name {
+    font-size: 13px;
+    font-weight: 700;
+    color: #065f46;
+  }
+  .module-desc {
+    font-size: 11px;
+    color: #6b7280;
+    margin-top: 4px;
+    line-height: 1.5;
+  }
+
+  .mod-dashboard .module-icon { background: #dbeafe; }
+  .mod-ip .module-icon { background: #fce7f3; }
+  .mod-config .module-icon { background: #fef3c7; }
+  .mod-tunnel .module-icon { background: #e0e7ff; }
+
+  /* Layer 4 - Database */
+  .layer-db {
+    background: linear-gradient(135deg, #fff7ed, #ffedd5);
+    border-color: #fed7aa;
+  }
+  .layer-db .layer-icon { background: #ea580c; color: #fff; }
+  .layer-db .layer-title { color: #9a3412; }
+  .layer-db .layer-badge { border-color: #ea580c; color: #ea580c; }
+
+  .db-tables {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+  }
+  .db-table {
+    background: #fff;
+    border: 1px solid #fed7aa;
+    border-radius: 10px;
+    padding: 10px 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .db-table-icon {
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    background: #fff7ed;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    flex-shrink: 0;
+  }
+  .db-table-name {
+    font-size: 12px;
+    font-weight: 600;
+    color: #9a3412;
+  }
+  .db-table-count {
+    font-size: 10px;
+    color: #6b7280;
+  }
+
+  /* Layer 5 - Background */
+  .layer-bg {
+    background: linear-gradient(135deg, #f0fdf4, #dcfce7);
+    border-color: #bbf7d0;
+  }
+  .layer-bg .layer-icon { background: #16a34a; color: #fff; }
+  .layer-bg .layer-title { color: #166534; }
+  .layer-bg .layer-badge { border-color: #16a34a; color: #16a34a; }
+
+  .bg-features {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+  }
+  .bg-feature {
+    background: #fff;
+    border: 1px solid #bbf7d0;
+    border-radius: 12px;
+    padding: 14px;
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+  }
+  .bg-feature-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    background: #dcfce7;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    flex-shrink: 0;
+  }
+  .bg-feature-text {
+    font-size: 12px;
+    font-weight: 600;
+    color: #166534;
+  }
+  .bg-feature-desc {
+    font-size: 11px;
+    color: #6b7280;
+    margin-top: 2px;
+  }
+
+  /* Security sidebar */
+  .security-strip {
+    position: absolute;
+    left: -60px;
+    top: 0;
+    bottom: 0;
+    width: 50px;
+    background: linear-gradient(180deg, #ef4444, #dc2626, #b91c1c);
+    border-radius: 14px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    color: #fff;
+    font-size: 16px;
+    writing-mode: vertical-rl;
+    font-weight: 700;
+    letter-spacing: 3px;
+    box-shadow: 0 4px 16px rgba(239,68,68,0.3);
+  }
+  .security-strip span {
+    writing-mode: vertical-rl;
+    font-size: 13px;
+    letter-spacing: 6px;
+  }
+
+  /* ===== SECOND DIAGRAM: FLOW ===== */
+  .flow-title {
+    font-size: 28px;
+    font-weight: 800;
+    color: #0f172a;
+    margin-top: 60px;
+    margin-bottom: 8px;
+    text-align: center;
+  }
+  .flow-subtitle {
+    font-size: 14px;
+    color: #64748b;
+    margin-bottom: 40px;
+    text-align: center;
+  }
+
+  .flow-container {
+    width: 1000px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0;
+    position: relative;
+  }
+
+  .flow-step {
+    flex: 1;
+    text-align: center;
+    position: relative;
+  }
+  .flow-circle {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 12px;
+    font-size: 30px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+    position: relative;
+    z-index: 2;
+  }
+  .flow-step-num {
+    position: absolute;
+    top: -8px;
+    right: calc(50% - 52px);
+    width: 24px;
+    height: 24px;
+    background: #0f172a;
+    color: #fff;
+    border-radius: 50%;
+    font-size: 12px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 3;
+  }
+  .flow-label {
+    font-size: 14px;
+    font-weight: 700;
+    color: #0f172a;
+  }
+  .flow-desc {
+    font-size: 11px;
+    color: #64748b;
+    margin-top: 4px;
+    line-height: 1.6;
+  }
+  .flow-time {
+    display: inline-block;
+    margin-top: 6px;
+    background: #ecfdf5;
+    color: #059669;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 3px 10px;
+    border-radius: 20px;
+  }
+
+  .flow-arrow {
+    width: 60px;
+    height: 3px;
+    background: linear-gradient(90deg, #3b82f6, #6366f1);
+    position: relative;
+    flex-shrink: 0;
+    margin-top: -50px;
+  }
+  .flow-arrow::after {
+    content: '';
+    position: absolute;
+    left: -6px;
+    top: -5px;
+    width: 0;
+    height: 0;
+    border-top: 6px solid transparent;
+    border-bottom: 6px solid transparent;
+    border-right: 8px solid #3b82f6;
+  }
+
+  .flow-c1 .flow-circle { background: linear-gradient(135deg, #3b82f6, #2563eb); color: #fff; }
+  .flow-c2 .flow-circle { background: linear-gradient(135deg, #8b5cf6, #7c3aed); color: #fff; }
+  .flow-c3 .flow-circle { background: linear-gradient(135deg, #f59e0b, #d97706); color: #fff; }
+  .flow-c4 .flow-circle { background: linear-gradient(135deg, #10b981, #059669); color: #fff; }
+  .flow-c5 .flow-circle { background: linear-gradient(135deg, #ef4444, #dc2626); color: #fff; }
+
+  /* Stats comparison */
+  .compare-title {
+    font-size: 28px;
+    font-weight: 800;
+    color: #0f172a;
+    margin-top: 60px;
+    margin-bottom: 8px;
+    text-align: center;
+  }
+  .compare-subtitle {
+    font-size: 14px;
+    color: #64748b;
+    margin-bottom: 40px;
+    text-align: center;
+  }
+  .compare-container {
+    width: 1000px;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 20px;
+  }
+  .compare-card {
+    background: #fff;
+    border-radius: 16px;
+    padding: 20px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.05);
+    border: 1px solid #e2e8f0;
+  }
+  .compare-card-title {
+    font-size: 14px;
+    font-weight: 700;
+    color: #334155;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .compare-bar-container {
+    margin-bottom: 8px;
+  }
+  .compare-bar-label {
+    display: flex;
+    justify-content: space-between;
+    font-size: 11px;
+    margin-bottom: 4px;
+  }
+  .compare-bar-label span:first-child { color: #64748b; }
+  .compare-bar {
+    height: 8px;
+    border-radius: 4px;
+    background: #f1f5f9;
+    overflow: hidden;
+  }
+  .compare-bar-fill {
+    height: 100%;
+    border-radius: 4px;
+    transition: width 1s ease;
+  }
+  .bar-red { background: linear-gradient(90deg, #ef4444, #dc2626); }
+  .bar-green { background: linear-gradient(90deg, #10b981, #059669); }
+
+  .print-hint {
+    margin-top: 50px;
+    padding: 16px 24px;
+    background: #fffbeb;
+    border: 1px solid #fde68a;
+    border-radius: 12px;
+    font-size: 13px;
+    color: #92400e;
+    text-align: center;
+  }
+
+  @media print {
+    body { padding: 0; background: #fff; }
+    .print-hint { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ========== ARCHITECTURE DIAGRAM ========== -->
+<div class="page-title">معماری فنی سامانه</div>
+<div class="page-subtitle">Network Configuration Portal — System Architecture</div>
+
+<div class="arch-container" style="padding-right: 70px;">
+
+  <!-- Security Strip -->
+  <div class="security-strip">
+    <span>SHA256 + Rate Limit + Audit Log</span>
+  </div>
+
+  <!-- Layer 1: Users -->
+  <div class="layer layer-users">
+    <div class="layer-badge">PRESENTATION LAYER</div>
+    <div class="layer-header">
+      <div class="layer-icon">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+      </div>
+      <div>
+        <div class="layer-title">لایه کاربران <span class="layer-title-en">User Interface — Web Browser (Chrome / Firefox)</span></div>
+      </div>
+    </div>
+    <div class="users-grid">
+      <div class="user-chip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> 9 کارشناس مجاز</div>
+      <div class="user-chip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8"/><path d="M12 17v4"/></svg> رابط کاربری وب واکنشگرا</div>
+      <div class="user-chip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg> تم تاریک / روشن</div>
+      <div class="user-chip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg> احراز هویت امن</div>
+    </div>
+  </div>
+
+  <div class="connector connector-short down"></div>
+
+  <!-- Layer 2: Web Server -->
+  <div class="layer layer-server">
+    <div class="layer-badge">APPLICATION LAYER</div>
+    <div class="layer-header">
+      <div class="layer-icon">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="8" rx="2"/><rect x="2" y="14" width="20" height="8" rx="2"/><line x1="6" y1="6" x2="6.01" y2="6"/><line x1="6" y1="18" x2="6.01" y2="18"/></svg>
+      </div>
+      <div>
+        <div class="layer-title">سرور وب و سرویس‌های API <span class="layer-title-en">Flask (Python) — http://10.0.51.76:5000</span></div>
+      </div>
+    </div>
+    <div class="server-stats">
+      <div class="server-stat">
+        <span class="server-stat-value">+60</span>
+        <div class="server-stat-label">سرویس REST API</div>
+      </div>
+      <div class="server-stat">
+        <span class="server-stat-value">8</span>
+        <div class="server-stat-label">صفحه وب واکنشگرا</div>
+      </div>
+      <div class="server-stat">
+        <span class="server-stat-value">+20K</span>
+        <div class="server-stat-label">خط کد</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="connector connector-short down"></div>
+
+  <!-- Layer 3: Modules -->
+  <div class="layer layer-modules">
+    <div class="layer-badge">BUSINESS LOGIC LAYER</div>
+    <div class="layer-header">
+      <div class="layer-icon">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+      </div>
+      <div>
+        <div class="layer-title">ماژول‌های کاربردی <span class="layer-title-en">Application Modules</span></div>
+      </div>
+    </div>
+    <div class="modules-grid">
+      <div class="module-card mod-dashboard">
+        <div class="module-icon">&#x1F4CA;</div>
+        <div class="module-name">داشبورد</div>
+        <div class="module-desc">آمار لحظه‌ای<br>هشدار انقضا<br>گزارش فعالیت</div>
+      </div>
+      <div class="module-card mod-ip">
+        <div class="module-icon">&#x1F310;</div>
+        <div class="module-name">مدیریت IP</div>
+        <div class="module-desc">رزرو و آزادسازی<br>انقضای 60 روزه<br>تست Ping</div>
+      </div>
+      <div class="module-card mod-config">
+        <div class="module-icon">&#x2699;&#xFE0F;</div>
+        <div class="module-name">تولید کانفیگ</div>
+        <div class="module-desc">Branch Router<br>WAN-INTR1<br>WAN-INTR2</div>
+      </div>
+      <div class="module-card mod-tunnel">
+        <div class="module-icon">&#x1F50C;</div>
+        <div class="module-name">مدیریت تونل</div>
+        <div class="module-desc">Intranet (1,157)<br>Mali (627)<br>Tunnel200 (42)</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="connector connector-short down"></div>
+
+  <!-- Layer 4: Database -->
+  <div class="layer layer-db">
+    <div class="layer-badge">DATA LAYER</div>
+    <div class="layer-header">
+      <div class="layer-icon">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
+      </div>
+      <div>
+        <div class="layer-title">پایگاه داده <span class="layer-title-en">SQLite — 8 Tables — 3,288 Records</span></div>
+      </div>
+    </div>
+    <div class="db-tables">
+      <div class="db-table"><div class="db-table-icon">&#x1F4CB;</div><div><div class="db-table-name">lan_ips</div><div class="db-table-count">477 آدرس شعب</div></div></div>
+      <div class="db-table"><div class="db-table-icon">&#x1F517;</div><div><div class="db-table-name">intranet_tunnels</div><div class="db-table-count">1,157 تونل</div></div></div>
+      <div class="db-table"><div class="db-table-icon">&#x1F4E1;</div><div><div class="db-table-name">apn_ips</div><div class="db-table-count">247 آدرس APN</div></div></div>
+      <div class="db-table"><div class="db-table-icon">&#x1F4B3;</div><div><div class="db-table-name">apn_mali</div><div class="db-table-count">738 آدرس مالی</div></div></div>
+      <div class="db-table"><div class="db-table-icon">&#x1F504;</div><div><div class="db-table-name">tunnel_mali</div><div class="db-table-count">627 جفت تونل</div></div></div>
+      <div class="db-table"><div class="db-table-icon">&#x1F4E6;</div><div><div class="db-table-name">tunnel200_ips</div><div class="db-table-count">42 جفت</div></div></div>
+      <div class="db-table"><div class="db-table-icon">&#x1F464;</div><div><div class="db-table-name">user_passwords</div><div class="db-table-count">9 کاربر</div></div></div>
+      <div class="db-table"><div class="db-table-icon">&#x1F4C5;</div><div><div class="db-table-name">reserved_ips</div><div class="db-table-count">رزروها + انقضا</div></div></div>
+    </div>
+  </div>
+
+  <div class="connector connector-short down"></div>
+
+  <!-- Layer 5: Background -->
+  <div class="layer layer-bg">
+    <div class="layer-badge">AUTOMATION LAYER</div>
+    <div class="layer-header">
+      <div class="layer-icon">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+      </div>
+      <div>
+        <div class="layer-title">فرآیندهای خودکار <span class="layer-title-en">Background Automation Threads</span></div>
+      </div>
+    </div>
+    <div class="bg-features">
+      <div class="bg-feature">
+        <div class="bg-feature-icon">&#x23F0;</div>
+        <div>
+          <div class="bg-feature-text">آزادسازی خودکار</div>
+          <div class="bg-feature-desc">رزروهای منقضی هر 6 ساعت آزاد می‌شوند</div>
+        </div>
+      </div>
+      <div class="bg-feature">
+        <div class="bg-feature-icon">&#x1F4DD;</div>
+        <div>
+          <div class="bg-feature-text">ثبت وقایع</div>
+          <div class="bg-feature-desc">آخرین 100 عملیات با جزئیات کامل</div>
+        </div>
+      </div>
+      <div class="bg-feature">
+        <div class="bg-feature-icon">&#x1F4BE;</div>
+        <div>
+          <div class="bg-feature-text">پشتیبان‌گیری</div>
+          <div class="bg-feature-desc">نسخه پشتیبان با برچسب زمانی</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ========== WORKFLOW DIAGRAM ========== -->
+<div class="flow-title">فرآیند اتصال شعبه جدید</div>
+<div class="flow-subtitle">از درخواست تا اعمال تنظیمات — کاملاً خودکار</div>
+
+<div class="flow-container">
+  <div class="flow-step flow-c1">
+    <div class="flow-step-num">1</div>
+    <div class="flow-circle">&#x1F50D;</div>
+    <div class="flow-label">انتخاب شعبه</div>
+    <div class="flow-desc">جستجوی نام شعبه<br>تکمیل خودکار اطلاعات</div>
+    <div class="flow-time">2 ثانیه</div>
+  </div>
+  <div class="flow-arrow"></div>
+  <div class="flow-step flow-c2">
+    <div class="flow-step-num">2</div>
+    <div class="flow-circle">&#x1F4CB;</div>
+    <div class="flow-label">رزرو IP</div>
+    <div class="flow-desc">بررسی تکراری نبودن<br>ثبت با شماره درخواست</div>
+    <div class="flow-time">10 ثانیه</div>
+  </div>
+  <div class="flow-arrow"></div>
+  <div class="flow-step flow-c3">
+    <div class="flow-step-num">3</div>
+    <div class="flow-circle">&#x2699;&#xFE0F;</div>
+    <div class="flow-label">تولید کانفیگ</div>
+    <div class="flow-desc">3 روتر — خودکار<br>بیش از 50 خط دستور</div>
+    <div class="flow-time">3 ثانیه</div>
+  </div>
+  <div class="flow-arrow"></div>
+  <div class="flow-step flow-c4">
+    <div class="flow-step-num">4</div>
+    <div class="flow-circle">&#x1F4E4;</div>
+    <div class="flow-label">اعمال تنظیمات</div>
+    <div class="flow-desc">کپی کانفیگ<br>Deploy روی روتر</div>
+    <div class="flow-time">1 دقیقه</div>
+  </div>
+  <div class="flow-arrow"></div>
+  <div class="flow-step flow-c5">
+    <div class="flow-step-num">5</div>
+    <div class="flow-circle">&#x2705;</div>
+    <div class="flow-label">تست و تایید</div>
+    <div class="flow-desc">Ping تست اتصال<br>ثبت در Activity Log</div>
+    <div class="flow-time">5 ثانیه</div>
+  </div>
+</div>
+
+<!-- ========== COMPARISON ========== -->
+<div class="compare-title">مقایسه قبل و بعد</div>
+<div class="compare-subtitle">تاثیر سامانه بر فرآیندهای عملیاتی</div>
+
+<div class="compare-container">
+  <div class="compare-card">
+    <div class="compare-card-title">&#x23F1; یافتن IP آزاد</div>
+    <div class="compare-bar-container">
+      <div class="compare-bar-label"><span>قبل (دستی)</span><span style="color:#ef4444;font-weight:700">30 دقیقه</span></div>
+      <div class="compare-bar"><div class="compare-bar-fill bar-red" style="width:100%"></div></div>
+    </div>
+    <div class="compare-bar-container">
+      <div class="compare-bar-label"><span>بعد (سامانه)</span><span style="color:#059669;font-weight:700">2 ثانیه</span></div>
+      <div class="compare-bar"><div class="compare-bar-fill bar-green" style="width:1%"></div></div>
+    </div>
+  </div>
+  <div class="compare-card">
+    <div class="compare-card-title">&#x1F4DD; تولید کانفیگ روتر</div>
+    <div class="compare-bar-container">
+      <div class="compare-bar-label"><span>قبل (دستی)</span><span style="color:#ef4444;font-weight:700">30 دقیقه</span></div>
+      <div class="compare-bar"><div class="compare-bar-fill bar-red" style="width:100%"></div></div>
+    </div>
+    <div class="compare-bar-container">
+      <div class="compare-bar-label"><span>بعد (سامانه)</span><span style="color:#059669;font-weight:700">3 ثانیه</span></div>
+      <div class="compare-bar"><div class="compare-bar-fill bar-green" style="width:1%"></div></div>
+    </div>
+  </div>
+  <div class="compare-card">
+    <div class="compare-card-title">&#x26A0;&#xFE0F; احتمال خطای انسانی</div>
+    <div class="compare-bar-container">
+      <div class="compare-bar-label"><span>قبل (دستی)</span><span style="color:#ef4444;font-weight:700">بالا</span></div>
+      <div class="compare-bar"><div class="compare-bar-fill bar-red" style="width:85%"></div></div>
+    </div>
+    <div class="compare-bar-container">
+      <div class="compare-bar-label"><span>بعد (سامانه)</span><span style="color:#059669;font-weight:700">صفر</span></div>
+      <div class="compare-bar"><div class="compare-bar-fill bar-green" style="width:0%"></div></div>
+    </div>
+  </div>
+  <div class="compare-card">
+    <div class="compare-card-title">&#x1F50D; ردیابی تغییرات</div>
+    <div class="compare-bar-container">
+      <div class="compare-bar-label"><span>قبل (دستی)</span><span style="color:#ef4444;font-weight:700">ناممکن</span></div>
+      <div class="compare-bar"><div class="compare-bar-fill bar-red" style="width:0%"></div></div>
+    </div>
+    <div class="compare-bar-container">
+      <div class="compare-bar-label"><span>بعد (سامانه)</span><span style="color:#059669;font-weight:700">کامل + خودکار</span></div>
+      <div class="compare-bar"><div class="compare-bar-fill bar-green" style="width:100%"></div></div>
+    </div>
+  </div>
+</div>
+
+<div class="print-hint">
+  برای ذخیره به عنوان تصویر: Ctrl+P سپس "Save as PDF" یا از صفحه اسکرین‌شات بگیرید
+</div>
+
+</body>
+</html>
