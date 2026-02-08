@@ -675,6 +675,34 @@ document.addEventListener('DOMContentLoaded', function() {
           </div>
         </div>
 
+        <section class="card">
+            <h2>Generated Config</h2>
+
+            <div class="device-box">
+                <div class="device-box-header">
+                    <span class="device-title">Branch Router</span>
+                    <button class="copy-btn" onclick="copyConfig('branchConfig')">Copy</button>
+                </div>
+                <textarea id="branchConfig" readonly style="min-height:300px;">Branch configuration will appear here...</textarea>
+            </div>
+
+            <div class="device-box">
+                <div class="device-box-header">
+                    <span class="device-title">WAN-INTR1 Router</span>
+                    <button class="copy-btn" onclick="copyConfig('wan1Config')">Copy</button>
+                </div>
+                <textarea id="wan1Config" readonly style="min-height:300px;">WAN-INTR1 configuration will appear here...</textarea>
+            </div>
+
+            <div class="device-box">
+                <div class="device-box-header">
+                    <span class="device-title">WAN-INTR2 Router</span>
+                    <button class="copy-btn" onclick="copyConfig('wan2Config')">Copy</button>
+                </div>
+                <textarea id="wan2Config" readonly style="min-height:300px;">WAN-INTR2 configuration will appear here...</textarea>
+            </div>
+        </section>
+
         <!-- DNS Forwarder Panel -->
         <div id="dnsForwarderPanel" style="display:none; margin-top:20px; background:linear-gradient(135deg,rgba(16,185,129,0.08),rgba(5,150,105,0.05)); border:1px solid rgba(16,185,129,0.3); border-radius:14px; padding:18px 20px;">
           <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:14px;">
@@ -729,33 +757,6 @@ document.addEventListener('DOMContentLoaded', function() {
           </div>
         </div>
 
-        <section class="card">
-            <h2>Generated Config</h2>
-
-            <div class="device-box">
-                <div class="device-box-header">
-                    <span class="device-title">Branch Router</span>
-                    <button class="copy-btn" onclick="copyConfig('branchConfig')">Copy</button>
-                </div>
-                <textarea id="branchConfig" readonly>Branch configuration will appear here...</textarea>
-            </div>
-
-            <div class="device-box">
-                <div class="device-box-header">
-                    <span class="device-title">WAN-INTR1 Router</span>
-                    <button class="copy-btn" onclick="copyConfig('wan1Config')">Copy</button>
-                </div>
-                <textarea id="wan1Config" readonly>WAN-INTR1 configuration will appear here...</textarea>
-            </div>
-
-            <div class="device-box">
-                <div class="device-box-header">
-                    <span class="device-title">WAN-INTR2 Router</span>
-                    <button class="copy-btn" onclick="copyConfig('wan2Config')">Copy</button>
-                </div>
-                <textarea id="wan2Config" readonly>WAN-INTR2 configuration will appear here...</textarea>
-            </div>
-        </section>
     </main>
 
     <script>
