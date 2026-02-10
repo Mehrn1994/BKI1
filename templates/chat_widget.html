@@ -1,4 +1,4 @@
-<!-- Chat Widget - Include at bottom of any page -->
+<!-- Chat Widget - HTTP Polling (no Socket.IO dependency) -->
 <style>
 #chatWidget{position:fixed;bottom:20px;right:20px;z-index:9998;font-family:inherit}
 #chatBubble{width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,#6366f1,#4f46e5);color:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 4px 20px rgba(99,102,241,0.4);transition:transform .2s}
@@ -85,7 +85,6 @@
     <!-- General Chat Room -->
     <div id="tab-general" class="chat-room" style="display:flex;">
       <div class="chat-messages" id="msgs-general"></div>
-      <div class="chat-typing" id="typing-general"></div>
       <div class="chat-input-area">
         <input type="file" id="file-general" style="display:none" onchange="uploadFile('general')">
         <button class="chat-file-btn" onclick="document.getElementById('file-general').click()">
@@ -98,7 +97,7 @@
       </div>
     </div>
 
-    <!-- Users List / Private Chat -->
+    <!-- Users List -->
     <div id="tab-users" class="chat-sidebar">
       <div id="usersList"></div>
     </div>
@@ -110,7 +109,6 @@
         <span id="private-room-name"></span>
       </div>
       <div class="chat-messages" id="msgs-private"></div>
-      <div class="chat-typing" id="typing-private"></div>
       <div class="chat-input-area">
         <input type="file" id="file-private" style="display:none" onchange="uploadFile('__private__')">
         <button class="chat-file-btn" onclick="document.getElementById('file-private').click()">
@@ -125,45 +123,110 @@
   </div>
 </div>
 
-<script src="/socket.io/socket.io.js"></script>
 <script>
 (function(){
-  const CHAT_USER = localStorage.getItem('currentUser') || localStorage.getItem('username') || sessionStorage.getItem('username') || 'unknown';
+  const CHAT_USER = localStorage.getItem('currentUser') || 'unknown';
   const ALL_USERS = ["Yarian","Sattari","Barari","Sahebdel","Vahedi","Aghajani","Hossein","Rezaei","Bagheri"];
-  let chatSocket = null;
   let currentPrivateRoom = null;
   let onlineUsers = [];
   let unreadGeneral = 0;
   let unreadPrivate = 0;
   let chatOpen = false;
   let activeTab = 'general';
-  let typingTimers = {};
+  let lastMsgId = 0;           // track last seen message id for polling
+  let lastPrivateMsgId = 0;    // for private room history
+  let pollTimer = null;
+  let heartbeatTimer = null;
 
   function initChat() {
     if (CHAT_USER === 'unknown') return;
-    try {
-      chatSocket = io('/chat', { transports: ['websocket','polling'] });
-      chatSocket.on('connect', () => {
-        chatSocket.emit('join', { username: CHAT_USER, room: 'general' });
-        loadHistory('general');
-      });
-      chatSocket.on('new_message', onNewMessage);
-      chatSocket.on('new_message_notify', onNotify);
-      chatSocket.on('online_users', (data) => {
-        onlineUsers = data.users || [];
-        renderUsers();
-      });
-      chatSocket.on('user_typing', (data) => {
-        const el = document.getElementById('typing-' + (data.room === 'general' ? 'general' : 'private'));
-        if (el) { el.textContent = data.username + ' is typing...'; clearTimeout(typingTimers[data.room]); typingTimers[data.room] = setTimeout(() => el.textContent = '', 2000); }
-      });
-    } catch(e) { console.error('Chat init error:', e); }
+    // Load initial history for general
+    loadHistory('general');
+    // Start polling for new messages every 2 seconds
+    pollTimer = setInterval(pollNewMessages, 2000);
+    // Start heartbeat every 5 seconds
+    sendHeartbeat();
+    heartbeatTimer = setInterval(sendHeartbeat, 5000);
   }
 
   function getPrivateRoom(otherUser) {
     const sorted = [CHAT_USER, otherUser].sort();
     return 'dm_' + sorted[0] + '_' + sorted[1];
   }
+
+  // === HTTP API calls ===
+
+  async function sendHeartbeat() {
+    try {
+      const res = await fetch('/api/chat/heartbeat', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({username: CHAT_USER})
+      });
+      const data = await res.json();
+      onlineUsers = data.users || [];
+      renderUsers();
+    } catch(e) {}
+  }
+
+  async function pollNewMessages() {
+    try {
+      const res = await fetch(`/api/chat/poll?username=${encodeURIComponent(CHAT_USER)}&after_id=${lastMsgId}`);
+      const data = await res.json();
+      const msgs = data.messages || [];
+      msgs.forEach(m => {
+        if (m.id > lastMsgId) lastMsgId = m.id;
+        handleNewMessage(m);
+      });
+    } catch(e) {}
+  }
+
+  function handleNewMessage(msg) {
+    const isGeneral = msg.room === 'general';
+    const isMyPrivate = msg.room === currentPrivateRoom;
+
+    if (isGeneral) {
+      appendMsg('msgs-general', msg);
+      if (!chatOpen || activeTab !== 'general') { unreadGeneral++; }
+    }
+    if (isMyPrivate) {
+      appendMsg('msgs-private', msg);
+    }
+    if (!isGeneral && !isMyPrivate && msg.room.startsWith('dm_') && msg.sender !== CHAT_USER) {
+      unreadPrivate++;
+    }
+    updateBadges();
+    if (msg.sender !== CHAT_USER) tryPlaySound();
+  }
+
+  function appendMsg(containerId, msg) {
+    const el = document.getElementById(containerId);
+    if (!el) return;
+    // Check if message already exists
+    if (el.querySelector(`[data-msg-id="${msg.id}"]`)) return;
+    el.insertAdjacentHTML('beforeend', renderMsg(msg));
+    scrollToBottom(containerId);
+  }
+
+  async function loadHistory(room, containerId) {
+    containerId = containerId || (room === 'general' ? 'msgs-general' : 'msgs-private');
+    try {
+      const res = await fetch(`/api/chat/history?room=${encodeURIComponent(room)}&limit=50`);
+      const data = await res.json();
+      const el = document.getElementById(containerId);
+      el.innerHTML = '';
+      let lastDate = '';
+      (data.messages || []).forEach(m => {
+        if (m.id > lastMsgId) lastMsgId = m.id;
+        const msgDate = m.timestamp.split(' ')[0];
+        if (msgDate !== lastDate) { lastDate = msgDate; el.innerHTML += `<div class="chat-date-sep">${msgDate}</div>`; }
+        el.innerHTML += renderMsg(m);
+      });
+      scrollToBottom(containerId);
+    } catch(e) { console.error('Load history error:', e); }
+  }
+
+  // === UI functions ===
 
   window.toggleChat = function() {
     chatOpen = !chatOpen;
@@ -184,6 +247,7 @@
 
   function renderUsers() {
     const el = document.getElementById('usersList');
+    if (!el) return;
     el.innerHTML = ALL_USERS.filter(u => u !== CHAT_USER).map(u => {
       const on = onlineUsers.includes(u);
       return `<div class="chat-user-item" onclick="openPrivate('${u}')">
@@ -199,86 +263,41 @@
     document.getElementById('tab-users').style.display = 'none';
     document.getElementById('tab-private').style.display = 'flex';
     document.getElementById('msgs-private').innerHTML = '';
-    chatSocket.emit('join', { username: CHAT_USER, room: currentPrivateRoom });
     loadHistory(currentPrivateRoom, 'msgs-private');
     unreadPrivate = 0;
     updateBadges();
   };
 
   window.backToUsers = function() {
-    if (currentPrivateRoom) chatSocket.emit('leave', { room: currentPrivateRoom });
     currentPrivateRoom = null;
     document.getElementById('tab-private').style.display = 'none';
     document.getElementById('tab-users').style.display = 'flex';
   };
 
-  async function loadHistory(room, containerId) {
-    containerId = containerId || (room === 'general' ? 'msgs-general' : 'msgs-private');
-    try {
-      const res = await fetch(`/api/chat/history?room=${encodeURIComponent(room)}&limit=50`);
-      const data = await res.json();
-      const el = document.getElementById(containerId);
-      el.innerHTML = '';
-      let lastDate = '';
-      (data.messages || []).forEach(m => {
-        const msgDate = m.timestamp.split(' ')[0];
-        if (msgDate !== lastDate) { lastDate = msgDate; el.innerHTML += `<div class="chat-date-sep">${msgDate}</div>`; }
-        el.innerHTML += renderMsg(m);
-      });
-      scrollToBottom(containerId);
-    } catch(e) { console.error('Load history error:', e); }
-  }
-
-  function renderMsg(m) {
-    const mine = m.sender === CHAT_USER;
-    const time = m.timestamp.split(' ')[1] || '';
-    let fileHtml = '';
-    if (m.file_name && m.file_path) {
-      fileHtml = `<a class="chat-msg-file" href="/data/chat_files/${m.file_path}" target="_blank" download="${m.file_name}">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
-        ${m.file_name}</a>`;
-    }
-    return `<div class="chat-msg ${mine ? 'mine' : 'other'}">
-      ${!mine ? `<div class="chat-msg-sender">${m.sender}</div>` : ''}
-      ${m.message ? `<div>${m.message}</div>` : ''}
-      ${fileHtml}
-      <div class="chat-msg-time">${time}</div>
-    </div>`;
-  }
-
-  function onNewMessage(msg) {
-    const isGeneral = msg.room === 'general';
-    const isMyPrivate = msg.room === currentPrivateRoom;
-    const containerId = isGeneral ? 'msgs-general' : (isMyPrivate ? 'msgs-private' : null);
-    if (containerId) {
-      document.getElementById(containerId).innerHTML += renderMsg(msg);
-      scrollToBottom(containerId);
-    }
-    // Badge
-    if (!chatOpen || (isGeneral && activeTab !== 'general')) { unreadGeneral++; }
-    updateBadges();
-    // Sound
-    if (msg.sender !== CHAT_USER) tryPlaySound();
-  }
-
-  function onNotify(msg) {
-    if (msg.sender === CHAT_USER) return;
-    const isForMe = msg.room.includes(CHAT_USER);
-    if (isForMe && msg.room !== currentPrivateRoom) {
-      unreadPrivate++;
-      updateBadges();
-      tryPlaySound();
-    }
-  }
-
   window.sendMsg = function(target) {
     const room = target === '__private__' ? currentPrivateRoom : target;
     const inputId = target === '__private__' ? 'input-private' : 'input-' + target;
     const input = document.getElementById(inputId);
+    if (!input) return;
     const text = input.value.trim();
     if (!text || !room) return;
-    chatSocket.emit('send_message', { sender: CHAT_USER, room: room, message: text });
     input.value = '';
+
+    fetch('/api/chat/send', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({sender: CHAT_USER, room: room, message: text})
+    })
+    .then(r => r.json())
+    .then(data => {
+      if (data.status === 'ok' && data.message) {
+        const msg = data.message;
+        if (msg.id > lastMsgId) lastMsgId = msg.id;
+        const containerId = room === 'general' ? 'msgs-general' : 'msgs-private';
+        appendMsg(containerId, msg);
+      }
+    })
+    .catch(e => console.error('Send error:', e));
   };
 
   window.uploadFile = function(target) {
@@ -288,23 +307,44 @@
     const room = target === '__private__' ? currentPrivateRoom : target;
     const fd = new FormData();
     fd.append('file', file);
-    fetch('/api/chat/upload', { method: 'POST', body: fd })
+    fetch('/api/chat/upload', {method: 'POST', body: fd})
       .then(r => r.json())
       .then(data => {
         if (data.status === 'ok') {
-          chatSocket.emit('send_message', { sender: CHAT_USER, room: room, file_name: data.file_name, file_path: data.file_path, message: '' });
+          fetch('/api/chat/send', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({sender: CHAT_USER, room: room, file_name: data.file_name, file_path: data.file_path, message: ''})
+          })
+          .then(r => r.json())
+          .then(res => {
+            if (res.status === 'ok' && res.message) {
+              if (res.message.id > lastMsgId) lastMsgId = res.message.id;
+              const containerId = room === 'general' ? 'msgs-general' : 'msgs-private';
+              appendMsg(containerId, res.message);
+            }
+          });
         }
       });
     fileInput.value = '';
   };
 
-  // Typing indicator
-  document.addEventListener('input', function(e) {
-    if (e.target.classList.contains('chat-input') && chatSocket) {
-      const room = e.target.id.includes('private') ? currentPrivateRoom : 'general';
-      if (room) chatSocket.emit('typing', { username: CHAT_USER, room: room });
+  function renderMsg(m) {
+    const mine = m.sender === CHAT_USER;
+    const time = m.timestamp ? m.timestamp.split(' ')[1] || '' : '';
+    let fileHtml = '';
+    if (m.file_name && m.file_path) {
+      fileHtml = `<a class="chat-msg-file" href="/data/chat_files/${m.file_path}" target="_blank" download="${m.file_name}">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+        ${m.file_name}</a>`;
     }
-  });
+    return `<div class="chat-msg ${mine ? 'mine' : 'other'}" data-msg-id="${m.id}">
+      ${!mine ? `<div class="chat-msg-sender">${m.sender}</div>` : ''}
+      ${m.message ? `<div>${m.message}</div>` : ''}
+      ${fileHtml}
+      <div class="chat-msg-time">${time}</div>
+    </div>`;
+  }
 
   function updateBadges() {
     const total = unreadGeneral + unreadPrivate;
@@ -312,11 +352,9 @@
     bubble.textContent = total;
     bubble.style.display = total > 0 ? 'flex' : 'none';
     const bg = document.getElementById('badge-general');
-    bg.textContent = unreadGeneral;
-    bg.style.display = unreadGeneral > 0 ? 'inline' : 'none';
+    if (bg) { bg.textContent = unreadGeneral; bg.style.display = unreadGeneral > 0 ? 'inline' : 'none'; }
     const bp = document.getElementById('badge-private');
-    bp.textContent = unreadPrivate;
-    bp.style.display = unreadPrivate > 0 ? 'inline' : 'none';
+    if (bp) { bp.textContent = unreadPrivate; bp.style.display = unreadPrivate > 0 ? 'inline' : 'none'; }
   }
 
   function scrollToBottom(id) { const el = document.getElementById(id); if (el) setTimeout(() => el.scrollTop = el.scrollHeight, 50); }
@@ -325,7 +363,7 @@
     try { const a = new AudioContext(); const o = a.createOscillator(); o.type = 'sine'; o.frequency.value = 800; const g = a.createGain(); g.gain.value = 0.1; o.connect(g); g.connect(a.destination); o.start(); o.stop(a.currentTime + 0.1); } catch(e) {}
   }
 
-  // Init
-  if (typeof io !== 'undefined') { initChat(); } else { console.warn('Socket.IO not loaded - chat disabled'); }
+  // Init on page load
+  initChat();
 })();
 </script>

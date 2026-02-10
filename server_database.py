@@ -281,7 +281,8 @@ def log_activity(atype, title, desc, user="System"):
 from werkzeug.utils import secure_filename
 import uuid
 
-chat_online_users = {}  # {sid: username}
+# Track online users via heartbeat: {username: last_seen_timestamp}
+chat_online_heartbeats = {}
 
 CHAT_ALLOWED_EXT = {'png', 'jpg', 'jpeg', 'gif', 'pdf', 'xlsx', 'xls', 'doc', 'docx', 'txt', 'zip', 'rar', 'csv'}
 
@@ -293,18 +294,100 @@ def chat_history():
     """Get chat message history for a room"""
     room = request.args.get('room', 'general')
     limit = min(int(request.args.get('limit', 50)), 200)
-    offset = int(request.args.get('offset', 0))
+    after_id = int(request.args.get('after_id', 0))
     conn = get_db()
     cursor = conn.cursor()
-    cursor.execute("""
-        SELECT id, sender, room, message, file_name, file_path, timestamp
-        FROM chat_messages WHERE room = ?
-        ORDER BY id DESC LIMIT ? OFFSET ?
-    """, (room, limit, offset))
+    if after_id > 0:
+        cursor.execute("""
+            SELECT id, sender, room, message, file_name, file_path, timestamp
+            FROM chat_messages WHERE room = ? AND id > ?
+            ORDER BY id ASC LIMIT ?
+        """, (room, after_id, limit))
+    else:
+        cursor.execute("""
+            SELECT id, sender, room, message, file_name, file_path, timestamp
+            FROM chat_messages WHERE room = ?
+            ORDER BY id DESC LIMIT ?
+        """, (room, limit))
     rows = cursor.fetchall()
     conn.close()
     messages = [dict(r) for r in rows]
-    messages.reverse()
+    if after_id == 0:
+        messages.reverse()
+    return jsonify({'messages': messages})
+
+@app.route('/api/chat/send', methods=['POST'])
+def chat_send_message():
+    """Send a chat message via HTTP POST"""
+    try:
+        data = request.json
+        sender = data.get('sender', '')
+        room = data.get('room', 'general')
+        message = data.get('message', '')
+        file_name = data.get('file_name', '')
+        file_path_val = data.get('file_path', '')
+
+        if not sender or (not message and not file_name):
+            return jsonify({'status': 'error', 'error': 'Empty message'}), 400
+
+        now = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        conn = get_db()
+        cursor = conn.cursor()
+        cursor.execute("""
+            INSERT INTO chat_messages (sender, room, message, file_name, file_path, timestamp)
+            VALUES (?, ?, ?, ?, ?, ?)
+        """, (sender, room, message, file_name, file_path_val, now))
+        msg_id = cursor.lastrowid
+        conn.commit()
+        conn.close()
+
+        return jsonify({
+            'status': 'ok',
+            'message': {
+                'id': msg_id,
+                'sender': sender,
+                'room': room,
+                'message': message,
+                'file_name': file_name,
+                'file_path': file_path_val,
+                'timestamp': now
+            }
+        })
+    except Exception as e:
+        print(f"❌ Chat send error: {e}")
+        return jsonify({'status': 'error', 'error': str(e)}), 500
+
+@app.route('/api/chat/heartbeat', methods=['POST'])
+def chat_heartbeat():
+    """Update user online status and return online users list"""
+    data = request.json or {}
+    username = data.get('username', '')
+    if username and username != 'unknown':
+        chat_online_heartbeats[username] = time.time()
+    # Remove users not seen in last 15 seconds
+    now = time.time()
+    offline = [u for u, t in chat_online_heartbeats.items() if now - t > 15]
+    for u in offline:
+        del chat_online_heartbeats[u]
+    return jsonify({'users': list(chat_online_heartbeats.keys())})
+
+@app.route('/api/chat/poll', methods=['GET'])
+def chat_poll():
+    """Poll for new messages across rooms user cares about"""
+    username = request.args.get('username', '')
+    after_id = int(request.args.get('after_id', 0))
+    conn = get_db()
+    cursor = conn.cursor()
+    # Get new messages in general + any DM rooms involving this user
+    cursor.execute("""
+        SELECT id, sender, room, message, file_name, file_path, timestamp
+        FROM chat_messages
+        WHERE id > ? AND (room = 'general' OR room LIKE ? OR room LIKE ?)
+        ORDER BY id ASC LIMIT 50
+    """, (after_id, f'dm_{username}_%', f'dm_%_{username}'))
+    rows = cursor.fetchall()
+    conn.close()
+    messages = [dict(r) for r in rows]
     return jsonify({'messages': messages})
 
 @app.route('/api/chat/rooms', methods=['GET'])
@@ -345,85 +428,13 @@ def chat_file_serve(filename):
 @app.route('/api/chat/online', methods=['GET'])
 def chat_online():
     """Get list of online users"""
-    return jsonify({'users': list(set(chat_online_users.values()))})
+    now = time.time()
+    offline = [u for u, t in chat_online_heartbeats.items() if now - t > 15]
+    for u in offline:
+        del chat_online_heartbeats[u]
+    return jsonify({'users': list(chat_online_heartbeats.keys())})
 
-# WebSocket events for chat
-if socketio:
-    from flask_socketio import emit, join_room, leave_room
-
-    @socketio.on('connect', namespace='/chat')
-    def chat_connect():
-        pass
-
-    @socketio.on('disconnect', namespace='/chat')
-    def chat_disconnect():
-        from flask import request as freq
-        username = chat_online_users.pop(freq.sid, None)
-        if username:
-            emit('user_left', {'username': username}, namespace='/chat', broadcast=True)
-            emit('online_users', {'users': list(set(chat_online_users.values()))}, namespace='/chat', broadcast=True)
-
-    @socketio.on('join', namespace='/chat')
-    def chat_join(data):
-        from flask import request as freq
-        username = data.get('username', '')
-        room = data.get('room', 'general')
-        chat_online_users[freq.sid] = username
-        join_room(room)
-        emit('online_users', {'users': list(set(chat_online_users.values()))}, namespace='/chat', broadcast=True)
-
-    @socketio.on('leave', namespace='/chat')
-    def chat_leave(data):
-        room = data.get('room', 'general')
-        leave_room(room)
-
-    @socketio.on('send_message', namespace='/chat')
-    def chat_send(data):
-        try:
-            sender = data.get('sender', '')
-            room = data.get('room', 'general')
-            message = data.get('message', '')
-            file_name = data.get('file_name', '')
-            file_path_val = data.get('file_path', '')
-
-            if not sender or (not message and not file_name):
-                return
-
-            now = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-            conn = sqlite3.connect(DB_PATH, check_same_thread=False)
-            conn.row_factory = sqlite3.Row
-            cursor = conn.cursor()
-            cursor.execute("""
-                INSERT INTO chat_messages (sender, room, message, file_name, file_path, timestamp)
-                VALUES (?, ?, ?, ?, ?, ?)
-            """, (sender, room, message, file_name, file_path_val, now))
-            msg_id = cursor.lastrowid
-            conn.commit()
-            conn.close()
-
-            msg = {
-                'id': msg_id,
-                'sender': sender,
-                'room': room,
-                'message': message,
-                'file_name': file_name,
-                'file_path': file_path_val,
-                'timestamp': now
-            }
-            emit('new_message', msg, room=room, namespace='/chat')
-            if room != 'general':
-                emit('new_message_notify', msg, namespace='/chat', broadcast=True)
-        except Exception as e:
-            print(f"❌ Chat send error: {e}")
-            import traceback
-            traceback.print_exc()
-
-    @socketio.on('typing', namespace='/chat')
-    def chat_typing(data):
-        room = data.get('room', 'general')
-        emit('user_typing', {'username': data.get('username', ''), 'room': room}, room=room, namespace='/chat', include_self=False)
-
-    print("✅ Chat module registered on /chat namespace")
+print("✅ Chat system ready (HTTP polling mode)")
 
 # ==================== PAGE ROUTES ====================
 @app.route('/')
