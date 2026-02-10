@@ -1,0 +1,331 @@
+<!-- Chat Widget - Include at bottom of any page -->
+<style>
+#chatWidget{position:fixed;bottom:20px;right:20px;z-index:9998;font-family:inherit}
+#chatBubble{width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,#6366f1,#4f46e5);color:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 4px 20px rgba(99,102,241,0.4);transition:transform .2s}
+#chatBubble:hover{transform:scale(1.1)}
+#chatBubble svg{width:26px;height:26px}
+#chatBadge{position:absolute;top:-4px;right:-4px;background:#ef4444;color:#fff;font-size:11px;font-weight:700;min-width:20px;height:20px;border-radius:10px;display:none;align-items:center;justify-content:center;padding:0 5px}
+#chatPanel{display:none;position:fixed;bottom:86px;right:20px;width:400px;height:520px;background:var(--bg-card,#111827);border:1px solid var(--border-color,rgba(255,255,255,.1));border-radius:16px;box-shadow:0 8px 40px rgba(0,0,0,.3);flex-direction:column;overflow:hidden;z-index:9999}
+#chatPanel.open{display:flex}
+
+.chat-header{padding:14px 16px;background:linear-gradient(135deg,#6366f1,#4f46e5);color:#fff;display:flex;align-items:center;justify-content:space-between}
+.chat-header-title{font-weight:700;font-size:15px;display:flex;align-items:center;gap:8px}
+.chat-header-close{background:none;border:none;color:rgba(255,255,255,.7);cursor:pointer;font-size:18px;padding:4px 8px;border-radius:6px}
+.chat-header-close:hover{color:#fff;background:rgba(255,255,255,.15)}
+
+.chat-tabs{display:flex;background:rgba(0,0,0,.2);padding:4px}
+.chat-tab{flex:1;padding:8px;text-align:center;font-size:12px;font-weight:600;cursor:pointer;border-radius:8px;color:rgba(255,255,255,.6);transition:.2s}
+.chat-tab.active{background:rgba(255,255,255,.15);color:#fff}
+.chat-tab .tab-badge{background:#ef4444;color:#fff;font-size:10px;padding:1px 5px;border-radius:8px;margin-right:4px;display:none}
+
+.chat-sidebar{display:none;flex-direction:column;height:100%;overflow-y:auto;padding:8px}
+.chat-sidebar.active{display:flex}
+.chat-user-item{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;cursor:pointer;transition:.15s}
+.chat-user-item:hover{background:rgba(255,255,255,.05)}
+.chat-user-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.chat-user-dot.online{background:#10b981}
+.chat-user-dot.offline{background:#6b7280}
+.chat-user-name{font-size:13px;font-weight:600;color:var(--text-primary,#e5e7eb)}
+.chat-user-status{font-size:11px;color:#6b7280}
+
+.chat-room{display:flex;flex-direction:column;flex:1;min-height:0}
+.chat-room-header{padding:8px 12px;background:rgba(0,0,0,.15);display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;color:var(--text-primary,#e5e7eb)}
+.chat-room-back{background:none;border:none;color:#6b7280;cursor:pointer;font-size:16px;padding:2px 6px;border-radius:4px}
+.chat-room-back:hover{color:#e5e7eb;background:rgba(255,255,255,.1)}
+
+.chat-messages{flex:1;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:6px}
+.chat-msg{max-width:80%;padding:8px 12px;border-radius:12px;font-size:13px;line-height:1.5;word-break:break-word}
+.chat-msg.mine{align-self:flex-end;background:linear-gradient(135deg,#6366f1,#4f46e5);color:#fff;border-bottom-right-radius:4px}
+.chat-msg.other{align-self:flex-start;background:rgba(255,255,255,.08);color:var(--text-primary,#e5e7eb);border-bottom-left-radius:4px}
+.chat-msg-sender{font-size:11px;font-weight:700;margin-bottom:2px;opacity:.7}
+.chat-msg-time{font-size:10px;opacity:.5;margin-top:2px;text-align:left;direction:ltr}
+.chat-msg-file{display:flex;align-items:center;gap:6px;padding:6px 10px;background:rgba(255,255,255,.1);border-radius:8px;margin-top:4px;font-size:12px;text-decoration:none;color:inherit}
+.chat-msg-file:hover{background:rgba(255,255,255,.2)}
+
+.chat-typing{font-size:11px;color:#6b7280;padding:0 12px 4px;min-height:18px}
+
+.chat-input-area{padding:10px 12px;border-top:1px solid rgba(255,255,255,.08);display:flex;align-items:center;gap:8px}
+.chat-input{flex:1;padding:9px 12px;border-radius:20px;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.05);color:var(--text-primary,#e5e7eb);font-size:13px;font-family:inherit;outline:none}
+.chat-input:focus{border-color:#6366f1}
+.chat-input::placeholder{color:#6b7280}
+.chat-send-btn{width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,#6366f1,#4f46e5);color:#fff;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.chat-send-btn:hover{opacity:.9}
+.chat-file-btn{width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,.08);color:#6b7280;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.chat-file-btn:hover{background:rgba(255,255,255,.15);color:#e5e7eb}
+
+.chat-date-sep{text-align:center;font-size:11px;color:#6b7280;padding:8px 0;position:relative}
+.chat-date-sep::before,.chat-date-sep::after{content:'';position:absolute;top:50%;width:30%;height:1px;background:rgba(255,255,255,.06)}
+.chat-date-sep::before{left:5%}
+.chat-date-sep::after{right:5%}
+</style>
+
+<div id="chatWidget">
+  <div id="chatBubble" onclick="toggleChat()">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+    <div id="chatBadge">0</div>
+  </div>
+
+  <div id="chatPanel">
+    <div class="chat-header">
+      <div class="chat-header-title">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+        Chat
+      </div>
+      <button class="chat-header-close" onclick="toggleChat()">&times;</button>
+    </div>
+    <div class="chat-tabs">
+      <div class="chat-tab active" data-tab="general" onclick="switchTab('general')">
+        <span class="tab-badge" id="badge-general"></span> General
+      </div>
+      <div class="chat-tab" data-tab="users" onclick="switchTab('users')">
+        <span class="tab-badge" id="badge-private"></span> Private
+      </div>
+    </div>
+
+    <!-- General Chat Room -->
+    <div id="tab-general" class="chat-room" style="display:flex;">
+      <div class="chat-messages" id="msgs-general"></div>
+      <div class="chat-typing" id="typing-general"></div>
+      <div class="chat-input-area">
+        <input type="file" id="file-general" style="display:none" onchange="uploadFile('general')">
+        <button class="chat-file-btn" onclick="document.getElementById('file-general').click()">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+        </button>
+        <input class="chat-input" id="input-general" placeholder="Type a message..." onkeydown="if(event.key==='Enter')sendMsg('general')">
+        <button class="chat-send-btn" onclick="sendMsg('general')">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- Users List / Private Chat -->
+    <div id="tab-users" class="chat-sidebar">
+      <div id="usersList"></div>
+    </div>
+
+    <!-- Private Chat Room (dynamic) -->
+    <div id="tab-private" class="chat-room" style="display:none;">
+      <div class="chat-room-header">
+        <button class="chat-room-back" onclick="backToUsers()">&larr;</button>
+        <span id="private-room-name"></span>
+      </div>
+      <div class="chat-messages" id="msgs-private"></div>
+      <div class="chat-typing" id="typing-private"></div>
+      <div class="chat-input-area">
+        <input type="file" id="file-private" style="display:none" onchange="uploadFile('__private__')">
+        <button class="chat-file-btn" onclick="document.getElementById('file-private').click()">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+        </button>
+        <input class="chat-input" id="input-private" placeholder="Type a message..." onkeydown="if(event.key==='Enter')sendMsg('__private__')">
+        <button class="chat-send-btn" onclick="sendMsg('__private__')">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.4/socket.io.min.js"></script>
+<script>
+(function(){
+  const CHAT_USER = localStorage.getItem('currentUser') || localStorage.getItem('username') || sessionStorage.getItem('username') || 'unknown';
+  const ALL_USERS = ["Yarian","Sattari","Barari","Sahebdel","Vahedi","Aghajani","Hossein","Rezaei","Bagheri"];
+  let chatSocket = null;
+  let currentPrivateRoom = null;
+  let onlineUsers = [];
+  let unreadGeneral = 0;
+  let unreadPrivate = 0;
+  let chatOpen = false;
+  let activeTab = 'general';
+  let typingTimers = {};
+
+  function initChat() {
+    if (CHAT_USER === 'unknown') return;
+    try {
+      chatSocket = io('/chat', { transports: ['websocket','polling'] });
+      chatSocket.on('connect', () => {
+        chatSocket.emit('join', { username: CHAT_USER, room: 'general' });
+        loadHistory('general');
+      });
+      chatSocket.on('new_message', onNewMessage);
+      chatSocket.on('new_message_notify', onNotify);
+      chatSocket.on('online_users', (data) => {
+        onlineUsers = data.users || [];
+        renderUsers();
+      });
+      chatSocket.on('user_typing', (data) => {
+        const el = document.getElementById('typing-' + (data.room === 'general' ? 'general' : 'private'));
+        if (el) { el.textContent = data.username + ' is typing...'; clearTimeout(typingTimers[data.room]); typingTimers[data.room] = setTimeout(() => el.textContent = '', 2000); }
+      });
+    } catch(e) { console.error('Chat init error:', e); }
+  }
+
+  function getPrivateRoom(otherUser) {
+    const sorted = [CHAT_USER, otherUser].sort();
+    return 'dm_' + sorted[0] + '_' + sorted[1];
+  }
+
+  window.toggleChat = function() {
+    chatOpen = !chatOpen;
+    document.getElementById('chatPanel').classList.toggle('open', chatOpen);
+    if (chatOpen && activeTab === 'general') { unreadGeneral = 0; updateBadges(); scrollToBottom('msgs-general'); }
+  };
+
+  window.switchTab = function(tab) {
+    activeTab = tab;
+    document.querySelectorAll('.chat-tab').forEach(t => t.classList.remove('active'));
+    document.querySelector(`.chat-tab[data-tab="${tab}"]`).classList.add('active');
+    document.getElementById('tab-general').style.display = tab === 'general' ? 'flex' : 'none';
+    document.getElementById('tab-users').style.display = tab === 'users' ? 'flex' : 'none';
+    document.getElementById('tab-private').style.display = 'none';
+    if (tab === 'general') { unreadGeneral = 0; updateBadges(); scrollToBottom('msgs-general'); }
+    if (tab === 'users') renderUsers();
+  };
+
+  function renderUsers() {
+    const el = document.getElementById('usersList');
+    el.innerHTML = ALL_USERS.filter(u => u !== CHAT_USER).map(u => {
+      const on = onlineUsers.includes(u);
+      return `<div class="chat-user-item" onclick="openPrivate('${u}')">
+        <div class="chat-user-dot ${on ? 'online' : 'offline'}"></div>
+        <div><div class="chat-user-name">${u}</div><div class="chat-user-status">${on ? 'Online' : 'Offline'}</div></div>
+      </div>`;
+    }).join('');
+  }
+
+  window.openPrivate = function(otherUser) {
+    currentPrivateRoom = getPrivateRoom(otherUser);
+    document.getElementById('private-room-name').textContent = otherUser;
+    document.getElementById('tab-users').style.display = 'none';
+    document.getElementById('tab-private').style.display = 'flex';
+    document.getElementById('msgs-private').innerHTML = '';
+    chatSocket.emit('join', { username: CHAT_USER, room: currentPrivateRoom });
+    loadHistory(currentPrivateRoom, 'msgs-private');
+    unreadPrivate = 0;
+    updateBadges();
+  };
+
+  window.backToUsers = function() {
+    if (currentPrivateRoom) chatSocket.emit('leave', { room: currentPrivateRoom });
+    currentPrivateRoom = null;
+    document.getElementById('tab-private').style.display = 'none';
+    document.getElementById('tab-users').style.display = 'flex';
+  };
+
+  async function loadHistory(room, containerId) {
+    containerId = containerId || (room === 'general' ? 'msgs-general' : 'msgs-private');
+    try {
+      const res = await fetch(`/api/chat/history?room=${encodeURIComponent(room)}&limit=50`);
+      const data = await res.json();
+      const el = document.getElementById(containerId);
+      el.innerHTML = '';
+      let lastDate = '';
+      (data.messages || []).forEach(m => {
+        const msgDate = m.timestamp.split(' ')[0];
+        if (msgDate !== lastDate) { lastDate = msgDate; el.innerHTML += `<div class="chat-date-sep">${msgDate}</div>`; }
+        el.innerHTML += renderMsg(m);
+      });
+      scrollToBottom(containerId);
+    } catch(e) { console.error('Load history error:', e); }
+  }
+
+  function renderMsg(m) {
+    const mine = m.sender === CHAT_USER;
+    const time = m.timestamp.split(' ')[1] || '';
+    let fileHtml = '';
+    if (m.file_name && m.file_path) {
+      fileHtml = `<a class="chat-msg-file" href="/data/chat_files/${m.file_path}" target="_blank" download="${m.file_name}">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+        ${m.file_name}</a>`;
+    }
+    return `<div class="chat-msg ${mine ? 'mine' : 'other'}">
+      ${!mine ? `<div class="chat-msg-sender">${m.sender}</div>` : ''}
+      ${m.message ? `<div>${m.message}</div>` : ''}
+      ${fileHtml}
+      <div class="chat-msg-time">${time}</div>
+    </div>`;
+  }
+
+  function onNewMessage(msg) {
+    const isGeneral = msg.room === 'general';
+    const isMyPrivate = msg.room === currentPrivateRoom;
+    const containerId = isGeneral ? 'msgs-general' : (isMyPrivate ? 'msgs-private' : null);
+    if (containerId) {
+      document.getElementById(containerId).innerHTML += renderMsg(msg);
+      scrollToBottom(containerId);
+    }
+    // Badge
+    if (!chatOpen || (isGeneral && activeTab !== 'general')) { unreadGeneral++; }
+    updateBadges();
+    // Sound
+    if (msg.sender !== CHAT_USER) tryPlaySound();
+  }
+
+  function onNotify(msg) {
+    if (msg.sender === CHAT_USER) return;
+    const isForMe = msg.room.includes(CHAT_USER);
+    if (isForMe && msg.room !== currentPrivateRoom) {
+      unreadPrivate++;
+      updateBadges();
+      tryPlaySound();
+    }
+  }
+
+  window.sendMsg = function(target) {
+    const room = target === '__private__' ? currentPrivateRoom : target;
+    const inputId = target === '__private__' ? 'input-private' : 'input-' + target;
+    const input = document.getElementById(inputId);
+    const text = input.value.trim();
+    if (!text || !room) return;
+    chatSocket.emit('send_message', { sender: CHAT_USER, room: room, message: text });
+    input.value = '';
+  };
+
+  window.uploadFile = function(target) {
+    const fileInput = document.getElementById(target === '__private__' ? 'file-private' : 'file-' + target);
+    const file = fileInput.files[0];
+    if (!file) return;
+    const room = target === '__private__' ? currentPrivateRoom : target;
+    const fd = new FormData();
+    fd.append('file', file);
+    fetch('/api/chat/upload', { method: 'POST', body: fd })
+      .then(r => r.json())
+      .then(data => {
+        if (data.status === 'ok') {
+          chatSocket.emit('send_message', { sender: CHAT_USER, room: room, file_name: data.file_name, file_path: data.file_path, message: '' });
+        }
+      });
+    fileInput.value = '';
+  };
+
+  // Typing indicator
+  document.addEventListener('input', function(e) {
+    if (e.target.classList.contains('chat-input') && chatSocket) {
+      const room = e.target.id.includes('private') ? currentPrivateRoom : 'general';
+      if (room) chatSocket.emit('typing', { username: CHAT_USER, room: room });
+    }
+  });
+
+  function updateBadges() {
+    const total = unreadGeneral + unreadPrivate;
+    const bubble = document.getElementById('chatBadge');
+    bubble.textContent = total;
+    bubble.style.display = total > 0 ? 'flex' : 'none';
+    const bg = document.getElementById('badge-general');
+    bg.textContent = unreadGeneral;
+    bg.style.display = unreadGeneral > 0 ? 'inline' : 'none';
+    const bp = document.getElementById('badge-private');
+    bp.textContent = unreadPrivate;
+    bp.style.display = unreadPrivate > 0 ? 'inline' : 'none';
+  }
+
+  function scrollToBottom(id) { const el = document.getElementById(id); if (el) setTimeout(() => el.scrollTop = el.scrollHeight, 50); }
+
+  function tryPlaySound() {
+    try { const a = new AudioContext(); const o = a.createOscillator(); o.type = 'sine'; o.frequency.value = 800; const g = a.createGain(); g.gain.value = 0.1; o.connect(g); g.connect(a.destination); o.start(); o.stop(a.currentTime + 0.1); } catch(e) {}
+  }
+
+  // Init
+  if (typeof io !== 'undefined') { initChat(); } else { console.warn('Socket.IO not loaded - chat disabled'); }
+})();
+</script>

@@ -171,6 +171,8 @@ def add_cache_headers(response):
 DB_PATH = os.path.join(os.path.dirname(__file__), 'data', 'network_ipam.db')
 BACKUP_DIR = os.path.join(os.path.dirname(__file__), 'data', 'backups')
 ACTIVITY_LOG = os.path.join(os.path.dirname(__file__), 'data', 'activity.json')
+CHAT_UPLOAD_DIR = os.path.join(os.path.dirname(__file__), 'data', 'chat_files')
+os.makedirs(CHAT_UPLOAD_DIR, exist_ok=True)
 
 os.makedirs(BACKUP_DIR, exist_ok=True)
 os.makedirs(os.path.dirname(ACTIVITY_LOG), exist_ok=True)
@@ -245,6 +247,18 @@ def init_tables():
     
     # Tickets and Email tables removed - ticketing system disabled
 
+    # Chat messages table
+    cursor.execute("""CREATE TABLE IF NOT EXISTS chat_messages (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        sender TEXT NOT NULL,
+        room TEXT NOT NULL DEFAULT 'general',
+        message TEXT,
+        file_name TEXT,
+        file_path TEXT,
+        timestamp TEXT NOT NULL)""")
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_chat_room ON chat_messages(room)")
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_chat_timestamp ON chat_messages(timestamp)")
+
     conn.commit()
     conn.close()
 
@@ -262,6 +276,149 @@ def log_activity(atype, title, desc, user="System"):
             json.dump(activities, f, ensure_ascii=False, indent=2)
     except Exception as e:
         print(f"Log error: {e}")
+
+# ==================== CHAT SYSTEM ====================
+from werkzeug.utils import secure_filename
+import uuid
+
+chat_online_users = {}  # {sid: username}
+
+CHAT_ALLOWED_EXT = {'png', 'jpg', 'jpeg', 'gif', 'pdf', 'xlsx', 'xls', 'doc', 'docx', 'txt', 'zip', 'rar', 'csv'}
+
+def allowed_chat_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in CHAT_ALLOWED_EXT
+
+@app.route('/api/chat/history', methods=['GET'])
+def chat_history():
+    """Get chat message history for a room"""
+    room = request.args.get('room', 'general')
+    limit = min(int(request.args.get('limit', 50)), 200)
+    offset = int(request.args.get('offset', 0))
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("""
+        SELECT id, sender, room, message, file_name, file_path, timestamp
+        FROM chat_messages WHERE room = ?
+        ORDER BY id DESC LIMIT ? OFFSET ?
+    """, (room, limit, offset))
+    rows = cursor.fetchall()
+    conn.close()
+    messages = [dict(r) for r in rows]
+    messages.reverse()
+    return jsonify({'messages': messages})
+
+@app.route('/api/chat/rooms', methods=['GET'])
+def chat_rooms():
+    """Get list of rooms user has messages in"""
+    username = request.args.get('username', '')
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("""
+        SELECT DISTINCT room FROM chat_messages
+        WHERE room = 'general' OR room LIKE ? OR room LIKE ?
+        ORDER BY room
+    """, (f'{username}_%', f'%_{username}'))
+    rooms = [row['room'] for row in cursor.fetchall()]
+    conn.close()
+    if 'general' not in rooms:
+        rooms.insert(0, 'general')
+    return jsonify({'rooms': rooms})
+
+@app.route('/api/chat/upload', methods=['POST'])
+def chat_upload():
+    """Upload a file for chat"""
+    if 'file' not in request.files:
+        return jsonify({'status': 'error', 'error': 'No file'}), 400
+    f = request.files['file']
+    if f.filename == '' or not allowed_chat_file(f.filename):
+        return jsonify({'status': 'error', 'error': 'Invalid file type'}), 400
+    ext = f.filename.rsplit('.', 1)[1].lower()
+    unique_name = f"{uuid.uuid4().hex[:12]}.{ext}"
+    f.save(os.path.join(CHAT_UPLOAD_DIR, unique_name))
+    return jsonify({'status': 'ok', 'file_name': f.filename, 'file_path': unique_name})
+
+@app.route('/data/chat_files/<path:filename>')
+def chat_file_serve(filename):
+    """Serve uploaded chat files"""
+    return app.send_static_file(f'../data/chat_files/{filename}')
+
+@app.route('/api/chat/online', methods=['GET'])
+def chat_online():
+    """Get list of online users"""
+    return jsonify({'users': list(set(chat_online_users.values()))})
+
+# WebSocket events for chat
+if socketio:
+    from flask_socketio import emit, join_room, leave_room
+
+    @socketio.on('connect', namespace='/chat')
+    def chat_connect():
+        pass
+
+    @socketio.on('disconnect', namespace='/chat')
+    def chat_disconnect():
+        from flask import request as freq
+        username = chat_online_users.pop(freq.sid, None)
+        if username:
+            emit('user_left', {'username': username}, namespace='/chat', broadcast=True)
+            emit('online_users', {'users': list(set(chat_online_users.values()))}, namespace='/chat', broadcast=True)
+
+    @socketio.on('join', namespace='/chat')
+    def chat_join(data):
+        from flask import request as freq
+        username = data.get('username', '')
+        room = data.get('room', 'general')
+        chat_online_users[freq.sid] = username
+        join_room(room)
+        emit('online_users', {'users': list(set(chat_online_users.values()))}, namespace='/chat', broadcast=True)
+
+    @socketio.on('leave', namespace='/chat')
+    def chat_leave(data):
+        room = data.get('room', 'general')
+        leave_room(room)
+
+    @socketio.on('send_message', namespace='/chat')
+    def chat_send(data):
+        sender = data.get('sender', '')
+        room = data.get('room', 'general')
+        message = data.get('message', '')
+        file_name = data.get('file_name', '')
+        file_path = data.get('file_path', '')
+
+        if not sender or (not message and not file_name):
+            return
+
+        now = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        conn = get_db()
+        cursor = conn.cursor()
+        cursor.execute("""
+            INSERT INTO chat_messages (sender, room, message, file_name, file_path, timestamp)
+            VALUES (?, ?, ?, ?, ?, ?)
+        """, (sender, room, message, file_name, file_path, now))
+        msg_id = cursor.lastrowid
+        conn.commit()
+        conn.close()
+
+        msg = {
+            'id': msg_id,
+            'sender': sender,
+            'room': room,
+            'message': message,
+            'file_name': file_name,
+            'file_path': file_path,
+            'timestamp': now
+        }
+        emit('new_message', msg, room=room, namespace='/chat')
+        # Also send to general broadcast for notification
+        if room != 'general':
+            emit('new_message_notify', msg, namespace='/chat', broadcast=True)
+
+    @socketio.on('typing', namespace='/chat')
+    def chat_typing(data):
+        room = data.get('room', 'general')
+        emit('user_typing', {'username': data.get('username', ''), 'room': room}, room=room, namespace='/chat', include_self=False)
+
+    print("✅ Chat module registered on /chat namespace")
 
 # ==================== PAGE ROUTES ====================
 @app.route('/')
