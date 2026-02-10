@@ -379,39 +379,44 @@ if socketio:
 
     @socketio.on('send_message', namespace='/chat')
     def chat_send(data):
-        sender = data.get('sender', '')
-        room = data.get('room', 'general')
-        message = data.get('message', '')
-        file_name = data.get('file_name', '')
-        file_path = data.get('file_path', '')
+        try:
+            sender = data.get('sender', '')
+            room = data.get('room', 'general')
+            message = data.get('message', '')
+            file_name = data.get('file_name', '')
+            file_path_val = data.get('file_path', '')
 
-        if not sender or (not message and not file_name):
-            return
+            if not sender or (not message and not file_name):
+                return
 
-        now = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-        conn = get_db()
-        cursor = conn.cursor()
-        cursor.execute("""
-            INSERT INTO chat_messages (sender, room, message, file_name, file_path, timestamp)
-            VALUES (?, ?, ?, ?, ?, ?)
-        """, (sender, room, message, file_name, file_path, now))
-        msg_id = cursor.lastrowid
-        conn.commit()
-        conn.close()
+            now = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+            conn = sqlite3.connect(DB_PATH, check_same_thread=False)
+            conn.row_factory = sqlite3.Row
+            cursor = conn.cursor()
+            cursor.execute("""
+                INSERT INTO chat_messages (sender, room, message, file_name, file_path, timestamp)
+                VALUES (?, ?, ?, ?, ?, ?)
+            """, (sender, room, message, file_name, file_path_val, now))
+            msg_id = cursor.lastrowid
+            conn.commit()
+            conn.close()
 
-        msg = {
-            'id': msg_id,
-            'sender': sender,
-            'room': room,
-            'message': message,
-            'file_name': file_name,
-            'file_path': file_path,
-            'timestamp': now
-        }
-        emit('new_message', msg, room=room, namespace='/chat')
-        # Also send to general broadcast for notification
-        if room != 'general':
-            emit('new_message_notify', msg, namespace='/chat', broadcast=True)
+            msg = {
+                'id': msg_id,
+                'sender': sender,
+                'room': room,
+                'message': message,
+                'file_name': file_name,
+                'file_path': file_path_val,
+                'timestamp': now
+            }
+            emit('new_message', msg, room=room, namespace='/chat')
+            if room != 'general':
+                emit('new_message_notify', msg, namespace='/chat', broadcast=True)
+        except Exception as e:
+            print(f"❌ Chat send error: {e}")
+            import traceback
+            traceback.print_exc()
 
     @socketio.on('typing', namespace='/chat')
     def chat_typing(data):

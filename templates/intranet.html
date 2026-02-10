@@ -573,6 +573,14 @@ document.addEventListener('DOMContentLoaded', function() {
                    autocomplete="off">
             <datalist id="branchList"></datalist>
 
+            <!-- Management Point Checkbox -->
+            <div style="margin:10px 0; display:flex; align-items:center; gap:8px;">
+                <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;color:var(--text-secondary,#9ca3af);">
+                    <input type="checkbox" id="isManagementPoint" style="width:16px;height:16px;accent-color:#6366f1;cursor:pointer;">
+                    <span>این نقطه مدیریت است</span>
+                </label>
+            </div>
+
             <!-- Auto-filled fields panel -->
             <div id="autoFieldsPanel" style="display:none; margin:12px 0 16px 0; background:rgba(59,130,246,0.06); border:1px solid rgba(59,130,246,0.2); border-radius:10px; padding:14px 16px;">
                 <div style="font-size:11px; text-transform:uppercase; letter-spacing:0.5px; color:#3b82f6; font-weight:700; margin-bottom:10px;">Auto-filled from branch</div>
@@ -1177,6 +1185,24 @@ router ospf 200
 !
 do wr
 `.trim();
+
+            // If management point checkbox is checked, append ACL config before do wr
+            if (document.getElementById('isManagementPoint').checked) {
+                branchCfg = branchCfg.replace(/\n?do wr$/, '');
+                branchCfg += `
+!
+ip access-list standard NewINTACL
+ deny   10.0.76.91
+ deny   10.0.68.223
+ deny   10.0.68.150
+ deny   10.0.68.187
+ permit any
+!
+router ospf 200
+ distribute-list NewINTACL in
+!
+do wr`;
+            }
 
             // Put configs into three separate boxes
             document.getElementById('branchConfig').value = branchCfg;
