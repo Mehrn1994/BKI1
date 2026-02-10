@@ -3,7 +3,7 @@ Network Config Portal Server - COMPLETE FIXED VERSION
 All APIs fixed + DB Manager only for Sahebdel
 """
 
-from flask import Flask, jsonify, request, render_template, Response
+from flask import Flask, jsonify, request, render_template, Response, send_from_directory
 from flask_cors import CORS
 import sqlite3
 import os
@@ -340,7 +340,7 @@ def chat_upload():
 @app.route('/data/chat_files/<path:filename>')
 def chat_file_serve(filename):
     """Serve uploaded chat files"""
-    return app.send_static_file(f'../data/chat_files/{filename}')
+    return send_from_directory(CHAT_UPLOAD_DIR, filename)
 
 @app.route('/api/chat/online', methods=['GET'])
 def chat_online():
