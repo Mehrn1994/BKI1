@@ -109,8 +109,8 @@
         /* Header */
         .header {
             background: var(--bg-header);
-            backdrop-filter: blur(10px);
-            padding: 16px 32px;
+            backdrop-filter: blur(20px);
+            padding: 16px 48px;
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -118,11 +118,12 @@
             position: sticky;
             top: 0;
             z-index: 100;
-            transition: background 0.3s ease;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 30px rgba(0,0,0,0.15);
         }
 
         [data-theme="light"] .header {
-            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.06);
         }
         
         .logo {
@@ -197,9 +198,9 @@
         
         /* Container */
         .container {
-            max-width: 1400px;
+            max-width: 1800px;
             margin: 0 auto;
-            padding: 32px;
+            padding: 32px 48px;
         }
         
         /* Stats Grid */
@@ -224,62 +225,125 @@
         
         .stat-card {
             background: var(--bg-card);
-            backdrop-filter: blur(10px);
-            border-radius: 16px;
-            padding: 28px;
+            backdrop-filter: blur(16px);
+            border-radius: 20px;
+            padding: 28px 30px;
             border: 1px solid var(--border-color);
-            transition: all 0.3s ease;
-            animation: fadeInUp 0.5s ease forwards;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            animation: cardSlideIn 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards;
             opacity: 0;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            border-radius: 20px 20px 0 0;
+        }
+
+        .stat-card:nth-child(1)::before { background: linear-gradient(90deg, #10b981, #34d399); }
+        .stat-card:nth-child(2)::before { background: linear-gradient(90deg, #3b82f6, #60a5fa); }
+        .stat-card:nth-child(3)::before { background: linear-gradient(90deg, #8b5cf6, #a78bfa); }
+        .stat-card:nth-child(4)::before { background: linear-gradient(90deg, #f59e0b, #fbbf24); }
+
+        .stat-card::after {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -50%;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle, rgba(255,255,255,0.03) 0%, transparent 70%);
+            pointer-events: none;
         }
 
         [data-theme="light"] .stat-card {
-            box-shadow: 0 4px 16px rgba(0,0,0,0.06);
+            box-shadow: 0 4px 24px rgba(0,0,0,0.06);
         }
-        
+
         .stat-card:nth-child(1) { animation-delay: 0.1s; }
         .stat-card:nth-child(2) { animation-delay: 0.2s; }
         .stat-card:nth-child(3) { animation-delay: 0.3s; }
         .stat-card:nth-child(4) { animation-delay: 0.4s; }
-        
-        @keyframes fadeInUp {
+
+        @keyframes cardSlideIn {
             from {
                 opacity: 0;
-                transform: translateY(20px);
+                transform: translateY(40px) scale(0.95);
             }
             to {
                 opacity: 1;
-                transform: translateY(0);
+                transform: translateY(0) scale(1);
             }
         }
-        
-        .stat-card:hover {
-            transform: translateY(-5px);
-            border-color: var(--accent-blue);
-            box-shadow: 0 20px 40px var(--shadow-color);
+
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
         }
-        
+
+        .stat-card:hover {
+            transform: translateY(-8px) scale(1.02);
+            box-shadow: 0 24px 48px var(--shadow-color);
+        }
+
+        .stat-card:nth-child(1):hover { border-color: #10b981; box-shadow: 0 24px 48px rgba(16,185,129,0.15); }
+        .stat-card:nth-child(2):hover { border-color: #3b82f6; box-shadow: 0 24px 48px rgba(59,130,246,0.15); }
+        .stat-card:nth-child(3):hover { border-color: #8b5cf6; box-shadow: 0 24px 48px rgba(139,92,246,0.15); }
+        .stat-card:nth-child(4):hover { border-color: #f59e0b; box-shadow: 0 24px 48px rgba(245,158,11,0.15); }
+
         .stat-card .icon {
             font-size: 2.8rem;
             margin-bottom: 16px;
+            display: inline-block;
+            animation: iconBounce 0.6s ease forwards;
+            animation-delay: inherit;
         }
-        
+
+        @keyframes iconBounce {
+            0% { transform: scale(0); }
+            60% { transform: scale(1.2); }
+            100% { transform: scale(1); }
+        }
+
+        .stat-card:nth-child(1) .value {
+            background: linear-gradient(135deg, #10b981, #34d399);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+        }
+        .stat-card:nth-child(2) .value {
+            background: linear-gradient(135deg, #3b82f6, #60a5fa);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+        }
+        .stat-card:nth-child(3) .value {
+            background: linear-gradient(135deg, #8b5cf6, #a78bfa);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+        }
+        .stat-card:nth-child(4) .value {
+            background: linear-gradient(135deg, #f59e0b, #fbbf24);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+        }
+
         .stat-card .value {
-            font-size: 2.8rem;
-            font-weight: 700;
-            background: linear-gradient(135deg, var(--accent-blue), #60a5fa);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
+            font-size: 3rem;
+            font-weight: 800;
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            letter-spacing: -1px;
+            direction: ltr;
+            display: inline-block;
         }
-        
+
         .stat-card .label {
             color: var(--text-secondary);
             font-size: 15px;
             font-weight: 600;
             margin-top: 8px;
         }
-        
+
         .stat-card .sub-stats {
             display: flex;
             gap: 20px;
@@ -287,14 +351,17 @@
             padding-top: 18px;
             border-top: 1px solid var(--border-color);
         }
-        
+
         .stat-card .sub-stat {
             flex: 1;
         }
-        
+
         .stat-card .sub-stat .sub-value {
-            font-size: 1.4rem;
+            font-size: 1.5rem;
             font-weight: 700;
+            direction: ltr;
+            display: inline-block;
+            font-family: 'Segoe UI', system-ui, sans-serif;
         }
         
         .stat-card .sub-stat .sub-label {
@@ -310,9 +377,9 @@
         .main-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 24px;
+            gap: 28px;
         }
-        
+
         @media (max-width: 1024px) {
             .main-grid {
                 grid-template-columns: 1fr;
@@ -322,36 +389,51 @@
         /* Card */
         .card {
             background: var(--bg-card);
-            backdrop-filter: blur(10px);
-            border-radius: 16px;
+            backdrop-filter: blur(16px);
+            border-radius: 20px;
             border: 1px solid var(--border-color);
             overflow: hidden;
-            animation: fadeInUp 0.5s ease forwards;
+            animation: cardFadeIn 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards;
             opacity: 0;
             animation-delay: 0.5s;
-            transition: background 0.3s ease;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .card:hover {
+            border-color: rgba(255,255,255,0.15);
+            box-shadow: 0 20px 60px var(--shadow-color);
+        }
+
+        @keyframes cardFadeIn {
+            from { opacity: 0; transform: translateY(30px) scale(0.98); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
         }
 
         [data-theme="light"] .card {
-            box-shadow: 0 4px 16px rgba(0,0,0,0.06);
+            box-shadow: 0 4px 24px rgba(0,0,0,0.06);
         }
-        
+
+        [data-theme="light"] .card:hover {
+            box-shadow: 0 20px 60px rgba(0,0,0,0.1);
+        }
+
         .card-header {
-            padding: 20px 24px;
+            padding: 22px 28px;
             border-bottom: 1px solid var(--border-color);
+            background: rgba(255,255,255,0.02);
         }
-        
+
         .card-header h2 {
-            font-size: 1.2rem;
+            font-size: 1.25rem;
             font-weight: 700;
             display: flex;
             align-items: center;
             gap: 10px;
             color: var(--text-primary);
         }
-        
+
         .card-body {
-            padding: 24px;
+            padding: 28px;
         }
         
         /* Module Grid */
@@ -363,40 +445,80 @@
         
         .module-card {
             background: var(--card-hover);
-            border-radius: 12px;
-            padding: 22px;
+            border-radius: 16px;
+            padding: 24px;
             cursor: pointer;
-            transition: all 0.3s ease;
-            border: 1px solid transparent;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            border: 1px solid var(--border-color);
             text-decoration: none;
             color: inherit;
+            position: relative;
+            overflow: hidden;
+            animation: moduleSlideIn 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+            opacity: 0;
         }
-        
+
+        .module-card::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.04), transparent);
+            transition: left 0.6s ease;
+        }
+
+        .module-card:hover::after {
+            left: 100%;
+        }
+
+        .module-card:nth-child(1) { animation-delay: 0.6s; }
+        .module-card:nth-child(2) { animation-delay: 0.7s; }
+        .module-card:nth-child(3) { animation-delay: 0.8s; }
+        .module-card:nth-child(4) { animation-delay: 0.9s; }
+        .module-card:nth-child(5) { animation-delay: 1.0s; }
+
+        @keyframes moduleSlideIn {
+            from { opacity: 0; transform: translateX(30px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
         .module-card:hover {
-            background: var(--bg-card);
-            transform: translateY(-3px);
-            border-color: var(--accent-blue);
-            box-shadow: 0 10px 30px var(--shadow-color);
+            transform: translateY(-6px) scale(1.02);
+            box-shadow: 0 16px 40px var(--shadow-color);
         }
-        
+
+        .module-card.intranet:hover { border-color: var(--accent-blue); box-shadow: 0 16px 40px rgba(59,130,246,0.15); }
+        .module-card.apn-int:hover { border-color: var(--accent-purple); box-shadow: 0 16px 40px rgba(139,92,246,0.15); }
+        .module-card.apn-mali:hover { border-color: var(--accent-green); box-shadow: 0 16px 40px rgba(16,185,129,0.15); }
+        .module-card.reserve:hover { border-color: var(--accent-orange); box-shadow: 0 16px 40px rgba(245,158,11,0.15); }
+        .module-card.db-manager:hover { border-color: #ef4444; box-shadow: 0 16px 40px rgba(239,68,68,0.15); }
+
         .module-card .icon {
-            font-size: 2.2rem;
-            margin-bottom: 12px;
+            font-size: 2.5rem;
+            margin-bottom: 14px;
+            display: inline-block;
+            transition: transform 0.3s ease;
         }
-        
+
+        .module-card:hover .icon {
+            transform: scale(1.15) rotate(-5deg);
+        }
+
         .module-card .title {
             font-size: 16px;
             font-weight: 700;
             margin-bottom: 6px;
             color: var(--text-primary);
         }
-        
+
         .module-card .desc {
             font-size: 13px;
             font-weight: 500;
             color: var(--text-secondary);
         }
-        
+
         .module-card.intranet { border-right: 4px solid var(--accent-blue); }
         .module-card.apn-int { border-right: 4px solid var(--accent-purple); }
         .module-card.apn-mali { border-right: 4px solid var(--accent-green); }
@@ -508,17 +630,23 @@
         }
         .search-input {
             width: 100%;
-            padding: 14px 20px 14px 50px;
+            padding: 16px 24px 16px 54px;
             border: 1px solid var(--border-color);
-            border-radius: 14px;
+            border-radius: 16px;
             background: var(--bg-card);
             color: var(--text-primary);
             font-size: 15px;
             font-family: inherit;
-            backdrop-filter: blur(10px);
-            transition: border-color 0.2s;
+            backdrop-filter: blur(16px);
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
         }
-        .search-input:focus { outline: none; border-color: var(--accent-blue); }
+        .search-input:focus {
+            outline: none;
+            border-color: var(--accent-blue);
+            box-shadow: 0 4px 30px rgba(59,130,246,0.15);
+            transform: translateY(-1px);
+        }
         .search-icon {
             position: absolute;
             left: 18px;
@@ -564,13 +692,64 @@
         .sr-badge.free { background: rgba(16,185,129,0.15); color: var(--accent-green); }
         .sr-badge.used { background: rgba(239,68,68,0.15); color: #ef4444; }
 
+        /* Shimmer effect on stat cards */
+        @keyframes shimmer {
+            0% { left: -100%; }
+            100% { left: 200%; }
+        }
+
+        .stat-card:hover::after {
+            animation: shimmer 1.5s ease forwards;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.06), transparent);
+            width: 50%;
+            top: 0;
+            right: auto;
+            left: -100%;
+            height: 100%;
+        }
+
+        /* Activity item animations */
+        .activity-item {
+            animation: activitySlide 0.4s ease forwards;
+            opacity: 0;
+        }
+
+        .activity-item:nth-child(1) { animation-delay: 0.7s; }
+        .activity-item:nth-child(2) { animation-delay: 0.8s; }
+        .activity-item:nth-child(3) { animation-delay: 0.9s; }
+        .activity-item:nth-child(4) { animation-delay: 1.0s; }
+        .activity-item:nth-child(5) { animation-delay: 1.1s; }
+        .activity-item:nth-child(6) { animation-delay: 1.2s; }
+        .activity-item:nth-child(7) { animation-delay: 1.3s; }
+        .activity-item:nth-child(8) { animation-delay: 1.4s; }
+        .activity-item:nth-child(9) { animation-delay: 1.5s; }
+        .activity-item:nth-child(10) { animation-delay: 1.6s; }
+
+        @keyframes activitySlide {
+            from { opacity: 0; transform: translateX(20px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        /* Search animation */
+        .search-wrapper {
+            animation: searchFadeIn 0.5s ease forwards;
+            opacity: 0;
+        }
+
+        @keyframes searchFadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
         /* Footer */
         .footer {
             text-align: center;
-            padding: 24px;
+            padding: 32px;
             color: var(--text-muted);
             font-size: 14px;
             font-weight: 500;
+            animation: fadeInUp 0.5s ease 1.5s forwards;
+            opacity: 0;
         }
         
         .loading {
@@ -1027,7 +1206,7 @@
                                 <!-- Total Records Counter -->
                                 <div style="background: linear-gradient(135deg, rgba(59, 130, 246, 0.15), rgba(59, 130, 246, 0.05)); border-radius: 12px; padding: 16px; border: 1px solid rgba(59, 130, 246, 0.3);">
                                     <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 4px;">کل رکوردها</div>
-                                    <div id="totalRecordsCounter" style="font-size: 28px; font-weight: 700; color: #3b82f6; font-family: monospace;">0</div>
+                                    <div id="totalRecordsCounter" style="font-size: 28px; font-weight: 700; color: #3b82f6; font-family: 'Segoe UI', system-ui, sans-serif; direction: ltr; display: inline-block;">0</div>
                                 </div>
                                 
                                 <!-- Expiring Alert -->
@@ -1035,7 +1214,7 @@
                                     <div style="display: flex; align-items: center; justify-content: space-between;">
                                         <div>
                                             <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 4px;">نزدیک انقضا (7 روز)</div>
-                                            <div id="expiringCounter" style="font-size: 24px; font-weight: 700; color: #ef4444;">0</div>
+                                            <div id="expiringCounter" style="font-size: 24px; font-weight: 700; color: #ef4444; direction: ltr; display: inline-block; font-family: 'Segoe UI', system-ui, sans-serif;">0</div>
                                         </div>
                                         <span style="font-size: 28px;">⚠️</span>
                                     </div>
@@ -1046,7 +1225,7 @@
                                     <div style="display: flex; align-items: center; justify-content: space-between;">
                                         <div>
                                             <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 4px;">فعالیت امروز</div>
-                                            <div id="todayActivityCounter" style="font-size: 24px; font-weight: 700; color: #8b5cf6;">0</div>
+                                            <div id="todayActivityCounter" style="font-size: 24px; font-weight: 700; color: #8b5cf6; direction: ltr; display: inline-block; font-family: 'Segoe UI', system-ui, sans-serif;">0</div>
                                         </div>
                                         <span style="font-size: 28px;">📈</span>
                                     </div>
@@ -1063,21 +1242,36 @@
                     0%, 100% { opacity: 1; transform: scale(1); }
                     50% { opacity: 0.5; transform: scale(1.1); }
                 }
-                
+
                 @keyframes countUp {
                     from { opacity: 0; transform: translateY(10px); }
                     to { opacity: 1; transform: translateY(0); }
                 }
-                
+
+                @keyframes gaugeAppear {
+                    from { opacity: 0; transform: scale(0.8); }
+                    to { opacity: 1; transform: scale(1); }
+                }
+
+                .gauge-container {
+                    animation: gaugeAppear 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+                    opacity: 0;
+                }
+
+                .gauge-container:nth-child(1) { animation-delay: 0.3s; }
+                .gauge-container:nth-child(2) { animation-delay: 0.45s; }
+                .gauge-container:nth-child(3) { animation-delay: 0.6s; }
+                .gauge-container:nth-child(4) { animation-delay: 0.75s; }
+
                 .gauge-container:hover .gauge-wrapper {
-                    transform: scale(1.05);
+                    transform: scale(1.08);
                     transition: transform 0.3s ease;
                 }
-                
+
                 .province-bar {
-                    transition: width 1s ease-out;
+                    transition: width 1.2s cubic-bezier(0.16, 1, 0.3, 1);
                 }
-                
+
                 .province-bar:hover {
                     filter: brightness(1.2);
                 }
@@ -1098,7 +1292,8 @@
     </div>
     
     <footer class="footer">
-        <p>🏢 Network Configuration Portal - Version 3.0</p>
+        <p style="font-size: 13px; letter-spacing: 0.5px;">Network Configuration Portal &mdash; Version 3.0</p>
+        <p style="font-size: 11px; margin-top: 4px; opacity: 0.6;">Keshavarzi Bank IT Infrastructure</p>
     </footer>
     
     <script>
@@ -1170,31 +1365,43 @@
                 const cached = localStorage.getItem('dashboardStats');
                 if (cached) {
                     const data = JSON.parse(cached);
-                    updateStatsUI(data);
+                    // Show cached values instantly (no animation) on first load
+                    const ids = ['totalLanIps','freeLanIps','usedLanIps','totalTunnels','freeTunnels','usedTunnels','totalApnInt','freeApnInt','usedApnInt','totalApnMali','freeApnMali','usedApnMali'];
+                    const vals = [
+                        data.lan_ips?.total||0, data.lan_ips?.free||0, data.lan_ips?.used||0,
+                        data.tunnels?.total||0, data.tunnels?.free||0, (data.tunnels?.total||0)-(data.tunnels?.free||0),
+                        data.apn?.total||0, data.apn?.free||0, (data.apn?.total||0)-(data.apn?.free||0),
+                        data.apn_mali?.total||0, data.apn_mali?.free||0, (data.apn_mali?.total||0)-(data.apn_mali?.free||0)
+                    ];
+                    ids.forEach((id, i) => {
+                        const el = document.getElementById(id);
+                        if (el) el.textContent = formatNumber(vals[i]);
+                    });
+                    updateChart(data);
                 }
             } catch (e) {}
         }
         
         function updateStatsUI(data) {
-            document.getElementById('totalLanIps').textContent = formatNumber(data.lan_ips?.total || 0);
-            document.getElementById('freeLanIps').textContent = formatNumber(data.lan_ips?.free || 0);
-            document.getElementById('usedLanIps').textContent = formatNumber(data.lan_ips?.used || 0);
-            
+            animateCounter('totalLanIps', data.lan_ips?.total || 0);
+            animateCounter('freeLanIps', data.lan_ips?.free || 0);
+            animateCounter('usedLanIps', data.lan_ips?.used || 0);
+
             const tunnelUsed = (data.tunnels?.total || 0) - (data.tunnels?.free || 0);
-            document.getElementById('totalTunnels').textContent = formatNumber(data.tunnels?.total || 0);
-            document.getElementById('freeTunnels').textContent = formatNumber(data.tunnels?.free || 0);
-            document.getElementById('usedTunnels').textContent = formatNumber(tunnelUsed);
-            
+            animateCounter('totalTunnels', data.tunnels?.total || 0);
+            animateCounter('freeTunnels', data.tunnels?.free || 0);
+            animateCounter('usedTunnels', tunnelUsed);
+
             const apnUsed = (data.apn?.total || 0) - (data.apn?.free || 0);
-            document.getElementById('totalApnInt').textContent = formatNumber(data.apn?.total || 0);
-            document.getElementById('freeApnInt').textContent = formatNumber(data.apn?.free || 0);
-            document.getElementById('usedApnInt').textContent = formatNumber(apnUsed);
-            
+            animateCounter('totalApnInt', data.apn?.total || 0);
+            animateCounter('freeApnInt', data.apn?.free || 0);
+            animateCounter('usedApnInt', apnUsed);
+
             const maliUsed = (data.apn_mali?.total || 0) - (data.apn_mali?.free || 0);
-            document.getElementById('totalApnMali').textContent = formatNumber(data.apn_mali?.total || 0);
-            document.getElementById('freeApnMali').textContent = formatNumber(data.apn_mali?.free || 0);
-            document.getElementById('usedApnMali').textContent = formatNumber(maliUsed);
-            
+            animateCounter('totalApnMali', data.apn_mali?.total || 0);
+            animateCounter('freeApnMali', data.apn_mali?.free || 0);
+            animateCounter('usedApnMali', maliUsed);
+
             updateChart(data);
         }
         
@@ -1254,7 +1461,7 @@
         }
         
         function formatNumber(num) {
-            return new Intl.NumberFormat('fa-IR').format(num);
+            return new Intl.NumberFormat('en-US').format(num);
         }
         
         function updateChart(data) {
