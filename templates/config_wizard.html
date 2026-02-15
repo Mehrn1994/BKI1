@@ -402,18 +402,6 @@ const STEPS = {
             { value: 'مالی', icon: '&#128181;', title: 'مالی', desc: 'سرویس مالی روی فیبر' },
             { value: 'غیرمالی', icon: '&#128421;', title: 'غیرمالی', desc: 'سرویس غیرمالی روی فیبر' }
         ]
-    },
-    // Switch 2960 - reporting only (no config generation)
-    fiber_switch_summary: {
-        id: 'fiber_switch_summary',
-        title: '&#9989; سوییچ 2960 - ثبت برای گزارش',
-        subtitle: 'این گزینه صرفاً جهت ثبت آماری و گزارش‌گیری است',
-        label: 'ثبت گزارش',
-        isFinal: true,
-        autoInfo: 'سوییچ Cisco Catalyst 2960 — این انتخاب جهت گزارش‌گیری و آمار تعداد نقاط ثبت می‌شود. نیازی به پیکربندی ندارد.',
-        options: [
-            { value: 'switch2960_confirm', icon: '&#9989;', title: 'تایید و ثبت', desc: 'ثبت سوییچ 2960 در گزارش' }
-        ]
     }
 };
 
@@ -441,11 +429,8 @@ function getNextStepId(currentStepId, selectedValue) {
         case 'copper_module_type': return null; // final
         case 'copper_modem_type': return null; // final
         // Fiber
-        case 'fiber_type':
-            if (selectedValue === 'Switch 2960') return 'fiber_switch_summary';
-            return 'fiber_service';
+        case 'fiber_type': return 'fiber_service';
         case 'fiber_service': return null; // final
-        case 'fiber_switch_summary': return null; // final
         default: return null;
     }
 }
@@ -676,12 +661,6 @@ function finishWizard() {
     // ---- FIBER ----
     if (platform === 'فیبر') {
         const fiberType = selections['fiber_type'];
-
-        // Switch 2960 - reporting only, no config needed
-        if (fiberType === 'Switch 2960') {
-            alert('سوییچ 2960 با موفقیت ثبت شد.\n\nاین اطلاعات جهت گزارش‌گیری ذخیره می‌شود.');
-            return;
-        }
 
         const fiberService = selections['fiber_service'];
         alert('پیکربندی فیبر (' + fiberType + ') - ' + fiberService +
