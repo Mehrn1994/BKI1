@@ -1,0 +1,969 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ویزارد پیکربندی شبکه</title>
+  <style>
+/* ========== THEME VARIABLES ========== */
+:root {
+    --bg-primary: #0a0e1a;
+    --bg-secondary: #111827;
+    --bg-card: rgba(17, 24, 39, 0.85);
+    --bg-header: rgba(10, 14, 26, 0.95);
+    --text-primary: #e2e8f0;
+    --text-secondary: #94a3b8;
+    --text-muted: #64748b;
+    --border-color: rgba(255, 255, 255, 0.08);
+    --shadow-color: rgba(0, 0, 0, 0.4);
+    --accent-green: #10b981;
+    --accent-blue: #3b82f6;
+    --accent-purple: #8b5cf6;
+    --accent-orange: #f59e0b;
+    --accent-pink: #ec4899;
+    --card-hover: rgba(255, 255, 255, 0.04);
+    --input-bg: rgba(15, 23, 42, 0.8);
+    --input-border: rgba(255, 255, 255, 0.2);
+}
+
+[data-theme="light"] {
+    --bg-primary: #f1f5f9;
+    --bg-secondary: #e2e8f0;
+    --bg-card: rgba(255, 255, 255, 0.9);
+    --bg-header: rgba(255, 255, 255, 0.95);
+    --text-primary: #0f172a;
+    --text-secondary: #1e293b;
+    --text-muted: #334155;
+    --border-color: rgba(0, 0, 0, 0.1);
+    --shadow-color: rgba(0, 0, 0, 0.08);
+    --accent-green: #059669;
+    --accent-blue: #2563eb;
+    --accent-purple: #7c3aed;
+    --accent-orange: #d97706;
+    --accent-pink: #db2777;
+    --card-hover: rgba(0, 0, 0, 0.03);
+    --input-bg: #ffffff;
+    --input-border: rgba(0, 0, 0, 0.2);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+    font-family: 'Segoe UI', Tahoma, sans-serif;
+    background: var(--bg-primary);
+    min-height: 100vh;
+    color: var(--text-primary);
+    font-size: 16px;
+    line-height: 1.6;
+    overflow-x: hidden;
+}
+
+/* ========== ANIMATED BACKGROUND ========== */
+.bg-animation {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    z-index: -1;
+    overflow: hidden;
+}
+.bg-animation::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background-image: url('/static/background.jpg');
+    background-size: cover;
+    background-position: center;
+    opacity: 0.3;
+}
+.bg-animation::after {
+    content: '';
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background: linear-gradient(180deg, rgba(10,14,26,0.7) 0%, rgba(17,24,39,0.9) 100%);
+}
+[data-theme="light"] .bg-animation::before { opacity: 0.4; }
+[data-theme="light"] .bg-animation::after {
+    background: linear-gradient(180deg, rgba(241,245,249,0.8) 0%, rgba(226,232,240,0.9) 100%);
+}
+
+.orb {
+    position: fixed;
+    border-radius: 50%;
+    filter: blur(80px);
+    opacity: 0.15;
+    pointer-events: none;
+    z-index: -1;
+}
+.orb-1 {
+    width: 600px; height: 600px;
+    background: radial-gradient(circle, #3b82f6, transparent 70%);
+    top: -200px; right: -100px;
+    animation: orbFloat1 20s ease-in-out infinite;
+}
+.orb-2 {
+    width: 500px; height: 500px;
+    background: radial-gradient(circle, #8b5cf6, transparent 70%);
+    bottom: -150px; left: -100px;
+    animation: orbFloat2 25s ease-in-out infinite;
+}
+[data-theme="light"] .orb { opacity: 0.08; }
+
+@keyframes orbFloat1 {
+    0%, 100% { transform: translate(0, 0) scale(1); }
+    33% { transform: translate(-80px, 60px) scale(1.1); }
+    66% { transform: translate(40px, -40px) scale(0.9); }
+}
+@keyframes orbFloat2 {
+    0%, 100% { transform: translate(0, 0) scale(1); }
+    33% { transform: translate(60px, -80px) scale(1.15); }
+    66% { transform: translate(-50px, 30px) scale(0.85); }
+}
+
+/* ========== HEADER ========== */
+.header {
+    background: var(--bg-header);
+    backdrop-filter: blur(24px);
+    padding: 12px 32px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid var(--border-color);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    box-shadow: 0 4px 40px rgba(0,0,0,0.2);
+}
+[data-theme="light"] .header { box-shadow: 0 4px 20px rgba(0,0,0,0.06); }
+
+.logo { display: flex; align-items: center; gap: 12px; }
+.logo h1 { font-size: 1.4rem; font-weight: 700; color: var(--text-primary); }
+
+.header-actions { display: flex; align-items: center; gap: 12px; }
+
+.theme-toggle {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 50%;
+    width: 40px; height: 40px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+    transition: all 0.3s ease;
+}
+.theme-toggle:hover { transform: scale(1.1) rotate(15deg); background: var(--card-hover); }
+
+.user-info {
+    display: flex; align-items: center; gap: 8px;
+    padding: 8px 16px;
+    background: rgba(59, 130, 246, 0.1);
+    border-radius: 25px;
+    font-size: 14px; font-weight: 600;
+    color: var(--text-primary);
+}
+
+.back-btn {
+    padding: 8px 18px;
+    background: linear-gradient(135deg, #3b82f6, #2563eb);
+    color: white;
+    border: none; border-radius: 8px;
+    cursor: pointer;
+    font-size: 13px; font-weight: 600;
+    text-decoration: none;
+    transition: all 0.3s ease;
+}
+.back-btn:hover { transform: translateY(-2px); box-shadow: 0 4px 16px rgba(59, 130, 246, 0.4); }
+
+.logout-btn {
+    padding: 8px 18px;
+    background: linear-gradient(135deg, #ef4444, #dc2626);
+    color: white; border: none; border-radius: 8px;
+    cursor: pointer; font-size: 13px; font-weight: 600;
+    transition: all 0.3s ease;
+}
+.logout-btn:hover { transform: translateY(-2px); box-shadow: 0 4px 16px rgba(239, 68, 68, 0.4); }
+
+/* ========== CONTAINER ========== */
+.container {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 32px 24px;
+}
+
+/* ========== WIZARD TITLE ========== */
+.wizard-title {
+    text-align: center;
+    margin-bottom: 32px;
+    animation: fadeInUp 0.5s ease forwards;
+}
+.wizard-title h2 {
+    font-size: 1.8rem;
+    font-weight: 800;
+    background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 8px;
+}
+.wizard-title p {
+    color: var(--text-secondary);
+    font-size: 15px;
+}
+
+/* ========== STEPPER ========== */
+.stepper {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 40px;
+    gap: 0;
+    animation: fadeInUp 0.5s ease 0.1s forwards;
+    opacity: 0;
+}
+
+.step-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    position: relative;
+}
+
+.step-circle {
+    width: 44px; height: 44px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 16px;
+    border: 2px solid var(--border-color);
+    background: var(--bg-card);
+    color: var(--text-muted);
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    flex-shrink: 0;
+}
+
+.step-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-muted);
+    white-space: nowrap;
+    transition: all 0.3s ease;
+}
+
+.step-line {
+    width: 50px;
+    height: 2px;
+    background: var(--border-color);
+    margin: 0 8px;
+    transition: all 0.4s ease;
+    flex-shrink: 0;
+}
+
+.step-item.active .step-circle {
+    background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
+    border-color: var(--accent-blue);
+    color: white;
+    box-shadow: 0 0 20px rgba(59, 130, 246, 0.3);
+    transform: scale(1.1);
+}
+.step-item.active .step-label {
+    color: var(--accent-blue);
+    font-weight: 700;
+}
+
+.step-item.completed .step-circle {
+    background: linear-gradient(135deg, var(--accent-green), #34d399);
+    border-color: var(--accent-green);
+    color: white;
+}
+.step-item.completed .step-label { color: var(--accent-green); }
+.step-line.completed { background: var(--accent-green); }
+
+@media (max-width: 700px) {
+    .step-label { display: none; }
+    .step-line { width: 30px; }
+}
+
+/* ========== WIZARD CARD ========== */
+.wizard-card {
+    background: var(--bg-card);
+    backdrop-filter: blur(20px);
+    border-radius: 24px;
+    border: 1px solid var(--border-color);
+    overflow: hidden;
+    box-shadow: 0 20px 60px var(--shadow-color);
+    animation: cardSlideIn 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    opacity: 0;
+    animation-delay: 0.2s;
+}
+[data-theme="light"] .wizard-card { box-shadow: 0 4px 24px rgba(0,0,0,0.08); }
+
+@keyframes cardSlideIn {
+    from { opacity: 0; transform: translateY(30px) scale(0.97); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.wizard-card-header {
+    padding: 24px 32px;
+    border-bottom: 1px solid var(--border-color);
+    background: rgba(255,255,255,0.015);
+}
+.wizard-card-header h3 {
+    font-size: 1.2rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.wizard-card-header p {
+    font-size: 14px;
+    color: var(--text-secondary);
+    margin-top: 4px;
+}
+
+.wizard-card-body {
+    padding: 32px;
+}
+
+/* ========== OPTION CARDS ========== */
+.options-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+}
+.options-grid.two-col { grid-template-columns: repeat(2, 1fr); }
+
+@media (max-width: 700px) {
+    .options-grid { grid-template-columns: 1fr; }
+    .options-grid.two-col { grid-template-columns: 1fr; }
+}
+
+.option-card {
+    background: var(--bg-secondary);
+    border: 2px solid var(--border-color);
+    border-radius: 16px;
+    padding: 28px 20px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+}
+
+.option-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    opacity: 0;
+    transition: opacity 0.3s;
+}
+
+.option-card:hover {
+    transform: translateY(-6px) scale(1.02);
+    border-color: rgba(59, 130, 246, 0.4);
+    box-shadow: 0 16px 40px rgba(59, 130, 246, 0.1);
+}
+
+.option-card.selected {
+    border-color: var(--accent-blue);
+    background: rgba(59, 130, 246, 0.08);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15), 0 16px 40px rgba(59, 130, 246, 0.12);
+}
+.option-card.selected::before {
+    opacity: 1;
+    background: linear-gradient(90deg, var(--accent-blue), var(--accent-purple));
+}
+
+.option-card.disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+    pointer-events: none;
+}
+
+.option-icon {
+    font-size: 3rem;
+    margin-bottom: 12px;
+    display: block;
+    transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.option-card:hover .option-icon { transform: scale(1.15) translateY(-4px); }
+
+.option-title {
+    font-size: 16px;
+    font-weight: 700;
+    margin-bottom: 6px;
+    color: var(--text-primary);
+}
+
+.option-desc {
+    font-size: 12px;
+    color: var(--text-muted);
+    line-height: 1.5;
+}
+
+.option-badge {
+    display: inline-block;
+    margin-top: 10px;
+    padding: 3px 10px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 600;
+}
+.option-badge.coming-soon {
+    background: rgba(245, 158, 11, 0.15);
+    color: var(--accent-orange);
+    border: 1px solid rgba(245, 158, 11, 0.3);
+}
+.option-badge.active {
+    background: rgba(16, 185, 129, 0.15);
+    color: var(--accent-green);
+    border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+/* ========== NAVIGATION BUTTONS ========== */
+.wizard-nav {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 24px 32px;
+    border-top: 1px solid var(--border-color);
+    background: rgba(255,255,255,0.01);
+}
+
+.nav-btn {
+    padding: 12px 28px;
+    border: none;
+    border-radius: 12px;
+    cursor: pointer;
+    font-size: 15px;
+    font-weight: 600;
+    font-family: inherit;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.nav-btn.prev {
+    background: var(--bg-secondary);
+    color: var(--text-secondary);
+    border: 1px solid var(--border-color);
+}
+.nav-btn.prev:hover {
+    background: var(--card-hover);
+    border-color: var(--text-muted);
+    color: var(--text-primary);
+}
+
+.nav-btn.next {
+    background: linear-gradient(135deg, var(--accent-blue), #2563eb);
+    color: white;
+    box-shadow: 0 4px 16px rgba(59, 130, 246, 0.3);
+}
+.nav-btn.next:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(59, 130, 246, 0.4);
+}
+.nav-btn.next:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+
+.nav-btn.finish {
+    background: linear-gradient(135deg, var(--accent-green), #059669);
+    color: white;
+    box-shadow: 0 4px 16px rgba(16, 185, 129, 0.3);
+    padding: 14px 36px;
+    font-size: 16px;
+}
+.nav-btn.finish:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(16, 185, 129, 0.4);
+}
+.nav-btn.finish:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+
+/* ========== SUMMARY ========== */
+.summary-box {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 14px;
+    padding: 20px;
+    margin-top: 20px;
+}
+.summary-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border-color);
+}
+.summary-item:last-child { border-bottom: none; }
+.summary-label {
+    font-size: 14px;
+    color: var(--text-muted);
+    font-weight: 500;
+}
+.summary-value {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+/* ========== STEP CONTENT TRANSITIONS ========== */
+.step-content {
+    display: none;
+    animation: stepFadeIn 0.4s ease forwards;
+}
+.step-content.active { display: block; }
+
+@keyframes stepFadeIn {
+    from { opacity: 0; transform: translateX(20px); }
+    to { opacity: 1; transform: translateX(0); }
+}
+
+/* ========== SCROLLBAR ========== */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.25); }
+
+/* ========== FOOTER ========== */
+.footer {
+    text-align: center;
+    padding: 24px;
+    color: var(--text-muted);
+    font-size: 12px;
+    font-weight: 500;
+    margin-top: 40px;
+}
+  </style>
+
+<script>
+(function() {
+    var theme = localStorage.getItem('theme') || 'dark';
+    document.documentElement.setAttribute('data-theme', theme);
+})();
+</script>
+</head>
+<body>
+    <div class="bg-animation"></div>
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+
+    <!-- Header -->
+    <header class="header">
+        <div class="logo">
+            <img src="/static/logo.png" alt="Logo" style="height: 48px; margin-left: 10px;">
+            <h1>ویزارد پیکربندی</h1>
+        </div>
+        <div class="header-actions">
+            <button class="theme-toggle" onclick="toggleTheme()" title="تغییر تم">
+                <span id="themeIcon">&#127769;</span>
+            </button>
+            <div class="user-info">
+                <span>&#128100;</span>
+                <span id="currentUser">کاربر</span>
+            </div>
+            <a href="/" class="back-btn">بازگشت به داشبورد</a>
+            <button class="logout-btn" onclick="logout()">خروج</button>
+        </div>
+    </header>
+
+    <div class="container">
+        <!-- Wizard Title -->
+        <div class="wizard-title">
+            <h2>پیکربندی سرویس شبکه</h2>
+            <p>مراحل زیر را برای تولید پیکربندی مورد نظر طی کنید</p>
+        </div>
+
+        <!-- Stepper -->
+        <div class="stepper" id="stepper">
+            <div class="step-item active" data-step="1">
+                <div class="step-circle">1</div>
+                <span class="step-label">نوع نقطه</span>
+            </div>
+            <div class="step-line" id="line-1-2"></div>
+            <div class="step-item" data-step="2">
+                <div class="step-circle">2</div>
+                <span class="step-label">بستر ارتباطی</span>
+            </div>
+            <div class="step-line" id="line-2-3"></div>
+            <div class="step-item" data-step="3">
+                <div class="step-circle">3</div>
+                <span class="step-label">ISP</span>
+            </div>
+            <div class="step-line" id="line-3-4"></div>
+            <div class="step-item" data-step="4">
+                <div class="step-circle">4</div>
+                <span class="step-label">نوع سرویس</span>
+            </div>
+        </div>
+
+        <!-- Wizard Card -->
+        <div class="wizard-card">
+            <!-- ====== STEP 1: Device Type ====== -->
+            <div class="step-content active" id="step-1">
+                <div class="wizard-card-header">
+                    <h3>&#127970; نوع نقطه را انتخاب کنید</h3>
+                    <p>پیکربندی برای چه نوع نقطه‌ای تولید می‌شود؟</p>
+                </div>
+                <div class="wizard-card-body">
+                    <div class="options-grid">
+                        <div class="option-card" data-value="شعبه" onclick="selectOption(1, this)">
+                            <span class="option-icon">&#127970;</span>
+                            <div class="option-title">شعبه</div>
+                            <div class="option-desc">شعبات بانک کشاورزی</div>
+                        </div>
+                        <div class="option-card" data-value="باجه" onclick="selectOption(1, this)">
+                            <span class="option-icon">&#128451;</span>
+                            <div class="option-title">باجه</div>
+                            <div class="option-desc">باجه‌های بانکی</div>
+                        </div>
+                        <div class="option-card" data-value="خودپرداز" onclick="selectOption(1, this)">
+                            <span class="option-icon">&#128179;</span>
+                            <div class="option-title">خودپرداز (کیوسک)</div>
+                            <div class="option-desc">ATM و دستگاه‌های کیوسک</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ====== STEP 2: Platform Type ====== -->
+            <div class="step-content" id="step-2">
+                <div class="wizard-card-header">
+                    <h3>&#128225; بستر ارتباطی را انتخاب کنید</h3>
+                    <p>ارتباط از طریق چه بستری برقرار می‌شود؟</p>
+                </div>
+                <div class="wizard-card-body">
+                    <div class="options-grid">
+                        <div class="option-card" data-value="APN" onclick="selectOption(2, this)">
+                            <span class="option-icon">&#128225;</span>
+                            <div class="option-title">APN</div>
+                            <div class="option-desc">شبکه خصوصی مجازی از طریق APN</div>
+                            <span class="option-badge active">فعال</span>
+                        </div>
+                        <div class="option-card disabled" data-value="سیم مسی">
+                            <span class="option-icon">&#128268;</span>
+                            <div class="option-title">سیم مسی</div>
+                            <div class="option-desc">ارتباط از طریق خط مسی</div>
+                            <span class="option-badge coming-soon">به زودی</span>
+                        </div>
+                        <div class="option-card disabled" data-value="فیبر">
+                            <span class="option-icon">&#128171;</span>
+                            <div class="option-title">فیبر نوری</div>
+                            <div class="option-desc">ارتباط از طریق فیبر نوری</div>
+                            <span class="option-badge coming-soon">به زودی</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ====== STEP 3: ISP ====== -->
+            <div class="step-content" id="step-3">
+                <div class="wizard-card-header">
+                    <h3>&#127760; ارائه‌دهنده سرویس (ISP) را انتخاب کنید</h3>
+                    <p>سرویس APN از طریق کدام پروایدر ارائه می‌شود؟</p>
+                </div>
+                <div class="wizard-card-body">
+                    <div class="options-grid two-col">
+                        <div class="option-card" data-value="گیلانت" onclick="selectOption(3, this)">
+                            <span class="option-icon">&#127760;</span>
+                            <div class="option-title">گیلانت</div>
+                            <div class="option-desc">Gilanet - ارائه‌دهنده فعلی سرویس APN</div>
+                            <span class="option-badge active">فعال</span>
+                        </div>
+                        <div class="option-card disabled" data-value="سایر">
+                            <span class="option-icon">&#128279;</span>
+                            <div class="option-title">سایر پروایدرها</div>
+                            <div class="option-desc">در صورت اضافه شدن پروایدر جدید</div>
+                            <span class="option-badge coming-soon">به زودی</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ====== STEP 4: Service Type ====== -->
+            <div class="step-content" id="step-4">
+                <div class="wizard-card-header">
+                    <h3>&#9881; نوع سرویس را انتخاب کنید</h3>
+                    <p>چه نوع سرویسی برای این نقطه نیاز دارید؟</p>
+                </div>
+                <div class="wizard-card-body">
+                    <div class="options-grid">
+                        <div class="option-card" data-value="مالی" onclick="selectOption(4, this)">
+                            <span class="option-icon">&#128181;</span>
+                            <div class="option-title">مالی</div>
+                            <div class="option-desc">سرویس مالی - ISR-APN-RO + Tunnel</div>
+                        </div>
+                        <div class="option-card" data-value="غیرمالی" onclick="selectOption(4, this)">
+                            <span class="option-icon">&#128421;</span>
+                            <div class="option-title">غیرمالی</div>
+                            <div class="option-desc">سرویس غیرمالی - APN-INT + Tunnel200</div>
+                        </div>
+                        <div class="option-card" data-value="هردو" onclick="selectOption(4, this)">
+                            <span class="option-icon">&#128640;</span>
+                            <div class="option-title">هردو (مالی + غیرمالی)</div>
+                            <div class="option-desc">پیکربندی هر دو سرویس در یک صفحه</div>
+                        </div>
+                    </div>
+
+                    <!-- Summary -->
+                    <div class="summary-box" id="summaryBox" style="display:none;">
+                        <div class="summary-item">
+                            <span class="summary-label">نوع نقطه</span>
+                            <span class="summary-value" id="summary-device"></span>
+                        </div>
+                        <div class="summary-item">
+                            <span class="summary-label">بستر ارتباطی</span>
+                            <span class="summary-value" id="summary-platform"></span>
+                        </div>
+                        <div class="summary-item">
+                            <span class="summary-label">ISP</span>
+                            <span class="summary-value" id="summary-isp"></span>
+                        </div>
+                        <div class="summary-item">
+                            <span class="summary-label">نوع سرویس</span>
+                            <span class="summary-value" id="summary-service"></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Navigation -->
+            <div class="wizard-nav">
+                <button class="nav-btn prev" id="prevBtn" onclick="prevStep()" style="visibility:hidden;">
+                    &#8594; مرحله قبل
+                </button>
+                <div id="stepIndicator" style="font-size:13px; color:var(--text-muted); font-weight:600;">
+                    مرحله <span id="currentStepNum">1</span> از 4
+                </div>
+                <button class="nav-btn next" id="nextBtn" onclick="nextStep()" disabled>
+                    مرحله بعد &#8592;
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <footer class="footer">
+        <p>Network Configuration Portal &mdash; Wizard v1.0</p>
+        <p style="margin-top:3px; opacity:0.5; font-size:11px;">Keshavarzi Bank IT Infrastructure</p>
+    </footer>
+
+<script>
+// ============ Theme System ============
+function toggleTheme() {
+    var current = document.documentElement.getAttribute('data-theme') || 'dark';
+    var next = current === 'dark' ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', next);
+    localStorage.setItem('theme', next);
+    document.getElementById('themeIcon').textContent = next === 'dark' ? '\u{1F319}' : '\u{2600}\u{FE0F}';
+}
+document.addEventListener('DOMContentLoaded', function() {
+    var theme = localStorage.getItem('theme') || 'dark';
+    document.getElementById('themeIcon').textContent = theme === 'dark' ? '\u{1F319}' : '\u{2600}\u{FE0F}';
+});
+
+// ============ Auth ============
+const SESSION_TIMEOUT = 8 * 60 * 60 * 1000;
+(function() {
+    const sessionStart = localStorage.getItem('sessionStart');
+    if (sessionStart && (Date.now() - parseInt(sessionStart)) > SESSION_TIMEOUT) {
+        localStorage.clear(); sessionStorage.clear();
+        alert('جلسه شما منقضی شده است. لطفاً دوباره وارد شوید.');
+        location.href = '/login';
+    }
+    const username = localStorage.getItem('currentUser') || localStorage.getItem('username') || sessionStorage.getItem('username');
+    if (!username) { location.href = '/login'; return; }
+    document.getElementById('currentUser').textContent = username;
+})();
+
+function logout() {
+    localStorage.clear(); sessionStorage.clear();
+    location.href = '/login';
+}
+
+// ============ Wizard Logic ============
+let currentStep = 1;
+const totalSteps = 4;
+const selections = {
+    1: null, // device type
+    2: null, // platform
+    3: null, // ISP
+    4: null  // service type
+};
+
+function selectOption(step, cardEl) {
+    // Remove selected from siblings
+    const parent = cardEl.parentElement;
+    parent.querySelectorAll('.option-card').forEach(c => c.classList.remove('selected'));
+    cardEl.classList.add('selected');
+
+    selections[step] = cardEl.dataset.value;
+
+    // Enable next button
+    document.getElementById('nextBtn').disabled = false;
+
+    // If on step 4, show summary and change button to finish
+    if (step === 4) {
+        showSummary();
+        showFinishButton();
+    }
+}
+
+function showSummary() {
+    const box = document.getElementById('summaryBox');
+    box.style.display = 'block';
+
+    const icons = {
+        'شعبه': '\u{1F3E2}', 'باجه': '\u{1F5C3}', 'خودپرداز': '\u{1F4B3}',
+        'APN': '\u{1F4E1}', 'سیم مسی': '\u{1F50C}', 'فیبر': '\u{1F4AB}',
+        'گیلانت': '\u{1F310}',
+        'مالی': '\u{1F4B5}', 'غیرمالی': '\u{1F5A5}', 'هردو': '\u{1F680}'
+    };
+
+    document.getElementById('summary-device').innerHTML = (icons[selections[1]] || '') + ' ' + (selections[1] || '-');
+    document.getElementById('summary-platform').innerHTML = (icons[selections[2]] || '') + ' ' + (selections[2] || '-');
+    document.getElementById('summary-isp').innerHTML = (icons[selections[3]] || '') + ' ' + (selections[3] || '-');
+    document.getElementById('summary-service').innerHTML = (icons[selections[4]] || '') + ' ' + (selections[4] || '-');
+}
+
+function showFinishButton() {
+    const nextBtn = document.getElementById('nextBtn');
+    nextBtn.className = 'nav-btn finish';
+    nextBtn.innerHTML = 'رفتن به صفحه پیکربندی &#8592;';
+    nextBtn.onclick = finishWizard;
+    nextBtn.disabled = false;
+}
+
+function showNextButton() {
+    const nextBtn = document.getElementById('nextBtn');
+    nextBtn.className = 'nav-btn next';
+    nextBtn.innerHTML = 'مرحله بعد \u2190';
+    nextBtn.onclick = nextStep;
+}
+
+function nextStep() {
+    if (!selections[currentStep]) return;
+    if (currentStep >= totalSteps) return;
+
+    currentStep++;
+    updateUI();
+}
+
+function prevStep() {
+    if (currentStep <= 1) return;
+
+    // Clear selection of current step
+    selections[currentStep] = null;
+
+    currentStep--;
+    updateUI();
+    showNextButton();
+}
+
+function updateUI() {
+    // Update step contents
+    document.querySelectorAll('.step-content').forEach(el => el.classList.remove('active'));
+    document.getElementById('step-' + currentStep).classList.add('active');
+
+    // Update stepper
+    document.querySelectorAll('.step-item').forEach(item => {
+        const step = parseInt(item.dataset.step);
+        item.classList.remove('active', 'completed');
+        if (step === currentStep) item.classList.add('active');
+        else if (step < currentStep) item.classList.add('completed');
+    });
+
+    // Update step lines
+    for (let i = 1; i < totalSteps; i++) {
+        const line = document.getElementById('line-' + i + '-' + (i + 1));
+        if (line) {
+            if (i < currentStep) line.classList.add('completed');
+            else line.classList.remove('completed');
+        }
+    }
+
+    // Update prev button visibility
+    document.getElementById('prevBtn').style.visibility = currentStep > 1 ? 'visible' : 'hidden';
+
+    // Update next button state
+    const nextBtn = document.getElementById('nextBtn');
+    nextBtn.disabled = !selections[currentStep];
+
+    // Update step indicator
+    document.getElementById('currentStepNum').textContent = currentStep;
+
+    // If on step 4 and already selected, show summary
+    if (currentStep === 4 && selections[4]) {
+        showSummary();
+        showFinishButton();
+    }
+
+    // Deselect cards in current step if no selection
+    if (!selections[currentStep]) {
+        const stepEl = document.getElementById('step-' + currentStep);
+        stepEl.querySelectorAll('.option-card').forEach(c => c.classList.remove('selected'));
+    } else {
+        // Restore selection
+        const stepEl = document.getElementById('step-' + currentStep);
+        stepEl.querySelectorAll('.option-card').forEach(c => {
+            if (c.dataset.value === selections[currentStep]) c.classList.add('selected');
+            else c.classList.remove('selected');
+        });
+    }
+
+    // Hide summary box if not on step 4
+    if (currentStep !== 4) {
+        document.getElementById('summaryBox').style.display = 'none';
+    }
+}
+
+function finishWizard() {
+    if (!selections[4]) return;
+
+    // Store wizard selections for the target page
+    const wizardData = {
+        deviceType: selections[1],
+        platform: selections[2],
+        isp: selections[3],
+        serviceType: selections[4]
+    };
+    localStorage.setItem('wizardConfig', JSON.stringify(wizardData));
+
+    // Navigate to the appropriate page based on service type
+    switch (selections[4]) {
+        case 'مالی':
+            window.location.href = '/apn-mali';
+            break;
+        case 'غیرمالی':
+            window.location.href = '/apn-int';
+            break;
+        case 'هردو':
+            window.location.href = '/config-both';
+            break;
+    }
+}
+</script>
+
+{% include 'chat_widget.html' %}
+</body>
+</html>
