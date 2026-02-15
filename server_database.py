@@ -457,6 +457,14 @@ def apn_int_page():
 def apn_mali_page():
     return render_template('apn_mali.html')
 
+@app.route('/config-wizard')
+def config_wizard_page():
+    return render_template('config_wizard.html')
+
+@app.route('/config-both')
+def config_both_page():
+    return render_template('config_both.html')
+
 @app.route('/reserve-lan')
 def reserve_lan_page():
     return render_template('reserve_lan.html')

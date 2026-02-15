@@ -393,13 +393,13 @@
         /* ========== MODULES STRIP ========== */
         .modules-strip {
             display: grid;
-            grid-template-columns: repeat(5, 1fr);
+            grid-template-columns: repeat(4, 1fr);
             gap: 16px;
             margin-bottom: 24px;
         }
 
-        @media (max-width: 1200px) { .modules-strip { grid-template-columns: repeat(3, 1fr); } }
-        @media (max-width: 640px) { .modules-strip { grid-template-columns: repeat(2, 1fr); } }
+        @media (max-width: 1200px) { .modules-strip { grid-template-columns: repeat(2, 1fr); } }
+        @media (max-width: 640px) { .modules-strip { grid-template-columns: 1fr; } }
 
         .module-card {
             background: var(--bg-card);
@@ -973,20 +973,15 @@
             <div class="line"></div>
         </div>
         <div class="modules-strip">
+            <a href="/config-wizard" class="module-card apn-mali" style="grid-column: span 2; background: linear-gradient(135deg, rgba(17,24,39,0.9), rgba(30,41,59,0.7));">
+                <div class="mod-icon">⚙️</div>
+                <div class="mod-title">ویزارد پیکربندی شبکه</div>
+                <div class="mod-desc">پیکربندی مرحله‌ای: انتخاب نوع نقطه، بستر، ISP و سرویس (مالی / غیرمالی / هردو)</div>
+            </a>
             <a href="/intranet" class="module-card intranet">
                 <div class="mod-icon">🔵</div>
                 <div class="mod-title">INTRANET</div>
                 <div class="mod-desc">WAN-INTR برای LAN & Tunnel200</div>
-            </a>
-            <a href="/apn-int" class="module-card apn-int">
-                <div class="mod-icon">🟣</div>
-                <div class="mod-title">APN غیرمالی</div>
-                <div class="mod-desc">APN-INT to HUB ASR + Tunnel200</div>
-            </a>
-            <a href="/apn-mali" class="module-card apn-mali">
-                <div class="mod-icon">🟢</div>
-                <div class="mod-title">APN مالی</div>
-                <div class="mod-desc">ISR-APN-RO + Financial APN</div>
             </a>
             <a href="/reserve-lan" class="module-card reserve">
                 <div class="mod-icon">🟡</div>
