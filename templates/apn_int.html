@@ -629,6 +629,7 @@ document.addEventListener('DOMContentLoaded', function() {
         <input id="existingSearch" type="text" placeholder="&#128269; جستجو نام شعبه، استان، IP..." style="flex:1; min-width:200px; padding:8px 12px; border-radius:8px; border:1px solid #374151; background:#020617; color:#e5e7eb; font-size:13px;" oninput="filterExistingPoints()">
         <div style="font-size:12px; color:#a78bfa; background:rgba(139,92,246,0.1); padding:6px 12px; border-radius:8px; border:1px solid rgba(139,92,246,0.2);">
           &#128260; <strong>مهاجرت:</strong> برای انتقال از طرح قدیم به جدید، روی دکمه مهاجرت کلیک کنید
+          <div style="font-size:11px; color:#94a3b8; margin-top:4px;">در حالت مهاجرت، دستورات حذف کانفیگ قدیم (no ip nat pool, no ip nat outside, clear ip nat translation) به صورت خودکار به ابتدای کانفیگ اضافه می‌شود</div>
         </div>
       </div>
       <div id="existingPointsList" style="max-height:350px; overflow-y:auto;">
@@ -1276,6 +1277,28 @@ function generateConfigsSeparated(d) {
   const lanNet = lanNetwork(d.x, d.y);
   const secondaryNote = d.isSecondary ? '\n! ⚠️ توجه: IP به صورت SECONDARY اضافه شده (شعبه قبلاً APN مالی دارد)\n! ⚠️ کانفیگ‌های Crypto از قبل روی روتر وجود دارد و نیاز به اضافه کردن نیست\n!' : '';
 
+  // Migration cleanup commands (when migrating from old to new infrastructure)
+  let migrationCleanup = '';
+  if (d.isMigration && d.oldApnIp) {
+    migrationCleanup = `!
+! ========================================================
+! ===== حذف کانفیگ‌های قدیم (مهاجرت از طرح قدیم به جدید) =====
+! ========================================================
+! ⚠️ دستورات زیر باید ابتدا اجرا شوند تا کانفیگ قدیم حذف شود
+!
+interface ${d.wanIface}
+ no ip nat outside
+!
+do clear ip nat translation forced
+!
+no ip nat pool APN-INT ${d.oldApnIp} ${d.oldApnIp} netmask 255.255.255.0
+no ip nat inside source list natlist pool APN-INT overload
+!
+! ===== پایان حذف کانفیگ‌های قدیم =====
+!
+`;
+  }
+
   // Crypto configs - only include if NOT secondary
   const cryptoConfig = d.isSecondary ? `!
 ! ⚠️ کانفیگ‌های زیر از قبل روی روتر وجود دارند (APN مالی) - نیازی به اعمال مجدد نیست
@@ -1309,7 +1332,7 @@ ip access-list extended GILANET-ACL
  permit gre host ${d.branchApnIp} host ${d.hubApnIp}
 !`;
 
-  const branchCfg = `!
+  const branchCfg = `${migrationCleanup}!
 ! ===== Branch Router (${d.branchName}) - APN غیرمالی =====${secondaryNote}
 ${cryptoConfig}
 interface Loopback2
@@ -1574,7 +1597,9 @@ document.getElementById('configForm').addEventListener('submit', async function(
     ospfProcess:  FIXED_OSPF_PROCESS,
     ospfArea:     ospfArea,
     asrNextHop:   FIXED_ASR_NEXTHOP,
-    hubDescription: hubDescription
+    hubDescription: hubDescription,
+    isMigration:  migrationMode,
+    oldApnIp:     migrationMode ? autoAssignedApnIp : null
   };
 
   const cfgs = generateConfigsSeparated(data);
@@ -1782,7 +1807,7 @@ function migrateIntPoint(name, apnIp, lanIp, province) {
     document.getElementById('existingPanelArrow').style.transform = '';
     document.getElementById('branchName').focus();
 
-    alert('&#128260; حالت مهاجرت فعال شد\n\nIP APN: ' + apnIp + ' (از دیتابیس)\n\nلطفاً سایر فیلدها را تکمیل کنید و کانفیگ تولید کنید.\nTunnel200 جدید به صورت خودکار تخصیص داده می‌شود.');
+    alert('&#128260; حالت مهاجرت فعال شد\n\nIP APN: ' + apnIp + ' (از دیتابیس)\n\nدستورات زیر به ابتدای کانفیگ اضافه می‌شود:\n• no ip nat outside (روی WAN interface)\n• do clear ip nat translation forced\n• no ip nat pool APN-INT\n• no ip nat inside source list natlist pool APN-INT overload\n\nلطفاً سایر فیلدها را تکمیل کنید و کانفیگ تولید کنید.\nTunnel200 جدید به صورت خودکار تخصیص داده می‌شود.');
 }
 
 async function freeIntPoint(id, name, ip) {
