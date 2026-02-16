@@ -574,11 +574,15 @@ document.addEventListener('DOMContentLoaded', function() {
             <datalist id="branchList"></datalist>
 
             <!-- Management Point Checkbox -->
-            <div style="margin:10px 0; display:flex; align-items:center; gap:8px;">
-                <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;color:var(--text-secondary,#9ca3af);">
-                    <input type="checkbox" id="isManagementPoint" style="width:16px;height:16px;accent-color:#6366f1;cursor:pointer;">
-                    <span>این نقطه مدیریت است</span>
+            <div style="margin:14px 0; padding:12px 16px; background:linear-gradient(135deg,rgba(99,102,241,0.08),rgba(139,92,246,0.06)); border:1.5px solid rgba(99,102,241,0.3); border-radius:10px;">
+                <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:15px;font-weight:600;color:var(--text-primary,#e2e8f0);margin:0;">
+                    <input type="checkbox" id="isManagementPoint" style="width:18px;height:18px;accent-color:#6366f1;cursor:pointer;">
+                    <span style="display:flex;align-items:center;gap:6px;">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#818cf8" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                        این نقطه مدیریت است
+                    </span>
                 </label>
+                <div style="font-size:13px; color:var(--text-secondary,#94a3b8); margin-top:6px; padding-right:34px;">در صورت فعال بودن، ACL محدودکننده OSPF (NewINTACL) به کانفیگ اضافه می‌شود</div>
             </div>
 
             <!-- Auto-filled fields panel -->
@@ -637,15 +641,24 @@ document.addEventListener('DOMContentLoaded', function() {
 
             <!-- Connection Type Selection -->
             <div style="margin:16px 0; background:rgba(245,158,11,0.06); border:1px solid rgba(245,158,11,0.25); border-radius:10px; padding:14px;">
-              <label style="font-weight:700; color:#f59e0b; margin-bottom:8px;">&#128268; نوع اتصال مودم / ماژول</label>
-              <div style="display:flex; gap:10px; margin-bottom:10px; flex-wrap:wrap;">
-                <label style="display:flex; align-items:center; gap:6px; padding:8px 16px; border:2px solid #374151; border-radius:8px; cursor:pointer; transition:all 0.3s;" id="connDirect" onclick="selectConnectionType('direct')">
+              <label style="font-weight:700; color:#f59e0b; margin-bottom:8px; display:block;">&#128268; نوع اتصال اینترنت به روتر</label>
+              <div id="wizardHint" style="display:none; font-size:12px; color:#38bdf8; margin-bottom:10px; padding:8px 12px; background:rgba(56,189,248,0.08); border:1px solid rgba(56,189,248,0.2); border-radius:8px;"></div>
+              <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:10px;">
+                <label style="display:flex; align-items:center; gap:6px; padding:10px 14px; border:2px solid #374151; border-radius:8px; cursor:pointer; transition:all 0.3s; font-size:13px;" id="connDirect" onclick="selectConnectionType('direct')">
                   <input type="radio" name="connectionType" value="direct" checked style="accent-color:#f59e0b;">
-                  <span style="font-weight:600;">اتصال مستقیم به پورت روتر</span>
+                  <span style="font-weight:600;">مودم مستقیم به پورت روتر</span>
                 </label>
-                <label style="display:flex; align-items:center; gap:6px; padding:8px 16px; border:2px solid #374151; border-radius:8px; cursor:pointer; transition:all 0.3s;" id="conn4esw" onclick="selectConnectionType('4esw')">
+                <label style="display:flex; align-items:center; gap:6px; padding:10px 14px; border:2px solid #374151; border-radius:8px; cursor:pointer; transition:all 0.3s; font-size:13px;" id="conn4esw" onclick="selectConnectionType('4esw')">
                   <input type="radio" name="connectionType" value="4esw" style="accent-color:#f59e0b;">
-                  <span style="font-weight:600;">اتصال با ماژول 4ESW</span>
+                  <span style="font-weight:600;">مودم به ماژول 4ESW</span>
+                </label>
+                <label style="display:flex; align-items:center; gap:6px; padding:10px 14px; border:2px solid #374151; border-radius:8px; cursor:pointer; transition:all 0.3s; font-size:13px;" id="connGshdsl" onclick="selectConnectionType('gshdsl')">
+                  <input type="radio" name="connectionType" value="gshdsl" style="accent-color:#10b981;">
+                  <span style="font-weight:600;">ماژول G.SHDSL (ATM+BVI)</span>
+                </label>
+                <label style="display:flex; align-items:center; gap:6px; padding:10px 14px; border:2px solid #374151; border-radius:8px; cursor:pointer; transition:all 0.3s; font-size:13px;" id="connAdsl" onclick="selectConnectionType('adsl')">
+                  <input type="radio" name="connectionType" value="adsl" style="accent-color:#8b5cf6;">
+                  <span style="font-weight:600;">ماژول 1ADSL (ATM+BVI)</span>
                 </label>
               </div>
 
@@ -654,6 +667,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 <label style="font-size:13px;">&#128204; نام پورت روتر (WAN Interface)</label>
                 <input type="text" id="directPortName" placeholder="مثال: FastEthernet0/1 یا GigabitEthernet0/0" value="FastEthernet0/1">
                 <div style="font-size:11px; color:#94a3b8; margin-top:3px;">پورت فیزیکی که مودم به آن متصل است</div>
+                <label style="font-size:13px; margin-top:10px;">&#128465; اینترفیس فعلی NAT (برای حذف)</label>
+                <input type="text" id="currentNatInterface" placeholder="مثال: Loopback2000 یا BVI1" value="">
+                <div style="font-size:11px; color:#f59e0b; margin-top:3px;">اینترفیسی که الان NAT روی آن فعال است - دستور no ip nat... با این اینترفیس زده می‌شود</div>
               </div>
 
               <!-- 4ESW Module Options -->
@@ -669,6 +685,71 @@ document.addEventListener('DOMContentLoaded', function() {
                   </div>
                 </div>
                 <div style="font-size:11px; color:#94a3b8; margin-top:3px;">پورت ماژول اکسس این VLAN می‌شود و interface vlan ساخته می‌شود</div>
+              </div>
+
+              <!-- G.SHDSL Module Options -->
+              <div id="gshdslOptions" style="display:none;">
+                <div style="padding:8px 12px; background:rgba(16,185,129,0.06); border:1px solid rgba(16,185,129,0.2); border-radius:8px; margin-bottom:10px;">
+                  <div style="font-size:12px; color:#10b981; font-weight:600; margin-bottom:4px;">ماژول G.SHDSL - اتصال ATM به BVI</div>
+                  <div style="font-size:11px; color:#94a3b8;">کانفیگ controller DSL + ATM interface + bridge-group + BVI تولید می‌شود</div>
+                </div>
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+                  <div>
+                    <label style="font-size:13px;">اسلات ماژول G.SHDSL</label>
+                    <select id="gshdslSlot">
+                      <option value="0/0/0">Slot 0 (DSL 0/0/0 → ATM0/0/0)</option>
+                      <option value="0/1/0">Slot 1 (DSL 0/1/0 → ATM0/1/0)</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label style="font-size:13px;">شماره Bridge-Group</label>
+                    <input type="number" id="gshdslBridgeGroup" placeholder="مثال: 1 یا 2" value="1" min="1" max="10">
+                  </div>
+                </div>
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:8px;">
+                  <div>
+                    <label style="font-size:13px;">PVC (VPI/VCI)</label>
+                    <input type="text" id="gshdslPvc" placeholder="مثال: 0/35" value="0/35">
+                  </div>
+                  <div>
+                    <label style="font-size:13px;">Bandwidth (CBR)</label>
+                    <input type="text" id="gshdslCbr" placeholder="مثال: 512" value="512">
+                  </div>
+                </div>
+              </div>
+
+              <!-- 1ADSL Module Options -->
+              <div id="adslOptions" style="display:none;">
+                <div style="padding:8px 12px; background:rgba(139,92,246,0.06); border:1px solid rgba(139,92,246,0.2); border-radius:8px; margin-bottom:10px;">
+                  <div style="font-size:12px; color:#8b5cf6; font-weight:600; margin-bottom:4px;">ماژول 1ADSL - اتصال ATM به BVI</div>
+                  <div style="font-size:11px; color:#94a3b8;">کانفیگ ATM interface + bridge-group + BVI تولید می‌شود</div>
+                </div>
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+                  <div>
+                    <label style="font-size:13px;">اسلات ماژول 1ADSL</label>
+                    <select id="adslSlot">
+                      <option value="0/0/0">Slot 0 (ATM0/0/0)</option>
+                      <option value="0/1/0">Slot 1 (ATM0/1/0)</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label style="font-size:13px;">شماره Bridge-Group</label>
+                    <input type="number" id="adslBridgeGroup" placeholder="مثال: 1 یا 2" value="1" min="1" max="10">
+                  </div>
+                </div>
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:8px;">
+                  <div>
+                    <label style="font-size:13px;">PVC (VPI/VCI)</label>
+                    <input type="text" id="adslPvc" placeholder="مثال: 0/35" value="0/35">
+                  </div>
+                  <div>
+                    <label style="font-size:13px;">Encapsulation</label>
+                    <select id="adslEncap">
+                      <option value="aal5snap">AAL5SNAP</option>
+                      <option value="aal5mux">AAL5MUX PPPoE</option>
+                    </select>
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -1005,13 +1086,57 @@ document.addEventListener('DOMContentLoaded', function() {
         function selectConnectionType(type) {
             document.getElementById('directPortOptions').style.display = type === 'direct' ? 'block' : 'none';
             document.getElementById('eswOptions').style.display = type === '4esw' ? 'block' : 'none';
-            document.getElementById('connDirect').style.borderColor = type === 'direct' ? '#f59e0b' : '#374151';
-            document.getElementById('connDirect').style.background = type === 'direct' ? 'rgba(245,158,11,0.08)' : '';
-            document.getElementById('conn4esw').style.borderColor = type === '4esw' ? '#f59e0b' : '#374151';
-            document.getElementById('conn4esw').style.background = type === '4esw' ? 'rgba(245,158,11,0.08)' : '';
+            document.getElementById('gshdslOptions').style.display = type === 'gshdsl' ? 'block' : 'none';
+            document.getElementById('adslOptions').style.display = type === 'adsl' ? 'block' : 'none';
+
+            const types = {direct: '#f59e0b', '4esw': '#f59e0b', gshdsl: '#10b981', adsl: '#8b5cf6'};
+            ['connDirect', 'conn4esw', 'connGshdsl', 'connAdsl'].forEach(id => {
+                const el = document.getElementById(id);
+                const t = el.querySelector('input[type=radio]').value;
+                el.style.borderColor = t === type ? (types[type] || '#f59e0b') : '#374151';
+                el.style.background = t === type ? `rgba(${type === 'gshdsl' ? '16,185,129' : type === 'adsl' ? '139,92,246' : '245,158,11'},0.08)` : '';
+                el.querySelector('input[type=radio]').checked = t === type;
+            });
         }
-        // Initialize direct selected
-        selectConnectionType('direct');
+
+        // Read wizard config from localStorage and pre-select
+        (function readWizardConfig() {
+            try {
+                const wc = JSON.parse(localStorage.getItem('wizardConfig') || '{}');
+                const connType = wc.copper_connection;
+                const moduleType = wc.copper_module_type;
+                const modemType = wc.copper_modem_type;
+                const hint = document.getElementById('wizardHint');
+
+                if (connType === 'Module') {
+                    if (moduleType === 'G.SHDSL') {
+                        selectConnectionType('gshdsl');
+                        if (hint) { hint.style.display = 'block'; hint.textContent = 'از ویزارد: ماژول G.SHDSL انتخاب شده - کانفیگ ATM + BVI تولید می‌شود'; }
+                        return;
+                    } else if (moduleType === '1ADSL') {
+                        selectConnectionType('adsl');
+                        if (hint) { hint.style.display = 'block'; hint.textContent = 'از ویزارد: ماژول 1ADSL انتخاب شده - کانفیگ ATM + BVI تولید می‌شود'; }
+                        return;
+                    } else if (moduleType === '4ESW') {
+                        selectConnectionType('4esw');
+                        if (hint) { hint.style.display = 'block'; hint.textContent = 'از ویزارد: ماژول 4ESW انتخاب شده - کانفیگ VLAN تولید می‌شود'; }
+                        return;
+                    }
+                } else if (connType === 'Modem') {
+                    if (modemType === '4ESW_VLAN') {
+                        selectConnectionType('4esw');
+                        if (hint) { hint.style.display = 'block'; hint.textContent = 'از ویزارد: مودم به 4ESW - کانفیگ VLAN تولید می‌شود'; }
+                        return;
+                    } else if (modemType === 'Direct_Port') {
+                        selectConnectionType('direct');
+                        if (hint) { hint.style.display = 'block'; hint.textContent = 'از ویزارد: مودم مستقیم به پورت روتر'; }
+                        return;
+                    }
+                }
+            } catch (e) { /* no wizard data */ }
+            // Default
+            selectConnectionType('direct');
+        })();
 
         // Generate config button handler
         document.getElementById('generateBtn').addEventListener('click', async () => {
@@ -1205,13 +1330,20 @@ do wr
 
             if (connType === 'direct') {
                 const portName = document.getElementById('directPortName').value.trim() || 'FastEthernet0/1';
-                ifaceConfig = `
+                const currentNatIface = document.getElementById('currentNatInterface').value.trim();
+                let natRemoveCmd = '';
+                if (currentNatIface) {
+                    natRemoveCmd = `
+!
+! ===== حذف NAT قبلی از اینترفیس ${currentNatIface} =====
+! توجه: دستور زیر تایید yes/no نیاز دارد - yes به صورت خودکار ارسال می‌شود
+no ip nat inside source list natlist interface ${currentNatIface} overload
+yes
+!`;
+                }
+                ifaceConfig = `${natRemoveCmd}
 !
 ! ===== WAN Interface (اتصال مستقیم - ${portName}) =====
-!
-! توجه: دستور زیر تایید yes/no نیاز دارد - yes به صورت خودکار ارسال می‌شود
-no ip nat inside source list natlist interface ${portName} overload
-yes
 !
 interface ${portName}
  description ** 2nd Network-Intranet **
@@ -1239,6 +1371,17 @@ interface ${portName}
 !
 ! ===== 4ESW Module + VLAN (VLAN ${vlanNum} - ${eswPort}) =====
 !
+! ===== ابتدا VLAN را بسازید (در 1841 از vlan database استفاده کنید) =====
+! exit از conf t:
+end
+!
+vlan database
+vlan ${vlanNum}
+exit
+!
+! بازگشت به conf t:
+conf t
+!
 interface ${eswPort}
  switchport access vlan ${vlanNum}
 !
@@ -1252,6 +1395,102 @@ interface Vlan${vlanNum}
  no ip nat outside
  no shutdown
 !`.trim();
+            } else if (connType === 'gshdsl') {
+                // G.SHDSL Module: controller DSL + ATM + bridge-group + BVI
+                const slot = document.getElementById('gshdslSlot').value;
+                const bg = document.getElementById('gshdslBridgeGroup').value.trim() || '1';
+                const pvc = document.getElementById('gshdslPvc').value.trim() || '0/35';
+                const cbr = document.getElementById('gshdslCbr').value.trim() || '512';
+                const atmIface = `ATM${slot}`;
+                const pvcParts = pvc.split('/');
+                const pvcVpi = pvcParts[0] || '0';
+                const pvcVci = pvcParts[1] || '35';
+
+                ifaceConfig = `
+!
+! ===== G.SHDSL Module (${slot}) - ATM + Bridge-Group ${bg} + BVI${bg} =====
+!
+controller DSL ${slot}
+ mode atm
+ line-term cpe
+ line-mode 2-wire line-zero
+ dsl-mode shdsl symmetric annex B
+ line-rate auto
+!
+interface ${atmIface}
+ description ** Intranet **
+ no ip address
+ no atm ilmi-keepalive
+ bridge-group ${bg}
+ bridge-group ${bg} spanning-disabled
+ pvc ${pvcVpi}/${pvcVci}
+  cbr ${cbr}
+  encapsulation aal5snap
+ !
+!
+bridge irb
+bridge ${bg} protocol ieee
+bridge ${bg} route ip
+!
+interface BVI${bg}
+ description ** 2nd Network-Intranet **
+ ip address ${srcBranch} 255.255.255.248
+ ip access-group INTR@NET in
+ ip nat outside
+ ip virtual-reassembly
+ ip policy route-map nachi-worm
+ crypto map BKI-MAP-INT
+!`.trim();
+
+                // For G.SHDSL, NAT should use BVI interface
+                branchCfg = branchCfg.replace(
+                    'ip nat inside source list intnat interface Loopback2 overload',
+                    'ip nat inside source list intnat interface BVI' + bg + ' overload'
+                );
+            } else if (connType === 'adsl') {
+                // 1ADSL Module: ATM + bridge-group + BVI
+                const slot = document.getElementById('adslSlot').value;
+                const bg = document.getElementById('adslBridgeGroup').value.trim() || '1';
+                const pvc = document.getElementById('adslPvc').value.trim() || '0/35';
+                const encap = document.getElementById('adslEncap').value;
+                const atmIface = `ATM${slot}`;
+                const pvcParts = pvc.split('/');
+                const pvcVpi = pvcParts[0] || '0';
+                const pvcVci = pvcParts[1] || '35';
+
+                ifaceConfig = `
+!
+! ===== 1ADSL Module (${slot}) - ATM + Bridge-Group ${bg} + BVI${bg} =====
+!
+interface ${atmIface}
+ description ** Intranet **
+ no ip address
+ no atm ilmi-keepalive
+ bridge-group ${bg}
+ bridge-group ${bg} spanning-disabled
+ pvc ${pvcVpi}/${pvcVci}
+  encapsulation ${encap}
+ !
+!
+bridge irb
+bridge ${bg} protocol ieee
+bridge ${bg} route ip
+!
+interface BVI${bg}
+ description ** 2nd Network-Intranet **
+ ip address ${srcBranch} 255.255.255.248
+ ip access-group INTR@NET in
+ ip nat outside
+ ip virtual-reassembly
+ ip policy route-map nachi-worm
+ crypto map BKI-MAP-INT
+!`.trim();
+
+                // For 1ADSL, NAT should use BVI interface
+                branchCfg = branchCfg.replace(
+                    'ip nat inside source list intnat interface Loopback2 overload',
+                    'ip nat inside source list intnat interface BVI' + bg + ' overload'
+                );
             }
 
             // Insert interface config before do wr in branch config
