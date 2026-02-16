@@ -1385,7 +1385,21 @@ ip access-list extended GILANET-AccessList
  permit gre host ${d.hubApnIp} host ${d.branchApnIp}
 !`;
 
-  const hubCfg = `!
+  // HUB migration cleanup
+  let hubMigrationCleanup = '';
+  if (d.isMigration) {
+    hubMigrationCleanup = `!
+! ========================================================
+! ===== حذف کانفیگ‌های قدیم روی HUB (مهاجرت) =====
+! ========================================================
+no ip prefix-list APN-INT-Branch permit ${lanNet}/24
+no ip route ${lanNet} 255.255.255.0
+!
+! ===== پایان حذف کانفیگ‌های قدیم HUB =====
+`;
+  }
+
+  const hubCfg = `${hubMigrationCleanup}!
 ! ===== APN-INT-HUB Router =====${d.isSecondary ? '\n! ⚠️ شعبه قبلاً APN مالی دارد - فقط ACL entry اضافه شود' : ''}
 !
 interface Tunnel${d.hubTunnelId}

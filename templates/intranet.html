@@ -198,6 +198,117 @@ body { transition: background 0.3s ease, color 0.3s ease; }
     margin-left: 10px;
 }
 .theme-toggle:hover { transform: scale(1.1); }
+
+/* ========== DARK THEME EXPLICIT OVERRIDES ========== */
+/* Default is dark theme - ensure all text is bright and readable */
+:root body {
+    background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+    color: #e2e8f0;
+}
+:root .card {
+    background: rgba(30, 41, 59, 0.8);
+    border-color: rgba(255, 255, 255, 0.1);
+    color: #e2e8f0;
+}
+:root h1, :root h2, :root h3, :root h4 {
+    color: #f1f5f9;
+}
+:root label {
+    color: #cbd5e1;
+}
+:root .device-title {
+    color: #f1f5f9;
+}
+:root input, :root select, :root textarea {
+    background: rgba(15, 23, 42, 0.8);
+    border-color: rgba(255, 255, 255, 0.2);
+    color: #e2e8f0;
+}
+:root input::placeholder {
+    color: #64748b;
+}
+:root pre, :root textarea {
+    background: rgba(15, 23, 42, 0.8);
+    border-color: rgba(255, 255, 255, 0.15);
+    color: #e2e8f0;
+}
+
+/* Force dark theme on inline-styled elements */
+[data-theme="dark"] label,
+[data-theme="dark"] .form-label {
+    color: #cbd5e1 !important;
+}
+[data-theme="dark"] h1,
+[data-theme="dark"] h2,
+[data-theme="dark"] h3,
+[data-theme="dark"] h4 {
+    color: #f1f5f9 !important;
+}
+[data-theme="dark"] span {
+    color: inherit;
+}
+[data-theme="dark"] .card {
+    background: rgba(30, 41, 59, 0.85) !important;
+    border-color: rgba(255, 255, 255, 0.12) !important;
+    color: #e2e8f0 !important;
+}
+[data-theme="dark"] input,
+[data-theme="dark"] select,
+[data-theme="dark"] textarea {
+    background: rgba(15, 23, 42, 0.9) !important;
+    border: 1px solid rgba(255, 255, 255, 0.2) !important;
+    color: #f1f5f9 !important;
+}
+[data-theme="dark"] input::placeholder {
+    color: #64748b !important;
+}
+[data-theme="dark"] select option {
+    background: #1e293b;
+    color: #e2e8f0;
+}
+[data-theme="dark"] .device-title {
+    color: #f1f5f9 !important;
+}
+[data-theme="dark"] .device-box-header {
+    color: #f1f5f9 !important;
+}
+[data-theme="dark"] .user-info {
+    background: rgba(59, 130, 246, 0.15) !important;
+    color: #93c5fd !important;
+}
+[data-theme="dark"] .tunnel-info {
+    background: rgba(245, 158, 11, 0.12) !important;
+    color: #fcd34d !important;
+}
+[data-theme="dark"] .status-success {
+    background: rgba(16, 185, 129, 0.15) !important;
+    color: #6ee7b7 !important;
+    border-color: rgba(16, 185, 129, 0.3) !important;
+}
+[data-theme="dark"] .status-error {
+    background: rgba(239, 68, 68, 0.15) !important;
+    color: #fca5a5 !important;
+    border-color: rgba(239, 68, 68, 0.3) !important;
+}
+[data-theme="dark"] pre,
+[data-theme="dark"] textarea {
+    background: rgba(15, 23, 42, 0.9) !important;
+    border-color: rgba(255, 255, 255, 0.15) !important;
+    color: #e2e8f0 !important;
+}
+/* Auto-filled fields in dark mode */
+[data-theme="dark"] .auto-field-item {
+    background: rgba(59, 130, 246, 0.08) !important;
+    border-color: rgba(59, 130, 246, 0.2) !important;
+}
+[data-theme="dark"] .auto-field-label {
+    color: #94a3b8 !important;
+}
+[data-theme="dark"] .auto-field-value {
+    color: #f1f5f9 !important;
+}
+/* ========== END DARK THEME ========== */
+
 /* ========== END THEME ========== */
 
 /* Auto-fill fields styling */
@@ -231,8 +342,8 @@ body { transition: background 0.3s ease, color 0.3s ease; }
 
         body {
             font-family: monospace;
-            background: #f5faff;
-            color: #1e293b;
+            background: var(--bg-primary, #f5faff);
+            color: var(--text-primary, #1e293b);
             margin: 0;
         }
         header {
@@ -243,7 +354,10 @@ body { transition: background 0.3s ease, color 0.3s ease; }
             margin: 0;
             font-size: 20px;
             font-weight: bold;
-            color: #0f172a;
+            color: var(--text-primary, #0f172a);
+        }
+        h2 {
+            color: var(--text-primary, #0f172a);
         }
         .ascii-banner {
             text-align: center;
@@ -261,26 +375,27 @@ body { transition: background 0.3s ease, color 0.3s ease; }
             padding: 16px;
         }
         .card {
-            background: #ffffff;
-            border: 1px solid #cbd5e1;
+            background: var(--bg-card, #ffffff);
+            border: 1px solid var(--border-color, #cbd5e1);
             border-radius: 10px;
             padding: 16px;
+            color: var(--text-primary, #0f172a);
         }
         label {
             display: block;
             margin-top: 10px;
             font-size: 12px;
             font-weight: bold;
-            color: #334155;
+            color: var(--text-secondary, #334155);
         }
         input, select {
             width: 100%;
             padding: 8px;
             margin-top: 4px;
             border-radius: 6px;
-            border: 1px solid #94a3b8;
-            background: #f1f5f9;
-            color: #0f172a;
+            border: 1px solid var(--input-border, #94a3b8);
+            background: var(--input-bg, #f1f5f9);
+            color: var(--text-primary, #0f172a);
             box-sizing: border-box;
         }
         button {
@@ -309,15 +424,15 @@ body { transition: background 0.3s ease, color 0.3s ease; }
             font-size: 11px;
         }
         pre, textarea {
-            background: #f8fafc;
-            border: 1px dashed #94a3b8;
+            background: var(--input-bg, #f8fafc);
+            border: 1px dashed var(--border-color, #94a3b8);
             border-radius: 8px;
             padding: 14px;
             white-space: pre;
             overflow-x: auto;
             max-height: 60vh;
             font-size: 12px;
-            color: #1e293b;
+            color: var(--text-primary, #1e293b);
             width: 100%;
             box-sizing: border-box;
             font-family: Consolas, monospace;
@@ -371,7 +486,7 @@ body { transition: background 0.3s ease, color 0.3s ease; }
         .device-title {
             font-size: 13px;
             font-weight: bold;
-            color: #0f172a;
+            color: var(--text-primary, #0f172a);
         }
         .copy-btn {
             background: #10b981;
@@ -636,8 +751,19 @@ document.addEventListener('DOMContentLoaded', function() {
             </div>
             <button class="reload-btn" onclick="loadTunnels()">🔄 Reload list</button>
 
-            <label>Branch Tunnel Source</label>
+            <label>Branch Tunnel Source (IP Intranet)</label>
             <input type="text" id="tunnelsourcebranch" placeholder="e.g. 10.126.5.125">
+
+            <label>Subnet Mask اینترفیس Intranet</label>
+            <select id="intranetSubnetMask">
+              <option value="255.255.255.248">/29 - 255.255.255.248 (پیش‌فرض)</option>
+              <option value="255.255.255.252">/30 - 255.255.255.252</option>
+              <option value="255.255.255.240">/28 - 255.255.255.240</option>
+              <option value="255.255.255.224">/27 - 255.255.255.224</option>
+              <option value="255.255.255.192">/26 - 255.255.255.192</option>
+              <option value="255.255.255.128">/25 - 255.255.255.128</option>
+              <option value="255.255.255.0">/24 - 255.255.255.0</option>
+            </select>
 
             <!-- Connection Type Selection -->
             <div style="margin:16px 0; background:rgba(245,158,11,0.06); border:1px solid rgba(245,158,11,0.25); border-radius:10px; padding:14px;">
@@ -1158,6 +1284,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
             let loopback = document.getElementById('loopbackip').value.trim();
             let srcBranch = document.getElementById('tunnelsourcebranch').value.trim();
+            let intSubnetMask = document.getElementById('intranetSubnetMask').value;
             let intnat = document.getElementById('intnatsubnet').value.trim();
             let area = document.getElementById('ospfareabranch').value.trim();
             let wanName = document.getElementById('wantunnelname').value.trim();
@@ -1347,7 +1474,7 @@ yes
 !
 interface ${portName}
  description ** 2nd Network-Intranet **
- ip address ${srcBranch} 255.255.255.248
+ ip address ${srcBranch} ${intSubnetMask}
  ip access-group INTR@NET in
  ip virtual-reassembly
  ip policy route-map nachi-worm
@@ -1387,7 +1514,7 @@ interface ${eswPort}
 !
 interface Vlan${vlanNum}
  description ** 2nd Network-Intranet **
- ip address ${srcBranch} 255.255.255.248
+ ip address ${srcBranch} ${intSubnetMask}
  ip access-group INTR@NET in
  ip virtual-reassembly
  ip policy route-map nachi-worm
@@ -1434,7 +1561,7 @@ bridge ${bg} route ip
 !
 interface BVI${bg}
  description ** 2nd Network-Intranet **
- ip address ${srcBranch} 255.255.255.248
+ ip address ${srcBranch} ${intSubnetMask}
  ip access-group INTR@NET in
  ip nat outside
  ip virtual-reassembly
@@ -1478,7 +1605,7 @@ bridge ${bg} route ip
 !
 interface BVI${bg}
  description ** 2nd Network-Intranet **
- ip address ${srcBranch} 255.255.255.248
+ ip address ${srcBranch} ${intSubnetMask}
  ip access-group INTR@NET in
  ip nat outside
  ip virtual-reassembly
