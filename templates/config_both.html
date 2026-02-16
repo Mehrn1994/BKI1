@@ -270,6 +270,18 @@ document.addEventListener('DOMContentLoaded', function() {
     فیلدهای مشترک یکبار پر می‌شوند و IP های هر سرویس جداگانه از دیتابیس تخصیص داده می‌شود.
   </div>
 
+  <!-- Base Config Checkbox -->
+  <div style="background:linear-gradient(135deg, rgba(16,185,129,0.1), rgba(6,182,212,0.05)); border:2px solid rgba(16,185,129,0.3); border-radius:12px; padding:16px 20px; margin-bottom:20px;">
+    <label style="display:flex; align-items:center; gap:12px; cursor:pointer; font-size:15px;">
+      <input type="checkbox" id="includeBaseConfig" style="width:20px; height:20px; cursor:pointer; accent-color:#10b981;">
+      <span style="color:#10b981; font-weight:700;">&#127381; پیکربندی اولیه (Base Config)</span>
+      <span style="color:#94a3b8; font-size:12px;">- اگر نقطه تازه راه‌اندازی شده و نیاز به کانفیگ اولیه دارد</span>
+    </label>
+    <div style="margin-top:8px; margin-right:32px; font-size:12px; color:#64748b;">
+      شامل: hostname, AAA/TACACS, SSH, SNMP, Banner, NTP, Access-Lists و سایر تنظیمات پایه
+    </div>
+  </div>
+
   <form id="configForm">
 
     <!-- ============ COMMON FIELDS ============ -->
@@ -293,6 +305,16 @@ document.addEventListener('DOMContentLoaded', function() {
         <input id="branchNameEn" type="text" placeholder="مثال: TEH-Branch-Vanak" required>
         <div class="help-text">برای Description روترها و مسیریابی - فقط حروف انگلیسی و اعداد</div>
       </div>
+    </div>
+
+    <!-- Hostname for Base Config (shown when checkbox is checked) -->
+    <div class="form-group" id="hostnameGroup" style="display:none; background:rgba(16,185,129,0.05); padding:12px; border-radius:10px; border:1px dashed rgba(16,185,129,0.3);">
+      <label for="routerHostname">
+        <span style="background:#10b981; color:white; padding:2px 8px; border-radius:4px; font-size:11px;">Base Config</span>
+        Hostname روتر <span class="required">*</span>
+      </label>
+      <input id="routerHostname" type="text" placeholder="مثال: FRS-IzadKhast">
+      <div class="help-text">&#128161; نام روتر که در hostname تنظیم می‌شود</div>
     </div>
 
     <div class="row">
@@ -508,6 +530,18 @@ document.addEventListener('DOMContentLoaded', function() {
         </div>
         <button class="copy-btn" type="button" onclick="copyText('asrOut')">Copy</button>
         <div id="asrOut" class="output"></div>
+      </div>
+    </div>
+
+    <!-- Base Config Output (shown when checkbox is checked) -->
+    <div id="baseConfigBox" class="router-card" style="display:none; grid-column:1/-1; border-color:#10b981;">
+      <div style="position:relative;">
+        <div class="router-header">
+          <div class="router-title" style="color:#10b981;">&#127381; Base Config (پیکربندی اولیه)</div>
+          <div class="router-tag" style="border-color:#10b981; color:#6ee7b7;">Base</div>
+        </div>
+        <button class="copy-btn" type="button" onclick="copyText('baseOut')">Copy</button>
+        <div id="baseOut" class="output"></div>
       </div>
     </div>
   </div>
@@ -947,12 +981,211 @@ ip access-list extended GILANET-AccessList
 ip route ${loop2} 255.255.255.255 ${INT_ASR_NEXTHOP} name ${routeName}-APN-INT
 !`;
 
+    // Base config generation
+    const includeBase = document.getElementById('includeBaseConfig').checked;
+    const hostname = document.getElementById('routerHostname').value.trim() || branchNameEn;
+    let baseConfigOutput = '';
+    if (includeBase) {
+        baseConfigOutput = `!
+! ========================================================
+! ===== BASE CONFIGURATION - ${hostname} =====
+! ========================================================
+!
+service timestamps debug datetime msec
+service timestamps log datetime msec
+service password-encryption
+!
+hostname ${hostname}
+!
+enable secret 5 $1$3Q12$7N45.W42cpvHCQ4YbWymQ1
+!
+aaa new-model
+!
+aaa authentication login CACS group tacacs+ local
+aaa authentication enable default group tacacs+ enable
+aaa authorization console
+aaa authorization config-commands
+aaa authorization exec CACS group tacacs+ local
+aaa authorization commands 0 CACS group tacacs+ local
+aaa authorization commands 1 CACS group tacacs+ local
+aaa authorization commands 2 CACS group tacacs+ local
+aaa authorization commands 3 CACS group tacacs+ local
+aaa authorization commands 15 CACS group tacacs+ local
+aaa accounting exec CACS start-stop group tacacs+
+aaa accounting commands 0 CACS start-stop group tacacs+
+aaa accounting commands 1 CACS start-stop group tacacs+
+aaa accounting commands 2 CACS start-stop group tacacs+
+aaa accounting commands 3 CACS start-stop group tacacs+
+aaa accounting commands 15 CACS start-stop group tacacs+
+!
+aaa session-id common
+clock timezone Tehran 3 30
+ip cef
+!
+no ip domain lookup
+ip domain name agri-bank.com
+ip auth-proxy max-nodata-conns 3
+ip admission max-nodata-conns 3
+!
+username bkiadmin privilege 15 secret 5 $1$fllM$rh8AwpffbPwMyIOZwf79Y0
+!
+ip ssh authentication-retries 2
+ip ssh port 2001 rotary 1
+ip ssh version 2
+!
+track 5 ip route 10.0.0.0 255.255.0.0 reachability
+!
+interface Loopback0
+ ip address 10.${x}.254.${y} 255.255.255.255
+!
+interface FastEthernet0/0
+ description ** LAN **
+ ip address 10.${x}.${y}.5 255.255.255.0
+ ip access-group ETHERNET_IN in
+ ip nat inside
+ ip virtual-reassembly
+ duplex auto
+ speed auto
+ standby 1 ip 10.${x}.${y}.1
+ standby 1 timers 1 3
+ standby 1 preempt
+ standby 1 track 5 decrement 25
+!
+no ip http server
+no ip http secure-server
+ip tacacs source-interface Loopback0
+!
+ip access-list standard SNMP-READ
+ permit 10.0.50.0 0.0.1.255
+ip access-list standard SNMP-WRITE
+ permit 10.0.51.49
+ permit 10.0.51.48
+ permit 10.0.51.50
+ip access-list standard TELNET_ACCESS
+ permit 10.${x}.1.8
+ permit 10.${x}.254.1
+ permit 10.${x}.251.1
+ permit 10.${x}.${y}.6 0.0.0.1
+ permit 10.0.50.0 0.0.1.255
+ permit 10.30.42.0 0.0.0.255
+!
+ip access-list extended ETHERNET_IN
+ deny   tcp any any range 135 139
+ deny   tcp any any eq 445
+ deny   udp any any range 135 netbios-ss
+ deny   udp any any eq 1434
+ deny   udp any any eq 1433
+ deny   tcp any any eq 1026
+ deny   tcp any any eq 4444
+ deny   udp any any eq 445
+ permit ip 10.${x}.${y}.0 0.0.0.255 192.168.65.0 0.0.0.255
+ permit ip 10.${x}.${y}.0 0.0.0.255 192.168.72.0 0.0.0.255
+ permit udp 10.${x}.${y}.0 0.0.0.255 224.0.0.0 0.0.0.255
+ permit ip 10.${x}.${y}.0 0.0.0.255 10.${x}.${y}.0 0.0.0.255
+ permit ip 10.${x}.${y}.0 0.0.0.255 10.${x}.0.0 0.0.7.255
+ permit ip 10.${x}.${y}.0 0.0.0.255 10.0.0.0 0.0.255.255
+ permit ip 10.${x}.${y}.0 0.0.0.255 10.30.42.0 0.0.0.255
+ permit ip 10.${x}.${y}.0 0.0.0.255 host 91.240.60.40
+ permit ip 10.${x}.${y}.0 0.0.0.255 host 91.240.61.1
+!
+logging 10.0.51.63
+access-list 199 permit icmp any any echo
+access-list 199 permit icmp any any echo-reply
+snmp-server group LMS v3 priv read myview write myview access SNMP-WRITE
+snmp-server group NMS v3 priv access SNMP-READ
+snmp-server view myview mib-2 included
+snmp-server view myview system included
+snmp-server view myview cisco included
+snmp-server ifindex persist
+!
+route-map nachi-worm permit 10
+ match ip address 199
+ match length 92 92
+ set interface Null0
+!
+tacacs-server host 10.0.51.56
+tacacs-server host 10.0.51.57
+tacacs-server timeout 10
+tacacs-server directed-request
+tacacs-server key 7 096D5D4756544442
+!
+banner motd ^C
+        ===
+       -+ +-
+       | | |
+    <--\\ | /-->
+   ##| ||||| |##
+  ###| |+++| |###
+ /____\\\\ | //____\\ ********************************************************
+   <###\\|||/###>                  Keshavarzi Bank Network
+    +====+====+     WARNING: Access is restricted to authorized users only.
+    | WAN-BKI |     Unauthorized access is a violation of state , civil and
+    +===+=+===+                       criminal laws.
+        +=+        ********************************************************
+^C
+privilege interface level 3 shutdown
+privilege interface level 3 no shutdown
+privilege interface level 3 no
+privilege configure level 3 interface
+privilege exec level 3 traceroute
+privilege exec level 3 ping
+privilege exec level 2 configure terminal
+privilege exec level 2 configure
+privilege exec level 3 terminal monitor
+privilege exec level 3 terminal
+privilege exec all level 2 show
+!
+line con 0
+ authorization exec CACS
+ login authentication CACS
+line aux 0
+ no exec
+line vty 0 4
+ access-class TELNET_ACCESS in
+ authorization commands 2 CACS
+ authorization exec CACS
+ accounting commands 15 CACS
+ accounting exec CACS
+ login authentication CACS
+ transport input ssh
+ transport output ssh
+line vty 5 15
+ access-class TELNET_ACCESS in
+ authorization commands 2 CACS
+ authorization exec CACS
+ accounting exec CACS
+ login authentication CACS
+ transport input ssh
+ transport output ssh
+!
+scheduler max-task-time 5000
+scheduler allocate 20000 1000
+ntp authentication-key 1 md5 050A011D28014C08170E 7
+ntp authenticate
+ntp trusted-key 1
+ntp clock-period 17178346
+ntp source Loopback0
+ntp master 5
+ntp server 10.0.51.27
+!
+end`;
+    }
+
     // Display outputs
     document.getElementById('maliBranchOut').textContent = maliBranchCfg;
     document.getElementById('maliHubOut').textContent = maliHubCfg;
     document.getElementById('intBranchOut').textContent = intBranchCfg;
     document.getElementById('intHubOut').textContent = intHubCfg;
     document.getElementById('asrOut').textContent = asrCfg;
+
+    // Show/hide base config output
+    var baseBox = document.getElementById('baseConfigBox');
+    if (includeBase && baseConfigOutput) {
+        document.getElementById('baseOut').textContent = baseConfigOutput;
+        baseBox.style.display = 'block';
+    } else {
+        baseBox.style.display = 'none';
+    }
     document.getElementById('outputs').style.display = 'grid';
     document.getElementById('outputs').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 
@@ -1060,6 +1293,11 @@ function fallbackCopy(text) {
     try { document.execCommand('copy'); alert('کپی شد!'); } catch(e) { alert('خطا در کپی'); }
     document.body.removeChild(ta);
 }
+
+// ========== BASE CONFIG TOGGLE ==========
+document.getElementById('includeBaseConfig').addEventListener('change', function() {
+    document.getElementById('hostnameGroup').style.display = this.checked ? 'block' : 'none';
+});
 
 // ========== INIT ==========
 loadProvinces();

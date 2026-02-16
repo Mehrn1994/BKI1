@@ -614,6 +614,29 @@ document.addEventListener('DOMContentLoaded', function() {
 </div>
 
 <div class="card">
+  <!-- ========== EXISTING POINTS PANEL ========== -->
+  <div id="existingPointsPanel" style="margin-bottom:20px;">
+    <div onclick="toggleExistingPanel()" style="cursor:pointer; display:flex; align-items:center; justify-content:space-between; background:linear-gradient(135deg, rgba(139,92,246,0.08), rgba(124,58,237,0.04)); border:1px solid rgba(139,92,246,0.25); border-radius:12px; padding:14px 18px;">
+      <div style="display:flex; align-items:center; gap:10px;">
+        <span style="font-size:18px;">&#128203;</span>
+        <span style="font-weight:700; font-size:15px; color:#a78bfa;">نقاط موجود APN غیرمالی</span>
+        <span id="existingIntCount" style="background:#7c3aed; color:#fff; padding:2px 10px; border-radius:999px; font-size:12px; font-weight:700;">0</span>
+      </div>
+      <span id="existingPanelArrow" style="font-size:14px; color:#a78bfa; transition:transform 0.3s;">&#9660;</span>
+    </div>
+    <div id="existingPanelBody" style="display:none; border:1px solid rgba(139,92,246,0.15); border-top:none; border-radius:0 0 12px 12px; padding:14px 18px; background:rgba(15,23,42,0.5);">
+      <div style="display:flex; gap:10px; margin-bottom:12px; flex-wrap:wrap; align-items:center;">
+        <input id="existingSearch" type="text" placeholder="&#128269; جستجو نام شعبه، استان، IP..." style="flex:1; min-width:200px; padding:8px 12px; border-radius:8px; border:1px solid #374151; background:#020617; color:#e5e7eb; font-size:13px;" oninput="filterExistingPoints()">
+        <div style="font-size:12px; color:#a78bfa; background:rgba(139,92,246,0.1); padding:6px 12px; border-radius:8px; border:1px solid rgba(139,92,246,0.2);">
+          &#128260; <strong>مهاجرت:</strong> برای انتقال از طرح قدیم به جدید، روی دکمه مهاجرت کلیک کنید
+        </div>
+      </div>
+      <div id="existingPointsList" style="max-height:350px; overflow-y:auto;">
+        <div style="text-align:center; color:#64748b; padding:20px;">در حال بارگذاری...</div>
+      </div>
+    </div>
+  </div>
+
   <div class="section-title">ورودی‌ها</div>
 
   <form id="configForm">
@@ -1643,12 +1666,153 @@ document.getElementById('configForm').addEventListener('submit', async function(
   }
 });
 
+// ========== EXISTING POINTS PANEL ==========
+let allExistingIntPoints = [];
+let migrationMode = false;
+
+function toggleExistingPanel() {
+    var body = document.getElementById('existingPanelBody');
+    var arrow = document.getElementById('existingPanelArrow');
+    if (body.style.display === 'none') {
+        body.style.display = 'block';
+        arrow.style.transform = 'rotate(180deg)';
+        if (allExistingIntPoints.length === 0) loadExistingIntPoints();
+    } else {
+        body.style.display = 'none';
+        arrow.style.transform = '';
+    }
+}
+
+async function loadExistingIntPoints() {
+    try {
+        var res = await fetch('/api/int-reserved-points');
+        allExistingIntPoints = await res.json();
+        document.getElementById('existingIntCount').textContent = allExistingIntPoints.length;
+        renderExistingPoints(allExistingIntPoints);
+    } catch (e) {
+        document.getElementById('existingPointsList').innerHTML = '<div style="color:#f87171; padding:10px;">خطا در بارگذاری</div>';
+    }
+}
+
+function filterExistingPoints() {
+    var q = document.getElementById('existingSearch').value.trim().toLowerCase();
+    if (!q) { renderExistingPoints(allExistingIntPoints); return; }
+    var filtered = allExistingIntPoints.filter(function(p) {
+        return (p.branch_name && p.branch_name.toLowerCase().includes(q)) ||
+               (p.province && p.province.toLowerCase().includes(q)) ||
+               (p.ip_wan_apn && p.ip_wan_apn.includes(q)) ||
+               (p.lan_ip && p.lan_ip.includes(q)) ||
+               (p.username && p.username.toLowerCase().includes(q));
+    });
+    renderExistingPoints(filtered);
+}
+
+function renderExistingPoints(points) {
+    var container = document.getElementById('existingPointsList');
+    if (points.length === 0) {
+        container.innerHTML = '<div style="text-align:center; color:#64748b; padding:20px;">هیچ نقطه رزرو شده‌ای یافت نشد</div>';
+        return;
+    }
+    var html = '<table style="width:100%; border-collapse:collapse; font-size:13px;">';
+    html += '<thead><tr style="background:#111827; color:#94a3b8;">';
+    html += '<th style="padding:8px; text-align:right; border-bottom:1px solid #1f2937;">شعبه</th>';
+    html += '<th style="padding:8px; text-align:right; border-bottom:1px solid #1f2937;">استان</th>';
+    html += '<th style="padding:8px; text-align:right; border-bottom:1px solid #1f2937;">IP APN</th>';
+    html += '<th style="padding:8px; text-align:right; border-bottom:1px solid #1f2937;">LAN</th>';
+    html += '<th style="padding:8px; text-align:right; border-bottom:1px solid #1f2937;">کاربر</th>';
+    html += '<th style="padding:8px; text-align:center; border-bottom:1px solid #1f2937;">عملیات</th>';
+    html += '</tr></thead><tbody>';
+    points.forEach(function(p) {
+        var escapedName = (p.branch_name || '').replace(/'/g, "\\'");
+        html += '<tr style="border-bottom:1px solid #1f2937;">';
+        html += '<td style="padding:8px; color:#e5e7eb;">' + (p.branch_name || '-') + '</td>';
+        html += '<td style="padding:8px; color:#94a3b8;">' + (p.province || '-') + '</td>';
+        html += '<td style="padding:8px; color:#a78bfa; font-family:monospace;">' + (p.ip_wan_apn || '-') + '</td>';
+        html += '<td style="padding:8px; color:#94a3b8; font-family:monospace;">' + (p.lan_ip || '-') + '</td>';
+        html += '<td style="padding:8px; color:#94a3b8;">' + (p.username || '-') + '</td>';
+        html += '<td style="padding:8px; text-align:center;">';
+        html += '<button onclick="migrateIntPoint(\'' + escapedName + '\', \'' + (p.ip_wan_apn || '') + '\', \'' + (p.lan_ip || '') + '\', \'' + (p.province || '') + '\')" style="background:#1e1b4b; color:#a78bfa; border:1px solid #4c1d95; border-radius:6px; padding:4px 10px; cursor:pointer; font-size:11px; font-weight:600; margin-left:4px;">&#128260; مهاجرت</button>';
+        html += '<button onclick="freeIntPoint(' + p.id + ', \'' + escapedName + '\', \'' + (p.ip_wan_apn || '') + '\')" style="background:#7f1d1d; color:#fca5a5; border:1px solid #991b1b; border-radius:6px; padding:4px 10px; cursor:pointer; font-size:11px; font-weight:600;">&#128465; حذف</button>';
+        html += '</td></tr>';
+    });
+    html += '</tbody></table>';
+    container.innerHTML = html;
+}
+
+function migrateIntPoint(name, apnIp, lanIp, province) {
+    migrationMode = true;
+
+    // Set APN IP from existing point (no need for new IP)
+    autoAssignedApnIp = apnIp;
+    document.getElementById('autoApnIp').value = apnIp;
+    var successDiv = document.getElementById('apn-success');
+    successDiv.textContent = '&#128260; حالت مهاجرت: IP APN (' + apnIp + ') از نقطه موجود استفاده می‌شود (بدون تخصیص IP جدید)';
+    successDiv.style.display = 'block';
+    successDiv.style.background = '#1e1b4b';
+    successDiv.style.color = '#a78bfa';
+    successDiv.style.border = '1px solid #4c1d95';
+    document.getElementById('apn-error').style.display = 'none';
+
+    // Auto-fill province and LAN IP
+    if (province) {
+        var pSel = document.getElementById('lanProvinceFilter');
+        pSel.value = province;
+        loadFreeLanIps(province).then(function() {
+            if (lanIp) {
+                var lSel = document.getElementById('freeLanIp');
+                var found = false;
+                for (var i = 0; i < lSel.options.length; i++) {
+                    if (lSel.options[i].value === lanIp) { found = true; lSel.value = lanIp; break; }
+                }
+                if (!found) {
+                    var o = document.createElement('option');
+                    o.value = lanIp; o.textContent = lanIp + ' (مهاجرت)';
+                    lSel.insertBefore(o, lSel.firstChild.nextSibling);
+                    lSel.value = lanIp;
+                }
+                var parts = lanIp.split('.');
+                if (parts.length >= 2) document.getElementById('ospfArea').value = parts[1];
+                lSel.disabled = false;
+            }
+        });
+    }
+
+    // Close panel and scroll to form
+    document.getElementById('existingPanelBody').style.display = 'none';
+    document.getElementById('existingPanelArrow').style.transform = '';
+    document.getElementById('branchName').focus();
+
+    alert('&#128260; حالت مهاجرت فعال شد\n\nIP APN: ' + apnIp + ' (از دیتابیس)\n\nلطفاً سایر فیلدها را تکمیل کنید و کانفیگ تولید کنید.\nTunnel200 جدید به صورت خودکار تخصیص داده می‌شود.');
+}
+
+async function freeIntPoint(id, name, ip) {
+    if (!confirm('آیا مطمئنید می‌خواهید APN غیرمالی نقطه "' + name + '" (IP: ' + ip + ') را حذف و IP را آزاد کنید?\n\nاین عملیات قابل بازگشت نیست!')) return;
+    var username = localStorage.getItem('currentUser') || localStorage.getItem('username') || '';
+    try {
+        var res = await fetch('/api/free-int-point', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({id: id, username: username})
+        });
+        var result = await res.json();
+        if (result.status === 'ok') {
+            alert('✅ ' + result.message + '\n\n' + result.updates.join('\n'));
+            loadExistingIntPoints();
+            autoAssignApnIp();
+            autoAssignTunnel200();
+        } else {
+            alert('❌ خطا: ' + result.error);
+        }
+    } catch (e) { alert('❌ خطا: ' + e.message); }
+}
+
 // Load data on page load
 console.log(' Initializing APN-INT Config Generator...');
 loadBranches();
 loadLanProvinces();
 autoAssignApnIp();
 autoAssignTunnel200();
+loadExistingIntPoints();
 
 // Warn before leaving page with unsaved form data
 let formModified = false;
