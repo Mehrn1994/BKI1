@@ -635,6 +635,43 @@ document.addEventListener('DOMContentLoaded', function() {
             <label>Branch Tunnel Source</label>
             <input type="text" id="tunnelsourcebranch" placeholder="e.g. 10.126.5.125">
 
+            <!-- Connection Type Selection -->
+            <div style="margin:16px 0; background:rgba(245,158,11,0.06); border:1px solid rgba(245,158,11,0.25); border-radius:10px; padding:14px;">
+              <label style="font-weight:700; color:#f59e0b; margin-bottom:8px;">&#128268; نوع اتصال مودم / ماژول</label>
+              <div style="display:flex; gap:10px; margin-bottom:10px; flex-wrap:wrap;">
+                <label style="display:flex; align-items:center; gap:6px; padding:8px 16px; border:2px solid #374151; border-radius:8px; cursor:pointer; transition:all 0.3s;" id="connDirect" onclick="selectConnectionType('direct')">
+                  <input type="radio" name="connectionType" value="direct" checked style="accent-color:#f59e0b;">
+                  <span style="font-weight:600;">اتصال مستقیم به پورت روتر</span>
+                </label>
+                <label style="display:flex; align-items:center; gap:6px; padding:8px 16px; border:2px solid #374151; border-radius:8px; cursor:pointer; transition:all 0.3s;" id="conn4esw" onclick="selectConnectionType('4esw')">
+                  <input type="radio" name="connectionType" value="4esw" style="accent-color:#f59e0b;">
+                  <span style="font-weight:600;">اتصال با ماژول 4ESW</span>
+                </label>
+              </div>
+
+              <!-- Direct Port Options -->
+              <div id="directPortOptions">
+                <label style="font-size:13px;">&#128204; نام پورت روتر (WAN Interface)</label>
+                <input type="text" id="directPortName" placeholder="مثال: FastEthernet0/1 یا GigabitEthernet0/0" value="FastEthernet0/1">
+                <div style="font-size:11px; color:#94a3b8; margin-top:3px;">پورت فیزیکی که مودم به آن متصل است</div>
+              </div>
+
+              <!-- 4ESW Module Options -->
+              <div id="eswOptions" style="display:none;">
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+                  <div>
+                    <label style="font-size:13px;">&#127760; شماره VLAN</label>
+                    <input type="number" id="eswVlan" placeholder="مثال: 100" min="2" max="4094">
+                  </div>
+                  <div>
+                    <label style="font-size:13px;">&#128204; پورت ماژول 4ESW</label>
+                    <input type="text" id="eswPort" placeholder="مثال: FastEthernet0/0/0">
+                  </div>
+                </div>
+                <div style="font-size:11px; color:#94a3b8; margin-top:3px;">پورت ماژول اکسس این VLAN می‌شود و interface vlan ساخته می‌شود</div>
+              </div>
+            </div>
+
             <!-- Branch name in English for tunnel description -->
             <label>Branch Name (English)</label>
             <input type="text" id="branchNameEn" placeholder="e.g. KhomeyniShahr" oninput="updateTunnelDesc()">
@@ -964,6 +1001,18 @@ document.addEventListener('DOMContentLoaded', function() {
             document.getElementById('autoDescPanel').style.display = 'block';
         }
 
+        // Connection type handler
+        function selectConnectionType(type) {
+            document.getElementById('directPortOptions').style.display = type === 'direct' ? 'block' : 'none';
+            document.getElementById('eswOptions').style.display = type === '4esw' ? 'block' : 'none';
+            document.getElementById('connDirect').style.borderColor = type === 'direct' ? '#f59e0b' : '#374151';
+            document.getElementById('connDirect').style.background = type === 'direct' ? 'rgba(245,158,11,0.08)' : '';
+            document.getElementById('conn4esw').style.borderColor = type === '4esw' ? '#f59e0b' : '#374151';
+            document.getElementById('conn4esw').style.background = type === '4esw' ? 'rgba(245,158,11,0.08)' : '';
+        }
+        // Initialize direct selected
+        selectConnectionType('direct');
+
         // Generate config button handler
         document.getElementById('generateBtn').addEventListener('click', async () => {
             const generateBtn = document.getElementById('generateBtn');
@@ -1149,6 +1198,66 @@ ip nat inside source list intnat interface Loopback2 overload
 !
 do wr
 `.trim();
+
+            // Add connection type interface config
+            const connType = document.querySelector('input[name="connectionType"]:checked').value;
+            let ifaceConfig = '';
+
+            if (connType === 'direct') {
+                const portName = document.getElementById('directPortName').value.trim() || 'FastEthernet0/1';
+                ifaceConfig = `
+!
+! ===== WAN Interface (اتصال مستقیم - ${portName}) =====
+!
+! توجه: دستور زیر تایید yes/no نیاز دارد - yes به صورت خودکار ارسال می‌شود
+no ip nat inside source list natlist interface ${portName} overload
+yes
+!
+interface ${portName}
+ description ** 2nd Network-Intranet **
+ ip address ${srcBranch} 255.255.255.248
+ ip access-group INTR@NET in
+ ip virtual-reassembly
+ ip policy route-map nachi-worm
+ duplex auto
+ speed auto
+ crypto map BKI-MAP-INT
+ no ip nat outside
+!`.trim();
+            } else if (connType === '4esw') {
+                const vlanNum = document.getElementById('eswVlan').value.trim();
+                const eswPort = document.getElementById('eswPort').value.trim() || 'FastEthernet0/0/0';
+
+                if (!vlanNum) {
+                    showStatus('⚠ لطفاً شماره VLAN را وارد کنید', true);
+                    generateBtn.disabled = false;
+                    generateBtn.textContent = 'Generate Configs';
+                    return;
+                }
+
+                ifaceConfig = `
+!
+! ===== 4ESW Module + VLAN (VLAN ${vlanNum} - ${eswPort}) =====
+!
+interface ${eswPort}
+ switchport access vlan ${vlanNum}
+!
+interface Vlan${vlanNum}
+ description ** 2nd Network-Intranet **
+ ip address ${srcBranch} 255.255.255.248
+ ip access-group INTR@NET in
+ ip virtual-reassembly
+ ip policy route-map nachi-worm
+ crypto map BKI-MAP-INT
+ no ip nat outside
+ no shutdown
+!`.trim();
+            }
+
+            // Insert interface config before do wr in branch config
+            if (ifaceConfig) {
+                branchCfg = branchCfg.replace(/\n?do wr$/, '\n' + ifaceConfig + '\n!\ndo wr');
+            }
 
             // WAN-INTR1 Config
             const wan1Cfg = `

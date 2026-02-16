@@ -1,0 +1,705 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <title>PTMP Config Generator</title>
+  <style>
+/* ========== THEME SYSTEM ========== */
+:root {
+    --bg-primary: #0f172a;
+    --bg-secondary: #1e293b;
+    --bg-card: rgba(30, 41, 59, 0.8);
+    --bg-header: rgba(30, 41, 59, 0.9);
+    --text-primary: #e2e8f0;
+    --text-secondary: #94a3b8;
+    --text-muted: #64748b;
+    --border-color: rgba(255, 255, 255, 0.1);
+    --shadow-color: rgba(0, 0, 0, 0.3);
+    --input-bg: rgba(15, 23, 42, 0.8);
+    --input-border: rgba(255, 255, 255, 0.2);
+    --card-hover: rgba(255, 255, 255, 0.05);
+}
+[data-theme="light"] {
+    --bg-primary: #f8fafc;
+    --bg-secondary: #f1f5f9;
+    --bg-card: #ffffff;
+    --bg-header: #ffffff;
+    --text-primary: #0f172a;
+    --text-secondary: #334155;
+    --text-muted: #475569;
+    --border-color: rgba(0, 0, 0, 0.15);
+    --shadow-color: rgba(0, 0, 0, 0.1);
+    --input-bg: #ffffff;
+    --input-border: rgba(0, 0, 0, 0.2);
+    --card-hover: rgba(0, 0, 0, 0.05);
+}
+body { transition: background 0.3s ease, color 0.3s ease; }
+[data-theme="light"] body { background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 100%) !important; color: var(--text-primary) !important; }
+[data-theme="light"] .top-bar { background: var(--bg-header) !important; border-color: var(--border-color) !important; box-shadow: 0 2px 8px rgba(0,0,0,0.08) !important; }
+[data-theme="light"] .card { background: var(--bg-card) !important; border-color: var(--border-color) !important; color: var(--text-primary) !important; box-shadow: 0 2px 12px rgba(0,0,0,0.06) !important; }
+[data-theme="light"] input, [data-theme="light"] select { background: var(--input-bg) !important; border: 1px solid var(--input-border) !important; color: #0f172a !important; }
+[data-theme="light"] input::placeholder { color: #64748b !important; }
+[data-theme="light"] select option { background: #fff; color: #0f172a; }
+[data-theme="light"] label, [data-theme="light"] h1, [data-theme="light"] h2, [data-theme="light"] h3, [data-theme="light"] .section-title, [data-theme="light"] .app-title h1, [data-theme="light"] .app-title p { color: #0f172a !important; }
+[data-theme="light"] .help-text, [data-theme="light"] small { color: #334155 !important; }
+[data-theme="light"] pre, [data-theme="light"] code, [data-theme="light"] .output { background: #1e293b !important; color: #e2e8f0 !important; }
+.theme-toggle { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 50%; width: 36px; height: 36px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1.1rem; transition: all 0.3s ease; margin-left: 10px; }
+.theme-toggle:hover { transform: scale(1.1); }
+
+body { font-family: sans-serif; background:#0f172a; padding:30px; color:#e2e8f0; font-size:16px; line-height:1.6; }
+.top-bar { max-width:1200px; margin:0 auto 16px auto; display:flex; justify-content:space-between; align-items:center; background:#020617; padding:12px 20px; border-radius:12px; border:1px solid #1f2937; }
+.user-display { font-size:14px; color:#a0aec0; }
+.user-name { color:#38bdf8; font-weight:600; font-size:15px; }
+.logout-link { color:#f97373; text-decoration:none; font-size:13px; }
+.app-title { max-width:1200px; margin:0 auto 20px auto; text-align:center; }
+.app-title h1 { font-size:1.8rem; margin-bottom:6px; color:#f59e0b; font-weight:700; }
+.app-title p { font-size:15px; color:#a0aec0; font-weight:500; }
+.card { max-width:1200px; margin:0 auto; background:#020617; border-radius:16px; padding:24px; box-shadow:0 25px 60px rgba(0,0,0,0.65); border:1px solid #1f2937; }
+.section-title { font-size:1.15rem; margin-bottom:12px; color:#f59e0b; font-weight:700; }
+.form-group { margin-bottom:18px; }
+label { font-size:15px; display:block; margin-bottom:6px; color:#e5e7eb; font-weight:600; }
+.required { color:#f97373; }
+input, select { width:100%; padding:12px 14px; font-size:15px; border-radius:10px; border:1px solid #374151; background:#020617; color:#e5e7eb; box-sizing:border-box; outline:none; transition:all .2s ease; }
+input:focus, select:focus { border-color:#f59e0b; box-shadow:0 0 0 1px #f59e0b; }
+.row { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+@media (max-width: 900px) { .row { grid-template-columns:1fr; } }
+.btns { margin-top:10px; display:flex; gap:12px; flex-wrap:wrap; }
+button { padding:10px 18px; border:none; border-radius:999px; cursor:pointer; font-size:15px; font-weight:600; }
+.btn-generate { background:linear-gradient(135deg,#f59e0b,#d97706); color:#0b1120; }
+.btn-reset { background:#111827; color:#e5e7eb; border:1px solid #374151; }
+.outputs-wrapper { margin-top:26px; display:grid; grid-template-columns:1fr; gap:18px; }
+.router-card { background:radial-gradient(circle at top,#1f2937 0,#020617 55%); border-radius:16px; padding:14px; border:1px solid #f59e0b; box-shadow:0 20px 45px rgba(15,23,42,0.9); position:relative; overflow:hidden; }
+.router-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:6px; }
+.router-title { font-size:15px; font-weight:700; color:#f59e0b; }
+.router-tag { font-size:11px; padding:2px 8px; border-radius:999px; border:1px solid #f59e0b; color:#fef3c7; }
+.output { background:#020617; border-radius:10px; border:1px solid #111827; padding:10px 12px; white-space:pre; font-family:"Fira Code",monospace; font-size:14px; line-height:1.5; color:#bbf7d0; max-height:500px; overflow:auto; direction:ltr; text-align:left; }
+.copy-btn { position:absolute; top:10px; left:12px; font-size:11px; padding:4px 10px; border-radius:999px; border:1px solid #4b5563; background:#020617; color:#e5e7eb; cursor:pointer; z-index:2; }
+.info-badge { display:inline-block; background:#78350f; color:#fcd34d; padding:2px 8px; border-radius:6px; font-size:11px; margin-right:8px; font-weight:600; }
+.help-text { font-size:14px; color:#94a3b8; margin-top:4px; font-weight:500; }
+.section-divider { height:1px; background:linear-gradient(90deg, transparent, #374151, transparent); margin:24px 0; }
+.info-box { background:#0f172a; border:1px solid #f59e0b; border-radius:8px; padding:14px 18px; margin-bottom:20px; font-size:15px; color:#fcd34d; font-weight:500; }
+.serial-option { display:inline-flex; align-items:center; gap:8px; padding:12px 24px; border:2px solid #374151; border-radius:12px; cursor:pointer; transition:all 0.3s; background:#020617; margin-left:12px; }
+.serial-option:hover { border-color:#f59e0b; }
+.serial-option.selected { border-color:#f59e0b; background:rgba(245,158,11,0.1); box-shadow:0 0 0 3px rgba(245,158,11,0.15); }
+.serial-option input[type="radio"] { display:none; }
+.serial-label { font-size:15px; font-weight:600; color:#e5e7eb; }
+.page-background { position:fixed; top:0; left:0; width:100%; height:100%; z-index:-1; overflow:hidden; }
+.page-background::before { content:''; position:absolute; top:0; left:0; width:100%; height:100%; background-image:url('/static/background.jpg'); background-size:cover; background-position:center; opacity:0.5; }
+.page-background::after { content:''; position:absolute; top:0; left:0; width:100%; height:100%; background:linear-gradient(135deg, rgba(15,23,42,0.45) 0%, rgba(30,41,59,0.55) 100%); }
+[data-theme="light"] .page-background::before { opacity:0.45; }
+[data-theme="light"] .page-background::after { background:linear-gradient(135deg, rgba(248,250,252,0.55) 0%, rgba(241,245,249,0.6) 100%); }
+  </style>
+<script>
+(function() { var t = localStorage.getItem('theme') || 'dark'; document.documentElement.setAttribute('data-theme', t); })();
+function toggleTheme() {
+    var c = document.documentElement.getAttribute('data-theme') || 'dark';
+    var n = c === 'dark' ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', n);
+    localStorage.setItem('theme', n);
+    document.getElementById('themeIcon').textContent = n === 'dark' ? '\u{1F319}' : '\u{2600}\u{FE0F}';
+}
+document.addEventListener('DOMContentLoaded', function() {
+    var icon = document.getElementById('themeIcon');
+    if (icon) icon.textContent = (localStorage.getItem('theme') || 'dark') === 'dark' ? '\u{1F319}' : '\u{2600}\u{FE0F}';
+});
+</script>
+</head>
+<body>
+<div class="page-background"></div>
+
+<div class="top-bar">
+  <div style="display:flex; align-items:center; gap:16px;">
+    <a href="/config-wizard" style="background:#f59e0b; color:#0b1120; padding:8px 16px; border-radius:8px; text-decoration:none; font-size:13px; font-weight:600;">
+      &#11013;&#65039; بازگشت به ویزارد
+    </a>
+    <img src="/static/logo.png" alt="Logo" style="height:56px;">
+    <div class="user-display">&#128100; کاربر فعال: <span class="user-name" id="currentUser">...</span></div>
+  </div>
+  <div style="display:flex; align-items:center; gap:8px;">
+    <button class="theme-toggle" onclick="toggleTheme()" title="تغییر تم"><span id="themeIcon">&#127769;</span></button>
+    <a href="/login" class="logout-link" onclick="localStorage.clear(); sessionStorage.clear();">خروج</a>
+  </div>
+</div>
+
+<div class="app-title">
+  <h1>PTMP (سیم مسی - مالی)</h1>
+  <p>پیکربندی Point-to-MultiPoint از طریق H-Wic T-2 (Serial)</p>
+</div>
+
+<div class="card">
+  <div class="info-box">
+    &#9889; <strong>PTMP:</strong> پیکربندی سریال برای ارتباط مالی از طریق بستر سیم مسی | OSPF Process 1
+  </div>
+
+  <!-- Base Config Checkbox -->
+  <div style="background:linear-gradient(135deg, rgba(245,158,11,0.1), rgba(251,146,60,0.05)); border:2px solid rgba(245,158,11,0.3); border-radius:12px; padding:16px 20px; margin-bottom:20px;">
+    <label style="display:flex; align-items:center; gap:12px; cursor:pointer; font-size:15px;">
+      <input type="checkbox" id="includeBaseConfig" style="width:20px; height:20px; cursor:pointer; accent-color:#f59e0b;">
+      <span style="color:#f59e0b; font-weight:700;">&#127381; پیکربندی اولیه (Base Config)</span>
+      <span style="color:#94a3b8; font-size:12px;">- برای روترهایی که اولین بار پیکربندی می‌شوند</span>
+    </label>
+    <div style="margin-top:8px; margin-right:32px; font-size:12px; color:#64748b;">
+      شامل: AAA/TACACS, SSH, SNMP, Access-Lists, Banner, NTP, LAN Interface, Loopback و سایر تنظیمات پایه
+    </div>
+  </div>
+
+  <div class="section-title">ورودی‌ها</div>
+
+  <form id="configForm">
+    <!-- Branch Selection -->
+    <div class="row">
+      <div class="form-group">
+        <label for="branchName">
+          <span class="info-badge">&#128205; شعبه</span>
+          نام شعبه (فارسی) - اختیاری
+        </label>
+        <input id="branchName" type="text" list="branchList" placeholder="برای شعبه موجود انتخاب کنید" autocomplete="off">
+        <datalist id="branchList"></datalist>
+        <div class="help-text">&#128161; انتخاب از لیست برای پر شدن خودکار LAN IP | برای نقطه جدید خالی بگذارید</div>
+      </div>
+
+      <div class="form-group">
+        <label for="routerHostname">
+          <span class="info-badge">&#127991;&#65039; Hostname</span>
+          نام روتر (Hostname) <span class="required">*</span>
+        </label>
+        <input id="routerHostname" type="text" placeholder="مثال: FRS-IzadKhast" required>
+        <div class="help-text">&#128161; نام روتر - فقط حروف انگلیسی، اعداد و خط تیره</div>
+      </div>
+    </div>
+
+    <div class="section-divider"></div>
+
+    <!-- LAN IP Selection -->
+    <div class="section-title">انتخاب IP LAN (برای محاسبه OSPF Area و Router-ID)</div>
+
+    <div class="row">
+      <div class="form-group">
+        <label for="lanProvinceFilter">
+          <span class="info-badge">&#128506;&#65039; استان</span>
+          انتخاب استان <span class="required">*</span>
+        </label>
+        <select id="lanProvinceFilter" required>
+          <option value="">انتخاب کنید...</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="freeLanIp">
+          <span class="info-badge" id="lanFreeCount">0 آزاد</span>
+          IP LAN <span class="required">*</span>
+        </label>
+        <select id="freeLanIp" disabled required>
+          <option value="">ابتدا استان را انتخاب کنید</option>
+        </select>
+        <div class="help-text">&#127919; OSPF Area = اکتت دوم LAN IP | Router-ID = 10.X.254.Y</div>
+      </div>
+    </div>
+
+    <div class="section-divider"></div>
+
+    <!-- Serial Port Selection -->
+    <div class="section-title">انتخاب پورت سریال اصلی</div>
+    <div class="form-group">
+      <div style="display:flex; flex-wrap:wrap; gap:0;">
+        <label class="serial-option selected" onclick="selectSerial(this, 'Serial0/0/0')">
+          <input type="radio" name="serialPort" value="Serial0/0/0" checked>
+          <span class="serial-label">&#128268; Serial0/0/0</span>
+        </label>
+        <label class="serial-option" onclick="selectSerial(this, 'Serial0/0/1')">
+          <input type="radio" name="serialPort" value="Serial0/0/1">
+          <span class="serial-label">&#128268; Serial0/0/1</span>
+        </label>
+      </div>
+      <div class="help-text">&#9888;&#65039; پورت سریال اصلی (با ip unnumbered) را انتخاب کنید</div>
+    </div>
+
+    <input id="ospfArea" type="hidden" value="">
+
+    <div class="btns">
+      <button type="submit" class="btn-generate">&#9881;&#65039; تولید پیکربندی PTMP</button>
+      <button type="reset" class="btn-reset">&#128260; پاک کردن</button>
+    </div>
+  </form>
+
+  <div id="outputs" class="outputs-wrapper" style="display:none;">
+    <div class="router-card">
+      <div style="position:relative;">
+        <div class="router-header">
+          <div class="router-title">Branch Router (PTMP - مالی)</div>
+          <div class="router-tag">Serial</div>
+        </div>
+        <button class="copy-btn" type="button" onclick="copyText('branchOut')">Copy</button>
+        <div id="branchOut" class="output"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// Auth
+const SESSION_TIMEOUT = 8 * 3600000;
+(function() {
+    var s = localStorage.getItem('sessionStart');
+    if (s && (Date.now() - parseInt(s)) > SESSION_TIMEOUT) { localStorage.clear(); sessionStorage.clear(); location.href = '/login'; }
+})();
+const currentUsername = localStorage.getItem('currentUser') || localStorage.getItem('username') || sessionStorage.getItem('username');
+if (!currentUsername) { alert('لطفاً ابتدا وارد سیستم شوید'); window.location.href = '/login'; }
+else { document.getElementById('currentUser').textContent = currentUsername; }
+
+let selectedSerial = 'Serial0/0/0';
+
+function selectSerial(el, val) {
+    document.querySelectorAll('.serial-option').forEach(function(o) { o.classList.remove('selected'); });
+    el.classList.add('selected');
+    el.querySelector('input[type="radio"]').checked = true;
+    selectedSerial = val;
+}
+
+// Load branches
+async function loadBranches() {
+    try {
+        const res = await fetch('/api/mali-branches');
+        const branches = await res.json();
+        const dl = document.getElementById('branchList');
+        dl.innerHTML = '';
+        branches.forEach(function(b) {
+            var opt = document.createElement('option');
+            opt.value = b.name + '|' + b.province + '|' + b.lan_ip;
+            dl.appendChild(opt);
+        });
+    } catch (e) { console.error('loadBranches error:', e); }
+}
+
+// Load provinces
+async function loadProvinces() {
+    try {
+        const res = await fetch('/api/provinces');
+        const provinces = await res.json();
+        var sel = document.getElementById('lanProvinceFilter');
+        sel.innerHTML = '<option value="">انتخاب کنید...</option>';
+        provinces.forEach(function(p) {
+            var opt = document.createElement('option');
+            opt.value = p; opt.textContent = p;
+            sel.appendChild(opt);
+        });
+    } catch (e) { console.error('loadProvinces error:', e); }
+}
+
+// Load free LAN IPs
+async function loadFreeLanIps(province) {
+    var sel = document.getElementById('freeLanIp');
+    var counter = document.getElementById('lanFreeCount');
+    if (!province) { sel.innerHTML = '<option value="">ابتدا استان را انتخاب کنید</option>'; sel.disabled = true; counter.textContent = '0 آزاد'; return; }
+    try {
+        sel.innerHTML = '<option value="">در حال بارگذاری...</option>'; sel.disabled = true;
+        const res = await fetch('/api/free-lan-ips?province=' + encodeURIComponent(province));
+        const ips = await res.json();
+        sel.innerHTML = '<option value="">-- انتخاب کنید --</option>';
+        ips.forEach(function(ip) { var opt = document.createElement('option'); opt.value = ip.ip; opt.textContent = ip.ip; sel.appendChild(opt); });
+        sel.disabled = false;
+        counter.textContent = ips.length + ' آزاد';
+    } catch (e) { console.error('loadFreeLanIps error:', e); sel.innerHTML = '<option value="">خطا</option>'; }
+}
+
+document.getElementById('lanProvinceFilter').addEventListener('change', function() { loadFreeLanIps(this.value); });
+
+// Auto-fill from branch selection
+document.getElementById('branchName').addEventListener('input', async function() {
+    var v = this.value.trim();
+    if (v.includes('|')) {
+        var parts = v.split('|');
+        this.value = parts[0];
+        var province = parts[1], lanIp = parts[2];
+        var pSel = document.getElementById('lanProvinceFilter');
+        // Add province if missing
+        var found = false;
+        for (var i = 0; i < pSel.options.length; i++) { if (pSel.options[i].value === province) { found = true; break; } }
+        if (!found && province) { var o = document.createElement('option'); o.value = province; o.textContent = province; pSel.appendChild(o); }
+        pSel.value = province;
+        await loadFreeLanIps(province);
+        var lSel = document.getElementById('freeLanIp');
+        var optExists = false;
+        for (var i = 0; i < lSel.options.length; i++) { if (lSel.options[i].value === lanIp) { optExists = true; lSel.value = lanIp; break; } }
+        if (!optExists) { var o = document.createElement('option'); o.value = lanIp; o.textContent = lanIp + ' (شعبه موجود)'; lSel.insertBefore(o, lSel.firstChild.nextSibling); lSel.value = lanIp; }
+        var lp = lanIp.split('.'); if (lp.length >= 2) document.getElementById('ospfArea').value = lp[1];
+        lSel.disabled = false;
+    }
+});
+
+document.getElementById('freeLanIp').addEventListener('change', function() {
+    if (this.value) { var p = this.value.split('.'); if (p.length >= 2) document.getElementById('ospfArea').value = p[1]; }
+});
+
+// Generate config
+document.getElementById('configForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    var hostname = document.getElementById('routerHostname').value.trim();
+    var lanIp = document.getElementById('freeLanIp').value;
+    var ospfArea = document.getElementById('ospfArea').value;
+    var includeBase = document.getElementById('includeBaseConfig').checked;
+
+    if (!hostname) { alert('لطفاً Hostname روتر را وارد کنید'); return; }
+    if (!lanIp) { alert('لطفاً IP LAN را انتخاب کنید'); return; }
+    if (!ospfArea) { alert('خطا در محاسبه OSPF Area'); return; }
+
+    var parts = lanIp.split('.');
+    var X = parts[1], Y = parts[2];
+
+    // Determine primary and secondary serial
+    var primarySerial = selectedSerial;
+    var secondarySerial = (primarySerial === 'Serial0/0/0') ? 'Serial0/0/1' : 'Serial0/0/0';
+
+    var cfg = '';
+
+    if (includeBase) {
+        cfg = generateBaseConfig(hostname, X, Y, ospfArea, primarySerial, secondarySerial);
+    } else {
+        cfg = generatePtmpOnlyConfig(hostname, X, Y, ospfArea, primarySerial, secondarySerial);
+    }
+
+    document.getElementById('branchOut').textContent = cfg;
+    document.getElementById('outputs').style.display = 'grid';
+    document.getElementById('outputs').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+});
+
+function generatePtmpOnlyConfig(hostname, X, Y, area, pri, sec) {
+    return '!\n' +
+'! ===== ' + hostname + ' - PTMP (مالی) =====\n' +
+'!\n' +
+'class-map match-all QOS-MEHR\n' +
+' match access-group name QOS-MEHR\n' +
+'!\n' +
+'policy-map QOS-MEHR\n' +
+' class QOS-MEHR\n' +
+'  bandwidth percent 50\n' +
+' class class-default\n' +
+'  fair-queue\n' +
+'!\n' +
+'interface ' + pri + '\n' +
+' description ** PTMP **\n' +
+' bandwidth 64\n' +
+' ip unnumbered Loopback0\n' +
+' ip access-group SERIAL_IN in\n' +
+' encapsulation ppp\n' +
+' service-policy output QOS-MEHR\n' +
+'!\n' +
+'interface ' + sec + '\n' +
+' description ** PTMP **\n' +
+' bandwidth 64\n' +
+' no ip address\n' +
+' ip access-group SERIAL_IN in\n' +
+' encapsulation ppp\n' +
+' clock rate 2000000\n' +
+' service-policy output QOS-MEHR\n' +
+'!\n' +
+'router ospf 1\n' +
+' router-id 10.' + X + '.254.' + Y + '\n' +
+' log-adjacency-changes\n' +
+' passive-interface default\n' +
+' no passive-interface ' + pri + '\n' +
+' no passive-interface ' + sec + '\n' +
+' network 10.' + X + '.' + Y + '.5 0.0.0.0 area ' + area + '\n' +
+' network 10.' + X + '.254.' + Y + ' 0.0.0.0 area ' + area + '\n' +
+' distribute-list OSPF-PERMIT in\n' +
+'!\n' +
+'ip access-list standard OSPF-PERMIT\n' +
+' remark -----------------------------\n' +
+' permit 192.168.65.0 0.0.0.255\n' +
+' permit 10.' + X + '.0.0 0.0.7.255\n' +
+' permit 10.0.0.0 0.0.255.255\n' +
+' permit 192.168.72.0 0.0.0.255\n' +
+'ip access-list extended QOS-MEHR\n' +
+' permit ip 10.' + X + '.0.0 0.0.255.255 10.0.64.0 0.0.1.255\n' +
+'ip access-list extended SERIAL_IN\n' +
+' permit ip 192.168.65.0 0.0.0.255 any\n' +
+' deny   tcp any any range 135 139\n' +
+' deny   udp any any range 135 netbios-ss\n' +
+' deny   udp any any eq 1434\n' +
+' deny   udp any any eq 1433\n' +
+' deny   tcp any any eq 1026\n' +
+' deny   tcp any any eq 4444\n' +
+' deny   udp any any eq 445\n' +
+' permit ospf any any\n' +
+' permit icmp any any\n' +
+' permit ip 10.' + X + '.0.0 0.0.7.255 any\n' +
+' permit ip 10.' + X + '.248.1 0.0.7.0 any\n' +
+' permit ip 10.0.0.0 0.0.255.255 any\n' +
+' permit ip 192.168.72.0 0.0.0.255 any\n' +
+'!\n' +
+'end';
+}
+
+function generateBaseConfig(hostname, X, Y, area, pri, sec) {
+    return '!\n' +
+'! ========================================================\n' +
+'! ===== BASE + PTMP CONFIGURATION - ' + hostname + ' =====\n' +
+'! ========================================================\n' +
+'!\n' +
+'service timestamps debug datetime msec\n' +
+'service timestamps log datetime msec\n' +
+'service password-encryption\n' +
+'!\n' +
+'hostname ' + hostname + '\n' +
+'!\n' +
+'enable secret 5 $1$3Q12$7N45.W42cpvHCQ4YbWymQ1\n' +
+'!\n' +
+'aaa new-model\n' +
+'!\n' +
+'aaa authentication login CACS group tacacs+ local\n' +
+'aaa authentication enable default group tacacs+ enable\n' +
+'aaa authorization console\n' +
+'aaa authorization config-commands\n' +
+'aaa authorization exec CACS group tacacs+ local\n' +
+'aaa authorization commands 0 CACS group tacacs+ local\n' +
+'aaa authorization commands 1 CACS group tacacs+ local\n' +
+'aaa authorization commands 2 CACS group tacacs+ local\n' +
+'aaa authorization commands 3 CACS group tacacs+ local\n' +
+'aaa authorization commands 15 CACS group tacacs+ local\n' +
+'aaa accounting exec CACS start-stop group tacacs+\n' +
+'aaa accounting commands 0 CACS start-stop group tacacs+\n' +
+'aaa accounting commands 1 CACS start-stop group tacacs+\n' +
+'aaa accounting commands 2 CACS start-stop group tacacs+\n' +
+'aaa accounting commands 3 CACS start-stop group tacacs+\n' +
+'aaa accounting commands 15 CACS start-stop group tacacs+\n' +
+'!\n' +
+'aaa session-id common\n' +
+'clock timezone Tehran 3 30\n' +
+'ip cef\n' +
+'!\n' +
+'no ip domain lookup\n' +
+'ip domain name agri-bank.com\n' +
+'ip auth-proxy max-nodata-conns 3\n' +
+'ip admission max-nodata-conns 3\n' +
+'!\n' +
+'username bkiadmin privilege 15 secret 5 $1$fllM$rh8AwpffbPwMyIOZwf79Y0\n' +
+'!\n' +
+'ip ssh authentication-retries 2\n' +
+'ip ssh port 2001 rotary 1\n' +
+'ip ssh version 2\n' +
+'!\n' +
+'track 5 ip route 10.0.0.0 255.255.0.0 reachability\n' +
+'!\n' +
+'class-map match-all QOS-MEHR\n' +
+' match access-group name QOS-MEHR\n' +
+'!\n' +
+'policy-map QOS-MEHR\n' +
+' class QOS-MEHR\n' +
+'  bandwidth percent 50\n' +
+' class class-default\n' +
+'  fair-queue\n' +
+'!\n' +
+'interface Loopback0\n' +
+' ip address 10.' + X + '.254.' + Y + ' 255.255.255.0\n' +
+'!\n' +
+'interface FastEthernet0/0\n' +
+' description ** LAN **\n' +
+' ip address 10.' + X + '.' + Y + '.5 255.255.255.0\n' +
+' ip access-group ETHERNET_IN in\n' +
+' ip nat inside\n' +
+' ip virtual-reassembly\n' +
+' duplex auto\n' +
+' speed auto\n' +
+' standby 1 ip 10.' + X + '.' + Y + '.1\n' +
+' standby 1 timers 1 3\n' +
+' standby 1 preempt\n' +
+' standby 1 track 5 decrement 25\n' +
+'!\n' +
+'interface ' + pri + '\n' +
+' description ** PTMP **\n' +
+' bandwidth 64\n' +
+' ip unnumbered Loopback0\n' +
+' ip access-group SERIAL_IN in\n' +
+' encapsulation ppp\n' +
+' service-policy output QOS-MEHR\n' +
+'!\n' +
+'interface ' + sec + '\n' +
+' description ** PTMP **\n' +
+' bandwidth 64\n' +
+' no ip address\n' +
+' ip access-group SERIAL_IN in\n' +
+' encapsulation ppp\n' +
+' clock rate 2000000\n' +
+' service-policy output QOS-MEHR\n' +
+'!\n' +
+'router ospf 1\n' +
+' router-id 10.' + X + '.254.' + Y + '\n' +
+' log-adjacency-changes\n' +
+' passive-interface default\n' +
+' no passive-interface ' + pri + '\n' +
+' no passive-interface ' + sec + '\n' +
+' network 10.' + X + '.' + Y + '.5 0.0.0.0 area ' + area + '\n' +
+' network 10.' + X + '.254.' + Y + ' 0.0.0.0 area ' + area + '\n' +
+' distribute-list OSPF-PERMIT in\n' +
+'!\n' +
+'no ip http server\n' +
+'no ip http secure-server\n' +
+'ip tacacs source-interface Loopback0\n' +
+'!\n' +
+'ip access-list standard OSPF-PERMIT\n' +
+' remark -----------------------------\n' +
+' permit 192.168.65.0 0.0.0.255\n' +
+' permit 10.' + X + '.0.0 0.0.7.255\n' +
+' permit 10.0.0.0 0.0.255.255\n' +
+' permit 192.168.72.0 0.0.0.255\n' +
+'ip access-list standard SNMP-READ\n' +
+' permit 10.0.50.0 0.0.1.255\n' +
+'ip access-list standard SNMP-WRITE\n' +
+' permit 10.0.51.49\n' +
+' permit 10.0.51.48\n' +
+' permit 10.0.51.50\n' +
+'ip access-list standard TELNET_ACCESS\n' +
+' permit 10.' + X + '.1.8\n' +
+' permit 10.' + X + '.254.1\n' +
+' permit 10.' + X + '.251.1\n' +
+' permit 10.' + X + '.' + Y + '.6 0.0.0.1\n' +
+' permit 10.0.50.0 0.0.1.255\n' +
+' permit 10.30.42.0 0.0.0.255\n' +
+'!\n' +
+'ip access-list extended ETHERNET_IN\n' +
+' deny   tcp any any range 135 139\n' +
+' deny   tcp any any eq 445\n' +
+' deny   udp any any range 135 netbios-ss\n' +
+' deny   udp any any eq 1434\n' +
+' deny   udp any any eq 1433\n' +
+' deny   tcp any any eq 1026\n' +
+' deny   tcp any any eq 4444\n' +
+' deny   udp any any eq 445\n' +
+' permit ip 10.' + X + '.' + Y + '.0 0.0.0.255 192.168.65.0 0.0.0.255\n' +
+' permit ip 10.' + X + '.' + Y + '.0 0.0.0.255 192.168.72.0 0.0.0.255\n' +
+' permit udp 10.' + X + '.' + Y + '.0 0.0.0.255 224.0.0.0 0.0.0.255\n' +
+' permit ip 10.' + X + '.' + Y + '.0 0.0.0.255 10.' + X + '.' + Y + '.0 0.0.0.255\n' +
+' permit ip 10.' + X + '.' + Y + '.0 0.0.0.255 10.' + X + '.0.0 0.0.7.255\n' +
+' permit ip 10.' + X + '.' + Y + '.0 0.0.0.255 10.0.0.0 0.0.255.255\n' +
+' permit ip 10.' + X + '.' + Y + '.0 0.0.0.255 10.30.42.0 0.0.0.255\n' +
+' permit ip 10.' + X + '.' + Y + '.0 0.0.0.255 host 91.240.60.40\n' +
+' permit ip 10.' + X + '.' + Y + '.0 0.0.0.255 host 91.240.61.1\n' +
+'ip access-list extended QOS-MEHR\n' +
+' permit ip 10.' + X + '.0.0 0.0.255.255 10.0.64.0 0.0.1.255\n' +
+'ip access-list extended SERIAL_IN\n' +
+' permit ip 192.168.65.0 0.0.0.255 any\n' +
+' deny   tcp any any range 135 139\n' +
+' deny   udp any any range 135 netbios-ss\n' +
+' deny   udp any any eq 1434\n' +
+' deny   udp any any eq 1433\n' +
+' deny   tcp any any eq 1026\n' +
+' deny   tcp any any eq 4444\n' +
+' deny   udp any any eq 445\n' +
+' permit ospf any any\n' +
+' permit icmp any any\n' +
+' permit ip 10.' + X + '.0.0 0.0.7.255 any\n' +
+' permit ip 10.' + X + '.248.1 0.0.7.0 any\n' +
+' permit ip 10.0.0.0 0.0.255.255 any\n' +
+' permit ip 192.168.72.0 0.0.0.255 any\n' +
+'!\n' +
+'logging 10.0.51.63\n' +
+'access-list 199 permit icmp any any echo\n' +
+'access-list 199 permit icmp any any echo-reply\n' +
+'snmp-server group LMS v3 priv read myview write myview access SNMP-WRITE\n' +
+'snmp-server group NMS v3 priv access SNMP-READ\n' +
+'snmp-server view myview mib-2 included\n' +
+'snmp-server view myview system included\n' +
+'snmp-server view myview cisco included\n' +
+'snmp-server ifindex persist\n' +
+'!\n' +
+'route-map nachi-worm permit 10\n' +
+' match ip address 199\n' +
+' match length 92 92\n' +
+' set interface Null0\n' +
+'!\n' +
+'tacacs-server host 10.0.51.56\n' +
+'tacacs-server host 10.0.51.57\n' +
+'tacacs-server timeout 10\n' +
+'tacacs-server directed-request\n' +
+'tacacs-server key 7 096D5D4756544442\n' +
+'!\n' +
+'control-plane\n' +
+'!\n' +
+'banner motd ^C\n' +
+'        ===\n' +
+'       -+ +-\n' +
+'       | | |\n' +
+'    <--\\ | /-->\n' +
+'   ##| ||||| |##\n' +
+'  ###| |+++| |###\n' +
+' /____\\\\ | //____\\ ********************************************************\n' +
+'   <###\\|||/###>                  Keshavarzi Bank Network\n' +
+'    +====+====+     WARNING: Access is restricted to authorized users only.\n' +
+'    | WAN-BKI |     Unauthorized access is a violation of state , civil and\n' +
+'    +===+=+===+                       criminal laws.\n' +
+'        +=+        ********************************************************\n' +
+'^C\n' +
+'privilege interface level 3 shutdown\n' +
+'privilege interface level 3 no shutdown\n' +
+'privilege interface level 3 no\n' +
+'privilege configure level 3 interface\n' +
+'privilege exec level 3 traceroute\n' +
+'privilege exec level 3 ping\n' +
+'privilege exec level 2 configure terminal\n' +
+'privilege exec level 2 configure\n' +
+'privilege exec level 3 terminal monitor\n' +
+'privilege exec level 3 terminal\n' +
+'privilege exec all level 2 show\n' +
+'!\n' +
+'line con 0\n' +
+' authorization exec CACS\n' +
+' login authentication CACS\n' +
+'line aux 0\n' +
+' no exec\n' +
+'line vty 0 4\n' +
+' access-class TELNET_ACCESS in\n' +
+' authorization commands 2 CACS\n' +
+' authorization exec CACS\n' +
+' accounting commands 15 CACS\n' +
+' accounting exec CACS\n' +
+' login authentication CACS\n' +
+' transport input ssh\n' +
+' transport output ssh\n' +
+'line vty 5 15\n' +
+' access-class TELNET_ACCESS in\n' +
+' authorization commands 2 CACS\n' +
+' authorization exec CACS\n' +
+' accounting exec CACS\n' +
+' login authentication CACS\n' +
+' transport input ssh\n' +
+' transport output ssh\n' +
+'!\n' +
+'scheduler max-task-time 5000\n' +
+'scheduler allocate 20000 1000\n' +
+'ntp authentication-key 1 md5 050A011D28014C08170E 7\n' +
+'ntp authenticate\n' +
+'ntp trusted-key 1\n' +
+'ntp clock-period 17178346\n' +
+'ntp source Loopback0\n' +
+'ntp master 5\n' +
+'ntp server 10.0.51.27\n' +
+'!\n' +
+'end';
+}
+
+function copyText(id) {
+    var el = document.getElementById(id);
+    if (!el) return;
+    var text = el.textContent || el.innerText;
+    if (!text || text.trim() === '') { alert('متنی برای کپی وجود ندارد'); return; }
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(function() {
+            var btn = el.parentElement.querySelector('.copy-btn');
+            if (btn) { var o = btn.textContent; btn.textContent = 'کپی شد!'; btn.style.background = '#f59e0b'; setTimeout(function() { btn.textContent = o; btn.style.background = ''; }, 2000); }
+        }).catch(function() { fallbackCopy(text); });
+    } else { fallbackCopy(text); }
+}
+function fallbackCopy(text) {
+    var ta = document.createElement('textarea'); ta.value = text; ta.style.position = 'fixed'; ta.style.left = '-9999px';
+    document.body.appendChild(ta); ta.focus(); ta.select();
+    try { document.execCommand('copy'); alert('کپی شد!'); } catch(e) { alert('خطا در کپی'); }
+    document.body.removeChild(ta);
+}
+
+// Init
+loadBranches();
+loadProvinces();
+</script>
+
+{% include 'chat_widget.html' %}
+</body>
+</html>

@@ -457,6 +457,10 @@ def apn_int_page():
 def apn_mali_page():
     return render_template('apn_mali.html')
 
+@app.route('/ptmp')
+def ptmp_page():
+    return render_template('ptmp.html')
+
 @app.route('/config-wizard')
 def config_wizard_page():
     return render_template('config_wizard.html')
@@ -2087,6 +2091,163 @@ def reserve_mali_ips():
         return jsonify({'status': 'ok', 'updates': updates, 'message': f'تمام فیلدها برای {branch_name} ذخیره شد'})
     except Exception as e:
         print(f"❌ Reserve Mali IPs error: {e}")
+        return jsonify({'status': 'error', 'error': str(e)}), 500
+
+# ==================== EXISTING RESERVED POINTS ====================
+@app.route('/api/mali-reserved-points')
+def mali_reserved_points():
+    """Get all reserved APN Mali points from database"""
+    try:
+        conn = get_db()
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT id, branch_name, province, type, lan_ip, ip_wan, username, reservation_date
+            FROM apn_mali
+            WHERE username IS NOT NULL AND username != ''
+            ORDER BY reservation_date DESC
+        """)
+        rows = cursor.fetchall()
+        points = []
+        for r in rows:
+            points.append({
+                'id': r[0], 'branch_name': r[1], 'province': r[2],
+                'type': r[3], 'lan_ip': r[4], 'ip_wan': r[5],
+                'username': r[6], 'reservation_date': r[7]
+            })
+        conn.close()
+        return jsonify(points)
+    except Exception as e:
+        print(f"❌ Mali reserved points error: {e}")
+        return jsonify([])
+
+@app.route('/api/int-reserved-points')
+def int_reserved_points():
+    """Get all reserved APN INT points from database"""
+    try:
+        conn = get_db()
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT id, branch_name, province, type, lan_ip, ip_wan_apn, username, reservation_date
+            FROM apn_ips
+            WHERE username IS NOT NULL AND username != ''
+            ORDER BY reservation_date DESC
+        """)
+        rows = cursor.fetchall()
+        points = []
+        for r in rows:
+            points.append({
+                'id': r[0], 'branch_name': r[1], 'province': r[2],
+                'type': r[3], 'lan_ip': r[4], 'ip_wan_apn': r[5],
+                'username': r[6], 'reservation_date': r[7]
+            })
+        conn.close()
+        return jsonify(points)
+    except Exception as e:
+        print(f"❌ INT reserved points error: {e}")
+        return jsonify([])
+
+@app.route('/api/free-mali-point', methods=['POST'])
+def free_mali_point():
+    """Free a reserved APN Mali point - release IP and tunnel"""
+    try:
+        data = request.json
+        point_id = data.get('id')
+        username = data.get('username', '')
+
+        if not point_id:
+            return jsonify({'status': 'error', 'error': 'شناسه نقطه مشخص نشده'}), 400
+
+        conn = get_db()
+        cursor = conn.cursor()
+
+        # Get point info before freeing
+        cursor.execute("SELECT branch_name, ip_wan, lan_ip FROM apn_mali WHERE id = ?", (point_id,))
+        point = cursor.fetchone()
+        if not point:
+            conn.close()
+            return jsonify({'status': 'error', 'error': 'نقطه پیدا نشد'}), 404
+
+        branch_name = point[0]
+        ip_wan = point[1]
+        lan_ip = point[2]
+
+        updates = []
+
+        # Free APN Mali IP
+        cursor.execute("""
+            UPDATE apn_mali SET username = NULL, branch_name = NULL, province = NULL,
+            type = NULL, lan_ip = NULL, reservation_date = NULL WHERE id = ?
+        """, (point_id,))
+        updates.append(f'IP APN مالی آزاد شد: {ip_wan}')
+
+        # Free associated tunnel (by destination_ip matching ip_wan)
+        cursor.execute("""
+            UPDATE tunnel_mali SET status = NULL, username = NULL, branch_name = NULL,
+            reservation_date = NULL, description = NULL, destination_ip = NULL
+            WHERE destination_ip = ?
+        """, (ip_wan,))
+        if cursor.rowcount > 0:
+            updates.append(f'Tunnel مالی مرتبط آزاد شد')
+
+        conn.commit()
+        conn.close()
+
+        log_activity('warning', 'آزادسازی IP مالی', f'{branch_name}: {ip_wan}', username)
+        return jsonify({'status': 'ok', 'updates': updates, 'message': f'نقطه {branch_name} آزاد شد'})
+    except Exception as e:
+        print(f"❌ Free Mali point error: {e}")
+        return jsonify({'status': 'error', 'error': str(e)}), 500
+
+@app.route('/api/free-int-point', methods=['POST'])
+def free_int_point():
+    """Free a reserved APN INT point - release IP and tunnel200"""
+    try:
+        data = request.json
+        point_id = data.get('id')
+        username = data.get('username', '')
+
+        if not point_id:
+            return jsonify({'status': 'error', 'error': 'شناسه نقطه مشخص نشده'}), 400
+
+        conn = get_db()
+        cursor = conn.cursor()
+
+        # Get point info before freeing
+        cursor.execute("SELECT branch_name, ip_wan_apn, lan_ip FROM apn_ips WHERE id = ?", (point_id,))
+        point = cursor.fetchone()
+        if not point:
+            conn.close()
+            return jsonify({'status': 'error', 'error': 'نقطه پیدا نشد'}), 404
+
+        branch_name = point[0]
+        ip_wan_apn = point[1]
+        lan_ip = point[2]
+
+        updates = []
+
+        # Free APN INT IP
+        cursor.execute("""
+            UPDATE apn_ips SET username = NULL, branch_name = NULL, province = NULL,
+            type = NULL, lan_ip = NULL, reservation_date = NULL WHERE id = ?
+        """, (point_id,))
+        updates.append(f'IP APN غیرمالی آزاد شد: {ip_wan_apn}')
+
+        # Free associated tunnel200 (by branch_name)
+        cursor.execute("""
+            UPDATE tunnel200_ips SET status = NULL, username = NULL, branch_name = NULL,
+            reservation_date = NULL, description = NULL
+            WHERE branch_name = ?
+        """, (branch_name,))
+        if cursor.rowcount > 0:
+            updates.append(f'Tunnel200 مرتبط آزاد شد')
+
+        conn.commit()
+        conn.close()
+
+        log_activity('warning', 'آزادسازی IP غیرمالی', f'{branch_name}: {ip_wan_apn}', username)
+        return jsonify({'status': 'ok', 'updates': updates, 'message': f'نقطه {branch_name} آزاد شد'})
+    except Exception as e:
+        print(f"❌ Free INT point error: {e}")
         return jsonify({'status': 'error', 'error': str(e)}), 500
 
 # ==================== PING ====================

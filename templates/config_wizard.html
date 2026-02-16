@@ -638,8 +638,7 @@ function finishWizard() {
         const protocol = selections['copper_protocol'];
 
         if (protocol === 'PTMP') {
-            // PTMP -> مالی, H-Wic T-2
-            alert('پیکربندی PTMP (H-Wic T-2 / Serial) - مالی\n\nصفحه پیکربندی PTMP به زودی اضافه می‌شود.');
+            window.location.href = '/ptmp';
             return;
         }
 
