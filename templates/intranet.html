@@ -649,16 +649,14 @@ document.addEventListener('DOMContentLoaded', function() {
             </div>
             <div style="display: flex; align-items: center; gap: 8px;">
                 <button class="theme-toggle" onclick="toggleTheme()" title="تغییر تم"><span id="themeIcon">🌙</span></button>
+                <a href="/config-wizard"
+                   style="padding:6px 14px; border-radius:6px; background:#3b82f6; color:#ffffff; text-decoration:none; font-size:13px; font-weight:bold;"
+                   onmouseover="this.style.background='#2563eb'"
+                   onmouseout="this.style.background='#3b82f6'">
+                  &#8594; بازگشت به ویزارد
+                </a>
                 <a href="/"
-                   style="
-                     padding:6px 14px;
-                     border-radius:6px;
-                     background:#ef4444;
-                     color:#ffffff;
-                     text-decoration:none;
-                     font-size:13px;
-                     font-weight:bold;
-                   "
+                   style="padding:6px 14px; border-radius:6px; background:#ef4444; color:#ffffff; text-decoration:none; font-size:13px; font-weight:bold;"
                    onmouseover="this.style.background='#dc2626'"
                    onmouseout="this.style.background='#ef4444'">
                   Back to Menu
@@ -1249,8 +1247,15 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         }
 
-        // Read wizard config from localStorage and pre-select
+        // Read wizard config from localStorage - pre-select and hide other connection types
         (function readWizardConfig() {
+            function hideOtherConnTypes(activeType) {
+                const typeToId = {direct: 'connDirect', '4esw': 'conn4esw', gshdsl: 'connGshdsl', adsl: 'connAdsl'};
+                Object.entries(typeToId).forEach(([t, id]) => {
+                    const el = document.getElementById(id);
+                    if (el) el.style.display = (t === activeType) ? 'flex' : 'none';
+                });
+            }
             try {
                 const wc = JSON.parse(localStorage.getItem('wizardConfig') || '{}');
                 const connType = wc.copper_connection;
@@ -1261,25 +1266,30 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (connType === 'Module') {
                     if (moduleType === 'G.SHDSL') {
                         selectConnectionType('gshdsl');
-                        if (hint) { hint.style.display = 'block'; hint.textContent = 'از ویزارد: ماژول G.SHDSL انتخاب شده - کانفیگ ATM + BVI تولید می‌شود'; }
+                        hideOtherConnTypes('gshdsl');
+                        if (hint) { hint.style.display = 'block'; hint.textContent = 'ویزارد: ماژول G.SHDSL انتخاب شده - کانفیگ ATM + BVI'; }
                         return;
                     } else if (moduleType === '1ADSL') {
                         selectConnectionType('adsl');
-                        if (hint) { hint.style.display = 'block'; hint.textContent = 'از ویزارد: ماژول 1ADSL انتخاب شده - کانفیگ ATM + BVI تولید می‌شود'; }
+                        hideOtherConnTypes('adsl');
+                        if (hint) { hint.style.display = 'block'; hint.textContent = 'ویزارد: ماژول 1ADSL انتخاب شده - کانفیگ ATM + BVI'; }
                         return;
                     } else if (moduleType === '4ESW') {
                         selectConnectionType('4esw');
-                        if (hint) { hint.style.display = 'block'; hint.textContent = 'از ویزارد: ماژول 4ESW انتخاب شده - کانفیگ VLAN تولید می‌شود'; }
+                        hideOtherConnTypes('4esw');
+                        if (hint) { hint.style.display = 'block'; hint.textContent = 'ویزارد: ماژول 4ESW انتخاب شده - کانفیگ VLAN'; }
                         return;
                     }
                 } else if (connType === 'Modem') {
                     if (modemType === '4ESW_VLAN') {
                         selectConnectionType('4esw');
-                        if (hint) { hint.style.display = 'block'; hint.textContent = 'از ویزارد: مودم به 4ESW - کانفیگ VLAN تولید می‌شود'; }
+                        hideOtherConnTypes('4esw');
+                        if (hint) { hint.style.display = 'block'; hint.textContent = 'ویزارد: مودم به 4ESW - کانفیگ VLAN'; }
                         return;
                     } else if (modemType === 'Direct_Port') {
                         selectConnectionType('direct');
-                        if (hint) { hint.style.display = 'block'; hint.textContent = 'از ویزارد: مودم مستقیم به پورت روتر'; }
+                        hideOtherConnTypes('direct');
+                        if (hint) { hint.style.display = 'block'; hint.textContent = 'ویزارد: مودم مستقیم به پورت روتر'; }
                         return;
                     }
                 }

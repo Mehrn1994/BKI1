@@ -648,10 +648,216 @@ def debug_tables():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+
+# ==================== SERVICE MANAGEMENT ====================
+@app.route('/service-management')
+def service_management():
+    return render_template('service_management.html')
+
+@app.route('/api/search-services', methods=['GET'])
+def search_services():
+    """Search all services for a branch/IP across all tables"""
+    try:
+        query = request.args.get('q', '').strip()
+        search_type = request.args.get('type', 'branch_name')  # branch_name, ip_lan, ip_apn_mali, ip_apn_int, ip_intranet, ip_vpls
+
+        if not query or len(query) < 2:
+            return jsonify([])
+
+        conn = get_db()
+        cursor = conn.cursor()
+        results = []
+
+        like_q = f'%{query}%'
+
+        if search_type == 'branch_name':
+            # Search by branch name across all tables
+            # APN Mali
+            cursor.execute("SELECT id, branch_name, province, ip_wan, lan_ip, username, reservation_date FROM apn_mali WHERE branch_name LIKE ? AND (username IS NOT NULL AND username != '')", (like_q,))
+            for r in cursor.fetchall():
+                results.append({'id': r[0], 'table': 'apn_mali', 'service': 'APN مالی', 'branch_name': r[1] or '', 'province': r[2] or '', 'ip': r[3] or '', 'lan_ip': r[4] or '', 'username': r[5] or '', 'date': r[6] or ''})
+
+            # APN Int
+            cursor.execute("SELECT id, branch_name, province, ip_wan_apn, lan_ip, username, reservation_date FROM apn_ips WHERE branch_name LIKE ? AND (username IS NOT NULL AND username != '')", (like_q,))
+            for r in cursor.fetchall():
+                results.append({'id': r[0], 'table': 'apn_ips', 'service': 'APN غیرمالی', 'branch_name': r[1] or '', 'province': r[2] or '', 'ip': r[3] or '', 'lan_ip': r[4] or '', 'username': r[5] or '', 'date': r[6] or ''})
+
+            # Intranet
+            cursor.execute("SELECT id, tunnel_name, province, ip_address, ip_lan, reserved_by, reserved_at FROM intranet_tunnels WHERE (tunnel_name LIKE ? OR description LIKE ?) AND LOWER(status) = 'reserved'", (like_q, like_q))
+            for r in cursor.fetchall():
+                results.append({'id': r[0], 'table': 'intranet_tunnels', 'service': 'Intranet', 'branch_name': r[1] or '', 'province': r[2] or '', 'ip': r[3] or '', 'lan_ip': r[4] or '', 'username': r[5] or '', 'date': r[6] or ''})
+
+            # VPLS/MPLS
+            cursor.execute("SELECT id, branch_name, province, ip_address, wan_ip, username, reservation_date FROM vpls_tunnels WHERE branch_name LIKE ? AND LOWER(status) = 'reserved'", (like_q,))
+            for r in cursor.fetchall():
+                results.append({'id': r[0], 'table': 'vpls_tunnels', 'service': 'MPLS/VPLS', 'branch_name': r[1] or '', 'province': r[2] or '', 'ip': r[3] or '', 'lan_ip': r[4] or '', 'username': r[5] or '', 'date': r[6] or ''})
+
+            # Tunnel Mali
+            cursor.execute("SELECT id, branch_name, '', ip_address, '', username, reservation_date FROM tunnel_mali WHERE branch_name LIKE ? AND (username IS NOT NULL AND username != '')", (like_q,))
+            for r in cursor.fetchall():
+                results.append({'id': r[0], 'table': 'tunnel_mali', 'service': 'Tunnel مالی', 'branch_name': r[1] or '', 'province': r[2] or '', 'ip': r[3] or '', 'lan_ip': r[4] or '', 'username': r[5] or '', 'date': r[6] or ''})
+
+            # Tunnel200
+            cursor.execute("SELECT id, branch_name, '', ip_address, '', username, reservation_date FROM tunnel200_ips WHERE branch_name LIKE ? AND (username IS NOT NULL AND username != '')", (like_q,))
+            for r in cursor.fetchall():
+                results.append({'id': r[0], 'table': 'tunnel200_ips', 'service': 'Tunnel200', 'branch_name': r[1] or '', 'province': r[2] or '', 'ip': r[3] or '', 'lan_ip': r[4] or '', 'username': r[5] or '', 'date': r[6] or ''})
+
+        elif search_type == 'ip_apn_mali':
+            cursor.execute("SELECT id, branch_name, province, ip_wan, lan_ip, username, reservation_date FROM apn_mali WHERE ip_wan LIKE ? AND (username IS NOT NULL AND username != '')", (like_q,))
+            for r in cursor.fetchall():
+                results.append({'id': r[0], 'table': 'apn_mali', 'service': 'APN مالی', 'branch_name': r[1] or '', 'province': r[2] or '', 'ip': r[3] or '', 'lan_ip': r[4] or '', 'username': r[5] or '', 'date': r[6] or ''})
+
+        elif search_type == 'ip_apn_int':
+            cursor.execute("SELECT id, branch_name, province, ip_wan_apn, lan_ip, username, reservation_date FROM apn_ips WHERE ip_wan_apn LIKE ? AND (username IS NOT NULL AND username != '')", (like_q,))
+            for r in cursor.fetchall():
+                results.append({'id': r[0], 'table': 'apn_ips', 'service': 'APN غیرمالی', 'branch_name': r[1] or '', 'province': r[2] or '', 'ip': r[3] or '', 'lan_ip': r[4] or '', 'username': r[5] or '', 'date': r[6] or ''})
+
+        elif search_type == 'ip_lan':
+            # Search by LAN IP - look in all service tables that have lan_ip
+            cursor.execute("SELECT id, branch_name, province, ip_wan, lan_ip, username, reservation_date FROM apn_mali WHERE lan_ip LIKE ? AND (username IS NOT NULL AND username != '')", (like_q,))
+            for r in cursor.fetchall():
+                results.append({'id': r[0], 'table': 'apn_mali', 'service': 'APN مالی', 'branch_name': r[1] or '', 'province': r[2] or '', 'ip': r[3] or '', 'lan_ip': r[4] or '', 'username': r[5] or '', 'date': r[6] or ''})
+            cursor.execute("SELECT id, branch_name, province, ip_wan_apn, lan_ip, username, reservation_date FROM apn_ips WHERE lan_ip LIKE ? AND (username IS NOT NULL AND username != '')", (like_q,))
+            for r in cursor.fetchall():
+                results.append({'id': r[0], 'table': 'apn_ips', 'service': 'APN غیرمالی', 'branch_name': r[1] or '', 'province': r[2] or '', 'ip': r[3] or '', 'lan_ip': r[4] or '', 'username': r[5] or '', 'date': r[6] or ''})
+            cursor.execute("SELECT id, tunnel_name, province, ip_address, ip_lan, reserved_by, reserved_at FROM intranet_tunnels WHERE ip_lan LIKE ? AND LOWER(status) = 'reserved'", (like_q,))
+            for r in cursor.fetchall():
+                results.append({'id': r[0], 'table': 'intranet_tunnels', 'service': 'Intranet', 'branch_name': r[1] or '', 'province': r[2] or '', 'ip': r[3] or '', 'lan_ip': r[4] or '', 'username': r[5] or '', 'date': r[6] or ''})
+
+        elif search_type == 'ip_intranet':
+            cursor.execute("SELECT id, tunnel_name, province, ip_address, ip_lan, reserved_by, reserved_at FROM intranet_tunnels WHERE (ip_address LIKE ? OR ip_intranet LIKE ?) AND LOWER(status) = 'reserved'", (like_q, like_q))
+            for r in cursor.fetchall():
+                results.append({'id': r[0], 'table': 'intranet_tunnels', 'service': 'Intranet', 'branch_name': r[1] or '', 'province': r[2] or '', 'ip': r[3] or '', 'lan_ip': r[4] or '', 'username': r[5] or '', 'date': r[6] or ''})
+
+        elif search_type == 'ip_vpls':
+            cursor.execute("SELECT id, branch_name, province, ip_address, wan_ip, username, reservation_date FROM vpls_tunnels WHERE (ip_address LIKE ? OR wan_ip LIKE ?) AND LOWER(status) = 'reserved'", (like_q, like_q))
+            for r in cursor.fetchall():
+                results.append({'id': r[0], 'table': 'vpls_tunnels', 'service': 'MPLS/VPLS', 'branch_name': r[1] or '', 'province': r[2] or '', 'ip': r[3] or '', 'lan_ip': r[4] or '', 'username': r[5] or '', 'date': r[6] or ''})
+
+        conn.close()
+        return jsonify(results)
+    except Exception as e:
+        print(f"Search services error: {e}")
+        return jsonify([])
+
+
+@app.route('/api/delete-service', methods=['POST'])
+def delete_service():
+    """Delete/free a specific service from any table"""
+    try:
+        data = request.json
+        table = data.get('table', '')
+        record_id = data.get('id')
+        username = data.get('username', '')
+
+        if not table or not record_id:
+            return jsonify({'status': 'error', 'error': 'پارامترهای ناقص'}), 400
+
+        allowed_tables = ['apn_mali', 'apn_ips', 'intranet_tunnels', 'vpls_tunnels', 'tunnel_mali', 'tunnel200_ips']
+        if table not in allowed_tables:
+            return jsonify({'status': 'error', 'error': 'جدول نامعتبر'}), 400
+
+        conn = get_db()
+        cursor = conn.cursor()
+
+        # Get info before deleting for logging
+        cursor.execute(f"SELECT * FROM {table} WHERE id = ?", (record_id,))
+        row = cursor.fetchone()
+        if not row:
+            conn.close()
+            return jsonify({'status': 'error', 'error': 'رکورد پیدا نشد'}), 404
+
+        # Free the record (set fields to NULL/Free) based on table type
+        if table == 'apn_mali':
+            branch = row['branch_name'] or ''
+            ip = row['ip_wan'] or ''
+            cursor.execute("""
+                UPDATE apn_mali SET username = NULL, branch_name = NULL, province = NULL,
+                type = NULL, lan_ip = NULL, reservation_date = NULL WHERE id = ?
+            """, (record_id,))
+            # Also free associated tunnel_mali
+            if ip:
+                cursor.execute("""
+                    UPDATE tunnel_mali SET status = NULL, username = NULL, branch_name = NULL,
+                    reservation_date = NULL, description = NULL, destination_ip = NULL
+                    WHERE destination_ip = ?
+                """, (ip,))
+            log_activity('warning', 'حذف سرویس APN مالی', f'{branch}: {ip}', username)
+
+        elif table == 'apn_ips':
+            branch = row['branch_name'] or ''
+            ip = row['ip_wan_apn'] or ''
+            cursor.execute("""
+                UPDATE apn_ips SET username = NULL, branch_name = NULL, province = NULL,
+                type = NULL, lan_ip = NULL, reservation_date = NULL WHERE id = ?
+            """, (record_id,))
+            # Also free associated tunnel200
+            if branch:
+                cursor.execute("""
+                    UPDATE tunnel200_ips SET status = NULL, username = NULL, branch_name = NULL,
+                    reservation_date = NULL, description = NULL
+                    WHERE branch_name = ?
+                """, (branch,))
+            log_activity('warning', 'حذف سرویس APN غیرمالی', f'{branch}: {ip}', username)
+
+        elif table == 'intranet_tunnels':
+            name = row['tunnel_name'] or ''
+            ip = row['ip_address'] or ''
+            cursor.execute("""
+                UPDATE intranet_tunnels SET status = 'Free', reserved_by = NULL, reserved_at = NULL,
+                tunnel_name = NULL, description = NULL, ip_lan = NULL, ip_intranet = NULL
+                WHERE id = ?
+            """, (record_id,))
+            log_activity('warning', 'حذف سرویس Intranet', f'{name}: {ip}', username)
+
+        elif table == 'vpls_tunnels':
+            branch = row['branch_name'] or ''
+            ip = row['ip_address'] or ''
+            cursor.execute("""
+                UPDATE vpls_tunnels SET status = 'Free', username = NULL, branch_name = NULL,
+                tunnel_name = NULL, description = NULL, wan_ip = NULL, tunnel_dest = NULL,
+                reservation_date = NULL
+                WHERE id = ?
+            """, (record_id,))
+            log_activity('warning', 'حذف سرویس MPLS/VPLS', f'{branch}: {ip}', username)
+
+        elif table == 'tunnel_mali':
+            branch = row['branch_name'] or ''
+            ip = row['ip_address'] or ''
+            cursor.execute("""
+                UPDATE tunnel_mali SET status = NULL, username = NULL, branch_name = NULL,
+                reservation_date = NULL, description = NULL, destination_ip = NULL
+                WHERE id = ?
+            """, (record_id,))
+            log_activity('warning', 'حذف سرویس Tunnel مالی', f'{branch}: {ip}', username)
+
+        elif table == 'tunnel200_ips':
+            branch = row['branch_name'] or ''
+            ip = row['ip_address'] or ''
+            cursor.execute("""
+                UPDATE tunnel200_ips SET status = NULL, username = NULL, branch_name = NULL,
+                reservation_date = NULL, description = NULL
+                WHERE id = ?
+            """, (record_id,))
+            log_activity('warning', 'حذف سرویس Tunnel200', f'{branch}: {ip}', username)
+
+        conn.commit()
+        conn.close()
+
+        # Clear stats cache
+        _stats_cache['data'] = None
+        _stats_cache['time'] = 0
+
+        return jsonify({'status': 'ok', 'message': 'سرویس با موفقیت حذف شد'})
+    except Exception as e:
+        print(f"Delete service error: {e}")
+        return jsonify({'status': 'error', 'error': str(e)}), 500
+
+
 @app.route('/api/stats', methods=['GET'])
 def get_stats():
     global _stats_cache
-    
+
     # Return cached result if less than 60 seconds old
     if _stats_cache['data'] and (time.time() - _stats_cache['time']) < STATS_CACHE_SECONDS:
         return jsonify(_stats_cache['data'])
@@ -660,9 +866,9 @@ def get_stats():
         conn = get_db()
         cursor = conn.cursor()
         
-        # OPTIMIZED: Single query instead of 12 separate queries
+        # OPTIMIZED: Single query instead of many separate queries
         cursor.execute("""
-            SELECT 
+            SELECT
                 (SELECT COUNT(*) FROM lan_ips) as total_lan,
                 (SELECT COUNT(*) FROM lan_ips WHERE (username IS NULL OR username = '') AND (branch_name IS NULL OR branch_name = '')) as free_lan,
                 (SELECT COUNT(*) FROM intranet_tunnels) as total_tun,
@@ -674,7 +880,9 @@ def get_stats():
                 (SELECT COUNT(*) FROM tunnel200_ips) as total_t200,
                 (SELECT COUNT(*) FROM tunnel200_ips WHERE status IS NULL OR status = '' OR LOWER(status) = 'free') as free_t200,
                 (SELECT COUNT(*) FROM tunnel_mali) as total_tmali,
-                (SELECT COUNT(*) FROM tunnel_mali WHERE status IS NULL OR status = '' OR LOWER(status) = 'free') as free_tmali
+                (SELECT COUNT(*) FROM tunnel_mali WHERE status IS NULL OR status = '' OR LOWER(status) = 'free') as free_tmali,
+                (SELECT COUNT(*) FROM vpls_tunnels) as total_vpls,
+                (SELECT COUNT(*) FROM vpls_tunnels WHERE LOWER(status) = 'free') as free_vpls
         """)
         
         row = cursor.fetchone()
@@ -686,14 +894,16 @@ def get_stats():
         total_mali, free_mali = row[6], row[7]
         total_t200, free_t200 = row[8], row[9]
         total_tmali, free_tmali = row[10], row[11]
-        
+        total_vpls, free_vpls = row[12], row[13]
+
         result = {
             'lan_ips': {'total': total_lan, 'free': free_lan, 'used': total_lan - free_lan},
             'tunnels': {'total': total_tun, 'free': free_tun, 'used': total_tun - free_tun},
             'apn': {'total': total_apn, 'free': free_apn, 'used': total_apn - free_apn},
             'apn_mali': {'total': total_mali, 'free': free_mali, 'used': total_mali - free_mali},
             'tunnel200': {'total': total_t200, 'free': free_t200, 'used': total_t200 - free_t200},
-            'tunnel_mali': {'total': total_tmali, 'free': free_tmali, 'used': total_tmali - free_tmali}
+            'tunnel_mali': {'total': total_tmali, 'free': free_tmali, 'used': total_tmali - free_tmali},
+            'vpls': {'total': total_vpls, 'free': free_vpls, 'used': total_vpls - free_vpls}
         }
         
         # Cache the result

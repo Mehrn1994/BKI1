@@ -340,6 +340,12 @@ document.addEventListener('DOMContentLoaded', function() {
             </div>
             <div style="display: flex; align-items: center; gap: 8px;">
                 <button class="theme-toggle" onclick="toggleTheme()" title="Toggle Theme"><span id="themeIcon">&#127769;</span></button>
+                <a href="/config-wizard"
+                   style="padding:6px 14px; border-radius:6px; background:#3b82f6; color:#ffffff; text-decoration:none; font-size:13px; font-weight:bold;"
+                   onmouseover="this.style.background='#2563eb'"
+                   onmouseout="this.style.background='#3b82f6'">
+                  &#8594; بازگشت به ویزارد
+                </a>
                 <a href="/"
                    style="padding:6px 14px; border-radius:6px; background:#ef4444; color:#ffffff; text-decoration:none; font-size:13px; font-weight:bold;"
                    onmouseover="this.style.background='#dc2626'"
@@ -431,10 +437,8 @@ document.addEventListener('DOMContentLoaded', function() {
             <input type="text" id="tunnelDest" placeholder="e.g. 10.126.251.1">
             <div style="font-size:11px; color:var(--text-muted,#94a3b8); margin-top:3px;">IP of the HUB/PE router (tunnel destination)</div>
 
-            <!-- Router-ID (auto-filled as 10.X.254.Y) -->
-            <label>Router-ID (Loopback)</label>
-            <input type="text" id="routerId" placeholder="Auto: 10.X.254.Y from branch">
-            <div style="font-size:11px; color:var(--text-muted,#94a3b8); margin-top:3px;">Auto-filled as 10.X.254.Y based on selected branch - can be changed</div>
+            <!-- Router-ID (hidden - auto-calculated as 10.X.254.Y) -->
+            <input type="hidden" id="routerId">
 
             <!-- Free Tunnel /31 IP Pair (auto-assignment from DB) -->
             <div style="margin:14px 0; padding:14px; background:rgba(6,182,212,0.06); border:1px solid rgba(6,182,212,0.25); border-radius:10px;">
@@ -764,12 +768,9 @@ document.addEventListener('DOMContentLoaded', function() {
                     tunnelNumEl.value = autoTunNum;
                 }
 
-                // Auto-fill Router-ID as 10.X.254.Y
+                // Auto-fill Router-ID as 10.X.254.Y (hidden field)
                 const autoRouterId = `10.${x}.254.${y}`;
-                const routerIdEl = document.getElementById('routerId');
-                if (!routerIdEl.dataset.manual) {
-                    routerIdEl.value = autoRouterId;
-                }
+                document.getElementById('routerId').value = autoRouterId;
 
                 // Load tunnel IPs filtered by this province
                 loadVplsTunnels(prov.en);
@@ -783,10 +784,7 @@ document.addEventListener('DOMContentLoaded', function() {
             this.dataset.manual = 'true';
         });
 
-        // Mark router-id as manually edited when user changes it
-        document.getElementById('routerId').addEventListener('input', function() {
-            this.dataset.manual = 'true';
-        });
+        // Router-ID is now auto-calculated (hidden field), no manual edit needed
 
         // ==================== SERVICE TYPE TOGGLE ====================
         document.querySelectorAll('input[name="serviceType"]').forEach(r => {
@@ -816,7 +814,7 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         }
 
-        // Read wizard config
+        // Read wizard config and hide non-selected connection types
         (function readWizardConfig() {
             try {
                 const wc = JSON.parse(localStorage.getItem('wizardConfig') || '{}');
@@ -824,29 +822,44 @@ document.addEventListener('DOMContentLoaded', function() {
                 const moduleType = wc.copper_module_type;
                 const modemType = wc.copper_modem_type;
                 const hint = document.getElementById('wizardHint');
+                const connLabels = {connDirect: 'direct', conn4esw: '4esw', connGshdsl: 'gshdsl', connAdsl: 'adsl'};
+
+                function hideOtherConnTypes(activeType) {
+                    // Map internal type to element IDs
+                    const typeToId = {direct: 'connDirect', '4esw': 'conn4esw', gshdsl: 'connGshdsl', adsl: 'connAdsl'};
+                    Object.entries(typeToId).forEach(([t, id]) => {
+                        const el = document.getElementById(id);
+                        if (el) el.style.display = (t === activeType) ? 'flex' : 'none';
+                    });
+                }
 
                 if (connType === 'Module') {
                     if (moduleType === 'G.SHDSL') {
                         selectConnectionType('gshdsl');
-                        if (hint) { hint.style.display = 'block'; hint.textContent = 'From wizard: G.SHDSL module selected'; }
+                        hideOtherConnTypes('gshdsl');
+                        if (hint) { hint.style.display = 'block'; hint.textContent = 'ویزارد: ماژول G.SHDSL انتخاب شده'; }
                         return;
                     } else if (moduleType === '1ADSL') {
                         selectConnectionType('adsl');
-                        if (hint) { hint.style.display = 'block'; hint.textContent = 'From wizard: 1ADSL module selected'; }
+                        hideOtherConnTypes('adsl');
+                        if (hint) { hint.style.display = 'block'; hint.textContent = 'ویزارد: ماژول 1ADSL انتخاب شده'; }
                         return;
                     } else if (moduleType === '4ESW') {
                         selectConnectionType('4esw');
-                        if (hint) { hint.style.display = 'block'; hint.textContent = 'From wizard: 4ESW module selected'; }
+                        hideOtherConnTypes('4esw');
+                        if (hint) { hint.style.display = 'block'; hint.textContent = 'ویزارد: ماژول 4ESW انتخاب شده'; }
                         return;
                     }
                 } else if (connType === 'Modem') {
                     if (modemType === '4ESW_VLAN') {
                         selectConnectionType('4esw');
-                        if (hint) { hint.style.display = 'block'; hint.textContent = 'From wizard: Modem to 4ESW VLAN'; }
+                        hideOtherConnTypes('4esw');
+                        if (hint) { hint.style.display = 'block'; hint.textContent = 'ویزارد: مودم به 4ESW VLAN'; }
                         return;
                     } else if (modemType === 'Direct_Port') {
                         selectConnectionType('direct');
-                        if (hint) { hint.style.display = 'block'; hint.textContent = 'From wizard: Direct port connection'; }
+                        hideOtherConnTypes('direct');
+                        if (hint) { hint.style.display = 'block'; hint.textContent = 'ویزارد: اتصال مستقیم به پورت'; }
                         return;
                     }
                 }
@@ -898,10 +911,6 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             if (!tunnelDest) {
                 showStatus('Please enter Tunnel Destination (HUB IP)!', true);
-                return;
-            }
-            if (!routerId) {
-                showStatus('Please enter Router-ID!', true);
                 return;
             }
             if (!area) {
