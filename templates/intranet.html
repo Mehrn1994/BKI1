@@ -370,9 +370,11 @@ body { transition: background 0.3s ease, color 0.3s ease; }
         }
         main {
             display: grid;
-            grid-template-columns: 340px 1fr;
+            grid-template-columns: 380px 1fr;
             gap: 16px;
             padding: 16px;
+            max-width: 1600px;
+            margin: 0 auto;
         }
         .card {
             background: var(--bg-card, #ffffff);
@@ -439,7 +441,7 @@ body { transition: background 0.3s ease, color 0.3s ease; }
         }
         textarea {
             resize: vertical;
-            min-height: 160px;
+            min-height: 500px;
         }
         .status-message {
             padding: 10px;
@@ -793,9 +795,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 <label style="font-size:13px;">&#128204; نام پورت روتر (WAN Interface)</label>
                 <input type="text" id="directPortName" placeholder="مثال: FastEthernet0/1 یا GigabitEthernet0/0" value="FastEthernet0/1">
                 <div style="font-size:11px; color:#94a3b8; margin-top:3px;">پورت فیزیکی که مودم به آن متصل است</div>
-                <label style="font-size:13px; margin-top:10px;">&#128465; اینترفیس فعلی NAT (برای حذف)</label>
-                <input type="text" id="currentNatInterface" placeholder="مثال: Loopback2000 یا BVI1" value="">
-                <div style="font-size:11px; color:#f59e0b; margin-top:3px;">اینترفیسی که الان NAT روی آن فعال است - دستور no ip nat... با این اینترفیس زده می‌شود</div>
               </div>
 
               <!-- 4ESW Module Options -->
@@ -877,6 +876,31 @@ document.addEventListener('DOMContentLoaded', function() {
                   </div>
                 </div>
               </div>
+
+              <!-- Shared: Current NAT Interface (for removal - all connection types) -->
+              <div style="margin-top:12px; padding:10px 12px; background:rgba(239,68,68,0.06); border:1px solid rgba(239,68,68,0.2); border-radius:8px;">
+                <label style="font-size:13px; color:#f87171; font-weight:600;">&#128465; اینترفیس فعلی NAT (برای حذف - اختیاری)</label>
+                <input type="text" id="currentNatInterface" placeholder="مثال: Loopback2000 یا BVI1" value="">
+                <div style="font-size:11px; color:var(--text-muted,#94a3b8); margin-top:3px;">اگر NAT قبلی باید حذف شود، اینترفیس فعلی را وارد کنید (دستور no ip nat... تولید می‌شود)</div>
+              </div>
+            </div>
+
+            <!-- Intranet-only config (no physical interface config) -->
+            <div style="margin:10px 0; padding:12px 16px; background:rgba(56,189,248,0.06); border:1.5px solid rgba(56,189,248,0.25); border-radius:10px;">
+                <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:14px;font-weight:600;color:var(--text-primary,#e2e8f0);margin:0;">
+                    <input type="checkbox" id="intranetOnlyConfig" style="width:18px;height:18px;accent-color:#38bdf8;cursor:pointer;" onchange="toggleIntranetOnly()">
+                    <span>فقط تنظیمات Intranet (بدون کانفیگ اینترفیس فیزیکی)</span>
+                </label>
+                <div style="font-size:12px; color:var(--text-secondary,#94a3b8); margin-top:5px; padding-right:34px;">برای نقاطی که قبلا اینترفیس تنظیم شده و فقط کانفیگ Intranet (Tunnel, OSPF, NAT, Crypto) نیاز دارند</div>
+            </div>
+
+            <!-- Default/Base Config Checkbox -->
+            <div style="margin:10px 0; padding:12px 16px; background:linear-gradient(135deg,rgba(16,185,129,0.08),rgba(6,182,212,0.04)); border:1.5px solid rgba(16,185,129,0.3); border-radius:10px;">
+                <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:14px;font-weight:600;color:var(--text-primary,#e2e8f0);margin:0;">
+                    <input type="checkbox" id="includeBaseConfig" style="width:18px;height:18px;accent-color:#10b981;cursor:pointer;">
+                    <span style="color:#10b981;">پیکربندی اولیه (Base Config)</span>
+                </label>
+                <div style="font-size:12px; color:var(--text-secondary,#94a3b8); margin-top:5px; padding-right:34px;">شامل: AAA/TACACS, SSH, SNMP, Access-Lists, Banner, NTP و سایر تنظیمات پایه</div>
             </div>
 
             <!-- Branch name in English for tunnel description -->
@@ -1264,6 +1288,17 @@ document.addEventListener('DOMContentLoaded', function() {
             selectConnectionType('direct');
         })();
 
+        // Toggle intranet-only mode (hides physical interface section)
+        function toggleIntranetOnly() {
+            const checked = document.getElementById('intranetOnlyConfig').checked;
+            const connDiv = document.querySelector('[onclick*="selectConnectionType"]')?.closest('div[style*="margin:16px"]');
+            // Hide the entire connection type selection box when intranet-only
+            const connBox = document.getElementById('connDirect')?.closest('div[style*="background:rgba(245"]');
+            if (connBox) {
+                connBox.style.display = checked ? 'none' : 'block';
+            }
+        }
+
         // Generate config button handler
         document.getElementById('generateBtn').addEventListener('click', async () => {
             const generateBtn = document.getElementById('generateBtn');
@@ -1451,24 +1486,29 @@ ip nat inside source list intnat interface Loopback2 overload
 do wr
 `.trim();
 
+            // Shared: NAT removal for all connection types
+            const currentNatIface = document.getElementById('currentNatInterface').value.trim();
+            let natRemoveCmd = '';
+            if (currentNatIface) {
+                natRemoveCmd = `!
+! ===== حذف NAT قبلی از اینترفیس ${currentNatIface} =====
+! توجه: دستور زیر تایید yes/no نیاز دارد
+no ip nat inside source list natlist interface ${currentNatIface} overload
+yes
+!`;
+            }
+
+            // Check intranet-only mode
+            const intranetOnly = document.getElementById('intranetOnlyConfig').checked;
+
             // Add connection type interface config
             const connType = document.querySelector('input[name="connectionType"]:checked').value;
             let ifaceConfig = '';
 
+            if (!intranetOnly) {
             if (connType === 'direct') {
                 const portName = document.getElementById('directPortName').value.trim() || 'FastEthernet0/1';
-                const currentNatIface = document.getElementById('currentNatInterface').value.trim();
-                let natRemoveCmd = '';
-                if (currentNatIface) {
-                    natRemoveCmd = `
-!
-! ===== حذف NAT قبلی از اینترفیس ${currentNatIface} =====
-! توجه: دستور زیر تایید yes/no نیاز دارد - yes به صورت خودکار ارسال می‌شود
-no ip nat inside source list natlist interface ${currentNatIface} overload
-yes
-!`;
-                }
-                ifaceConfig = `${natRemoveCmd}
+                ifaceConfig = `
 !
 ! ===== WAN Interface (اتصال مستقیم - ${portName}) =====
 !
@@ -1620,10 +1660,71 @@ interface BVI${bg}
                 );
             }
 
-            // Insert interface config before do wr in branch config
-            if (ifaceConfig) {
-                branchCfg = branchCfg.replace(/\n?do wr$/, '\n' + ifaceConfig + '\n!\ndo wr');
+            } // end if (!intranetOnly)
+
+            // Build ACLs using X and Y from branch data
+            let aclConfig = '';
+            if (selectedBranchData && !intranetOnly) {
+                const bx = selectedBranchData.x;
+                const by = selectedBranchData.y;
+                aclConfig = `
+!
+! ===== Access Lists =====
+!
+ip access-list extended INTR@NET
+ permit icmp any any
+ deny   udp any any eq tftp
+ deny   udp any any eq 135
+ deny   udp any any eq netbios-ns
+ deny   udp any any eq netbios-dgm
+ deny   udp any any eq netbios-ss
+ deny   udp any any eq snmp
+ deny   udp any any eq snmptrap
+ deny   udp any any eq 18999
+ deny   tcp any any eq 135
+ deny   tcp any any eq 139
+ deny   tcp any any eq 445
+ deny   tcp any any eq 593
+ deny   tcp any any eq 4444
+ deny   tcp any any eq 1433
+ deny   tcp any any eq 4786
+ permit ip 10.30.42.0 0.0.0.255 any
+ permit ip host 91.240.180.40 any
+ permit ip host 91.240.181.1 any
+!
+ip access-list extended ETHERNET_IN
+ deny   tcp any any range 135 139
+ deny   tcp any any eq 445
+ deny   udp any any range 135 netbios-ss
+ deny   udp any any eq 1434
+ deny   udp any any eq 1433
+ deny   tcp any any eq 1026
+ deny   tcp any any eq 4444
+ deny   udp any any eq 445
+ permit ip 10.${bx}.${by}.0 0.0.0.255 192.168.65.0 0.0.0.255
+ permit ip 10.${bx}.${by}.0 0.0.0.255 192.168.72.0 0.0.0.255
+ permit udp 10.${bx}.${by}.0 0.0.0.255 224.0.0.0 0.0.0.255
+ permit ip 10.${bx}.${by}.0 0.0.0.255 10.${bx}.${by}.0 0.0.0.255
+ permit ip 10.${bx}.${by}.0 0.0.0.255 10.${bx}.0.0 0.0.7.255
+ permit ip 10.${bx}.${by}.0 0.0.0.255 10.0.0.0 0.0.255.255
+ permit ip 10.${bx}.${by}.0 0.0.0.255 10.30.42.0 0.0.0.255
+ permit ip 10.${bx}.${by}.0 0.0.0.255 host 91.240.180.40
+ permit ip 10.${bx}.${by}.0 0.0.0.255 host 91.240.181.1
+!`;
             }
+
+            // Build final branch config: NAT removal → Interface → ACLs → Intranet (crypto/tunnel/ospf)
+            let finalBranchCfg = '';
+            // 1. NAT removal (if any)
+            if (natRemoveCmd) finalBranchCfg += natRemoveCmd + '\n';
+            // 2. Interface config (if not intranet-only)
+            if (ifaceConfig) finalBranchCfg += ifaceConfig + '\n!\n';
+            // 3. ACLs
+            if (aclConfig) finalBranchCfg += aclConfig + '\n';
+            // 4. Intranet config (crypto, tunnels, ospf, nat)
+            finalBranchCfg += branchCfg;
+
+            branchCfg = finalBranchCfg;
 
             // WAN-INTR1 Config
             const wan1Cfg = `
@@ -1677,6 +1778,144 @@ router ospf 200
  distribute-list NewINTACL in
 !
 do wr`;
+            }
+
+            // Base config (if checkbox checked)
+            if (document.getElementById('includeBaseConfig').checked && selectedBranchData) {
+                const bx = selectedBranchData.x;
+                const by = selectedBranchData.y;
+                const baseConfig = `!
+! ===== Base Config (تنظیمات پایه) =====
+!
+service timestamps debug datetime msec localtime
+service timestamps log datetime msec localtime
+service password-encryption
+!
+aaa new-model
+aaa authentication login CACS group tacacs+ local
+aaa authentication enable default group tacacs+ enable
+aaa authorization console
+aaa authorization config-commands
+aaa authorization exec CACS group tacacs+ local
+aaa authorization commands 0 CACS group tacacs+ local
+aaa authorization commands 1 CACS group tacacs+ local
+aaa authorization commands 2 CACS group tacacs+ local
+aaa authorization commands 3 CACS group tacacs+ local
+aaa authorization commands 15 CACS group tacacs+ local
+aaa accounting exec CACS start-stop group tacacs+
+aaa accounting commands 0 CACS start-stop group tacacs+
+aaa accounting commands 1 CACS start-stop group tacacs+
+aaa accounting commands 2 CACS start-stop group tacacs+
+aaa accounting commands 3 CACS start-stop group tacacs+
+aaa accounting commands 15 CACS start-stop group tacacs+
+!
+clock timezone Tehran 3 30
+ip cef
+no ip domain lookup
+ip domain name agri-bank.com
+!
+username bkiadmin privilege 15 secret 0 BKI@dmin#2024
+username wanuser privilege 3 secret 0 W@nUs3r#2024
+!
+ip ssh authentication-retries 2
+ip ssh version 2
+!
+track 5 ip route 10.0.0.0 255.255.0.0 reachability
+!
+ip access-list standard SNMP-READ
+ permit 10.0.50.0 0.0.1.255
+ip access-list standard SNMP-WRITE
+ permit 10.0.51.49
+ permit 10.0.51.48
+ permit 10.0.51.50
+ip access-list standard TELNET_ACCESS
+ permit 10.${bx}.254.1
+ permit 10.${bx}.251.1
+ permit 10.${bx}.12.6 0.0.0.1
+ permit 10.0.50.0 0.0.1.255
+ permit 10.30.42.0 0.0.0.255
+!
+logging 10.0.51.63
+access-list 199 permit icmp any any echo
+access-list 199 permit icmp any any echo-reply
+snmp-server group LMS v3 priv read myview write myview access SNMP-WRITE
+snmp-server group NMS v3 priv access SNMP-READ
+snmp-server view myview mib-2 included
+snmp-server view myview system included
+snmp-server view myview cisco included
+snmp-server ifindex persist
+!
+route-map nachi-worm permit 10
+ match ip address 199
+ match length 92 92
+ set interface Null0
+!
+tacacs-server host 10.0.51.56
+tacacs-server host 10.0.51.57
+tacacs-server directed-request
+tacacs-server key 7 08005F0046485647
+!
+banner motd ^C
+        ===
+       -+ +-
+       | | |
+    <--\\ | /-->
+   ##| ||||| |##
+  ###| |+++| |###
+ /____\\\\ | //____\\ ********************************************************
+   <###\\|||/###>                  Keshavarzi Bank Network
+    +====+====+     WARNING: Access is restricted to authorized users only.
+    | WAN-BKI |     Unauthorized access is a violation of state , civil and
+    +===+=+===+                       criminal laws.
+        +=+        ********************************************************
+^C
+!
+privilege interface level 3 shutdown
+privilege interface level 3 no shutdown
+privilege interface level 3 no
+privilege configure level 3 interface
+privilege exec level 3 traceroute
+privilege exec level 3 ping
+privilege exec level 3 configure terminal
+privilege exec level 3 configure
+privilege exec level 3 reload
+privilege exec level 3 terminal monitor
+privilege exec level 3 terminal
+privilege exec all level 3 show running-config
+privilege exec level 3 show
+!
+line con 0
+ authorization exec CACS
+ login authentication CACS
+line aux 0
+ no exec
+line vty 0 4
+ access-class TELNET_ACCESS in
+ privilege level 15
+ authorization exec CACS
+ login authentication CACS
+ transport input ssh
+ transport output ssh
+line vty 5 15
+ access-class TELNET_ACCESS in
+ privilege level 15
+ authorization exec CACS
+ login authentication CACS
+ transport input ssh
+ transport output ssh
+!
+scheduler allocate 20000 1000
+ntp authentication-key 1 md5 070E265E47441B041919 7
+ntp authenticate
+ntp trusted-key 1
+ntp source Loopback0
+ntp master 5
+ntp update-calendar
+ntp server 10.0.51.27
+!
+! ===== پایان تنظیمات پایه =====
+!`;
+                branchCfg = baseConfig + '\n' + branchCfg;
             }
 
             // Put configs into three separate boxes

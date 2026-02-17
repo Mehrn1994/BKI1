@@ -593,19 +593,8 @@ document.addEventListener('DOMContentLoaded', function() {
         <div class="help-text">⚠️ برای HUB Description - فقط حروف انگلیسی و اعداد</div>
       </div>
       
-      <!-- Node Type Selection -->
-      <div class="form-group">
-        <label for="nodeType">
-          <span class="info-badge" style="background: #f59e0b;">📋 نوع</span>
-          نوع نقطه <span class="required">*</span>
-        </label>
-        <select id="nodeType" required style="padding: 12px; border-radius: 10px; border: 1px solid var(--border-color); background: var(--bg-secondary); color: var(--text-primary); font-size: 14px;">
-          <option value="شعبه">🏢 شعبه</option>
-          <option value="کیوسک">🖥️ کیوسک</option>
-          <option value="ATM">💳 ATM</option>
-        </select>
-        <div class="help-text">💡 نوع نقطه را انتخاب کنید (شعبه، کیوسک یا ATM)</div>
-      </div>
+      <!-- Node Type Selection - removed: user selects type in wizard -->
+      <input type="hidden" id="nodeType" value="شعبه">
     </div>
 
     <!-- Hostname for Base Config (shown when checkbox is checked) -->
@@ -686,9 +675,9 @@ document.addEventListener('DOMContentLoaded', function() {
       </label>
       <div style="display: flex; align-items: center; gap: 0;">
         <span style="background: linear-gradient(135deg, #374151, #1f2937); color: #10b981; padding: 12px 16px; border-radius: 12px 0 0 12px; border: 1px solid rgba(16, 185, 129, 0.3); border-right: none; font-family: 'Courier New', monospace; font-weight: bold; font-size: 1rem;">Tunnel</span>
-        <input id="hubTunnelNumber" type="text" placeholder="مثال: 10158100170" required style="border-radius: 0 12px 12px 0; flex: 1; direction: ltr; text-align: left;">
+        <input id="hubTunnelNumber" type="text" placeholder="Lan IP (xy) مثال: 3014" required style="border-radius: 0 12px 12px 0; flex: 1; direction: ltr; text-align: left;">
       </div>
-      <div class="help-text">⚠️ فقط شماره Tunnel را وارد کنید (بدون کلمه Tunnel)</div>
+      <div class="help-text">⚠️ از X و Y آدرس LAN شعبه استفاده کنید (مثال: اگر LAN = 10.30.14.0 → 3014)</div>
     </div>
 
     <!-- Hidden fields -->

@@ -662,20 +662,8 @@ document.addEventListener('DOMContentLoaded', function() {
       </div>
     </div>
 
-    <!-- Node Type Selection -->
-    <div class="form-group">
-      <label for="nodeType">
-        <span class="info-badge" style="background: #f59e0b;">📋 نوع</span>
-        نوع نقطه <span class="required">*</span>
-      </label>
-      <select id="nodeType" required style="padding: 12px; border-radius: 10px; border: 1px solid var(--border-color); background: var(--bg-secondary); color: var(--text-primary); font-size: 14px;">
-        <option value="شعبه">🏢 شعبه</option>
-        <option value="کیوسک">🖥️ کیوسک</option>
-        <option value="ATM">💳 ATM</option>
-        <option value="سایر">📌 سایر</option>
-      </select>
-      <div class="help-text">💡 نوع نقطه را انتخاب کنید (شعبه، کیوسک، ATM یا سایر)</div>
-    </div>
+    <!-- Node Type Selection - removed: user selects type in wizard -->
+    <input type="hidden" id="nodeType" value="شعبه">
 
     <!-- Route Name Field (appears only for existing branches) -->
     <div class="form-group" id="routeNameGroup">
@@ -811,11 +799,11 @@ document.addEventListener('DOMContentLoaded', function() {
           <span class="required">*</span>
           شماره اینترفیس Tunnel روی HUB
         </label>
-        <input id="hubTunnelId" 
-               type="number" 
-               placeholder="مثال: 9157" 
+        <input id="hubTunnelId"
+               type="text"
+               placeholder="Lan IP (xy) مثال: 3014"
                required>
-        <div class="help-text">⚠️ شماره یکتا برای این تونل را وارد کنید</div>
+        <div class="help-text">⚠️ شماره یکتا - از X و Y آدرس LAN شعبه استفاده کنید (مثال: اگر LAN = 10.30.14.0 → 3014)</div>
       </div>
     </div>
 
