@@ -247,6 +247,23 @@ def init_tables():
     
     # Tickets and Email tables removed - ticketing system disabled
 
+    # VPLS/MPLS tunnels table
+    cursor.execute("""CREATE TABLE IF NOT EXISTS vpls_tunnels (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        ip_address TEXT,
+        hub_ip TEXT,
+        branch_ip TEXT,
+        tunnel_name TEXT,
+        description TEXT,
+        province TEXT,
+        branch_name TEXT,
+        wan_ip TEXT,
+        tunnel_dest TEXT,
+        status TEXT DEFAULT 'Free',
+        username TEXT,
+        reservation_date TEXT)""")
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_vpls_tunnels_status ON vpls_tunnels(status)")
+
     # Chat messages table
     cursor.execute("""CREATE TABLE IF NOT EXISTS chat_messages (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -1129,6 +1146,84 @@ def check_tunnel_name():
             'reserved_by': row['reserved_by'] or ''
         })
     return jsonify({'exists': False})
+
+# ==================== VPLS/MPLS TUNNEL IPs ====================
+@app.route('/api/vpls-tunnels', methods=['GET'])
+def get_vpls_tunnels():
+    """Get free VPLS/MPLS tunnel IPs"""
+    try:
+        conn = get_db()
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT id, ip_address, hub_ip, branch_ip, tunnel_name, description,
+                   province, status
+            FROM vpls_tunnels
+            WHERE LOWER(status) = 'free'
+            ORDER BY id
+        """)
+        tunnels = []
+        for row in cursor.fetchall():
+            tunnels.append({
+                'id': row['id'],
+                'ip_address': row['ip_address'],
+                'hub_ip': row['hub_ip'],
+                'branch_ip': row['branch_ip'],
+                'tunnel_name': row['tunnel_name'] or '',
+                'description': row['description'] or '',
+                'province': row['province'] or '',
+                'status': row['status']
+            })
+        conn.close()
+        print(f"✓ Free VPLS tunnels: {len(tunnels)}")
+        return jsonify(tunnels)
+    except Exception as e:
+        print(f"❌ VPLS tunnels error: {e}")
+        return jsonify([])
+
+@app.route('/api/reserve-vpls-tunnel', methods=['POST'])
+def reserve_vpls_tunnel():
+    """Reserve a VPLS/MPLS tunnel IP"""
+    try:
+        data = request.json
+        tunnel_id = data.get('id')
+        tunnel_name = data.get('tunnel_name', '')
+        description = data.get('description', '')
+        province = data.get('province', '')
+        branch_name = data.get('branch_name', '')
+        username = data.get('username', '')
+        wan_ip = data.get('wan_ip', '')
+        tunnel_dest = data.get('tunnel_dest', '')
+
+        conn = get_db()
+        cursor = conn.cursor()
+        now = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+
+        cursor.execute("""
+            UPDATE vpls_tunnels
+            SET status = 'Reserved',
+                tunnel_name = ?,
+                description = ?,
+                province = ?,
+                branch_name = ?,
+                wan_ip = ?,
+                tunnel_dest = ?,
+                username = ?,
+                reservation_date = ?
+            WHERE id = ? AND LOWER(status) = 'free'
+        """, (tunnel_name, description, province, branch_name,
+              wan_ip, tunnel_dest, username, now, tunnel_id))
+
+        if cursor.rowcount == 0:
+            conn.close()
+            return jsonify({'status': 'error', 'error': 'Tunnel IP already reserved or not found'}), 400
+
+        conn.commit()
+        conn.close()
+        log_activity('success', 'رزرو تونل VPLS', tunnel_name, username)
+        return jsonify({'status': 'ok'})
+    except Exception as e:
+        print(f"❌ Reserve VPLS tunnel error: {e}")
+        return jsonify({'status': 'error', 'error': str(e)}), 500
 
 # ==================== TUNNEL200 IPs ====================
 @app.route('/api/tunnel200-ips', methods=['GET'])
