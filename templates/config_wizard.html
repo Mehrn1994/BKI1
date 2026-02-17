@@ -648,12 +648,14 @@ function finishWizard() {
             return;
         }
 
-        // MPLS / VPLS -> مالی
-        // For now placeholder
-        alert('پیکربندی ' + protocol + ' (سیم مسی - مالی)\n\nاتصال: ' + (selections['copper_connection'] || '') +
-              '\n' + (selections['copper_module_type'] ? 'ماژول: ' + selections['copper_module_type'] : '') +
-              (selections['copper_modem_type'] ? 'نوع مودم: ' + selections['copper_modem_type'] : '') +
-              '\n\nصفحه پیکربندی به زودی اضافه می‌شود.');
+        // MPLS / VPLS -> مالی -> MPLS/VPLS page
+        if (protocol === 'MPLS' || protocol === 'VPLS') {
+            window.location.href = '/mpls-vpls';
+            return;
+        }
+
+        // Other protocols placeholder
+        alert('پیکربندی ' + protocol + ' (سیم مسی - مالی)\n\nصفحه پیکربندی به زودی اضافه می‌شود.');
         return;
     }
 

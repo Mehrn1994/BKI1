@@ -461,6 +461,10 @@ def apn_mali_page():
 def ptmp_page():
     return render_template('ptmp.html')
 
+@app.route('/mpls-vpls')
+def mpls_vpls_page():
+    return render_template('mpls_vpls.html')
+
 @app.route('/config-wizard')
 def config_wizard_page():
     return render_template('config_wizard.html')
