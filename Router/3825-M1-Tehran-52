@@ -1,0 +1,550 @@
+
+!
+! Last configuration change at 11:35:17 Tehran Sun Feb 15 2026 by m-hossain
+! NVRAM config last updated at 11:50:22 Tehran Sun Feb 15 2026 by pyth0nuser
+!
+version 12.4
+service timestamps debug datetime msec localtime
+service timestamps log datetime localtime
+service password-encryption
+!
+hostname 3825-M1-Tehran
+!
+boot-start-marker
+boot system flash c3825-adventerprisek9-mz.124-11.XW7.bin
+boot-end-marker
+!
+enable secret 5 $1$LA1Y$5l6Hi2GAXSRjjmwnPiew40
+!
+aaa new-model
+!
+!
+aaa authentication login CACS group tacacs+ local
+aaa authentication enable default group tacacs+ enable
+aaa authorization console
+aaa authorization config-commands
+aaa authorization exec CACS group tacacs+ local 
+aaa authorization commands 0 CACS group tacacs+ local 
+aaa authorization commands 1 CACS group tacacs+ local 
+aaa authorization commands 2 CACS group tacacs+ local 
+aaa authorization commands 3 CACS group tacacs+ local 
+aaa authorization commands 15 CACS group tacacs+ local 
+aaa accounting exec CACS start-stop group tacacs+
+aaa accounting commands 0 CACS start-stop group tacacs+
+aaa accounting commands 1 CACS start-stop group tacacs+
+aaa accounting commands 2 CACS start-stop group tacacs+
+aaa accounting commands 3 CACS start-stop group tacacs+
+aaa accounting commands 15 CACS start-stop group tacacs+
+!
+!
+aaa session-id common
+clock timezone Tehran 3 30
+clock calendar-valid
+!
+ip cef
+!
+!
+!
+!
+no ip domain lookup
+ip domain name agri-bank.com
+!
+multilink bundle-name authenticated
+!
+!
+voice-card 0
+ no dspfarm
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+! 
+!
+crypto isakmp policy 10
+ encr aes
+ authentication pre-share
+ group 2
+!
+crypto isakmp policy 102
+ encr aes
+ authentication pre-share
+ group 2
+crypto isakmp key G!l@n3tAcc3ss address 10.250.46.1
+crypto isakmp key N3w1ntr@n3t address 10.30.42.200
+crypto isakmp key N3w1ntr@n3t address 10.30.42.201
+crypto isakmp invalid-spi-recovery
+!
+!
+crypto ipsec transform-set GILANETTS esp-aes esp-sha-hmac 
+crypto ipsec transform-set BK!-TR esp-aes 256 esp-sha-hmac 
+crypto ipsec transform-set INTR1 esp-aes 256 esp-sha-hmac 
+crypto ipsec transform-set INTR2 esp-aes 256 esp-sha-hmac 
+!
+crypto map BKI-MAP-INT 1 ipsec-isakmp 
+ ! Incomplete
+ set peer 10.30.42.2
+ set transform-set BK!-TR 
+ match address INTRANET-CRYPTO
+crypto map BKI-MAP-INT 2 ipsec-isakmp 
+ set peer 10.30.42.200
+ set transform-set INTR1 
+ match address INTR1ACL
+crypto map BKI-MAP-INT 3 ipsec-isakmp 
+ set peer 10.30.42.201
+ set transform-set INTR2 
+ match address INTR2ACL
+!
+crypto map GILANET 10 ipsec-isakmp 
+ set peer 10.250.46.1
+ set transform-set GILANETTS 
+ match address GILANET-ACL
+!
+!
+!
+username bkroot privilege 15 secret 5 $1$AE81$b8qouCTYeDXoVw35sUWwt.
+archive
+ log config
+  hidekeys
+ path tftp://10.0.51.40/Pro/$h
+ write-memory
+!
+!
+controller DSL 0/0/0
+ line-term cpe
+!
+controller DSL 0/1/0
+ line-term cpe
+!
+ip tftp source-interface Vlan10
+ip ssh authentication-retries 2
+ip ssh port 2001 rotary 1
+!
+!
+!
+!
+interface Loopback0
+ no ip address
+!
+interface Loopback1
+ ip address 10.35.254.1 255.255.255.255
+!
+interface Loopback2
+ ip address 10.210.35.1 255.255.255.255
+!
+interface Tunnel20
+ description ** MPLS(2M)->50M **
+ bandwidth 2048
+ ip address 10.255.241.35 255.255.255.254
+ ip access-group HQ-ACCESS-IN in
+ ip access-group HQ-ACCESS-OUT out
+ ip mtu 1460
+ ip flow ingress
+ ip flow egress
+ ip tcp adjust-mss 1420
+ keepalive 3 3
+ cdp enable
+ tunnel source 10.241.72.2
+ tunnel destination 10.241.0.2
+!
+interface Tunnel24
+ description ** MPLS(2M)->50M **
+ bandwidth 2000
+ ip address 10.255.244.53 255.255.255.254
+ ip access-group HQ-ACCESS-IN in
+ ip access-group HQ-ACCESS-OUT out
+ ip mtu 1460
+ ip flow ingress
+ ip flow egress
+ ip tcp adjust-mss 1420
+ keepalive 3 3
+ cdp enable
+ tunnel source 10.241.72.2
+ tunnel destination 10.244.0.2
+!
+interface Tunnel100
+ description "" Shoab-MGRE ""
+ ip address 10.255.135.1 255.255.255.0
+ no ip redirects
+ no ip unreachables
+ ip mtu 1460
+ ip nhrp authentication dmvpnbki
+ ip nhrp map multicast dynamic
+ ip nhrp network-id 100
+ ip nhrp holdtime 300
+ ip nhrp cache non-authoritative
+ ip tcp adjust-mss 1420
+ ip ospf network point-to-multipoint
+ ip ospf cost 200
+ ip ospf priority 255
+ ip ospf database-filter all out
+ cdp enable
+ tunnel source 10.241.72.2
+ tunnel mode gre multipoint
+!
+interface Tunnel110
+ description ** Tunnel-To-TB **
+ ip address 10.255.242.2 255.255.255.252
+ ip mtu 1460
+ ip flow ingress
+ ip flow egress
+ ip tcp adjust-mss 1420
+ keepalive 3 3
+ cdp enable
+ tunnel source 10.241.72.2
+ tunnel destination 10.241.76.2
+!
+interface Tunnel156
+ description ** Gilanet **
+ ip address 10.156.100.231 255.255.255.254
+ ip mtu 1460
+ ip flow ingress
+ ip flow egress
+ ip tcp adjust-mss 1420
+ ip ospf hello-interval 100
+ ip ospf dead-interval 300
+ keepalive 100 3
+ tunnel source 10.250.46.132
+ tunnel destination 10.250.46.1
+!
+interface Tunnel200
+ description ** Intranet - R1 **
+ bandwidth 2000
+ ip address 10.200.7.247 255.255.255.254
+ ip mtu 1360
+ ip nat outside
+ ip virtual-reassembly
+ ip tcp adjust-mss 1320
+ ip ospf cost 200
+ keepalive 10 3
+ tunnel source 10.3.117.186
+ tunnel destination 10.30.42.200
+!
+interface Tunnel201
+ description ** Intranet - R2 **
+ bandwidth 2000
+ ip address 10.201.7.247 255.255.255.254
+ ip mtu 1360
+ ip nat outside
+ ip virtual-reassembly
+ ip tcp adjust-mss 1320
+ ip ospf cost 400
+ keepalive 10 3
+ tunnel source 10.3.117.186
+ tunnel destination 10.30.42.201
+!
+interface GigabitEthernet0/0
+ no ip address
+ duplex full
+ speed 1000
+ media-type sfp
+!
+interface GigabitEthernet0/0.3700
+ description ** Intranet-10M **
+ encapsulation dot1Q 3700
+ ip address 10.3.117.186 255.255.255.248
+ ip flow ingress
+ ip flow egress
+ ip virtual-reassembly
+ crypto map BKI-MAP-INT
+!
+interface GigabitEthernet0/0.3900
+ description ** MPLS-10M **
+ encapsulation dot1Q 3900
+ ip address 10.241.72.2 255.255.255.252
+ ip flow ingress
+ ip flow egress
+ ip virtual-reassembly
+!
+interface GigabitEthernet0/1
+ no ip address
+ duplex auto
+ speed auto
+ media-type rj45
+!
+interface FastEthernet0/2/0
+ switchport access vlan 10
+!
+interface FastEthernet0/2/1
+!
+interface FastEthernet0/2/2
+!
+interface FastEthernet0/2/3
+ description ** APN **
+ switchport access vlan 40
+ spanning-tree portfast
+!
+interface Vlan1
+ no ip address
+!
+interface Vlan10
+ description ** To-Core **
+ ip address 10.35.0.1 255.255.255.254
+ ip flow ingress
+ ip flow egress
+ ip nat inside
+ ip virtual-reassembly
+!
+interface Vlan20
+ no ip address
+!
+interface Vlan40
+ description ** APN **
+ ip address 10.250.46.132 255.255.255.0
+ crypto map GILANET
+!
+router ospf 1
+ router-id 10.35.254.1
+ ispf
+ log-adjacency-changes
+ area 35 filter-list prefix OSPF-FILTER in
+ network 10.35.0.1 0.0.0.0 area 35
+ network 10.35.254.1 0.0.0.0 area 35
+ network 10.255.241.35 0.0.0.0 area 0
+ distribute-list OSPF-PERMIT in
+!
+router ospf 2
+ router-id 10.156.35.1
+ log-adjacency-changes
+ redistribute connected subnets route-map Connected-to-OSPF2
+ redistribute ospf 1 subnets route-map OSPF1-to-OSPF2
+ passive-interface default
+ no passive-interface Tunnel156
+ network 10.156.100.231 0.0.0.0 area 35
+ distribute-list OSPF2-PERMIT in
+ distance 120
+!
+router ospf 200
+ router-id 10.210.35.1
+ log-adjacency-changes
+ network 10.200.7.247 0.0.0.0 area 1
+ network 10.201.7.247 0.0.0.0 area 1
+ network 10.210.35.1 0.0.0.0 area 1
+!
+ip route 0.0.0.0 0.0.0.0 10.241.72.1
+ip route 10.0.34.95 255.255.255.255 Tunnel156 name lib.bki.ir
+ip route 10.0.34.96 255.255.255.255 Tunnel156 name parslib
+ip route 10.0.34.112 255.255.255.255 Tunnel156 name Portal
+ip route 10.0.54.112 255.255.255.255 Tunnel156 name AV-GILANET
+ip route 10.0.56.52 255.255.255.255 Tunnel156 name AV-GILANET
+ip route 10.0.56.53 255.255.255.255 Tunnel156 name AV-GILANET
+ip route 10.1.0.0 255.255.0.0 Tunnel110 name TB-Branch
+ip route 10.3.58.242 255.255.255.255 10.3.117.185
+ip route 10.30.42.0 255.255.255.0 10.3.117.185 name 2nd-Network-Intranet
+ip route 10.30.176.187 255.255.255.255 10.3.117.185 name ndf.ir
+ip route 10.30.176.188 255.255.255.255 10.3.117.185 name ndf.ir
+ip route 10.40.5.0 255.255.255.0 Tunnel20 name Khazaneh-Tarasht
+ip route 10.40.21.0 255.255.255.0 Tunnel20
+ip route 10.240.0.0 255.254.0.0 Tunnel110 name Monitoring
+ip route 10.241.0.2 255.255.255.255 10.241.72.1 name T20
+ip route 10.241.76.2 255.255.255.255 10.241.72.1 name T110-MPLS
+ip route 91.240.180.40 255.255.255.255 10.3.117.185 name sp.sep.ir
+ip route 91.240.180.133 255.255.255.255 10.3.117.185 name SSPM.SEP.IR
+ip route 91.240.181.41 255.255.255.255 10.3.117.185 name sp.sep.ir
+!
+ip flow-cache timeout active 1
+ip flow-export source Loopback1
+ip flow-export version 5
+ip flow-export destination 10.0.51.61 9996
+!
+no ip http server
+no ip http secure-server
+ip nat inside source list intnat interface Loopback2 overload
+ip tacacs source-interface Vlan10
+!
+ip access-list standard Connected-to-OSPF2
+ permit 10.35.254.1
+ permit 10.35.0.0 0.0.7.255
+ permit 10.35.254.0 0.0.0.255
+ip access-list standard NewINTACL
+ deny   10.0.76.91
+ deny   10.0.68.223
+ deny   10.0.68.187
+ permit any
+ip access-list standard OSPF-PERMIT
+ permit 10.0.0.0 0.0.255.255
+ permit 192.168.65.0 0.0.0.255
+ permit 10.35.0.0 0.0.255.255
+ permit 192.168.15.0 0.0.0.255
+ permit 192.168.72.0 0.0.0.255
+ permit 10.60.3.0 0.0.0.255
+ permit 192.168.112.0 0.0.0.255
+ permit 10.60.66.0 0.0.0.255
+ip access-list standard OSPF1-to-OSPF2
+ permit 10.35.0.0 0.0.255.255
+ip access-list standard OSPF2-PERMIT
+ permit 192.168.65.0 0.0.0.255
+ permit 192.168.72.0 0.0.0.255
+ permit 10.0.0.0 0.0.255.255
+ip access-list standard SNMP-READ
+ permit 10.35.1.8
+ permit 10.0.50.0 0.0.1.255
+ip access-list standard SNMP-WRITE
+ permit 10.0.51.49
+ permit 10.0.51.48
+ip access-list standard TELNET-ACCESS
+ permit 10.255.255.1
+ permit 10.255.241.8
+ permit 10.0.51.25
+ remark -----------------------------
+ permit 10.35.0.0
+ permit 10.35.0.2
+ permit 10.30.42.2
+ permit 10.0.201.36
+ permit 10.0.201.62
+ permit 10.0.50.64 0.0.0.63
+!
+ip access-list extended GILANET-ACL
+ permit gre host 10.250.46.132 host 10.250.46.1
+ip access-list extended HQ-ACCESS-IN
+ permit gre any any
+ permit ospf any any
+ permit ip 192.168.65.0 0.0.0.255 any
+ permit ip 10.0.0.0 0.255.255.255 any
+ permit ip 192.168.15.0 0.0.0.255 any
+ permit ip 192.168.72.0 0.0.0.255 any
+ permit ip 192.168.112.0 0.0.0.255 any
+ip access-list extended HQ-ACCESS-OUT
+ deny   ip any 10.0.151.0 0.0.0.7
+ permit gre any any
+ permit eigrp any any
+ permit ip any 192.168.65.0 0.0.0.255
+ permit ip any 10.0.0.0 0.255.255.255
+ permit ip any 192.168.15.0 0.0.0.255
+ permit ip any 192.168.72.0 0.0.0.255
+ permit ip any 192.168.112.0 0.0.0.255
+ip access-list extended INTR1ACL
+ permit gre host 10.3.117.186 host 10.30.42.200
+ip access-list extended INTR2ACL
+ permit gre host 10.3.117.186 host 10.30.42.201
+ip access-list extended INTR@NET
+ permit ip host 91.240.180.133 any
+ip access-list extended INTRANET-CRYPTO
+ip access-list extended intnat
+ permit ip 10.35.1.0 0.0.0.255 10.0.0.0 0.0.255.255
+ip access-list extended natlist
+ permit ip 10.35.1.0 0.0.0.255 10.30.42.0 0.0.0.255
+ permit ip 10.35.1.0 0.0.0.255 host 91.240.180.40
+ permit ip 10.35.1.0 0.0.0.255 host 91.240.181.1
+ permit ip 10.35.1.0 0.0.0.255 10.30.176.184 0.0.0.7
+ permit ip 10.35.1.0 0.0.0.255 host 91.240.180.133
+ permit ip host 10.35.1.8 host 10.3.58.242
+!
+!
+ip prefix-list OSPF-FILTER seq 10 permit 10.0.0.0/16
+ip prefix-list OSPF-FILTER seq 20 permit 10.60.3.0/24
+logging trap notifications
+logging source-interface Loopback1
+logging 10.0.51.58
+logging 10.0.51.63
+logging 10.0.51.25
+snmp-server group LMS v3 priv read myview write myview access SNMP-WRITE
+snmp-server group NMS v3 priv access SNMP-READ
+snmp-server view myview mib-2 included
+snmp-server view myview system included
+snmp-server view myview cisco included
+snmp-server ifindex persist
+!
+!
+!
+route-map OSPF1-to-OSPF2 permit 10
+ match ip address OSPF1-to-OSPF2
+ match route-type internal
+ set metric 10000
+!
+route-map Connected-to-OSPF2 permit 10
+ match ip address Connected-to-OSPF2
+ set metric 1000
+!
+!
+!
+tacacs-server host 10.0.51.56
+tacacs-server host 10.0.51.57
+tacacs-server timeout 10
+tacacs-server directed-request
+tacacs-server key 7 106F1A574A46415B
+!
+control-plane
+!
+!
+!
+!
+!
+!
+!
+!
+!
+banner motd 
+          
+                                      ===
+                                     -+ +-
+                                     | | |
+                                  <--\ | /-->
+                                 ##| ||||| |##
+                                ###| |+++| |###
+                               /____\\ | //____\
+                                 <###\|||/###>
+                                  +====+====+
+                                  | WAN-BKI |
+                                  +===+=+===+
+                                      +=+
+                            Keshavarzi Bank Network
+          
+    WARNING:
+                Access is restricted to authorized users only.
+      Unauthorized access is a violation of state , civil and criminal laws.
+          
+********************************************************************************
+          
+
+!
+line con 0
+ authorization exec CACS
+ login authentication CACS
+line aux 0
+ no exec
+line vty 0 4
+ access-class TELNET-ACCESS in
+ privilege level 15
+ authorization commands 2 CACS
+ authorization exec CACS
+ accounting commands 15 CACS
+ login authentication CACS
+ transport input ssh
+ transport output telnet ssh
+line vty 5 15
+ access-class TELNET-ACCESS in
+ privilege level 15
+ authorization commands 2 CACS
+ authorization exec CACS
+ login authentication CACS
+ transport input ssh
+ transport output ssh
+!
+scheduler allocate 20000 1000
+process cpu extended history 360
+ntp authentication-key 1 md5 070E265E47441B041919 7
+ntp authenticate
+ntp trusted-key 1
+ntp clock-period 17180335
+ntp source Loopback1
+ntp update-calendar
+ntp server 10.0.51.27
+
+!
+webvpn cef
+!
+end

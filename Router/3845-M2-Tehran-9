@@ -1,0 +1,1549 @@
+
+!
+! Last configuration change at 11:00:38 Tehran Sun Feb 15 2026 by m-hossain
+! NVRAM config last updated at 11:45:06 Tehran Sun Feb 15 2026 by pyth0nuser
+!
+version 12.4
+service timestamps debug datetime msec localtime
+service timestamps log datetime localtime
+service password-encryption
+!
+hostname 3845-M2-Tehran
+!
+boot-start-marker
+boot-end-marker
+!
+enable secret 5 $1$LA1Y$5l6Hi2GAXSRjjmwnPiew40
+!
+aaa new-model
+!
+!
+aaa authentication login CACS group tacacs+ local
+aaa authentication enable default group tacacs+ enable
+aaa authorization console
+aaa authorization config-commands
+aaa authorization exec CACS group tacacs+ local 
+aaa authorization commands 0 CACS group tacacs+ local 
+aaa authorization commands 1 CACS group tacacs+ local 
+aaa authorization commands 2 CACS group tacacs+ local 
+aaa authorization commands 3 CACS group tacacs+ local 
+aaa authorization commands 15 CACS group tacacs+ local 
+aaa accounting exec CACS start-stop group tacacs+
+aaa accounting commands 0 CACS start-stop group tacacs+
+aaa accounting commands 1 CACS start-stop group tacacs+
+aaa accounting commands 2 CACS start-stop group tacacs+
+aaa accounting commands 3 CACS start-stop group tacacs+
+aaa accounting commands 15 CACS start-stop group tacacs+
+!
+!
+aaa session-id common
+clock timezone Tehran 3 30
+clock calendar-valid
+!
+!
+ip traffic-export profile ISC mode capture
+  bidirectional
+ip cef
+!
+!
+!
+!
+no ip domain lookup
+ip domain name agri-bank.com
+!
+multilink bundle-name authenticated
+!
+!
+voice-card 0
+ no dspfarm
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+! 
+!
+crypto isakmp policy 10
+ encr aes
+ authentication pre-share
+ group 2
+!
+crypto isakmp policy 102
+ encr aes
+ authentication pre-share
+ group 2
+crypto isakmp key G!l@n3tAcc3ss address 10.250.46.1
+crypto isakmp key N3w1ntr@n3t address 10.30.42.200
+crypto isakmp key N3w1ntr@n3t address 10.30.42.201
+crypto isakmp invalid-spi-recovery
+!
+!
+crypto ipsec transform-set GILANETTS esp-aes esp-sha-hmac 
+crypto ipsec transform-set INTR1 esp-aes 256 esp-sha-hmac 
+crypto ipsec transform-set INTR2 esp-aes 256 esp-sha-hmac 
+!
+crypto map BKI-MAP-INT 2 ipsec-isakmp 
+ set peer 10.30.42.200
+ set transform-set INTR1 
+ match address INTR1ACL
+crypto map BKI-MAP-INT 3 ipsec-isakmp 
+ set peer 10.30.42.201
+ set transform-set INTR2 
+ match address INTR2ACL
+!
+crypto map GILANET 10 ipsec-isakmp 
+ set peer 10.250.46.1
+ set transform-set GILANETTS 
+ match address GILANET-ACL
+!
+!
+!
+memory reserve critical 16384
+username bkroot privilege 15 secret 5 $1$g.gd$3WXLMKmxZghqc0vNSjm5X0
+archive
+ log config
+  hidekeys
+ path tftp://10.0.51.40/Pro/$h
+ write-memory
+!
+!
+controller DSL 0/1/0
+ mode atm
+ line-term cpe
+ line-mode 2-wire line-zero
+ dsl-mode shdsl symmetric annex B
+ line-rate auto
+!
+ip ssh authentication-retries 2
+ip ssh port 2001 rotary 1
+ip ssh source-interface Tunnel1101
+!
+class-map match-all undesireable-udp
+ match access-group 198
+!
+!
+policy-map drop-udp
+ class undesireable-udp
+   drop
+!
+bridge irb
+!
+!
+!
+!
+interface Loopback1
+ ip address 10.1.254.1 255.255.255.255
+!
+interface Loopback2
+ ip address 10.210.1.1 255.255.255.255
+!
+interface Tunnel20
+ description ** MPLS(6M)->50M **
+ bandwidth 768
+ ip address 10.255.241.9 255.255.255.254
+ ip access-group HQ-ACCESS-IN in
+ ip access-group HQ-ACCESS-OUT out
+ ip mtu 1460
+ ip flow ingress
+ ip flow egress
+ ip route-cache flow
+ ip tcp adjust-mss 1420
+ keepalive 3 3
+ cdp enable
+ tunnel source 10.241.76.2
+ tunnel destination 10.241.0.2
+!
+interface Tunnel24
+ description ** MPLS(6M)->50M-TohidHQ **
+ bandwidth 768
+ ip address 10.255.244.9 255.255.255.254
+ ip access-group HQ-ACCESS-IN in
+ ip access-group HQ-ACCESS-OUT out
+ ip mtu 1460
+ ip flow ingress
+ ip flow egress
+ ip route-cache flow
+ ip tcp adjust-mss 1420
+ keepalive 3 3
+ cdp enable
+ tunnel source 10.241.76.2
+ tunnel destination 10.244.0.2
+!
+interface Tunnel30
+ description ** ShahinShahr **
+ ip address 10.255.50.77 255.255.255.254
+ ip mtu 1460
+ ip tcp adjust-mss 1420
+ keepalive 3 3
+ cdp enable
+ tunnel source 10.241.76.2
+ tunnel destination 10.134.44.2
+!
+interface Tunnel100
+ description "" Shoab-MGRE ""
+ ip address 10.255.100.1 255.255.252.0
+ no ip redirects
+ no ip unreachables
+ ip mtu 1460
+ ip nhrp authentication dmvpnbki
+ ip nhrp map multicast dynamic
+ ip nhrp network-id 100
+ ip nhrp holdtime 300
+ ip nhrp cache non-authoritative
+ ip tcp adjust-mss 1420
+ ip ospf network point-to-multipoint
+ ip ospf cost 200
+ ip ospf priority 255
+ ip ospf database-filter all out
+ cdp enable
+ tunnel source 10.241.76.2
+ tunnel mode gre multipoint
+!
+interface Tunnel110
+ description ** Tunnel-To-M1Tehran **
+ ip address 10.255.242.1 255.255.255.252
+ ip mtu 1460
+ ip flow ingress
+ ip flow egress
+ ip nat inside
+ ip virtual-reassembly
+ ip tcp adjust-mss 1420
+ keepalive 3 3
+ cdp enable
+ tunnel source 10.241.76.2
+ tunnel destination 10.241.72.2
+!
+interface Tunnel114
+ description ** Tunnel-To-OSTehran **
+ ip address 10.255.242.5 255.255.255.252
+ ip mtu 1460
+ ip flow ingress
+ ip flow egress
+ ip nat inside
+ ip virtual-reassembly
+ ip tcp adjust-mss 1420
+ keepalive 3 3
+ cdp enable
+ tunnel source 10.241.76.2
+ tunnel destination 10.241.32.2
+!
+interface Tunnel156
+ description ** Gilanet **
+ ip address 10.163.100.141 255.255.255.254
+ ip flow ingress
+ ip flow egress
+ ip ospf hello-interval 100
+ ip ospf dead-interval 300
+ keepalive 100 3
+ tunnel source 10.250.45.89
+ tunnel destination 10.250.46.1
+!
+interface Tunnel200
+ description Intranet - R1
+ bandwidth 2000
+ ip address 10.200.9.175 255.255.255.254
+ ip mtu 1360
+ ip nat outside
+ ip virtual-reassembly
+ ip tcp adjust-mss 1320
+ ip ospf cost 200
+ keepalive 10 3
+ tunnel source 10.19.159.250
+ tunnel destination 10.30.42.200
+!
+interface Tunnel201
+ description Intranet - R2
+ bandwidth 2000
+ ip address 10.201.9.175 255.255.255.254
+ ip mtu 1360
+ ip nat outside
+ ip virtual-reassembly
+ ip tcp adjust-mss 1320
+ ip ospf cost 400
+ keepalive 10 3
+ tunnel source 10.19.159.250
+ tunnel destination 10.30.42.201
+!
+interface Tunnel1031
+ description ** MPLS Mo-AzSharghi **Dont Change
+ bandwidth 512
+ ip address 10.255.240.58 255.255.255.254
+ ip mtu 1460
+ ip tcp adjust-mss 1420
+ ip ospf cost 505
+ shutdown
+ keepalive 3 3
+ cdp enable
+ tunnel source 10.134.45.2
+ tunnel destination 10.134.58.2
+!
+interface Tunnel1041
+ description ** MPLS Mo-Tehran **Dont Change
+ bandwidth 512
+ ip address 10.255.240.6 255.255.255.254
+ ip mtu 1460
+ ip tcp adjust-mss 1420
+ shutdown
+ keepalive 3 3
+ cdp enable
+ tunnel source 10.134.45.2
+ tunnel destination 10.241.32.2
+!
+interface Tunnel1051
+ description ** MPLS Mo-KermanShah **Dont Change
+ bandwidth 512
+ ip address 10.255.240.62 255.255.255.254
+ ip mtu 1460
+ ip tcp adjust-mss 1420
+ ip ospf cost 505
+ shutdown
+ keepalive 3 3
+ cdp enable
+ tunnel source 10.134.45.2
+ tunnel destination 10.134.66.2
+!
+interface Tunnel1061
+ description ** MPLS Mo-Khuzestan **Dont Change
+ bandwidth 512
+ ip address 10.255.240.16 255.255.255.254
+ ip mtu 1460
+ ip tcp adjust-mss 1420
+ ip ospf cost 505
+ shutdown
+ keepalive 3 3
+ cdp enable
+ tunnel source 10.134.45.2
+ tunnel destination 10.20.124.70
+!
+interface Tunnel1071
+ description ** MPLS Mo-Fars **Dont Change
+ bandwidth 512
+ ip address 10.255.240.66 255.255.255.254
+ ip mtu 1460
+ ip tcp adjust-mss 1420
+ ip ospf cost 505
+ shutdown
+ keepalive 3 3
+ cdp enable
+ tunnel source 10.134.45.2
+ tunnel destination 10.134.63.2
+!
+interface Tunnel1079
+ description ** MPLS Amuzesh-Fars **-Dont Change
+ bandwidth 512
+ ip address 10.255.240.84 255.255.255.254
+ ip mtu 1460
+ ip tcp adjust-mss 1420
+ ip ospf cost 505
+ shutdown
+ keepalive 3 3
+ cdp enable
+ tunnel source 10.134.45.2
+ tunnel destination 10.134.49.2
+!
+interface Tunnel1081
+ description ** MPLS Mo-Kerman **Dont Change
+ bandwidth 1000
+ ip address 10.255.240.4 255.255.255.254
+ ip mtu 1460
+ ip tcp adjust-mss 1420
+ ip ospf cost 505
+ shutdown
+ keepalive 3 3
+ cdp enable
+ tunnel source 10.134.45.2
+ tunnel destination 10.20.100.214
+!
+interface Tunnel1091
+ description ** MPLS Mo-KhRazavi **Dont Change
+ bandwidth 640
+ ip address 10.255.240.68 255.255.255.254
+ ip mtu 1460
+ ip tcp adjust-mss 1420
+ ip ospf cost 505
+ shutdown
+ keepalive 3 3
+ cdp enable
+ tunnel source 10.134.45.2
+ tunnel destination 10.134.60.2
+!
+interface Tunnel1099
+ description ** MPLS Amuzesh-Forughi **Dont Change
+ bandwidth 512
+ ip address 10.255.240.72 255.255.255.254
+ ip mtu 1460
+ ip tcp adjust-mss 1420
+ ip ospf cost 505
+ shutdown
+ keepalive 3 3
+ cdp enable
+ tunnel source 10.134.45.2
+ tunnel destination 10.134.50.2
+!
+interface Tunnel1101
+ description ** MPLS Mo-Isfahan **Dont Change
+ bandwidth 512
+ ip address 10.255.240.80 255.255.255.254
+ ip mtu 1460
+ ip tcp adjust-mss 1420
+ ip ospf cost 505
+ ip ospf hello-interval 5
+ ip ospf dead-interval 15
+ shutdown
+ keepalive 3 3
+ cdp enable
+ tunnel source 10.134.45.2
+ tunnel destination 10.134.64.2
+!
+interface Tunnel1109
+ description ** MPLS Amuzesh-Kharazi **Dont Change
+ bandwidth 512
+ ip address 10.255.240.76 255.255.255.254
+ ip mtu 1460
+ ip tcp adjust-mss 1420
+ ip ospf cost 505
+ shutdown
+ keepalive 3 3
+ cdp enable
+ tunnel source 10.134.45.2
+ tunnel destination 10.134.51.2
+!
+interface Tunnel1111
+ description ** MPLS Mo-S&B **Dont Change
+ bandwidth 512
+ ip address 10.255.240.32 255.255.255.254
+ ip mtu 1460
+ ip tcp adjust-mss 1420
+ ip ospf cost 505
+ shutdown
+ keepalive 3 3
+ cdp enable
+ tunnel source 10.134.45.2
+ tunnel destination 10.134.37.2
+!
+interface Tunnel1121
+ description ** MPLS Mo-Kordestan **-Dont Change
+ bandwidth 512
+ ip address 10.255.240.24 255.255.255.254
+ ip mtu 1460
+ ip tcp adjust-mss 1420
+ ip ospf cost 505
+ shutdown
+ keepalive 3 3
+ cdp enable
+ tunnel source 10.134.45.2
+ tunnel destination 10.134.40.2
+!
+interface Tunnel1131
+ description ** MPLS Mo-Semnan **-Dont Change
+ bandwidth 512
+ ip address 10.255.240.22 255.255.255.254
+ ip mtu 1460
+ ip tcp adjust-mss 1420
+ ip ospf cost 505
+ shutdown
+ keepalive 3 3
+ cdp enable
+ tunnel source 10.134.45.2
+ tunnel destination 10.134.39.2
+!
+interface Tunnel1141
+ description ** MPLS Mo-Lorestan **-Dont Change
+ bandwidth 512
+ ip address 10.255.240.48 255.255.255.254
+ ip mtu 1460
+ ip tcp adjust-mss 1420
+ ip ospf cost 505
+ shutdown
+ keepalive 3 3
+ cdp enable
+ tunnel source 10.134.45.2
+ tunnel destination 10.134.59.2
+!
+interface Tunnel1151
+ description ** MPLS Mo-Hamedan **-Dont Change
+ bandwidth 512
+ ip address 10.255.240.44 255.255.255.254
+ ip mtu 1460
+ ip tcp adjust-mss 1420
+ ip ospf cost 505
+ shutdown
+ keepalive 3 3
+ cdp enable
+ tunnel source 10.134.45.2
+ tunnel destination 10.134.62.2
+!
+interface Tunnel1161
+ description ** MPLS Mo-4Mahal **-Dont Change
+ bandwidth 512
+ ip address 10.255.240.30 255.255.255.254
+ ip mtu 1460
+ ip tcp adjust-mss 1420
+ ip ospf cost 505
+ ip ospf hello-interval 5
+ ip ospf dead-interval 15
+ shutdown
+ keepalive 3 3
+ cdp enable
+ tunnel source 10.134.45.2
+ tunnel destination 10.134.41.2
+!
+interface Tunnel1171
+ description ** MPLS Mo-Hormozgan **-Dont Change
+ bandwidth 512
+ ip address 10.255.240.40 255.255.255.254
+ ip mtu 1460
+ ip tcp adjust-mss 1420
+ ip ospf cost 505
+ ip ospf hello-interval 5
+ ip ospf dead-interval 15
+ shutdown
+ keepalive 3 3
+ cdp enable
+ tunnel source 10.134.45.2
+ tunnel destination 10.134.31.2
+!
+interface Tunnel1181
+ description ** MPLS Mo-Bushehr **-Dont Change
+ bandwidth 1800
+ ip address 10.255.240.36 255.255.255.254
+ ip mtu 1460
+ ip tcp adjust-mss 1420
+ ip ospf cost 505
+ ip ospf hello-interval 5
+ ip ospf dead-interval 15
+ shutdown
+ keepalive 3 3
+ cdp enable
+ tunnel source 10.134.45.2
+ tunnel destination 10.134.36.2
+!
+interface Tunnel1191
+ description ** MPLS Mo-Zanjan **-Dont Change
+ bandwidth 512
+ ip address 10.255.240.38 255.255.255.254
+ ip mtu 1460
+ ip tcp adjust-mss 1420
+ ip ospf cost 505
+ shutdown
+ keepalive 2 2
+ cdp enable
+ tunnel source 10.134.45.2
+ tunnel destination 10.20.232.174
+!
+interface Tunnel1201
+ description ** MPLS Mo-Yazd **-Dont Change
+ bandwidth 512
+ ip address 10.255.240.46 255.255.255.254
+ ip mtu 1460
+ ip tcp adjust-mss 1420
+ ip ospf cost 505
+ shutdown
+ keepalive 3 3
+ cdp enable
+ tunnel source 10.134.45.2
+ tunnel destination 10.134.61.2
+!
+interface Tunnel1211
+ description ** MPLS Mo-Guilan **-Dont Change
+ bandwidth 512
+ ip address 10.255.240.64 255.255.255.254
+ ip mtu 1460
+ ip tcp adjust-mss 1420
+ ip ospf cost 505
+ shutdown
+ keepalive 3 3
+ cdp enable
+ tunnel source 10.134.45.2
+ tunnel destination 10.139.70.2
+!
+interface Tunnel1221
+ description ** MPLS Mo-Golestan **-Dont Change
+ bandwidth 512
+ ip address 10.255.240.20 255.255.255.254
+ ip mtu 1460
+ ip tcp adjust-mss 1420
+ ip ospf cost 505
+ shutdown
+ keepalive 3 3
+ cdp enable
+ tunnel source 10.134.45.2
+ tunnel destination 10.60.60.90
+!
+interface Tunnel1231
+ description ** MPLS Mo-Ardabil **-Dont Change
+ bandwidth 512
+ ip address 10.255.240.56 255.255.255.254
+ ip mtu 1460
+ ip tcp adjust-mss 1420
+ ip ospf cost 505
+ shutdown
+ keepalive 3 3
+ cdp enable
+ tunnel source 10.134.45.2
+ tunnel destination 10.20.240.166
+!
+interface Tunnel1241
+ description ** MPLS Mo-Markazi **-Dont Change
+ bandwidth 512
+ ip address 10.255.240.50 255.255.255.254
+ ip mtu 1460
+ ip tcp adjust-mss 1420
+ ip ospf cost 505
+ ip ospf hello-interval 5
+ ip ospf dead-interval 15
+ shutdown
+ keepalive 3 3
+ cdp enable
+ tunnel source 10.134.45.2
+ tunnel destination 192.168.104.34
+!
+interface Tunnel1251
+ description ** MPLS Mo-ILam **-Dont Change
+ bandwidth 1800
+ ip address 10.255.240.0 255.255.255.254
+ ip mtu 1460
+ ip tcp adjust-mss 1420
+ ip ospf cost 505
+ shutdown
+ keepalive 3 3
+ cdp enable
+ tunnel source 10.134.45.2
+ tunnel destination 10.20.90.26
+!
+interface Tunnel1261
+ description ** MPLS Mo-K&B **-Dont Change
+ bandwidth 600
+ ip address 10.255.240.52 255.255.255.254
+ ip mtu 1460
+ ip tcp adjust-mss 1420
+ ip ospf cost 505
+ shutdown
+ keepalive 3 3
+ cdp enable
+ tunnel source 10.134.45.2
+ tunnel destination 10.20.130.178
+!
+interface Tunnel1271
+ description ** MPLS Mo-Qazvin **-Dont Change
+ bandwidth 512
+ ip address 10.255.240.2 255.255.255.254
+ ip mtu 1460
+ ip tcp adjust-mss 1420
+ ip ospf cost 505
+ shutdown
+ keepalive 3 3
+ cdp enable
+ tunnel source 10.134.45.2
+ tunnel destination 10.20.170.158
+!
+interface Tunnel1281
+ description ** MPLS Mo-Qom **-Dont Change
+ bandwidth 512
+ ip address 10.255.240.18 255.255.255.254
+ ip mtu 1460
+ ip tcp adjust-mss 1420
+ ip ospf cost 505
+ shutdown
+ keepalive 3 3
+ cdp enable
+ tunnel source 10.134.45.2
+ tunnel destination 10.134.43.2
+!
+interface Tunnel1291
+ description ** MPLS Mo-KhJonubi **-Dont Change
+ bandwidth 512
+ ip address 10.255.240.60 255.255.255.254
+ ip mtu 1460
+ ip tcp adjust-mss 1420
+ ip ospf cost 505
+ shutdown
+ keepalive 3 3
+ cdp enable
+ tunnel source 10.134.45.2
+ tunnel destination 10.134.29.2
+!
+interface Tunnel1301
+ description ** MPLS Mo-KhShomali **-Dont Change
+ bandwidth 512
+ ip address 10.255.240.54 255.255.255.254
+ ip mtu 1460
+ ip tcp adjust-mss 1420
+ ip ospf cost 505
+ shutdown
+ keepalive 3 3
+ cdp enable
+ tunnel source 10.134.45.2
+ tunnel destination 10.134.47.2
+!
+interface Tunnel1311
+ description ** MPLS Mo-Alborz **-Dont Change
+ bandwidth 512
+ ip address 10.255.240.12 255.255.255.254
+ ip mtu 1460
+ ip tcp adjust-mss 1420
+ ip ospf cost 500
+ shutdown
+ keepalive 3 3
+ cdp enable
+ tunnel source 10.134.45.2
+ tunnel destination 10.241.92.2
+!
+interface Tunnel1321
+ description ** MPLS Mo-Mazandaran **-Dont Change
+ bandwidth 512
+ ip address 10.255.240.28 255.255.255.254
+ ip mtu 1460
+ ip tcp adjust-mss 1420
+ ip ospf cost 505
+ shutdown
+ keepalive 3 3
+ cdp enable
+ tunnel source 10.134.45.2
+ tunnel destination 10.87.93.238
+!
+interface Tunnel1331
+ description ** MPLS Mo-AzGharbi **-Dont Change
+ bandwidth 512
+ ip address 10.255.240.42 255.255.255.254
+ ip mtu 1460
+ ip tcp adjust-mss 1420
+ ip ospf cost 505
+ shutdown
+ keepalive 40 3
+ cdp enable
+ tunnel source 10.134.45.2
+ tunnel destination 10.114.142.182
+!
+interface Tunnel1341
+ description ** MPLS Mo-JKerman **-Dont Change
+ bandwidth 512
+ ip address 10.255.240.74 255.255.255.254
+ ip mtu 1460
+ ip tcp adjust-mss 1420
+ ip ospf cost 505
+ shutdown
+ keepalive 3 3
+ cdp enable
+ tunnel source 10.134.45.2
+ tunnel destination 172.23.12.26
+!
+interface Tunnel1361
+ description ** MPLS Amuzesh-Babolsar **-Dont Change
+ bandwidth 512
+ ip address 10.255.240.70 255.255.255.254
+ ip mtu 1460
+ ip tcp adjust-mss 1420
+ ip ospf cost 505
+ shutdown
+ keepalive 3 3
+ cdp enable
+ tunnel source 10.134.45.2
+ tunnel destination 10.87.0.138
+!
+interface Tunnel1501
+ description ** MPLS Central-II-(ShahinShahr) **-Dont Change
+ bandwidth 2000
+ ip address 10.255.240.26 255.255.255.254
+ ip mtu 1460
+ ip tcp adjust-mss 1420
+ ip ospf cost 505
+ shutdown
+ keepalive 3 3
+ cdp enable
+ tunnel source 10.134.45.2
+ tunnel destination 10.134.44.2
+!
+interface GigabitEthernet0/0
+ description ** LAN **
+ ip address 10.1.0.1 255.255.255.254
+ ip nat inside
+ ip virtual-reassembly
+ duplex auto
+ speed auto
+ media-type rj45
+!
+interface GigabitEthernet0/1
+ description ** WireLess To Agri **
+ bandwidth 1024
+ ip address 10.250.0.4 255.255.255.248
+ ip ospf cost 10
+ shutdown
+ duplex half
+ speed auto
+ media-type rj45
+!
+interface FastEthernet0/2/0
+ description ** Bajeh HQ **
+ switchport access vlan 2
+!
+interface FastEthernet0/2/1
+ description ** SW-CoreB **
+ switchport access vlan 30
+!
+interface FastEthernet0/2/2
+ description ** APN-GILANET **
+ switchport access vlan 40
+ speed 100
+!
+interface FastEthernet0/2/3
+ description ** StackPort **
+ switchport stacking-partner interface FastEthernet0/3/0
+!
+interface FastEthernet0/3/0
+ description ** StackPort **
+ switchport stacking-partner interface FastEthernet0/2/3
+!
+interface FastEthernet0/3/1
+ description ** MPLS-6M **
+ switchport access vlan 20
+!
+interface FastEthernet0/3/2
+ description ** MPLS-10M **
+ switchport access vlan 70
+!
+interface FastEthernet0/3/3
+ description ** Interanet-Huawei **
+ switchport access vlan 50
+!
+interface ATM0/1/0
+ bandwidth 2048
+ no ip address
+ no atm ilmi-keepalive
+ pvc 0/35 
+ !
+!
+interface Vlan1
+ no ip address
+ shutdown
+!
+interface Vlan2
+ description ** Bajeh HQ ** 
+ ip address 10.1.143.1 255.255.255.0
+ ip nat inside
+ ip virtual-reassembly
+!
+interface Vlan20
+ description ** MPLS-6M **
+ ip address 10.241.76.2 255.255.255.252
+ ip nat outside
+ ip virtual-reassembly
+!
+interface Vlan30
+ description ** SW-CoreB **
+ ip address 10.1.0.3 255.255.255.254
+ ip ospf cost 20
+!
+interface Vlan40
+ description ** APN-GILANET **
+ ip address 10.250.45.89 255.255.248.0
+ crypto map GILANET
+!
+interface Vlan50
+ description ** InterAnet-4M **
+ ip address 10.19.159.250 255.255.255.248
+ ip access-group INTR@NET in
+ ip virtual-reassembly
+ ip policy route-map nachi-worm
+ crypto map BKI-MAP-INT
+!
+interface Vlan70
+ description ** MPLS Keshvari **
+ ip address 10.134.45.2 255.255.255.252
+!
+router ospf 1
+ router-id 10.1.254.1
+ ispf
+ log-adjacency-changes
+ area 1 filter-list prefix OSPF-FILTER in
+ redistribute static
+ network 10.1.0.1 0.0.0.0 area 1
+ network 10.1.0.3 0.0.0.0 area 1
+ network 10.1.143.1 0.0.0.0 area 1
+ network 10.1.254.1 0.0.0.0 area 1
+ network 10.250.0.0 0.0.0.7 area 0
+ network 10.255.240.0 0.0.0.255 area 0
+ network 10.255.241.9 0.0.0.0 area 0
+ distribute-list OSPF-PERMIT in
+!
+router ospf 2
+ router-id 10.163.1.1
+ log-adjacency-changes
+ redistribute connected subnets route-map Connected-to-OSPF2
+ redistribute ospf 1 subnets route-map OSPF1-to-OSPF2
+ passive-interface default
+ no passive-interface Tunnel156
+ network 10.163.100.141 0.0.0.0 area 1
+ distribute-list OSPF2-PERMIT in
+ distance 120
+!
+router ospf 200
+ router-id 10.210.1.1
+ log-adjacency-changes
+ network 10.200.9.175 0.0.0.0 area 1
+ network 10.201.9.175 0.0.0.0 area 1
+ network 10.210.1.1 0.0.0.0 area 1
+ distribute-list NewINTACL in
+!
+ip route 10.1.0.0 255.255.0.0 Tunnel100
+ip route 10.1.20.0 255.255.255.0 10.255.101.20 name ImamAli
+ip route 10.1.21.0 255.255.255.0 10.255.101.21 name BlvParvin
+ip route 10.1.22.0 255.255.255.0 10.255.101.22 name ValiAsr
+ip route 10.1.23.0 255.255.255.0 10.255.101.23 name Ozgol
+ip route 10.1.24.0 255.255.255.0 10.255.101.24 name ImamHossein
+ip route 10.1.25.0 255.255.255.0 10.255.101.25 name Elahie
+ip route 10.1.26.0 255.255.255.0 10.255.101.26 name MofatehJonubi
+ip route 10.1.27.0 255.255.255.0 10.255.101.27 name 3RahTaleqani
+ip route 10.1.28.0 255.255.255.0 10.255.101.28 name SohrevardiJonubi
+ip route 10.1.29.0 255.255.255.0 10.255.101.29 name 30Tir
+ip route 10.1.30.0 255.255.255.0 10.255.101.30 name Esteqlal
+ip route 10.1.31.0 255.255.255.0 10.255.101.31 name Gorgan
+ip route 10.1.32.0 255.255.255.0 10.255.101.32 name Shariati-Malek
+ip route 10.1.33.0 255.255.255.0 10.255.101.33 name Marzdaran
+ip route 10.1.33.198 255.255.255.255 10.19.159.249 name TEMP-FireDis/DetTest
+ip route 10.1.34.0 255.255.255.0 10.255.101.34 name TehranPars
+ip route 10.1.35.0 255.255.255.0 10.255.101.35 name Afriqa
+ip route 10.1.36.0 255.255.255.0 10.255.101.36 name Aqdasiyeh
+ip route 10.1.37.0 255.255.255.0 10.255.101.37 name Delavaran
+ip route 10.1.38.0 255.255.255.0 10.255.101.38 name SeyedKhandan
+ip route 10.1.39.0 255.255.255.0 10.255.101.39 name Khorasan
+ip route 10.1.40.0 255.255.255.0 10.255.101.40 name NezamVazifeh
+ip route 10.1.41.0 255.255.255.0 10.255.101.41 name Dowlat
+ip route 10.1.42.0 255.255.255.0 10.255.101.42 name Zafar(Dastgerdi)
+ip route 10.1.43.0 255.255.255.0 10.255.101.43 name AqaNoor
+ip route 10.1.44.0 255.255.255.0 10.255.101.44 name DarDasht
+ip route 10.1.45.0 255.255.255.0 10.255.101.45 name Gandi
+ip route 10.1.46.0 255.255.255.0 10.255.101.46 name Sabalan
+ip route 10.1.47.0 255.255.255.0 10.255.101.47 name Qiyam
+ip route 10.1.48.0 255.255.255.0 10.255.101.48 name Qarani
+ip route 10.1.49.0 255.255.255.0 10.255.101.49 name Pasdaran
+ip route 10.1.50.0 255.255.255.0 10.255.101.50 name Galubandak
+ip route 10.1.51.0 255.255.255.0 10.255.101.51 name BazarKafashHa
+ip route 10.1.52.0 255.255.255.0 10.255.101.52 name ShamsAbad
+ip route 10.1.53.0 255.255.255.0 10.255.101.53 name BursKala
+ip route 10.1.54.0 255.255.255.0 10.255.101.54 name 4RahMolavi
+ip route 10.1.55.0 255.255.255.0 10.255.101.55 name 7Tir
+ip route 10.1.57.0 255.255.255.0 10.255.101.57 name SohrevardiShomali
+ip route 10.1.58.0 255.255.255.0 10.255.101.58 name QanatKowsar
+ip route 10.1.59.0 255.255.255.0 10.255.101.59 name Afsariyeh
+ip route 10.1.60.0 255.255.255.0 10.255.101.60 name Mirdamad
+ip route 10.1.61.0 255.255.255.0 10.255.101.61 name BaqFerdos
+ip route 10.1.62.0 255.255.255.0 10.255.101.62 name Vanak
+ip route 10.1.63.0 255.255.255.0 10.255.101.63 name Piruzi
+ip route 10.1.64.0 255.255.255.0 10.255.101.64 name NiruHavaei
+ip route 10.1.65.0 255.255.255.0 10.255.101.65 name FerdosiShomali
+ip route 10.1.66.0 255.255.255.0 10.255.101.66 name Nobonyad
+ip route 10.1.67.0 255.255.255.0 10.255.101.67 name AhmadQasir
+ip route 10.1.68.0 255.255.255.0 10.255.101.68 name Niavaran
+ip route 10.1.69.0 255.255.255.0 10.255.101.69 name Resalat
+ip route 10.1.70.0 255.255.255.0 10.255.101.70 name Narmak
+ip route 10.1.71.0 255.255.255.0 10.255.101.71 name Palizi
+ip route 10.1.72.0 255.255.255.0 10.255.101.72 name Ferdosi
+ip route 10.1.73.0 255.255.255.0 10.255.101.73 name JanatAbad
+ip route 10.1.74.0 255.255.255.0 10.255.101.74 name BlvKeshavarz
+ip route 10.1.75.0 255.255.255.0 10.255.101.75 name ShirPastorizeh
+ip route 10.1.76.0 255.255.255.0 10.255.101.76 name Dadman
+ip route 10.1.77.0 255.255.255.0 10.255.101.77 name Tohid
+ip route 10.1.78.0 255.255.255.0 10.255.101.78 name TareBar
+ip route 10.1.79.0 255.255.255.0 10.255.101.79 name SeyedJamal
+ip route 10.1.80.0 255.255.255.0 10.255.101.80 name AmirAkram
+ip route 10.1.81.0 255.255.255.0 10.255.101.81 name Vesal
+ip route 10.1.82.0 255.255.255.0 10.255.101.82 name Tajrish
+ip route 10.1.84.0 255.255.255.0 10.255.101.84 name Ekbatan
+ip route 10.1.85.0 255.255.255.0 10.255.101.85 name Rudaki
+ip route 10.1.86.0 255.255.255.0 10.255.101.86 name BazarAhan
+ip route 10.1.87.0 255.255.255.0 10.255.101.87 name Moqadam
+ip route 10.1.88.0 255.255.255.0 10.255.101.88 name Sadeqiyeh
+ip route 10.1.89.0 255.255.255.0 10.255.101.89 name HotelTehran
+ip route 10.1.90.0 255.255.255.0 10.255.101.90 name Fatemi
+ip route 10.1.91.0 255.255.255.0 10.255.101.91 name ParkSaei
+ip route 10.1.92.0 255.255.255.0 10.255.101.92 name NaziAbad
+ip route 10.1.93.0 255.255.255.0 10.255.101.93 name KargarShomali
+ip route 10.1.94.0 255.255.255.0 10.255.101.94 name Satarkhan
+ip route 10.1.95.0 255.255.255.0 10.255.101.95 name ShadMehr
+ip route 10.1.96.0 255.255.255.0 10.255.101.96 name ImZdHasan
+ip route 10.1.97.0 255.255.255.0 10.255.101.97 name VezaratJahadK
+ip route 10.1.99.0 255.255.255.0 10.255.101.99 name ShahAra
+ip route 10.1.100.0 255.255.255.0 10.255.101.100 name @rahiQapan
+ip route 10.1.101.0 255.255.255.0 10.255.101.101 name MTGolestan
+ip route 10.1.102.0 255.255.255.0 10.255.101.102 name AmirBahador
+ip route 10.1.103.0 255.255.255.0 10.255.101.103 name Jomhuri
+ip route 10.1.104.0 255.255.255.0 10.255.101.104 name Brasil
+ip route 10.1.106.0 255.255.255.0 10.255.101.106 name Jeyhun
+ip route 10.1.107.0 255.255.255.0 10.255.101.107 name Enqelab
+ip route 10.1.108.0 255.255.255.0 10.255.101.108 name Javadiyeh
+ip route 10.1.109.0 255.255.255.0 10.255.101.109 name BuAli
+ip route 10.1.110.0 255.255.255.0 10.255.101.110 name ParkLaleh
+ip route 10.1.111.0 255.255.255.0 10.255.101.111 name Bj-Shilat
+ip route 10.1.112.0 255.255.255.0 10.255.101.112 name MolaSadra
+ip route 10.1.113.0 255.255.255.0 10.255.101.113 name SazmanJahad
+ip route 10.1.114.0 255.255.255.0 10.255.101.114 name YaftAbad
+ip route 10.1.115.0 255.255.255.0 10.255.101.115 name SandoqBimeh
+ip route 10.1.116.0 255.255.255.0 10.255.101.116 name Velenjak
+ip route 10.1.117.0 255.255.255.0 10.255.101.117 name ShahrakRahAhan
+ip route 10.1.118.0 255.255.255.0 10.255.101.118 name ParkDaneshju
+ip route 10.1.120.0 255.255.255.0 10.255.101.120 name KhajeNasir
+ip route 10.1.121.0 255.255.255.0 10.255.101.121 name SaadatAbad
+ip route 10.1.122.0 255.255.255.0 10.255.101.122 name Kashani
+ip route 10.1.124.0 255.255.255.0 10.255.101.124 name Taleqani
+ip route 10.1.125.0 255.255.255.0 10.255.101.125 name QaemMaqam
+ip route 10.1.142.0 255.255.255.0 10.255.101.142 name PeykanShahr
+ip route 10.1.144.0 255.255.255.0 10.255.101.144 name Bj-SalamatFardaHsptl
+ip route 10.1.145.0 255.255.255.0 10.255.101.145 name Bj-SazmanJahad
+ip route 10.1.146.0 255.255.255.0 10.255.102.146 name Vezarat-Jahad-M-Fatemi
+ip route 10.1.147.0 255.255.255.0 10.255.101.147 name Bj-KomitehEmdad2
+ip route 10.1.148.0 255.255.255.0 10.255.101.148 name Bj-Pakhsh-Tolu-E-Aftab
+ip route 10.1.149.0 255.255.255.0 10.255.101.149 name Bj-Qiasi-Hsptl
+ip route 10.1.150.0 255.255.255.0 10.255.101.150 name Bj-Golrang
+ip route 10.1.181.0 255.255.255.0 10.255.101.181 name ATM-Yas
+ip route 10.1.182.0 255.255.255.0 10.255.101.182 name ATM-Sina
+ip route 10.1.183.0 255.255.255.0 10.255.101.183 name ATM-Jarahi
+ip route 10.1.184.0 255.255.255.0 10.255.101.184 name ATM-Mehr78
+ip route 10.1.185.0 255.255.255.0 10.255.101.185
+ip route 10.1.187.0 255.255.255.0 10.255.101.187 name ATM-RahAhan
+ip route 10.1.188.0 255.255.255.0 10.255.101.188
+ip route 10.1.189.0 255.255.255.0 10.255.101.189
+ip route 10.1.190.0 255.255.255.0 10.255.101.190
+ip route 10.1.191.0 255.255.255.0 10.255.101.191
+ip route 10.1.193.0 255.255.255.0 10.255.101.193
+ip route 10.1.194.0 255.255.255.0 10.255.101.194
+ip route 10.1.195.0 255.255.255.0 10.255.101.195
+ip route 10.1.196.0 255.255.255.0 10.255.101.196
+ip route 10.1.197.0 255.255.255.0 10.255.101.197 name ATM-AzDanesh
+ip route 10.1.198.0 255.255.255.0 10.255.101.198
+ip route 10.1.199.0 255.255.255.0 10.255.101.199
+ip route 10.1.200.0 255.255.255.0 10.255.101.200
+ip route 10.1.201.0 255.255.255.0 10.255.101.201
+ip route 10.1.202.0 255.255.255.0 10.255.101.202
+ip route 10.1.203.0 255.255.255.0 10.255.101.203
+ip route 10.1.205.0 255.255.255.0 10.255.101.205
+ip route 10.1.206.0 255.255.255.0 10.255.101.206
+ip route 10.1.207.0 255.255.255.0 10.255.101.207
+ip route 10.1.208.0 255.255.255.0 10.255.101.208
+ip route 10.1.209.0 255.255.255.0 10.255.101.209
+ip route 10.1.210.0 255.255.255.0 10.255.101.210
+ip route 10.1.211.0 255.255.255.0 10.255.101.211
+ip route 10.1.212.0 255.255.255.0 10.255.101.212
+ip route 10.1.213.0 255.255.255.0 10.255.101.213
+ip route 10.1.214.0 255.255.255.0 10.255.101.214
+ip route 10.1.215.0 255.255.255.0 10.255.101.215
+ip route 10.1.216.0 255.255.255.0 10.255.101.216 name ATM-Korosh
+ip route 10.1.217.0 255.255.255.0 10.255.101.217
+ip route 10.1.218.0 255.255.255.0 10.255.101.218
+ip route 10.1.219.0 255.255.255.0 10.255.101.219
+ip route 10.1.220.0 255.255.255.0 10.255.101.220
+ip route 10.1.221.0 255.255.255.0 10.255.101.221
+ip route 10.1.222.0 255.255.255.0 10.255.101.222
+ip route 10.1.223.0 255.255.255.0 10.255.101.223
+ip route 10.1.224.0 255.255.255.0 10.255.101.224 name ATM-PayamNur
+ip route 10.1.225.0 255.255.255.0 10.255.101.225 name ATM-EnergyAtomi
+ip route 10.1.226.0 255.255.255.0 10.255.101.226
+ip route 10.1.227.0 255.255.255.0 10.255.101.227 name ATM-GolbargBaharan
+ip route 10.1.229.0 255.255.255.0 10.255.101.229
+ip route 10.1.230.0 255.255.255.0 10.255.101.230
+ip route 10.1.231.0 255.255.255.0 10.255.101.231 name ATM-Abkhizdari
+ip route 10.1.232.0 255.255.255.0 10.255.101.232 name ATM-SanaPakhsh
+ip route 10.1.233.0 255.255.255.0 10.255.101.233
+ip route 10.1.234.0 255.255.255.0 10.255.101.234
+ip route 10.1.235.0 255.255.255.0 10.255.101.235 name ATM-AlborzHospital
+ip route 10.1.236.0 255.255.255.0 10.255.101.236
+ip route 10.1.237.0 255.255.255.0 10.255.101.237
+ip route 10.1.238.0 255.255.255.0 10.255.101.238
+ip route 10.1.239.0 255.255.255.0 10.255.101.239 name ATM-Hekmat
+ip route 10.1.240.0 255.255.255.0 10.255.101.240
+ip route 10.1.241.0 255.255.255.0 10.255.101.241
+ip route 10.1.242.0 255.255.255.0 10.255.101.242
+ip route 10.1.243.0 255.255.255.0 10.255.101.243
+ip route 10.1.245.0 255.255.255.0 10.255.101.245
+ip route 10.1.246.0 255.255.255.0 10.255.101.246
+ip route 10.1.247.0 255.255.255.0 10.255.101.247
+ip route 10.1.248.0 255.255.255.0 10.255.101.248 name ATM-BimeAshayeri
+ip route 10.1.249.0 255.255.255.0 10.255.101.249
+ip route 10.1.250.0 255.255.255.0 10.255.101.250
+ip route 10.1.251.0 255.255.255.0 10.255.101.251
+ip route 10.1.252.0 255.255.255.0 10.255.101.252 name ATM-TahqiqatKeshavarzi
+ip route 10.1.253.0 255.255.255.0 10.255.101.253
+ip route 10.2.10.0 255.255.255.0 Tunnel20 10 name Markazi-Branch
+ip route 10.2.10.0 255.255.255.0 GigabitEthernet0/1 15 name Markazi
+ip route 10.2.11.0 255.255.255.0 10.255.102.11
+ip route 10.2.12.0 255.255.255.0 10.255.102.12
+ip route 10.2.13.0 255.255.255.0 10.255.102.13
+ip route 10.2.14.0 255.255.255.0 10.255.102.14
+ip route 10.2.15.0 255.255.255.0 10.255.102.15
+ip route 10.2.16.0 255.255.255.0 10.255.102.16
+ip route 10.2.17.0 255.255.255.0 10.255.102.17 name ATM-ErfanTower
+ip route 10.2.18.0 255.255.255.0 10.255.102.18
+ip route 10.2.19.0 255.255.255.0 10.255.102.19
+ip route 10.2.20.0 255.255.255.0 10.255.102.20 name ATM-EksirArya
+ip route 10.2.21.0 255.255.255.0 10.255.102.21
+ip route 10.2.22.0 255.255.255.0 10.255.102.22
+ip route 10.2.23.0 255.255.255.0 10.255.102.23
+ip route 10.2.24.0 255.255.255.0 10.255.102.24
+ip route 10.2.25.0 255.255.255.0 10.255.102.25
+ip route 10.2.26.0 255.255.255.0 10.255.102.26
+ip route 10.2.28.0 255.255.255.0 10.255.102.28 name Nasr-Novin
+ip route 10.2.29.0 255.255.255.0 10.255.102.29
+ip route 10.2.30.0 255.255.255.0 10.255.102.30
+ip route 10.2.31.0 255.255.255.0 10.255.102.31
+ip route 10.2.32.0 255.255.255.0 10.255.102.32 name ATM-BimeIran
+ip route 10.2.33.0 255.255.255.0 10.255.102.33
+ip route 10.2.34.0 255.255.255.0 10.255.102.34
+ip route 10.2.37.0 255.255.255.0 10.255.102.37
+ip route 10.2.39.0 255.255.255.0 10.255.102.39 name ATM-PeykanShr
+ip route 10.2.40.0 255.255.255.0 10.255.102.40
+ip route 10.2.41.0 255.255.255.0 10.255.102.41
+ip route 10.2.42.0 255.255.255.0 10.255.102.42
+ip route 10.2.43.0 255.255.255.0 10.255.102.43 name ATM-Kosar
+ip route 10.2.45.0 255.255.255.0 10.255.102.45
+ip route 10.2.46.0 255.255.255.0 10.255.102.46
+ip route 10.2.47.0 255.255.255.0 10.255.102.47
+ip route 10.2.48.0 255.255.255.0 10.255.102.48
+ip route 10.2.49.0 255.255.255.0 10.255.102.49 name ATM-ArmanSabz
+ip route 10.2.50.0 255.255.255.0 10.255.102.50 name ATM-MadarTakhasosi
+ip route 10.2.51.0 255.255.255.0 10.255.102.51
+ip route 10.2.53.0 255.255.255.0 10.255.102.53
+ip route 10.2.56.0 255.255.255.0 10.255.102.56 name ATM-BorjDamavand
+ip route 10.2.57.0 255.255.255.0 10.255.102.57 name ATM-Shaparak
+ip route 10.2.58.0 255.255.255.0 10.255.102.58
+ip route 10.2.59.0 255.255.255.0 10.255.102.59
+ip route 10.2.60.0 255.255.255.0 10.255.102.60
+ip route 10.2.61.0 255.255.255.0 10.255.102.61 name ATM-kiosk-niayesh
+ip route 10.2.62.0 255.255.255.0 10.255.102.62
+ip route 10.2.63.0 255.255.255.0 10.255.102.63
+ip route 10.2.64.0 255.255.255.0 10.255.102.64
+ip route 10.2.65.0 255.255.255.0 10.255.102.65
+ip route 10.2.66.0 255.255.255.0 10.255.102.66
+ip route 10.2.67.0 255.255.255.0 10.255.102.67 name ATM-FarhangianPaas
+ip route 10.2.68.0 255.255.255.0 10.255.102.68 name ATM-T.G.M.Z
+ip route 10.2.69.0 255.255.255.0 10.255.102.69 name ATM-OPG
+ip route 10.2.70.0 255.255.255.0 10.255.102.70
+ip route 10.2.71.0 255.255.255.0 10.255.102.71 name ATM-Pajuheshgah-OlumEnsani
+ip route 10.2.73.0 255.255.255.0 10.255.102.73 name ATM-Nasr2
+ip route 10.2.76.0 255.255.255.0 10.255.102.76 name ATM-Qods
+ip route 10.2.77.0 255.255.255.0 10.255.102.77 name Kiosk-IranRadiator
+ip route 10.2.78.0 255.255.255.0 10.255.102.78
+ip route 10.2.79.0 255.255.255.0 10.255.102.79 name ATM-JalaleAlAhmad2
+ip route 10.2.80.0 255.255.255.0 10.255.102.80 name ATM-BazarchehEkbatan
+ip route 10.2.82.0 255.255.255.0 10.255.102.82 name ATM-MofidHospital
+ip route 10.2.83.0 255.255.255.0 10.255.102.83 name ATM-BazresiJahad
+ip route 10.2.84.0 255.255.255.0 10.255.102.84 name ATM-Amin
+ip route 10.2.85.0 255.255.255.0 10.255.102.85 name Kiosk-PanjerehAria
+ip route 10.2.86.0 255.255.255.0 10.255.102.86 name ATM-M-Sohrevardi
+ip route 10.2.87.0 255.255.255.0 10.255.102.87 name MetroHeravi
+ip route 10.2.88.0 255.255.255.0 10.255.102.88 name ATM-M-Jahad
+ip route 10.2.89.0 255.255.255.0 10.255.102.89 name ATM-M-Valiasr
+ip route 10.2.90.0 255.255.255.0 10.255.102.90 name ATM-SanayeShir
+ip route 10.2.92.0 255.255.255.0 10.255.102.92
+ip route 10.2.93.0 255.255.255.0 10.255.102.93
+ip route 10.2.94.0 255.255.255.0 10.255.102.94
+ip route 10.2.100.0 255.255.255.0 10.255.102.100 name Kiosk-Yasaman
+ip route 10.2.101.0 255.255.255.0 10.255.102.101 name ATM-KomiteEmdad-Centeral
+ip route 10.2.104.0 255.255.255.0 10.255.102.104 name Kiosk-Orkide
+ip route 10.2.107.0 255.255.255.0 10.255.102.107 name ATM-PasajMofid1
+ip route 10.2.109.0 255.255.255.0 10.255.102.109 name ATM-Doosheh
+ip route 10.2.110.0 255.255.255.0 10.255.102.110 name Kiosk-ZarAfshan
+ip route 10.2.112.0 255.255.255.0 10.255.102.112
+ip route 10.2.113.0 255.255.255.0 10.255.102.113 name ATM-AmirKabirUni
+ip route 10.2.116.0 255.255.255.0 10.255.102.116 name Kiosk-MFRasa
+ip route 10.2.118.0 255.255.255.0 10.255.102.118 name Kiosk-Daryoosh
+ip route 10.2.119.0 255.255.255.0 10.255.102.119 name ATM-AmjadMall
+ip route 10.2.121.0 255.255.255.0 10.255.102.121 name Kiosk-TajhizatPezeshkiAval
+ip route 10.2.122.0 255.255.255.0 10.255.102.122 name kiosk-TajhizatPezeshkiDovom
+ip route 10.2.124.0 255.255.255.0 10.255.102.124 name ATM-Irna
+ip route 10.2.125.0 255.255.255.0 10.255.102.125 name ATM-Sandoghrefah
+ip route 10.2.127.0 255.255.255.0 10.255.102.127 name Kiosk-Resturant-Baghlale
+ip route 10.2.128.0 255.255.255.0 10.255.102.128 name ATM-Daneshkade-Tavanbakhshi
+ip route 10.3.58.226 255.255.255.255 10.19.159.249 name Intranet-ValiAsr
+ip route 10.4.1.0 255.255.255.0 Tunnel114 name OSTehran
+ip route 10.4.2.0 255.255.255.0 Tunnel114 name OstanTehran
+ip route 10.19.162.160 255.255.255.252 10.19.159.249 name Intranet-Tohid
+ip route 10.19.186.104 255.255.255.252 10.19.159.249 name Intranet-MTGolestan
+ip route 10.20.90.26 255.255.255.255 10.134.45.1 10 name Mo-ILam
+ip route 10.20.100.214 255.255.255.255 10.134.45.1 10 name Mo-Kerman
+ip route 10.20.121.134 255.255.255.255 10.134.45.1 10 name Amuzesh-Khuzestan
+ip route 10.20.124.70 255.255.255.255 10.134.45.1 10 name Mo-Khuzestan
+ip route 10.20.130.178 255.255.255.255 10.134.45.1 10 name Mo-K&B
+ip route 10.20.170.156 255.255.255.252 10.134.45.1 10 name Mo-Qazvin
+ip route 10.20.232.172 255.255.255.252 10.134.45.1 10 name Mo-Zanjan
+ip route 10.20.240.166 255.255.255.255 10.134.45.1 10 name Mo-Ardabil
+ip route 10.30.42.0 255.255.255.0 10.19.159.249 name SSL-VPN-INTRANET
+ip route 10.30.176.187 255.255.255.255 10.19.159.249 name SandoqTose'eMelli
+ip route 10.30.176.188 255.255.255.255 10.19.159.249 name SandoqTose'eMelli
+ip route 10.30.186.138 255.255.255.255 10.19.159.249 name INT-ShahrAra-TEMp-TestForFireAlarming
+ip route 10.35.1.0 255.255.255.0 Tunnel110 name M1-Branch
+ip route 10.40.5.0 255.255.255.0 Tunnel20 name AnbarTarasht
+ip route 10.50.0.0 255.255.0.0 Tunnel30 name ShahinShahr
+ip route 10.60.60.88 255.255.255.252 10.134.45.1 10 name Mo-Golestan
+ip route 10.87.0.0 255.255.255.0 10.134.45.1 10 name Amuzesh-Babolsar
+ip route 10.87.93.236 255.255.255.252 10.134.45.1 10 name PDH-MPLS-MO-Mazandaran
+ip route 10.114.142.180 255.255.255.252 10.134.45.1 10 name Mo-AzGharbi
+ip route 10.134.0.0 255.255.0.0 10.134.45.1 name MPLS-I-Keshavar
+ip route 10.134.31.2 255.255.255.255 10.134.45.1 name Mo-Hormozgan
+ip route 10.134.36.2 255.255.255.255 10.134.45.1 10 name Mo-Bushehr
+ip route 10.134.41.2 255.255.255.255 10.134.45.1 name Mo-CHB
+ip route 10.134.49.0 255.255.255.0 10.134.45.1 10 name Amuzesh-Fars
+ip route 10.134.58.0 255.255.255.252 10.134.45.1 10 name Mo-AzSharghi
+ip route 10.134.66.0 255.255.255.252 10.134.45.1 10 name Mo-KermanShah
+ip route 10.139.70.0 255.255.255.252 10.134.45.1 10 name Mo-Guilan
+ip route 10.240.0.0 255.254.0.0 10.241.76.1
+ip route 10.241.0.0 255.255.255.252 10.241.76.1 name MPLS-6M
+ip route 10.241.32.0 255.255.255.252 10.134.45.1 10 name Mo-Tehran
+ip route 10.241.32.2 255.255.255.255 10.241.76.1
+ip route 10.241.72.0 255.255.255.252 10.134.45.1 10 name Mo-TB-Clear
+ip route 10.241.92.0 255.255.255.252 10.134.45.1 10 name Mo-Alborz
+ip route 10.243.0.14 255.255.255.255 Tunnel20 name Monitoring-MPLS-OraqTasviyeh
+ip route 10.244.0.0 255.255.255.252 10.241.76.1 name MPLS-Tohid-HQ
+ip route 91.240.180.40 255.255.255.255 10.19.159.249 name SP.SEP.IR
+ip route 91.240.180.133 255.255.255.255 10.19.159.249 name SSPM.SEP.IR
+ip route 91.240.181.1 255.255.255.255 10.19.159.249 name SP.SEP.IR-GW
+ip route 172.23.12.26 255.255.255.255 10.134.45.1 10 name Mo-JKerman-2M
+ip route 172.26.79.118 255.255.255.255 10.134.45.1 10 name Mo-CHB
+ip route 192.168.104.32 255.255.255.252 10.134.45.1 10 name Mo-Markazi
+!
+ip flow-cache timeout active 1
+ip flow-export source GigabitEthernet0/0
+ip flow-export version 5
+ip flow-export destination 10.0.51.61 9996
+!
+no ip http server
+no ip http secure-server
+ip nat pool VC-1 10.19.159.252 10.19.159.252 netmask 255.255.255.248
+ip nat inside source list MPLS-PING interface Vlan20 overload
+ip nat inside source list VC pool VC-1
+ip nat inside source list intnat interface Loopback2 overload
+ip nat outside source static 10.1.1.220 10.19.159.252
+ip tacacs source-interface Vlan20
+!
+ip access-list standard Connected-to-OSPF2
+ permit 10.1.254.1
+ permit 10.1.0.0 0.0.7.255
+ permit 10.1.254.0 0.0.0.255
+ip access-list standard DENY-STATIC
+ permit 192.168.104.34
+ permit 10.20.124.70
+ permit 10.20.170.158
+ permit 10.20.130.178
+ permit 10.20.240.166
+ permit 10.20.232.174
+ permit 10.20.90.26
+ permit 10.20.250.134
+ permit 10.20.100.214
+ permit 172.23.12.26
+ permit 10.139.70.2
+ permit 10.87.93.238
+ permit 10.243.0.14
+ permit 10.0.144.0 0.0.15.255
+ permit 10.240.0.0 0.0.255.255
+ permit 10.1.0.0 0.0.255.255
+ permit 10.0.0.0 0.0.255.255
+ permit 10.40.5.0 0.0.0.255
+ permit 10.134.0.0 0.0.255.255
+ permit 10.60.60.88 0.0.0.3
+ip access-list standard NewINTACL
+ deny   10.0.76.91
+ deny   10.0.68.223
+ deny   10.0.68.187
+ permit any
+ip access-list standard OSPF-PERMIT
+ permit 2.2.2.2
+ permit 192.168.65.0 0.0.0.255
+ remark -----------------------------
+ permit 10.1.0.0 0.0.255.255
+ permit 10.40.5.0 0.0.0.255
+ remark -----------------------------
+ permit 10.60.3.0 0.0.0.255
+ permit 10.255.240.0 0.0.0.255
+ permit 10.0.0.0 0.63.255.255
+ permit 10.0.0.0 0.0.255.255
+ permit 192.168.15.0 0.0.0.255
+ permit 192.168.72.0 0.0.0.255
+ permit 10.60.66.0 0.0.0.255
+ permit 192.168.112.0 0.0.0.255
+ip access-list standard OSPF1-to-OSPF2
+ permit 10.1.0.0 0.0.255.255
+ip access-list standard OSPF2-PERMIT
+ permit 10.0.0.0 0.0.255.255
+ permit 192.168.65.0 0.0.0.255
+ permit 192.168.72.0 0.0.0.255
+ip access-list standard SNMP-READ
+ permit 10.0.50.0 0.0.1.255
+ip access-list standard SNMP-WRITE
+ permit 10.0.51.49
+ permit 10.0.51.48
+ permit 10.0.51.50
+ip access-list standard STATIC-->OSPF
+ permit 10.1.0.0 0.0.255.255
+ip access-list standard TELNET-ACCESS
+ permit 10.1.0.2
+ remark -----------------------------
+ permit 10.1.0.0
+ permit 10.255.255.1
+ permit 10.255.241.8
+ permit 10.30.42.2
+ permit 10.0.201.36
+ permit 10.0.201.62
+ permit 10.0.50.0 0.0.1.255
+!
+ip access-list extended GILANET-ACL
+ permit gre host 10.250.45.89 host 10.250.46.1
+ip access-list extended HQ-ACCESS-IN
+ permit gre any any
+ permit ospf any any
+ permit ip 192.168.65.0 0.0.0.255 any
+ permit ip 10.0.0.0 0.255.255.255 any
+ permit ip 192.168.15.0 0.0.0.255 any
+ permit ip 192.168.72.0 0.0.0.255 any
+ permit ip 192.168.112.0 0.0.0.255 any
+ip access-list extended HQ-ACCESS-OUT
+ deny   ip any 10.0.151.0 0.0.0.7
+ permit gre any any
+ permit eigrp any any
+ permit ip any 192.168.65.0 0.0.0.255
+ permit ip any 10.0.0.0 0.255.255.255
+ permit ip any 192.168.15.0 0.0.0.255
+ permit ip any 192.168.72.0 0.0.0.255
+ permit ip any 192.168.112.0 0.0.0.255
+ip access-list extended INTR1ACL
+ permit gre host 10.19.159.250 host 10.30.42.200
+ip access-list extended INTR2ACL
+ permit gre host 10.19.159.250 host 10.30.42.201
+ip access-list extended INTR@NET
+ permit icmp any any
+ deny   udp any any eq tftp
+ deny   udp any any eq 135
+ deny   udp any any eq netbios-ns
+ deny   udp any any eq netbios-dgm
+ deny   udp any any eq netbios-ss
+ deny   udp any any eq snmp
+ deny   udp any any eq snmptrap
+ deny   udp any any eq 18999
+ deny   tcp any any eq 135
+ deny   tcp any any eq 139
+ deny   tcp any any eq 445
+ deny   tcp any any eq 593
+ deny   tcp any any eq 4444
+ deny   tcp any any eq 1433
+ deny   tcp any any eq 4786
+ permit ip 10.30.42.0 0.0.0.255 any
+ permit ip host 91.240.180.40 any
+ permit ip host 91.240.181.1 any
+ permit ip 10.30.176.184 0.0.0.7 any
+ permit ip host 10.30.186.138 any
+ permit ip host 10.3.69.90 any
+ permit ip host 91.240.180.133 any
+ip access-list extended MPLS-PING
+ permit tcp host 10.1.1.8 10.240.0.0 0.1.255.255 eq telnet 22
+ permit icmp host 10.1.1.8 10.240.0.0 0.1.255.255
+ permit ip host 10.1.1.232 10.240.0.0 0.0.255.255
+ permit ip host 10.1.1.233 10.240.0.0 0.0.255.255
+ permit tcp host 10.1.1.8 10.240.0.0 0.1.255.255 eq telnet
+ permit icmp host 10.35.1.8 10.240.0.0 0.1.255.255
+ip access-list extended SHOAB_ACCESS
+ permit ip 10.1.0.0 0.0.255.255 10.1.1.10 0.0.0.1
+ permit ip 10.1.0.0 0.0.255.255 host 10.1.1.13
+ deny   tcp any any range 135 139
+ deny   udp any any range 135 netbios-ss
+ deny   udp any any eq 1434
+ deny   udp any any eq 1433
+ deny   tcp any any eq 1026
+ deny   tcp any any eq 4444
+ deny   udp any any eq 445
+ permit gre any any
+ permit ospf any any
+ permit icmp any any
+ permit ip 10.1.0.136 0.0.255.1 10.1.1.232 0.0.0.1
+ permit ip 10.40.0.136 0.0.255.1 10.1.1.232 0.0.0.1
+ permit ip 10.1.0.0 0.0.255.255 host 10.1.1.15
+ permit ip 10.1.0.0 0.0.255.255 host 10.1.1.30
+ permit ip 10.1.0.0 0.0.255.255 host 10.1.1.26
+ permit tcp 10.1.0.0 0.0.255.255 host 10.1.1.16 eq 8443 1433 81 18081 18082 8444 443
+ permit ip 10.2.0.0 0.0.255.255 host 10.1.1.15
+ permit ip 10.40.5.0 0.0.0.255 host 10.1.1.15
+ permit ip 10.255.101.0 0.0.0.255 10.1.143.0 0.0.0.3
+ permit ip 10.1.115.0 0.0.0.3 10.1.143.0 0.0.0.3
+ permit ip 10.1.115.0 0.0.0.3 host 10.1.143.140
+ permit tcp 10.1.0.0 0.0.255.255 host 10.1.1.8
+ permit tcp 10.2.0.0 0.0.255.255 host 10.1.1.8
+ permit ip 10.255.101.0 0.0.0.255 10.1.0.0 0.0.255.255
+ permit ip 10.1.0.0 0.0.255.255 0.255.101.0 0.0.0.255
+ permit ip 10.1.0.0 0.0.255.3 host 10.1.2.8
+ permit ip 10.2.0.0 0.0.255.3 host 10.1.2.8
+ permit ip 10.1.0.192 0.0.255.63 10.1.1.192 0.0.0.15
+ permit ip 10.1.0.0 0.0.255.255 10.0.0.0 0.0.255.255
+ permit ip 10.1.146.0 0.0.0.3 host 10.1.97.2
+ permit ip 10.1.97.0 0.0.0.3 10.1.146.0 0.0.0.3
+ permit ip 10.1.113.0 0.0.0.3 10.1.145.0 0.0.0.3
+ permit ip 10.1.114.0 0.0.0.3 10.1.149.0 0.0.0.3
+ permit ip 10.1.145.0 0.0.0.3 10.1.113.0 0.0.0.3
+ permit ip 10.1.149.0 0.0.0.3 10.1.114.0 0.0.0.3
+ deny   ip 10.1.0.0 0.0.255.255 10.1.0.0 0.0.255.25
+ip access-list extended VC
+ permit ip host 10.1.1.220 host 10.187.114.50
+ permit ip host 10.1.1.220 host 10.187.130.202
+ip access-list extended intnat
+ permit ip 10.1.1.0 0.0.0.255 10.0.0.0 0.0.255.255
+ip access-list extended natlist
+ permit ip 10.1.3.0 0.0.0.255 10.30.42.0 0.0.0.255
+ permit ip 10.1.1.0 0.0.0.255 10.30.42.0 0.0.0.255
+ permit ip 10.1.1.0 0.0.0.255 host 91.240.180.40
+ permit ip 10.1.1.0 0.0.0.255 host 91.240.181.1
+ permit ip 10.1.3.0 0.0.0.255 host 91.240.180.40
+ permit ip 10.1.3.0 0.0.0.255 host 91.240.181.1
+ permit ip 10.1.1.0 0.0.0.255 host 10.30.176.187
+ permit ip 10.1.1.0 0.0.0.255 host 10.30.176.188
+ permit ip host 10.1.1.198 host 10.1.33.198
+ permit ip 10.1.1.0 0.0.0.255 host 91.240.180.133
+ip access-list extended temploan
+ permit ip 10.1.95.0 0.0.0.255 host 10.0.76.70
+!
+!
+ip prefix-list OSPF-FILTER seq 10 permit 10.0.0.0/16
+ip prefix-list OSPF-FILTER seq 20 permit 10.1.0.0/21
+ip prefix-list OSPF-FILTER seq 30 permit 10.60.3.0/24
+logging trap notifications
+logging source-interface Loopback1
+logging 10.0.51.58
+logging 10.0.51.63
+logging 10.0.51.25
+access-list 120 deny   icmp host 10.1.1.220 any
+access-list 120 permit ip any any
+access-list 198 deny   ip any any fragments
+access-list 198 permit udp any any eq 18999
+snmp-server group LMS v3 priv read myview write myview access SNMP-WRITE
+snmp-server group NMS v3 priv access SNMP-READ
+snmp-server view myview mib-2 included
+snmp-server view myview system included
+snmp-server view myview cisco included
+snmp-server community public RO
+snmp-server ifindex persist
+!
+!
+!
+route-map STATIC->OSPF permit 10
+ match ip address STATIC-->OSPF
+ set metric 30
+!
+route-map OSPF1-to-OSPF2 permit 10
+ match ip address OSPF1-to-OSPF2
+ set metric 10000
+!
+route-map DENY-STATIC deny 10
+ match ip address DENY-STATIC
+!
+route-map DENY-STATIC permit 20
+!
+route-map nachi-worm permit 10
+ match ip address 199
+ match length 92 92
+ set interface Null0
+!
+route-map Connected-to-OSPF2 permit 10
+ match ip address Connected-to-OSPF2
+ set metric 1000
+!
+!
+!
+tacacs-server host 10.0.51.56
+tacacs-server host 10.0.51.57
+tacacs-server timeout 10
+tacacs-server directed-request
+tacacs-server key 7 106F1A574A46415B
+!
+control-plane
+ service-policy input drop-udp
+!
+!
+!
+!
+!
+!
+!
+!
+!
+banner motd 
+
+                                      ===
+                                     -+ +-
+                                     | | |
+                                  <--\ | /-->
+                                 ##| ||||| |##
+                                ###| |+++| |###
+                               /____\\ | //____\
+                                 <###\|||/###>
+                                  +====+====+
+                                  | WAN-BKI |
+                                  +===+=+===+
+                                      +=+
+                            Keshavarzi Bank Network
+
+    WARNING:
+                Access is restricted to authorized users only.
+      Unauthorized access is a violation of state , civil and criminal laws.
+
+********************************************************************************
+
+
+privilege interface level 3 shutdown
+privilege interface level 3 no shutdown
+privilege interface level 3 no
+privilege configure level 3 interface
+privilege exec level 3 traceroute
+privilege exec level 3 ping
+privilege exec level 2 configure terminal
+privilege exec level 2 configure
+privilege exec level 3 terminal monitor
+privilege exec level 3 terminal
+privilege exec all level 2 show running-config
+privilege exec all level 2 show
+!
+line con 0
+ authorization exec CACS
+ login authentication CACS
+line aux 0
+ no exec
+line vty 0 4
+ access-class TELNET-ACCESS in
+ privilege level 15
+ authorization commands 2 CACS
+ authorization exec CACS
+ accounting commands 15 CACS
+ login authentication CACS
+ transport input ssh
+ transport output telnet ssh
+line vty 5 15
+ access-class TELNET-ACCESS in
+ privilege level 15
+ authorization commands 2 CACS
+ authorization exec CACS
+ login authentication CACS
+ transport input ssh
+ transport output ssh
+!
+scheduler allocate 20000 1000
+process cpu extended history 360
+ntp authentication-key 1 md5 agri-bank 0
+ntp authenticate
+ntp trusted-key 1
+ntp clock-period 17180318
+ntp source Loopback1
+ntp master 5
+ntp update-calendar
+ntp server 10.0.51.27
+
+!
+webvpn cef
+!
+end
