@@ -19,18 +19,21 @@ DB_PATH = os.path.join(os.path.dirname(__file__), 'data', 'network_ipam.db')
 EXCEL_PATH = os.path.join(os.path.dirname(__file__), 'data', 'VPLS_MPLS_Tunnel_IPs.xlsx')
 
 # Province abbreviation mapping from filenames
+# Names MUST match the province names used in generate_vpls_tunnels.py
 PROVINCE_MAP = {
     'ALZ': 'Alborz', 'ARD': 'Ardabil', 'AZGH': 'West Azerbaijan',
-    'AZSH': 'East Azerbaijan', 'BSH': 'Bushehr', 'CHB': 'Chaharmahal',
+    'AZSH': 'East Azerbaijan', 'BSH': 'Bushehr',
+    'CHB': 'Chaharmahal and Bakhtiari',
     'ESF': 'Isfahan', 'FRS': 'Fars', 'GIL': 'Gilan', 'GLS': 'Golestan',
     'HMD': 'Hamadan', 'HMZ': 'Hormozgan', 'ILM': 'Ilam',
     'KHR': 'Razavi Khorasan', 'KHRJ': 'South Khorasan',
-    'KHZ': 'Khuzestan', 'KNB': 'Kohgiluyeh', 'KRD': 'Kurdistan',
+    'KHZ': 'Khuzestan', 'KNB': 'Kohgiluyeh and Boyer-Ahmad',
+    'KRD': 'Kurdistan',
     'KRM': 'Kerman', 'KRMJ': 'Kermanshah', 'KRSH': 'Kermanshah',
     'LOR': 'Lorestan', 'MAZ': 'Mazandaran', 'MRZ': 'Markazi',
     'QOM': 'Qom', 'QZV': 'Qazvin', 'SMN': 'Semnan',
-    'SNB': 'Sistan', 'YZD': 'Yazd', 'ZNJ': 'Zanjan',
-    'M1': 'Tehran-M1', 'M2': 'Tehran-M2', 'OSTehran': 'Tehran-OS',
+    'SNB': 'Sistan and Baluchestan', 'YZD': 'Yazd', 'ZNJ': 'Zanjan',
+    'M1': 'Tehran', 'M2': 'Tehran', 'OSTehran': 'Tehran',
     'Tehran': 'Tehran', 'KhShomali': 'North Khorasan',
 }
 
@@ -114,7 +117,7 @@ def main():
     print("=" * 80)
 
     all_tunnels = []  # (province_abbr, province_name, router_file, tunnel_data)
-    vpls_used_ips = {}  # ip -> tunnel_info (only 100.100.100.x range)
+    vpls_used_ips = {}  # (province, pair_ip) -> tunnel_info (only 100.100.100.x range)
 
     config_files = sorted(os.listdir(ROUTER_DIR))
     print(f"\nFound {len(config_files)} router config files")
@@ -144,7 +147,7 @@ def main():
                 **t
             })
 
-            # Track 100.100.100.x IPs (VPLS/MPLS range)
+            # Track 100.100.100.x IPs (VPLS/MPLS range) - per province
             ip = t['ip_address']
             if ip.startswith('100.100.10'):
                 # Find the /31 pair base (even IP)
@@ -154,7 +157,8 @@ def main():
                 pair_base = f"{parts[0]}.{parts[1]}.{parts[2]}.{base}"
                 pair_ip = f"{pair_base}/31"
 
-                vpls_used_ips[pair_ip] = {
+                key = (prov_name, pair_ip)
+                vpls_used_ips[key] = {
                     'tunnel_name': t['tunnel_name'],
                     'description': t['description'],
                     'ip_address': ip,
@@ -170,7 +174,7 @@ def main():
     print(f"SUMMARY")
     print(f"{'=' * 60}")
     print(f"Total tunnels found: {len(all_tunnels)}")
-    print(f"VPLS/MPLS (100.100.x.x) used IPs: {len(vpls_used_ips)}")
+    print(f"VPLS/MPLS (100.100.x.x) used IP pairs (per-province): {len(vpls_used_ips)}")
 
     # ==================== UPDATE DATABASE ====================
     print(f"\n{'=' * 60}")
@@ -196,28 +200,27 @@ def main():
         username TEXT,
         reservation_date TEXT)""")
 
-    # Mark used IPs in the database
+    # Mark used IPs in the database (per-province matching)
     updated = 0
-    for pair_ip, info in vpls_used_ips.items():
+    for (province, pair_ip), info in vpls_used_ips.items():
         cursor.execute("""
             UPDATE vpls_tunnels
             SET status = 'Used',
                 tunnel_name = ?,
                 description = ?,
-                province = ?,
                 wan_ip = ?,
                 tunnel_dest = ?,
                 username = 'imported',
                 reservation_date = ?
-            WHERE ip_address = ? AND LOWER(status) = 'free'
+            WHERE ip_address = ? AND province = ? AND LOWER(status) = 'free'
         """, (
             info['tunnel_name'],
             info['description'],
-            info['province'],
             info['tunnel_source'],
             info['tunnel_destination'],
             datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
-            pair_ip
+            pair_ip,
+            province
         ))
         if cursor.rowcount > 0:
             updated += 1
@@ -249,7 +252,7 @@ def main():
 
         # Sheet 2: VPLS/MPLS used IPs
         vpls_rows = []
-        for pair_ip, info in sorted(vpls_used_ips.items()):
+        for (prov, pair_ip), info in sorted(vpls_used_ips.items()):
             vpls_rows.append({
                 'IP Pair (/31)': pair_ip,
                 'Tunnel Name': info['tunnel_name'],

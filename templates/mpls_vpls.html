@@ -376,6 +376,24 @@ document.addEventListener('DOMContentLoaded', function() {
               </div>
             </div>
 
+            <!-- Interface-only config checkbox -->
+            <div style="margin:10px 0; padding:12px 16px; background:rgba(56,189,248,0.06); border:1.5px solid rgba(56,189,248,0.25); border-radius:10px;">
+                <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:14px;font-weight:600;color:var(--text-primary,#e2e8f0);margin:0;">
+                    <input type="checkbox" id="tunnelOnlyConfig" style="width:18px;height:18px;accent-color:#38bdf8;cursor:pointer;" onchange="toggleTunnelOnly()">
+                    <span>Only Tunnel/OSPF Config (skip physical interface)</span>
+                </label>
+                <div style="font-size:12px; color:var(--text-secondary,#94a3b8); margin-top:5px; padding-right:34px;">For branches where physical interface is already configured</div>
+            </div>
+
+            <!-- Base Config Checkbox -->
+            <div style="margin:10px 0; padding:12px 16px; background:linear-gradient(135deg,rgba(16,185,129,0.08),rgba(6,182,212,0.04)); border:1.5px solid rgba(16,185,129,0.3); border-radius:10px;">
+                <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:14px;font-weight:600;color:var(--text-primary,#e2e8f0);margin:0;">
+                    <input type="checkbox" id="includeBaseConfig" style="width:18px;height:18px;accent-color:#10b981;cursor:pointer;">
+                    <span style="color:#10b981;">Base Config (AAA/TACACS/SSH/SNMP/NTP)</span>
+                </label>
+                <div style="font-size:12px; color:var(--text-secondary,#94a3b8); margin-top:5px; padding-right:34px;">Include base configuration template</div>
+            </div>
+
             <!-- Branch Selection -->
             <label>Select Branch</label>
             <input id="branchName" type="text" list="branchList"
@@ -413,9 +431,10 @@ document.addEventListener('DOMContentLoaded', function() {
             <input type="text" id="tunnelDest" placeholder="e.g. 10.126.251.1">
             <div style="font-size:11px; color:var(--text-muted,#94a3b8); margin-top:3px;">IP of the HUB/PE router (tunnel destination)</div>
 
-            <!-- Router-ID -->
+            <!-- Router-ID (auto-filled as 10.X.254.Y) -->
             <label>Router-ID (Loopback)</label>
-            <input type="text" id="routerId" placeholder="e.g. 10.126.254.5">
+            <input type="text" id="routerId" placeholder="Auto: 10.X.254.Y from branch">
+            <div style="font-size:11px; color:var(--text-muted,#94a3b8); margin-top:3px;">Auto-filled as 10.X.254.Y based on selected branch - can be changed</div>
 
             <!-- Free Tunnel /31 IP Pair (auto-assignment from DB) -->
             <div style="margin:14px 0; padding:14px; background:rgba(6,182,212,0.06); border:1px solid rgba(6,182,212,0.25); border-radius:10px;">
@@ -423,7 +442,7 @@ document.addEventListener('DOMContentLoaded', function() {
               <label style="font-size:13px;">Choose a FREE /31 range</label>
               <select id="tunnelSelect"></select>
               <div class="tunnel-info">&#10003; First free tunnel auto-selected</div>
-              <button class="reload-btn" onclick="loadVplsTunnels()" type="button">&#128260; Reload list</button>
+              <button class="reload-btn" onclick="loadVplsTunnels(document.getElementById('province').value)" type="button">&#128260; Reload list</button>
 
               <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:10px;">
                 <div>
@@ -562,30 +581,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 </div>
               </div>
 
-              <!-- Shared: Current NAT Interface (for removal) -->
-              <div style="margin-top:12px; padding:10px 12px; background:rgba(239,68,68,0.06); border:1px solid rgba(239,68,68,0.2); border-radius:8px;">
-                <label style="font-size:13px; color:#f87171; font-weight:600;">&#128465; Current NAT Interface (for removal - optional)</label>
-                <input type="text" id="currentNatInterface" placeholder="e.g. Loopback2000 or BVI1" value="">
-                <div style="font-size:11px; color:var(--text-muted,#94a3b8); margin-top:3px;">If old NAT needs removal, enter current interface</div>
-              </div>
-            </div>
-
-            <!-- Interface-only config checkbox -->
-            <div style="margin:10px 0; padding:12px 16px; background:rgba(56,189,248,0.06); border:1.5px solid rgba(56,189,248,0.25); border-radius:10px;">
-                <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:14px;font-weight:600;color:var(--text-primary,#e2e8f0);margin:0;">
-                    <input type="checkbox" id="tunnelOnlyConfig" style="width:18px;height:18px;accent-color:#38bdf8;cursor:pointer;" onchange="toggleTunnelOnly()">
-                    <span>Only Tunnel/OSPF Config (skip physical interface)</span>
-                </label>
-                <div style="font-size:12px; color:var(--text-secondary,#94a3b8); margin-top:5px; padding-right:34px;">For branches where physical interface is already configured</div>
-            </div>
-
-            <!-- Base Config Checkbox -->
-            <div style="margin:10px 0; padding:12px 16px; background:linear-gradient(135deg,rgba(16,185,129,0.08),rgba(6,182,212,0.04)); border:1.5px solid rgba(16,185,129,0.3); border-radius:10px;">
-                <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:14px;font-weight:600;color:var(--text-primary,#e2e8f0);margin:0;">
-                    <input type="checkbox" id="includeBaseConfig" style="width:18px;height:18px;accent-color:#10b981;cursor:pointer;">
-                    <span style="color:#10b981;">Base Config (AAA/TACACS/SSH/SNMP/NTP)</span>
-                </label>
-                <div style="font-size:12px; color:var(--text-secondary,#94a3b8); margin-top:5px; padding-right:34px;">Include base configuration template</div>
             </div>
 
             <!-- Branch English name -->
@@ -707,15 +702,19 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         // ==================== LOAD FREE VPLS TUNNELS ====================
-        async function loadVplsTunnels() {
+        async function loadVplsTunnels(province) {
             try {
-                const res = await fetch('/api/vpls-tunnels');
+                let url = '/api/vpls-tunnels';
+                if (province) {
+                    url += '?province=' + encodeURIComponent(province);
+                }
+                const res = await fetch(url);
                 const data = await res.json();
                 const sel = document.getElementById('tunnelSelect');
                 sel.innerHTML = '';
 
                 if (data.length === 0) {
-                    sel.innerHTML = '<option value="">No free tunnel IPs available</option>';
+                    sel.innerHTML = '<option value="">No free tunnel IPs for this province</option>';
                     return;
                 }
 
@@ -727,7 +726,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 });
 
                 sel.selectedIndex = 0;
-                console.log(`Loaded ${data.length} free VPLS tunnel IPs`);
+                console.log(`Loaded ${data.length} free VPLS tunnel IPs for province: ${province || 'all'}`);
             } catch (err) {
                 console.error('Error loading VPLS tunnels:', err);
                 const sel = document.getElementById('tunnelSelect');
@@ -765,12 +764,27 @@ document.addEventListener('DOMContentLoaded', function() {
                     tunnelNumEl.value = autoTunNum;
                 }
 
+                // Auto-fill Router-ID as 10.X.254.Y
+                const autoRouterId = `10.${x}.254.${y}`;
+                const routerIdEl = document.getElementById('routerId');
+                if (!routerIdEl.dataset.manual) {
+                    routerIdEl.value = autoRouterId;
+                }
+
+                // Load tunnel IPs filtered by this province
+                loadVplsTunnels(prov.en);
+
                 document.getElementById('autoFieldsPanel').style.display = 'block';
             }
         });
 
         // Mark tunnel number as manually edited when user changes it
         document.getElementById('tunnelNumber').addEventListener('input', function() {
+            this.dataset.manual = 'true';
+        });
+
+        // Mark router-id as manually edited when user changes it
+        document.getElementById('routerId').addEventListener('input', function() {
             this.dataset.manual = 'true';
         });
 
@@ -943,18 +957,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
             const tunnelOnly = document.getElementById('tunnelOnlyConfig').checked;
             const connType = document.querySelector('input[name="connectionType"]:checked').value;
-            const currentNatIface = document.getElementById('currentNatInterface').value.trim();
             const desc = branchNameEn ? `** ${svcType} - ${branchNameEn} **` : `** ${svcType} **`;
-
-            // ========== NAT Removal ==========
-            let natRemoveCmd = '';
-            if (currentNatIface) {
-                natRemoveCmd = `!
-! ===== Remove old NAT from ${currentNatIface} =====
-no ip nat inside source list natlist interface ${currentNatIface} overload
-yes
-!`;
-            }
 
             // ========== Interface Config ==========
             let ifaceConfig = '';
@@ -1162,7 +1165,6 @@ do wr`;
 
             // ========== Build Final Branch Config ==========
             let branchCfg = '';
-            if (natRemoveCmd) branchCfg += natRemoveCmd + '\n';
             if (ifaceConfig) branchCfg += ifaceConfig + '\n';
             if (aclConfig) branchCfg += aclConfig + '\n';
             branchCfg += tunnelConfig;
@@ -1334,9 +1336,10 @@ do wr`;
             console.log(`${svcType} config generated for branch 10.${bx}.${by}.0`);
         });
 
-        // Load branches and tunnels on page load
+        // Load branches on page load (tunnels load when branch is selected)
         loadBranches();
-        loadVplsTunnels();
+        // Show hint in tunnel dropdown until branch is selected
+        document.getElementById('tunnelSelect').innerHTML = '<option value="">Select a branch first to load tunnel IPs</option>';
     </script>
 
 {% include 'chat_widget.html' %}

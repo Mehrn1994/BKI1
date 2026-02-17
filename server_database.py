@@ -1150,17 +1150,28 @@ def check_tunnel_name():
 # ==================== VPLS/MPLS TUNNEL IPs ====================
 @app.route('/api/vpls-tunnels', methods=['GET'])
 def get_vpls_tunnels():
-    """Get free VPLS/MPLS tunnel IPs"""
+    """Get free VPLS/MPLS tunnel IPs, optionally filtered by province"""
     try:
         conn = get_db()
         cursor = conn.cursor()
-        cursor.execute("""
-            SELECT id, ip_address, hub_ip, branch_ip, tunnel_name, description,
-                   province, status
-            FROM vpls_tunnels
-            WHERE LOWER(status) = 'free'
-            ORDER BY id
-        """)
+        province = request.args.get('province', '').strip()
+
+        if province:
+            cursor.execute("""
+                SELECT id, ip_address, hub_ip, branch_ip, tunnel_name, description,
+                       province, status
+                FROM vpls_tunnels
+                WHERE LOWER(status) = 'free' AND province = ?
+                ORDER BY id
+            """, (province,))
+        else:
+            cursor.execute("""
+                SELECT id, ip_address, hub_ip, branch_ip, tunnel_name, description,
+                       province, status
+                FROM vpls_tunnels
+                WHERE LOWER(status) = 'free'
+                ORDER BY id
+            """)
         tunnels = []
         for row in cursor.fetchall():
             tunnels.append({
