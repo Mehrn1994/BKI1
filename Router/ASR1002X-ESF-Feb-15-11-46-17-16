@@ -1,0 +1,4894 @@
+
+!
+! Last configuration change at 11:29:30 Tehran Sun Feb 15 2026 by m-hossain
+! NVRAM config last updated at 11:46:13 Tehran Sun Feb 15 2026 by pyth0nuser
+!
+version 15.5
+service timestamps debug datetime msec
+service timestamps log datetime localtime
+service password-encryption
+no platform punt-keepalive disable-kernel-core
+!
+hostname ASR1002X-ESF
+!
+boot-start-marker
+boot system flash bootflash:asr1002x-universalk9.03.16.01a.S.155-3.S1a-ext.SPA.bin
+boot-end-marker
+!
+aqm-register-fnf
+!
+vrf definition Mgmt-intf
+ !
+ address-family ipv4
+ exit-address-family
+ !
+ address-family ipv6
+ exit-address-family
+!
+card type e1 0 2
+enable secret level 3 5 $1$.2Br$WxkRUwfwid/JGbkoXLGb31
+enable secret 5 $1$xW88$WoVfhmdWmT6Kshoq2vrKw.
+!
+aaa new-model
+!
+!
+aaa authentication login CACS group tacacs+ local
+aaa authentication enable default group tacacs+ enable
+aaa authorization console
+aaa authorization config-commands
+aaa authorization exec CACS group tacacs+ local 
+aaa authorization commands 0 CACS group tacacs+ local 
+aaa authorization commands 1 CACS group tacacs+ local 
+aaa authorization commands 2 CACS group tacacs+ local 
+aaa authorization commands 3 CACS group tacacs+ local 
+aaa authorization commands 15 CACS group tacacs+ local 
+aaa accounting exec CACS start-stop group tacacs+
+aaa accounting commands 0 CACS start-stop group tacacs+
+aaa accounting commands 1 CACS start-stop group tacacs+
+aaa accounting commands 2 CACS start-stop group tacacs+
+aaa accounting commands 3 CACS start-stop group tacacs+
+aaa accounting commands 15 CACS start-stop group tacacs+
+!
+!
+!
+!
+!
+aaa session-id common
+clock timezone Tehran 3 30
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+
+
+
+ip domain name agri-bank.com
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+subscriber templating
+!
+!
+flow exporter NETFLOW
+ destination 10.0.51.61
+ source GigabitEthernet0/0/0
+ transport udp 9996
+!
+!
+flow monitor aaa
+!
+!
+flow monitor NETFLOW
+ exporter NETFLOW
+ cache timeout active 60
+ record netflow ipv4 original-input
+!
+multilink bundle-name authenticated
+!
+!
+!
+!
+!
+!
+!
+!
+!
+license udi pid ASR1002-X sn JAE192609C1
+license accept end user agreement
+license boot level adventerprise
+archive
+ log config
+  hidekeys
+ path tftp://10.0.51.40/Pro/$h
+ write-memory
+!
+spanning-tree extend system-id
+!
+username bkroot privilege 15 secret 5 $1$dVKn$uue3OEh91BCrZEx0JjvIi0
+!
+redundancy
+ mode none
+!
+!
+!
+!
+controller SONET 0/1/0
+ framing sdh
+ clock source line
+ aug mapping au-4
+ !
+ au-4 1 tug-3 1
+  mode c-12
+  idle pattern 0x00
+  tug-2 1 e1 1 channel-group 1 timeslots 1-8
+  tug-2 1 e1 1 channel-group 2 timeslots 9-16
+  tug-2 1 e1 1 channel-group 3 timeslots 17-24
+  tug-2 1 e1 1 channel-group 4 timeslots 25-31
+  tug-2 1 e1 2 channel-group 1 timeslots 1-8
+  tug-2 1 e1 2 channel-group 2 timeslots 9-16
+  tug-2 1 e1 2 channel-group 3 timeslots 17-24
+  tug-2 1 e1 2 channel-group 4 timeslots 25-31
+  tug-2 1 e1 3 channel-group 1 timeslots 1-8
+  tug-2 1 e1 3 channel-group 2 timeslots 9-16
+  tug-2 1 e1 3 channel-group 3 timeslots 17-24
+  tug-2 1 e1 3 channel-group 4 timeslots 25-31
+  tug-2 2 e1 1 channel-group 1 timeslots 1-8
+  tug-2 2 e1 1 channel-group 2 timeslots 9-16
+  tug-2 2 e1 1 channel-group 3 timeslots 17-24
+  tug-2 2 e1 1 channel-group 4 timeslots 25-31
+  tug-2 2 e1 2 channel-group 1 timeslots 1-8
+  tug-2 2 e1 2 channel-group 2 timeslots 9-16
+  tug-2 2 e1 2 channel-group 3 timeslots 17-24
+  tug-2 2 e1 2 channel-group 4 timeslots 25-31
+  tug-2 2 e1 3 channel-group 1 timeslots 1-8
+  tug-2 2 e1 3 channel-group 2 timeslots 9-16
+  tug-2 2 e1 3 channel-group 3 timeslots 17-24
+  tug-2 2 e1 3 channel-group 4 timeslots 25-31
+  tug-2 3 e1 1 channel-group 1 timeslots 1-8
+  tug-2 3 e1 1 channel-group 2 timeslots 9-16
+  tug-2 3 e1 1 channel-group 3 timeslots 17-24
+  tug-2 3 e1 1 channel-group 4 timeslots 25-31
+  tug-2 3 e1 2 channel-group 1 timeslots 1-8
+  tug-2 3 e1 2 channel-group 2 timeslots 9-16
+  tug-2 3 e1 2 channel-group 3 timeslots 17-24
+  tug-2 3 e1 2 channel-group 4 timeslots 25-31
+  tug-2 3 e1 3 channel-group 1 timeslots 1-8
+  tug-2 3 e1 3 channel-group 2 timeslots 9-16
+  tug-2 3 e1 3 channel-group 3 timeslots 17-24
+  tug-2 3 e1 3 channel-group 4 timeslots 25-31
+  tug-2 4 e1 1 channel-group 1 timeslots 1-8
+  tug-2 4 e1 1 channel-group 2 timeslots 9-16
+  tug-2 4 e1 1 channel-group 3 timeslots 17-24
+  tug-2 4 e1 1 channel-group 4 timeslots 25-31
+  tug-2 4 e1 2 channel-group 1 timeslots 1-8
+  tug-2 4 e1 2 channel-group 2 timeslots 9-16
+  tug-2 4 e1 2 channel-group 3 timeslots 17-24
+  tug-2 4 e1 2 channel-group 4 timeslots 25-31
+  tug-2 4 e1 3 channel-group 1 timeslots 1-8
+  tug-2 4 e1 3 channel-group 2 timeslots 9-16
+  tug-2 4 e1 3 channel-group 3 timeslots 17-24
+  tug-2 4 e1 3 channel-group 4 timeslots 25-31
+  tug-2 5 e1 1 channel-group 1 timeslots 1-8,17-24
+  tug-2 5 e1 1 channel-group 2 timeslots 9-16
+  tug-2 5 e1 1 channel-group 4 timeslots 25-31
+  tug-2 5 e1 2 channel-group 1 timeslots 1-8
+  tug-2 5 e1 2 channel-group 2 timeslots 9-15
+  tug-2 5 e1 2 channel-group 3 timeslots 17-24
+  tug-2 5 e1 2 channel-group 4 timeslots 25-31
+  tug-2 5 e1 3 channel-group 1 timeslots 1-8
+  tug-2 5 e1 3 channel-group 2 timeslots 9-16
+  tug-2 5 e1 3 channel-group 3 timeslots 17-24
+  tug-2 5 e1 3 channel-group 4 timeslots 25-31
+  tug-2 6 e1 1 channel-group 1 timeslots 1-8
+  tug-2 6 e1 1 channel-group 2 timeslots 9-16
+  tug-2 6 e1 1 channel-group 3 timeslots 17-24
+  tug-2 6 e1 1 channel-group 4 timeslots 25-31
+  tug-2 6 e1 2 channel-group 1 timeslots 1-8
+  tug-2 6 e1 2 channel-group 2 timeslots 9-16
+  tug-2 6 e1 2 channel-group 3 timeslots 17-24
+  tug-2 6 e1 2 channel-group 4 timeslots 25-31
+  tug-2 6 e1 3 channel-group 1 timeslots 1-8
+  tug-2 6 e1 3 channel-group 2 timeslots 9-16
+  tug-2 6 e1 3 channel-group 3 timeslots 17-24
+  tug-2 6 e1 3 channel-group 4 timeslots 25-31
+  tug-2 7 e1 1 channel-group 1 timeslots 1-8
+  tug-2 7 e1 1 channel-group 2 timeslots 9-16
+  tug-2 7 e1 1 channel-group 3 timeslots 17-24
+  tug-2 7 e1 1 channel-group 4 timeslots 25-31
+  tug-2 7 e1 2 channel-group 1 timeslots 1-8
+  tug-2 7 e1 2 channel-group 2 timeslots 9-16
+  tug-2 7 e1 2 channel-group 3 timeslots 17-24
+  tug-2 7 e1 2 channel-group 4 timeslots 25-31
+  tug-2 7 e1 3 channel-group 1 timeslots 1-8
+  tug-2 7 e1 3 channel-group 2 timeslots 9-16
+  tug-2 7 e1 3 channel-group 3 timeslots 17-24
+  tug-2 7 e1 3 channel-group 4 timeslots 25-31
+ !
+ au-4 1 tug-3 2
+  mode c-12
+  tug-2 1 e1 1 channel-group 1 timeslots 1-8
+  tug-2 1 e1 1 channel-group 2 timeslots 9-16
+  tug-2 1 e1 1 channel-group 3 timeslots 17-24
+  tug-2 1 e1 1 channel-group 4 timeslots 25-31
+  tug-2 1 e1 2 channel-group 1 timeslots 1-8
+  tug-2 1 e1 2 channel-group 2 timeslots 9-16
+  tug-2 1 e1 2 channel-group 3 timeslots 17-24
+  tug-2 1 e1 2 channel-group 4 timeslots 25-31
+  tug-2 1 e1 3 channel-group 1 timeslots 1-8
+  tug-2 1 e1 3 channel-group 2 timeslots 9-16
+  tug-2 1 e1 3 channel-group 3 timeslots 17-24
+  tug-2 1 e1 3 channel-group 4 timeslots 25-31
+  tug-2 2 e1 1 channel-group 1 timeslots 1-8
+  tug-2 2 e1 1 channel-group 2 timeslots 9-16
+  tug-2 2 e1 1 channel-group 3 timeslots 17-24
+  tug-2 2 e1 1 channel-group 4 timeslots 25-31
+  tug-2 2 e1 2 channel-group 1 timeslots 1-8
+  tug-2 2 e1 2 channel-group 2 timeslots 9-16
+  tug-2 2 e1 2 channel-group 3 timeslots 17-24
+  tug-2 2 e1 2 channel-group 4 timeslots 25-31
+  tug-2 2 e1 3 channel-group 1 timeslots 1-8
+  tug-2 2 e1 3 channel-group 2 timeslots 9-16
+  tug-2 2 e1 3 channel-group 3 timeslots 17-24
+  tug-2 2 e1 3 channel-group 4 timeslots 25-31
+  tug-2 3 e1 1 channel-group 1 timeslots 1-8
+  tug-2 3 e1 1 channel-group 2 timeslots 9-16
+  tug-2 3 e1 1 channel-group 3 timeslots 17-23
+  tug-2 3 e1 1 channel-group 4 timeslots 25-31
+  tug-2 3 e1 2 channel-group 1 timeslots 1-8
+  tug-2 3 e1 2 channel-group 2 timeslots 9-16
+  tug-2 3 e1 2 channel-group 3 timeslots 17-24
+  tug-2 3 e1 2 channel-group 4 timeslots 25-31
+  tug-2 3 e1 3 channel-group 1 timeslots 1-8
+  tug-2 3 e1 3 channel-group 2 timeslots 9-16
+  tug-2 3 e1 3 channel-group 3 timeslots 17-24
+  tug-2 3 e1 3 channel-group 4 timeslots 25-31
+  tug-2 4 e1 1 channel-group 1 timeslots 1-8
+  tug-2 4 e1 1 channel-group 2 timeslots 9-16
+  tug-2 4 e1 1 channel-group 3 timeslots 17-24
+  tug-2 4 e1 1 channel-group 4 timeslots 25-31
+  tug-2 4 e1 2 channel-group 1 timeslots 1-8
+  tug-2 4 e1 2 channel-group 2 timeslots 9-16
+  tug-2 4 e1 2 channel-group 3 timeslots 17-24
+  tug-2 4 e1 2 channel-group 4 timeslots 25-31
+  tug-2 4 e1 3 channel-group 1 timeslots 1-8
+  tug-2 4 e1 3 channel-group 2 timeslots 9-16
+  tug-2 4 e1 3 channel-group 3 timeslots 17-24
+  tug-2 4 e1 3 channel-group 4 timeslots 25-31
+  tug-2 5 e1 1 channel-group 1 timeslots 1-8
+  tug-2 5 e1 1 channel-group 2 timeslots 9-16
+  tug-2 5 e1 1 channel-group 3 timeslots 17-24
+  tug-2 5 e1 1 channel-group 4 timeslots 25-31
+  tug-2 5 e1 2 channel-group 1 timeslots 1-8
+  tug-2 5 e1 2 channel-group 2 timeslots 9-16
+  tug-2 5 e1 2 channel-group 3 timeslots 17-24
+  tug-2 5 e1 2 channel-group 4 timeslots 25-31
+  tug-2 5 e1 3 channel-group 1 timeslots 1-8
+  tug-2 5 e1 3 channel-group 2 timeslots 9-16
+  tug-2 5 e1 3 channel-group 3 timeslots 17-24
+  tug-2 5 e1 3 channel-group 4 timeslots 25-31
+  tug-2 6 e1 1 channel-group 1 timeslots 1-8
+  tug-2 6 e1 1 channel-group 2 timeslots 9-16
+  tug-2 6 e1 1 channel-group 3 timeslots 17-24
+  tug-2 6 e1 1 channel-group 4 timeslots 25-31
+  tug-2 6 e1 2 channel-group 1 timeslots 1-8
+  tug-2 6 e1 2 channel-group 2 timeslots 9-16
+  tug-2 6 e1 2 channel-group 3 timeslots 17-24
+  tug-2 6 e1 2 channel-group 4 timeslots 25-31
+  tug-2 6 e1 3 channel-group 1 timeslots 1-8
+  tug-2 6 e1 3 channel-group 2 timeslots 9-16
+  tug-2 6 e1 3 channel-group 3 timeslots 17-24
+  tug-2 6 e1 3 channel-group 4 timeslots 25-31
+  tug-2 7 e1 1 channel-group 1 timeslots 1-8
+  tug-2 7 e1 1 channel-group 2 timeslots 9-16
+  tug-2 7 e1 1 channel-group 3 timeslots 17-24
+  tug-2 7 e1 1 channel-group 4 timeslots 25-31
+  tug-2 7 e1 2 channel-group 1 timeslots 1-8
+  tug-2 7 e1 2 channel-group 2 timeslots 9-16
+  tug-2 7 e1 2 channel-group 3 timeslots 17-24
+  tug-2 7 e1 2 channel-group 4 timeslots 25-31
+  tug-2 7 e1 3 channel-group 1 timeslots 1-8
+  tug-2 7 e1 3 channel-group 2 timeslots 9-16
+  tug-2 7 e1 3 channel-group 3 timeslots 17-24
+  tug-2 7 e1 3 channel-group 4 timeslots 25-31
+ !
+ au-4 1 tug-3 3
+  mode c-12
+  tug-2 1 e1 1 channel-group 1 timeslots 1-8
+  tug-2 1 e1 1 channel-group 2 timeslots 9-16
+  tug-2 1 e1 1 channel-group 3 timeslots 17-24
+  tug-2 1 e1 1 channel-group 4 timeslots 25-31
+  tug-2 1 e1 2 channel-group 1 timeslots 1-8
+  tug-2 1 e1 2 channel-group 2 timeslots 9-16
+  tug-2 1 e1 2 channel-group 3 timeslots 17-24
+  tug-2 1 e1 2 channel-group 4 timeslots 25-31
+  tug-2 1 e1 3 channel-group 1 timeslots 1-8
+  tug-2 1 e1 3 channel-group 2 timeslots 9-16
+  tug-2 1 e1 3 channel-group 3 timeslots 17-24
+  tug-2 1 e1 3 channel-group 4 timeslots 25-31
+  tug-2 2 e1 1 channel-group 1 timeslots 1-8
+  tug-2 2 e1 1 channel-group 2 timeslots 9-16
+  tug-2 2 e1 1 channel-group 3 timeslots 17-24
+  tug-2 2 e1 1 channel-group 4 timeslots 25-31
+  tug-2 2 e1 2 channel-group 1 timeslots 1-8
+  tug-2 2 e1 2 channel-group 2 timeslots 9-16
+  tug-2 2 e1 2 channel-group 3 timeslots 17-24
+  tug-2 2 e1 2 channel-group 4 timeslots 25-31
+  tug-2 2 e1 3 channel-group 1 timeslots 1-8
+  tug-2 2 e1 3 channel-group 2 timeslots 9-16
+  tug-2 2 e1 3 channel-group 3 timeslots 17-24
+  tug-2 2 e1 3 channel-group 4 timeslots 25-31
+  tug-2 3 e1 1 channel-group 1 timeslots 1-8
+  tug-2 3 e1 1 channel-group 2 timeslots 9-16
+  tug-2 3 e1 1 channel-group 3 timeslots 17-24
+  tug-2 3 e1 1 channel-group 4 timeslots 25-31
+  tug-2 3 e1 2 channel-group 1 timeslots 1-8
+  tug-2 3 e1 2 channel-group 2 timeslots 9-16
+  tug-2 3 e1 2 channel-group 3 timeslots 17-24
+  tug-2 3 e1 2 channel-group 4 timeslots 25-31
+  tug-2 3 e1 3 channel-group 1 timeslots 1-8
+  tug-2 3 e1 3 channel-group 2 timeslots 9-16
+  tug-2 3 e1 3 channel-group 3 timeslots 17-24
+  tug-2 3 e1 3 channel-group 4 timeslots 25-31
+  tug-2 4 e1 1 channel-group 1 timeslots 1-8
+  tug-2 4 e1 1 channel-group 2 timeslots 9-16
+  tug-2 4 e1 1 channel-group 3 timeslots 17-24
+  tug-2 4 e1 1 channel-group 4 timeslots 25-31
+  tug-2 4 e1 2 channel-group 1 timeslots 1-8
+  tug-2 4 e1 2 channel-group 2 timeslots 9-16
+  tug-2 4 e1 2 channel-group 3 timeslots 17-24
+  tug-2 4 e1 2 channel-group 4 timeslots 25-31
+  tug-2 4 e1 3 channel-group 1 timeslots 1-8
+  tug-2 4 e1 3 channel-group 2 timeslots 9-16
+  tug-2 4 e1 3 channel-group 3 timeslots 17-24
+  tug-2 4 e1 3 channel-group 4 timeslots 25-31
+  tug-2 5 e1 1 channel-group 1 timeslots 1-8
+  tug-2 5 e1 1 channel-group 2 timeslots 9-16
+  tug-2 5 e1 1 channel-group 3 timeslots 17-24
+  tug-2 5 e1 1 channel-group 4 timeslots 25-31
+  tug-2 5 e1 2 channel-group 1 timeslots 1-8
+  tug-2 5 e1 2 channel-group 2 timeslots 9-16
+  tug-2 5 e1 2 channel-group 3 timeslots 17-24
+  tug-2 5 e1 2 channel-group 4 timeslots 25-31
+  tug-2 5 e1 3 channel-group 1 timeslots 1-8
+  tug-2 5 e1 3 channel-group 2 timeslots 9-16
+  tug-2 5 e1 3 channel-group 3 timeslots 17-24
+  tug-2 5 e1 3 channel-group 4 timeslots 25-31
+  tug-2 6 e1 1 channel-group 1 timeslots 1-8
+  tug-2 6 e1 1 channel-group 2 timeslots 9-16
+  tug-2 6 e1 1 channel-group 3 timeslots 17-24
+  tug-2 6 e1 1 channel-group 4 timeslots 25-31
+  tug-2 6 e1 2 channel-group 1 timeslots 1-8
+  tug-2 6 e1 2 channel-group 2 timeslots 9-16
+  tug-2 6 e1 2 channel-group 3 timeslots 17-24
+  tug-2 6 e1 2 channel-group 4 timeslots 25-31
+  tug-2 6 e1 3 channel-group 1 timeslots 1-8
+  tug-2 6 e1 3 channel-group 2 timeslots 9-16
+  tug-2 6 e1 3 channel-group 3 timeslots 17-24
+  tug-2 6 e1 3 channel-group 4 timeslots 25-31
+  tug-2 7 e1 1 channel-group 1 timeslots 1-8
+  tug-2 7 e1 1 channel-group 2 timeslots 9-16
+  tug-2 7 e1 1 channel-group 3 timeslots 17-24
+  tug-2 7 e1 1 channel-group 4 timeslots 25-31
+!
+controller E1 0/2/0
+ framing no-crc4 
+ channel-group 0 timeslots 1
+ channel-group 1 timeslots 2
+ channel-group 2 timeslots 3
+ channel-group 3 timeslots 4
+ channel-group 4 timeslots 5
+ channel-group 5 timeslots 6
+ channel-group 6 timeslots 7
+ channel-group 7 timeslots 8
+ channel-group 8 timeslots 9
+ channel-group 9 timeslots 10
+ channel-group 10 timeslots 11
+ channel-group 11 timeslots 12
+ channel-group 12 timeslots 13
+ channel-group 13 timeslots 14
+ channel-group 14 timeslots 15
+ channel-group 15 timeslots 16
+ channel-group 16 timeslots 17
+ channel-group 17 timeslots 18
+ channel-group 18 timeslots 19
+ channel-group 19 timeslots 20
+ channel-group 20 timeslots 21
+ channel-group 21 timeslots 22
+ channel-group 22 timeslots 23
+ channel-group 23 timeslots 24
+ channel-group 24 timeslots 25
+ channel-group 25 timeslots 26
+ channel-group 26 timeslots 27
+ channel-group 27 timeslots 28
+ channel-group 28 timeslots 29
+ channel-group 29 timeslots 30
+ channel-group 30 timeslots 31
+!
+controller E1 0/2/1
+ framing no-crc4 
+ channel-group 0 timeslots 1
+ channel-group 1 timeslots 2
+ channel-group 2 timeslots 3
+ channel-group 3 timeslots 4
+ channel-group 4 timeslots 5
+ channel-group 5 timeslots 6
+ channel-group 6 timeslots 7
+ channel-group 7 timeslots 8
+ channel-group 8 timeslots 9
+ channel-group 9 timeslots 10
+ channel-group 10 timeslots 11
+ channel-group 11 timeslots 12
+ channel-group 12 timeslots 13
+ channel-group 13 timeslots 14
+ channel-group 14 timeslots 15
+ channel-group 15 timeslots 16
+ channel-group 16 timeslots 17
+ channel-group 17 timeslots 18
+ channel-group 18 timeslots 19
+ channel-group 19 timeslots 20
+ channel-group 20 timeslots 21
+ channel-group 21 timeslots 22
+ channel-group 22 timeslots 23
+ channel-group 23 timeslots 24
+ channel-group 24 timeslots 25
+ channel-group 25 timeslots 26
+ channel-group 26 timeslots 27
+ channel-group 27 timeslots 28
+ channel-group 28 timeslots 29
+ channel-group 29 timeslots 30
+ channel-group 30 timeslots 31
+!
+controller E1 0/2/2
+ framing no-crc4 
+ channel-group 0 timeslots 1
+ channel-group 1 timeslots 2
+ channel-group 2 timeslots 3
+ channel-group 3 timeslots 4
+ channel-group 4 timeslots 5
+ channel-group 5 timeslots 6
+ channel-group 6 timeslots 7
+ channel-group 7 timeslots 8
+ channel-group 8 timeslots 9
+ channel-group 9 timeslots 10
+ channel-group 10 timeslots 11
+ channel-group 11 timeslots 12
+ channel-group 12 timeslots 13
+ channel-group 13 timeslots 14
+ channel-group 14 timeslots 15
+ channel-group 15 timeslots 16
+ channel-group 16 timeslots 17
+ channel-group 17 timeslots 18
+ channel-group 18 timeslots 19
+ channel-group 19 timeslots 20
+ channel-group 20 timeslots 21
+ channel-group 21 timeslots 22
+ channel-group 22 timeslots 23
+ channel-group 23 timeslots 24
+ channel-group 24 timeslots 25
+ channel-group 25 timeslots 26
+ channel-group 26 timeslots 27
+ channel-group 27 timeslots 28
+ channel-group 28 timeslots 29
+ channel-group 29 timeslots 30
+ channel-group 30 timeslots 31
+!
+controller E1 0/2/3
+ framing no-crc4 
+ channel-group 0 timeslots 1
+ channel-group 1 timeslots 2
+ channel-group 2 timeslots 3
+ channel-group 3 timeslots 4
+ channel-group 4 timeslots 5
+ channel-group 5 timeslots 6
+ channel-group 6 timeslots 7
+ channel-group 7 timeslots 8
+ channel-group 8 timeslots 9
+ channel-group 9 timeslots 10
+ channel-group 10 timeslots 11
+ channel-group 11 timeslots 12
+ channel-group 12 timeslots 13
+ channel-group 13 timeslots 14
+ channel-group 14 timeslots 15
+ channel-group 15 timeslots 16
+ channel-group 16 timeslots 17
+ channel-group 17 timeslots 18
+ channel-group 18 timeslots 19
+ channel-group 19 timeslots 20
+ channel-group 20 timeslots 21
+ channel-group 21 timeslots 22
+ channel-group 22 timeslots 23
+ channel-group 23 timeslots 24
+ channel-group 24 timeslots 25
+ channel-group 25 timeslots 26
+ channel-group 26 timeslots 27
+ channel-group 27 timeslots 28
+ channel-group 28 timeslots 29
+ channel-group 29 timeslots 30
+ channel-group 30 timeslots 31
+!
+controller E1 0/2/4
+ framing no-crc4 
+ channel-group 0 timeslots 1-31
+!
+controller E1 0/2/5
+ framing no-crc4 
+ channel-group 0 timeslots 1-31
+!
+controller E1 0/2/6
+ framing no-crc4 
+ channel-group 0 timeslots 1-31
+!
+controller E1 0/2/7
+ framing no-crc4 
+ channel-group 0 timeslots 1
+ channel-group 1 timeslots 2
+ channel-group 2 timeslots 3
+ channel-group 3 timeslots 4-10,12
+ channel-group 10 timeslots 11
+ channel-group 12 timeslots 13
+ channel-group 13 timeslots 14
+ channel-group 14 timeslots 15
+ channel-group 15 timeslots 16
+ channel-group 16 timeslots 17
+ channel-group 17 timeslots 18
+ channel-group 18 timeslots 19
+ channel-group 19 timeslots 20
+ channel-group 20 timeslots 21
+ channel-group 21 timeslots 22
+ channel-group 22 timeslots 23
+ channel-group 23 timeslots 24
+ channel-group 24 timeslots 25-28
+ channel-group 29 timeslots 30
+ channel-group 30 timeslots 31
+!
+!
+cdp run
+!
+!
+class-map match-all undesireable-udp
+ match access-group 198
+class-map match-all QOS-MEHR
+ match access-group name QOS-MEHR
+!
+policy-map QOS-MEHR
+ class QOS-MEHR
+  bandwidth percent 50 
+ class class-default
+  fair-queue
+policy-map drop-udp
+ class undesireable-udp
+  police rate 8000 
+   conform-action drop 
+   exceed-action drop 
+   violate-action drop 
+!
+!
+! 
+!
+!
+!
+!
+!
+crypto isakmp policy 10
+ encr aes
+ authentication pre-share
+ group 2
+!
+crypto isakmp policy 20
+ encr aes 256
+ authentication pre-share
+ group 2
+!
+crypto isakmp policy 101
+ encr aes
+ authentication pre-share
+ group 2
+!
+crypto isakmp policy 102
+ encr aes
+ authentication pre-share
+ group 2
+crypto isakmp key G!l@n3tAcc3ss address 10.250.46.1    
+crypto isakmp key bk!@# address 10.142.134.74  
+crypto isakmp key N3w1ntr@n3t address 10.30.42.200   
+crypto isakmp key N3w1ntr@n3t address 10.30.42.201   
+crypto isakmp key FTPBr@nch2023 address 0.0.0.0        
+crypto isakmp invalid-spi-recovery
+!
+!
+crypto ipsec transform-set GILANETTS esp-aes esp-sha-hmac 
+ mode tunnel
+crypto ipsec transform-set BK!-TR esp-aes 256 esp-sha-hmac 
+ mode tunnel
+crypto ipsec transform-set FTPSet esp-aes 256 esp-sha-hmac 
+ mode tunnel
+crypto ipsec transform-set INTR1 esp-aes 256 esp-sha-hmac 
+ mode tunnel
+crypto ipsec transform-set INTR2 esp-aes 256 esp-sha-hmac 
+ mode tunnel
+!
+!
+!
+!
+!
+crypto map BKI-MAP-INT 2 ipsec-isakmp 
+ set peer 10.30.42.200
+ set transform-set INTR1 
+ match address INTR1ACL
+crypto map BKI-MAP-INT 3 ipsec-isakmp 
+ set peer 10.30.42.201
+ set transform-set INTR2 
+ match address INTR2ACL
+!
+crypto map FTPMAP 10 ipsec-isakmp 
+ set peer 10.142.17.82
+ set transform-set FTPSet 
+ match address FTPSrvBranch
+crypto map FTPMAP 20 ipsec-isakmp 
+ set peer 10.139.192.2
+ set transform-set FTPSet 
+ match address FTPSrvBranch
+!
+crypto map GILANET 10 ipsec-isakmp 
+ set peer 10.250.46.1
+ set transform-set GILANETTS 
+ match address GILANET-ACL
+!
+!
+!
+!
+! 
+! 
+! 
+! 
+! 
+! 
+!
+!
+interface Loopback1
+ description ** HQ **
+ ip address 10.10.254.1 255.255.255.0
+ ip virtual-reassembly
+!
+interface Loopback2
+ ip address 10.210.10.1 255.255.255.255
+!
+interface Loopback2000
+ ip address 10.103.52.114 255.255.255.248
+!
+interface Multilink10
+ description ** 3*E1 6M **
+ bandwidth 6000
+ ip address 10.0.250.9 255.255.255.254
+ ip mtu 1460
+ ip flow monitor NETFLOW input
+ ip flow monitor NETFLOW output
+ ip access-group HQ-ACCESS-IN in
+ ip access-group HQ-ACCESS-OUT out
+ ip tcp adjust-mss 1420
+ ip ospf cost 500
+ ppp multilink
+ ppp multilink group 10
+!
+interface Tunnel20
+ description ** MPLS(8M)->50M **
+ bandwidth 768
+ ip address 10.255.241.81 255.255.255.254
+ ip mtu 1460
+ ip flow monitor NETFLOW input
+ ip flow monitor NETFLOW output
+ ip access-group HQ-ACCESS-IN in
+ ip access-group HQ-ACCESS-OUT out
+ ip tcp adjust-mss 1420
+ ip ospf dead-interval 15
+ ip ospf hello-interval 5
+ ip ospf cost 500
+ keepalive 2 2
+ cdp enable
+ tunnel source 10.134.64.2
+ tunnel destination 10.241.0.2
+!
+interface Tunnel21
+ description ** MPLS(2M)->10M-TB **Dont Change
+ bandwidth 512
+ ip address 10.255.240.81 255.255.255.254
+ ip mtu 1460
+ ip access-group HQ-ACCESS-IN in
+ ip access-group HQ-ACCESS-OUT out
+ ip tcp adjust-mss 1420
+ ip ospf dead-interval 15
+ ip ospf hello-interval 5
+ ip ospf cost 505
+ shutdown
+ keepalive 3 3
+ cdp enable
+ tunnel source 10.134.64.2
+ tunnel destination 10.134.45.2
+!
+interface Tunnel24
+ description ** MPLS(8M)->50M-HQ-Tohid **
+ bandwidth 768
+ ip address 10.255.244.81 255.255.255.254
+ ip mtu 1460
+ ip access-group HQ-ACCESS-IN in
+ ip access-group HQ-ACCESS-OUT out
+ ip tcp adjust-mss 1420
+ ip ospf dead-interval 15
+ ip ospf hello-interval 5
+ ip ospf cost 500
+ keepalive 2 2
+ cdp enable
+ tunnel source 10.134.64.2
+ tunnel destination 10.244.0.2
+!
+interface Tunnel30
+ description ** ShahinShahr **
+ ip address 10.255.50.1 255.255.255.254
+ ip mtu 1460
+ ip tcp adjust-mss 1420
+ ip ospf 1 area 0
+ ip ospf cost 500
+ keepalive 3 3
+ cdp enable
+ tunnel source 10.134.64.2
+ tunnel destination 10.134.44.2
+!
+interface Tunnel100
+ description ** FTP-MGRE **
+ ip address 10.10.100.1 255.255.255.0
+ no ip redirects
+ no ip unreachables
+ ip mtu 1460
+ ip nhrp authentication dmvpnbki
+ ip nhrp map multicast dynamic
+ ip nhrp network-id 100
+ ip nhrp holdtime 300
+ ip tcp adjust-mss 1436
+ ip ospf network point-to-multipoint
+ ip ospf cost 200
+ cdp enable
+ tunnel source 10.139.192.14
+ tunnel mode gre multipoint
+!
+interface Tunnel156
+ description ** Gilanet **
+ ip address 10.156.100.109 255.255.255.254
+ ip ospf dead-interval 300
+ ip ospf hello-interval 100
+ keepalive 100 3
+ tunnel source 10.250.46.52
+ tunnel destination 10.250.46.1
+!
+interface Tunnel200
+ description ** Intranet - R1 **
+ bandwidth 2000
+ ip address 10.200.2.113 255.255.255.254
+ ip mtu 1360
+ ip nat outside
+ ip tcp adjust-mss 1320
+ ip ospf cost 200
+ keepalive 10 3
+ tunnel source 10.139.192.14
+ tunnel destination 10.30.42.200
+ ip virtual-reassembly
+!
+interface Tunnel201
+ description ** Intranet - R2 **
+ bandwidth 2000
+ ip address 10.201.2.113 255.255.255.254
+ ip mtu 1360
+ ip nat outside
+ ip tcp adjust-mss 1320
+ ip ospf cost 400
+ keepalive 10 3
+ tunnel source 10.139.192.14
+ tunnel destination 10.30.42.201
+ ip virtual-reassembly
+!
+interface Tunnel10028
+ description ** Eskandari **
+ ip address 100.100.100.62 255.255.255.254
+ ip mtu 1460
+ ip tcp adjust-mss 1420
+ ip ospf dead-interval 120
+ ip ospf hello-interval 40
+ keepalive 40 3
+ cdp enable
+ tunnel source 10.10.251.1
+ tunnel destination 10.10.251.122
+!
+interface Tunnel10031
+ description ** Bustan **
+ ip address 100.100.100.38 255.255.255.254
+ ip mtu 1460
+ ip tcp adjust-mss 1420
+ ip ospf dead-interval 120
+ ip ospf hello-interval 40
+ keepalive 40 3
+ cdp enable
+ tunnel source 10.10.251.1
+ tunnel destination 10.10.251.134
+!
+interface Tunnel10034
+ description ** NajafAbad **
+ ip address 100.100.100.16 255.255.255.254
+ ip mtu 1460
+ ip tcp adjust-mss 1420
+ ip ospf dead-interval 120
+ ip ospf hello-interval 40
+ keepalive 40 3
+ cdp enable
+ tunnel source 10.10.251.1
+ tunnel destination 10.10.251.14
+!
+interface Tunnel10039
+ description ** Meymeh  **
+ ip address 100.100.100.84 255.255.255.254
+ ip mtu 1460
+ ip tcp adjust-mss 1420
+ ip ospf dead-interval 120
+ ip ospf hello-interval 40
+ keepalive 40 3
+ cdp enable
+ tunnel source 10.10.251.1
+ tunnel destination 10.10.251.222
+!
+interface Tunnel10042
+ description ** VahdatAbad **
+ ip address 100.100.100.58 255.255.255.254
+ ip mtu 1460
+ ip tcp adjust-mss 1420
+ ip ospf dead-interval 120
+ ip ospf hello-interval 40
+ keepalive 40 3
+ cdp enable
+ tunnel source 10.10.251.1
+ tunnel destination 10.10.251.82
+!
+interface Tunnel10052
+ description ** SefidShahr **
+ ip address 100.100.100.20 255.255.255.254
+ ip mtu 1460
+ ip tcp adjust-mss 1420
+ ip ospf dead-interval 120
+ ip ospf hello-interval 40
+ keepalive 40 3
+ cdp enable
+ tunnel source 10.10.251.1
+ tunnel destination 10.10.251.210
+!
+interface Tunnel10057
+ description ** PknJarghuyeh **
+ ip address 100.100.100.34 255.255.255.254
+ ip mtu 1460
+ ip tcp adjust-mss 1420
+ ip ospf dead-interval 120
+ ip ospf hello-interval 40
+ keepalive 40 3
+ cdp enable
+ tunnel source 10.10.251.1
+ tunnel destination 10.10.251.90
+!
+interface Tunnel10061
+ description ** Mehrgerd **
+ ip address 100.100.100.44 255.255.255.254
+ ip mtu 1460
+ ip tcp adjust-mss 1420
+ ip ospf dead-interval 120
+ ip ospf hello-interval 40
+ keepalive 40 3
+ cdp enable
+ tunnel source 10.10.251.1
+ tunnel destination 10.10.251.114
+!
+interface Tunnel10063
+ description ** PegahEsfahan **
+ ip address 100.100.100.64 255.255.255.254
+ ip mtu 1460
+ ip tcp adjust-mss 1420
+ ip ospf dead-interval 120
+ ip ospf hello-interval 40
+ keepalive 40 3
+ cdp enable
+ tunnel source 10.10.251.1
+ tunnel destination 10.10.251.186
+!
+interface Tunnel10065
+ description ** Bideh **
+ ip address 100.100.100.54 255.255.255.254
+ ip mtu 1460
+ ip tcp adjust-mss 1420
+ ip ospf dead-interval 120
+ ip ospf hello-interval 40
+ keepalive 40 3
+ cdp enable
+ tunnel source 10.10.251.1
+ tunnel destination 10.10.251.74
+!
+interface Tunnel10072
+ description ** MeydanTarebarKashan **
+ ip address 100.100.100.88 255.255.255.254
+ ip mtu 1460
+ ip tcp adjust-mss 1420
+ ip ospf dead-interval 120
+ ip ospf hello-interval 40
+ keepalive 40 3
+ cdp enable
+ tunnel source 10.10.251.1
+ tunnel destination 10.10.251.218
+!
+interface Tunnel10076
+ description ** Payaneh-Sharq **
+ ip address 100.100.100.14 255.255.255.254
+ ip mtu 1460
+ ip tcp adjust-mss 1420
+ ip ospf dead-interval 120
+ ip ospf hello-interval 40
+ keepalive 40 3
+ cdp enable
+ tunnel source 10.10.251.1
+ tunnel destination 10.10.251.42
+!
+interface Tunnel10081
+ description ** Ziar **
+ ip address 100.100.100.6 255.255.255.254
+ ip mtu 1460
+ ip tcp adjust-mss 1420
+ ip ospf dead-interval 120
+ ip ospf hello-interval 40
+ keepalive 40 3
+ cdp enable
+ tunnel source 10.10.251.1
+ tunnel destination 10.10.251.46
+!
+interface Tunnel10083
+ description ** Dastja **
+ ip address 100.100.100.32 255.255.255.254
+ ip mtu 1460
+ ip tcp adjust-mss 1420
+ ip ospf dead-interval 120
+ ip ospf hello-interval 40
+ keepalive 40 3
+ cdp enable
+ tunnel source 10.10.251.1
+ tunnel destination 10.10.251.78
+!
+interface Tunnel10084
+ description ** Rehnan **
+ ip address 100.100.100.86 255.255.255.254
+ ip mtu 1460
+ ip tcp adjust-mss 1420
+ ip ospf dead-interval 120
+ ip ospf hello-interval 40
+ keepalive 40 3
+ cdp enable
+ tunnel source 10.10.251.1
+ tunnel destination 10.10.251.202
+!
+interface Tunnel10085
+ description ** Moqar **
+ ip address 100.100.100.42 255.255.255.254
+ ip mtu 1460
+ ip tcp adjust-mss 1420
+ ip ospf dead-interval 120
+ ip ospf hello-interval 40
+ keepalive 40 3
+ cdp enable
+ tunnel source 10.10.251.1
+ tunnel destination 10.10.251.118
+!
+interface Tunnel10089
+ description ** RahmatAbad **
+ ip address 100.100.100.78 255.255.255.254
+ ip mtu 1460
+ ip tcp adjust-mss 1420
+ ip ospf dead-interval 120
+ ip ospf hello-interval 40
+ keepalive 40 3
+ cdp enable
+ tunnel source 10.10.251.1
+ tunnel destination 10.10.251.174
+!
+interface Tunnel10091
+ description ** Pudeh **
+ ip address 100.100.100.68 255.255.255.254
+ ip mtu 1460
+ ip tcp adjust-mss 1420
+ ip ospf dead-interval 120
+ ip ospf hello-interval 40
+ keepalive 40 3
+ cdp enable
+ tunnel source 10.10.251.1
+ tunnel destination 10.10.251.178
+!
+interface Tunnel10099
+ description ** Esfarjan **
+ ip address 100.100.100.60 255.255.255.254
+ ip mtu 1460
+ ip tcp adjust-mss 1420
+ ip ospf dead-interval 120
+ ip ospf hello-interval 40
+ keepalive 40 3
+ cdp enable
+ tunnel source 10.10.251.1
+ tunnel destination 10.10.251.130
+!
+interface Tunnel10109
+ description ** Taad **
+ ip address 100.100.100.40 255.255.255.254
+ ip mtu 1460
+ ip tcp adjust-mss 1420
+ ip ospf dead-interval 120
+ ip ospf hello-interval 40
+ keepalive 40 3
+ cdp enable
+ tunnel source 10.10.251.1
+ tunnel destination 10.10.251.62
+!
+interface Tunnel10116
+ description ** EslmAbdKouhPayeh **
+ ip address 100.100.100.46 255.255.255.254
+ ip mtu 1460
+ ip tcp adjust-mss 1420
+ ip ospf dead-interval 120
+ ip ospf hello-interval 40
+ keepalive 40 3
+ cdp enable
+ tunnel source 10.10.251.1
+ tunnel destination 10.10.251.94
+!
+interface Tunnel10122
+ description ** Talkhuncheh  **
+ ip address 100.100.100.56 255.255.255.254
+ ip mtu 1460
+ ip tcp adjust-mss 1420
+ ip ospf dead-interval 120
+ ip ospf hello-interval 40
+ keepalive 40 3
+ cdp enable
+ tunnel source 10.10.251.1
+ tunnel destination 10.10.251.214
+!
+interface Tunnel10126
+ description ** NekuAbad **
+ ip address 100.100.100.18 255.255.255.254
+ ip mtu 1460
+ ip tcp adjust-mss 1420
+ ip ospf dead-interval 120
+ ip ospf hello-interval 40
+ keepalive 40 3
+ cdp enable
+ tunnel source 10.10.251.1
+ tunnel destination 10.10.251.18
+!
+interface Tunnel10134
+ description ** Yazdel **
+ ip address 100.100.100.72 255.255.255.254
+ ip mtu 1460
+ ip tcp adjust-mss 1420
+ ip ospf dead-interval 120
+ ip ospf hello-interval 40
+ keepalive 40 3
+ cdp enable
+ tunnel source 10.10.251.1
+ tunnel destination 10.10.251.166
+!
+interface Tunnel10136
+ description ** Gorgab **
+ ip address 100.100.100.48 255.255.255.254
+ ip mtu 1460
+ ip tcp adjust-mss 1420
+ ip ospf dead-interval 120
+ ip ospf hello-interval 40
+ keepalive 40 3
+ cdp enable
+ tunnel source 10.10.251.1
+ tunnel destination 10.10.251.206
+!
+interface Tunnel10139
+ description ** Jandaq **
+ ip address 100.100.100.82 255.255.255.254
+ ip mtu 1460
+ ip tcp adjust-mss 1420
+ ip ospf dead-interval 120
+ ip ospf hello-interval 40
+ keepalive 40 3
+ cdp enable
+ tunnel source 10.10.251.1
+ tunnel destination 10.10.251.194
+!
+interface Tunnel10143
+ description ** Jandan **
+ ip address 100.100.100.76 255.255.255.254
+ ip mtu 1460
+ ip tcp adjust-mss 1420
+ ip ospf dead-interval 120
+ ip ospf hello-interval 40
+ keepalive 40 3
+ cdp enable
+ tunnel source 10.10.251.1
+ tunnel destination 10.10.251.170
+!
+interface Tunnel10144
+ description ** Kafran **
+ ip address 100.100.100.22 255.255.255.254
+ ip mtu 1460
+ ip tcp adjust-mss 1420
+ ip ospf dead-interval 120
+ ip ospf hello-interval 40
+ keepalive 40 3
+ cdp enable
+ tunnel source 10.10.251.1
+ tunnel destination 10.10.251.54
+!
+interface Tunnel10145
+ description ** Ashkavand **
+ ip address 100.100.100.28 255.255.255.254
+ ip mtu 1460
+ ip tcp adjust-mss 1420
+ ip ospf dead-interval 120
+ ip ospf hello-interval 40
+ keepalive 40 3
+ cdp enable
+ tunnel source 10.10.251.1
+ tunnel destination 10.10.251.66
+!
+interface Tunnel10153
+ description ** Mahyar **
+ ip address 100.100.100.66 255.255.255.254
+ ip mtu 1460
+ ip tcp adjust-mss 1420
+ ip ospf dead-interval 120
+ ip ospf hello-interval 40
+ keepalive 40 3
+ cdp enable
+ tunnel source 10.10.251.1
+ tunnel destination 10.10.251.158
+!
+interface Tunnel10156
+ description ** Bj-PegahGolpaygan **
+ ip address 100.100.100.10 255.255.255.254
+ ip mtu 1460
+ ip tcp adjust-mss 1420
+ ip ospf dead-interval 120
+ ip ospf hello-interval 40
+ keepalive 40 3
+ cdp enable
+ tunnel source 10.10.251.1
+ tunnel destination 10.10.251.10
+!
+interface Tunnel10158
+ description ** ATM-Vanak **
+ ip address 100.100.100.52 255.255.255.254
+ ip mtu 1460
+ ip tcp adjust-mss 1420
+ ip ospf dead-interval 120
+ ip ospf hello-interval 40
+ keepalive 40 3
+ cdp enable
+ tunnel source 10.10.251.1
+ tunnel destination 10.10.251.70
+!
+interface Tunnel10159
+ description ** Bj-Chupanan **
+ ip address 100.100.100.50 255.255.255.254
+ ip mtu 1460
+ ip tcp adjust-mss 1420
+ ip ospf dead-interval 120
+ ip ospf hello-interval 40
+ keepalive 40 3
+ cdp enable
+ tunnel source 10.10.251.1
+ tunnel destination 10.10.251.126
+!
+interface Tunnel10182
+ description ** ATM-QarzLHasane **
+ ip address 100.100.100.30 255.255.255.254
+ ip mtu 1460
+ ip tcp adjust-mss 1420
+ ip ospf dead-interval 120
+ ip ospf hello-interval 40
+ keepalive 40 3
+ cdp enable
+ tunnel source 10.10.251.1
+ tunnel destination 10.10.251.38
+!
+interface Tunnel10183
+ description ** ATM-JahadSemirom **
+ ip address 100.100.100.74 255.255.255.254
+ ip mtu 1460
+ ip tcp adjust-mss 1420
+ ip ospf dead-interval 120
+ ip ospf hello-interval 40
+ keepalive 40 3
+ cdp enable
+ tunnel source 10.10.251.1
+ tunnel destination 10.10.251.102
+!
+interface Tunnel10186
+ description ** ATM-GoloGiahSepahan **
+ ip address 100.100.100.26 255.255.255.254
+ ip mtu 1460
+ ip tcp adjust-mss 1420
+ ip ospf dead-interval 120
+ ip ospf hello-interval 40
+ keepalive 40 3
+ cdp enable
+ tunnel source 10.10.251.1
+ tunnel destination 10.10.251.30
+!
+interface Tunnel10192
+ description ** ATM-Jahad **
+ ip address 100.100.100.36 255.255.255.254
+ ip mtu 1460
+ ip tcp adjust-mss 1420
+ ip ospf dead-interval 120
+ ip ospf hello-interval 40
+ keepalive 40 3
+ cdp enable
+ tunnel source 10.10.251.1
+ tunnel destination 10.10.251.34
+!
+interface GigabitEthernet0/0/0
+ description ** Sw-CoreA **
+ ip address 10.10.0.1 255.255.255.254
+ ip nat inside
+ ip flow monitor NETFLOW input
+ ip flow monitor NETFLOW output
+ ip policy route-map FTPSrv-RM
+ negotiation auto
+ cdp enable
+ ip virtual-reassembly
+!
+interface GigabitEthernet0/0/1
+ no ip address
+ negotiation auto
+!
+interface GigabitEthernet0/0/2
+ no ip address
+ negotiation auto
+!
+interface GigabitEthernet0/0/3
+ no ip address
+ negotiation auto
+!
+interface GigabitEthernet0/0/3.115
+ description ** MPLS-Ostani **
+ encapsulation dot1Q 115
+ ip address 10.10.251.1 255.255.255.252
+!
+interface GigabitEthernet0/0/3.222
+ description ** InterAnet-4M **
+ encapsulation dot1Q 222
+ ip address 10.139.192.14 255.255.255.252
+ ip policy route-map nachi-worm
+ crypto map BKI-MAP-INT
+ ip virtual-reassembly
+!
+interface GigabitEthernet0/0/3.563
+ description ** Fibr-MPLS-8M **
+ encapsulation dot1Q 563
+ ip address 10.134.64.2 255.255.255.0
+!
+interface GigabitEthernet0/0/4
+ description ** Branch **
+ ip address 10.10.253.1 255.255.255.252
+ negotiation auto
+ cdp enable
+!
+interface GigabitEthernet0/0/5
+ description ** APN **
+ ip address 10.250.46.52 255.255.255.0
+ negotiation auto
+ crypto map GILANET
+!
+interface Serial0/1/0.1/1/1/1:1
+ description ** 4Bagh - 512 **
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0.1/1/1/1:2
+ description ** Manuchehri - 512 **
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0.1/1/1/1:3
+ description ** ImamAli - 512 **
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0.1/1/1/1:4
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0.1/1/1/2:1
+ ip unnumbered Loopback1
+!
+interface Serial0/1/0.1/1/1/2:2
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0.1/1/1/2:3
+ description ** QamSar - 512 **
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0.1/1/1/2:4
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0.1/1/1/3:1
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0.1/1/1/3:2
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0.1/1/1/3:3
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0.1/1/1/3:4
+ description ** ValiAsrAran - 448 **
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0.1/1/2/1:1
+ description ** Abar - 512 **
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0.1/1/2/1:2
+ description ** Khorasgan - 512 **
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0.1/1/2/1:3
+ description ** TareBarIsf - 512 **
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0.1/1/2/1:4
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0.1/1/2/2:1
+ description ** Shohada - 512 **
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0.1/1/2/2:2
+ description ** Jomhuri - 512 **
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0.1/1/2/2:3
+ ip unnumbered Loopback1
+!
+interface Serial0/1/0.1/1/2/2:4
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0.1/1/2/3:1
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0.1/1/2/3:2
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0.1/1/2/3:3
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0.1/1/2/3:4
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0.1/1/3/1:1
+ description ** HezarJarib - 512 **
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0.1/1/3/1:2
+ description ** Kashan - 512 **
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0.1/1/3/1:3
+ description ** AmirKabir - 512 **
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0.1/1/3/1:4
+ description ** Qahdarijan - 448 **
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0.1/1/3/2:1
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0.1/1/3/2:2
+ description ** Khur - 512 **
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0.1/1/3/2:3
+ description ** Naein - 512 **
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0.1/1/3/2:4
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0.1/1/3/3:1
+ description ** ImamShrza - 512 **
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0.1/1/3/3:2
+ description ** Semirom - 512 **
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0.1/1/3/3:3
+ description ** Shahreza - 512 **
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0.1/1/3/3:4
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0.1/1/4/1:1
+ description ** Buein - 512 **
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0.1/1/4/1:2
+ description ** Damaneh - 512 **
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0.1/1/4/1:3
+ description ** KhanSaar - 512 **
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0.1/1/4/1:4
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0.1/1/4/2:1
+ description ** BaqBahadaran - 512 **
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0.1/1/4/2:2
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0.1/1/4/2:3
+ description ** Flavarjan - 512 **
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0.1/1/4/2:4
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0.1/1/4/3:1
+ description ** Aran - 512 **
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0.1/1/4/3:2
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0.1/1/4/3:3
+ description ** BaadRud - 512 **
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0.1/1/4/3:4
+ description ** KhaledAbd - 448 **
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0.1/1/5/1:4
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0.1/1/5/1:2
+ description ** AhmadAbad **
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0.1/1/5/1:1
+ description ** AmuzeshKharazi - 1M **
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0.1/1/5/2:1
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0.1/1/5/2:2
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0.1/1/5/2:3
+ description ** Chadegan - 512 **
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0.1/1/5/2:4
+ description ** Gugad - 448 **
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0.1/1/5/3:1
+ description ** Dehagh - 512 **
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0.1/1/5/3:2
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0.1/1/5/3:3
+ description ** Tirn - 512 **
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0.1/1/5/3:4
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0.1/1/6/1:1
+ no ip address
+ encapsulation ppp
+ cdp enable
+!
+interface Serial0/1/0.1/1/6/1:2
+ no ip address
+ encapsulation ppp
+ cdp enable
+!
+interface Serial0/1/0.1/1/6/1:3
+ no ip address
+ encapsulation ppp
+ cdp enable
+!
+interface Serial0/1/0.1/1/6/1:4
+ no ip address
+ encapsulation ppp
+ cdp enable
+!
+interface Serial0/1/0.1/1/6/2:1
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0.1/1/6/2:2
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0.1/1/6/2:3
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0.1/1/6/2:4
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0.1/1/6/3:1
+ description ** Ardestan - 512 **
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0.1/1/6/3:2
+ description ** Raavand - 512 **
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0.1/1/6/3:3
+ description ** Natanz - 512 **
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0.1/1/6/3:4
+ description ** AbuZeydAbad - 448 **
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0.1/1/7/1:1
+ description ** GolShahr - 512 **
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0.1/1/7/1:2
+ description ** Hana - 512 **
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0.1/1/7/1:3
+ description ** Zavareh **
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0.1/1/7/1:4
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0.1/1/7/2:1
+ description ** SheykhSadugh - 512 **
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0.1/1/7/2:2
+ description ** Zeynabiyeh - 512 **
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0.1/1/7/2:3
+ description ** Dahaghan - 512 **
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0.1/1/7/2:4
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0.1/1/7/3:1
+ description ** BustanSadi - 512 **
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0.1/1/7/3:2
+ description ** ShamsAbadi - 512 **
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0.1/1/7/3:3
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0.1/1/7/3:4
+ description ** Afus - 448 **
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0.1/2/1/1:1
+ no ip address
+!
+interface Serial0/1/0.1/2/1/1:2
+ description ** FereydunShahr - 512 **
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0.1/2/1/1:3
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0.1/2/1/1:4
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0.1/2/1/2:1
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0.1/2/1/2:2
+ description ** Jarghuyeh - 512 **
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0.1/2/1/2:3
+ description ** HsnAbdJrgh - 512 **
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0.1/2/1/2:4
+ description ** Ejeyeh - 448 **
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0.1/2/1/3:1
+ description ** AmirHamzeh - 512 **
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0.1/2/1/3:2
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0.1/2/1/3:3
+ description ** Jahad - 512 **
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0.1/2/1/3:4
+ description ** BazarchehNo - 448 **
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0.1/2/2/1:1
+ description ** GolDasht - 512 **
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0.1/2/2/1:2
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0.1/2/2/1:3
+ description ** Golpaygan - 512 **
+ ip unnumbered Loopback1
+ encapsulation ppp
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0.1/2/2/1:4
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0.1/2/2/2:1
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0.1/2/2/2:2
+ description ** ZibaShahr - 512 **
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0.1/2/2/2:3
+ description ** ShahrakSnt - 512 **
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0.1/2/2/2:4
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0.1/2/2/3:1
+ description ** ImamZadehHrand - 512 **
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0.1/2/2/3:2
+ description ** Karkavand - 512 **
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0.1/2/2/3:3
+ description ** Mahabad - 512 **
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0.1/2/2/3:4
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0.1/2/3/1:1
+ ip unnumbered Loopback1
+!
+interface Serial0/1/0.1/2/3/1:2
+ description ** Mobarakeh - 512 **
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0.1/2/3/1:3
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0.1/2/3/1:4
+ description ** ImanShahr - 448 **
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0.1/2/3/2:1
+ no ip address
+!
+interface Serial0/1/0.1/2/3/2:2
+ description ** Rozveh - 512 **
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0.1/2/3/2:3
+ description ** Faridan - 512 **
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0.1/2/3/2:4
+ description ** SaeidAbad - 448 **
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0.1/2/3/3:1
+ description ** PirBakran - 512 **
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0.1/2/3/3:2
+ description ** ZarinShahr - 512 **
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0.1/2/3/3:3
+ description ** Chermahin - 512 **
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0.1/2/3/3:4
+ no ip address
+!
+interface Serial0/1/0.1/2/4/1:1
+ description ** KhomeyniShr - 512 **
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0.1/2/4/1:2
+ description ** Dorcheh - 512 **
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0.1/2/4/1:3
+ no ip address
+!
+interface Serial0/1/0.1/2/4/1:4
+ no ip address
+!
+interface Serial0/1/0.1/2/4/2:1
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0.1/2/4/2:2
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0.1/2/4/2:3
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0.1/2/4/2:4
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0.1/2/4/3:1
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0.1/2/4/3:2
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0.1/2/4/3:3
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0.1/2/4/3:4
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0.1/2/5/1:1
+ description ** ShahinShahr - 512 **
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0.1/2/5/1:2
+ description ** DowlatAbad - 512 **
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0.1/2/5/1:3
+ description ** Gaz - 512 **
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0.1/2/5/1:4
+ description ** Dastgerd - 448 **
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0.1/2/5/2:1
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0.1/2/5/2:2
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0.1/2/5/2:3
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0.1/2/5/2:4
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0.1/2/5/3:1
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0.1/2/5/3:2
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0.1/2/5/3:3
+ no ip address
+!
+interface Serial0/1/0.1/2/5/3:4
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0.1/2/6/1:1
+ description ** KuhPayeh - 512 **
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0.1/2/6/1:2
+ description ** Varzaneh - 512 **
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0.1/2/6/1:3
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0.1/2/6/1:4
+ description ** NasrAbadJrgh - 448 **
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0.1/2/6/2:1
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0.1/2/6/2:2
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0.1/2/6/2:3
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0.1/2/6/2:4
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0.1/2/6/3:1
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0.1/2/6/3:2
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0.1/2/6/3:3
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0.1/2/6/3:4
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0.1/2/7/1:1
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0.1/2/7/1:2
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0.1/2/7/1:3
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0.1/2/7/1:4
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0.1/2/7/2:1
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0.1/2/7/2:2
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0.1/2/7/2:3
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0.1/2/7/2:4
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0.1/2/7/3:1
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0.1/2/7/3:2
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0.1/2/7/3:3
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0.1/2/7/3:4
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0.1/3/1/1:1
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0.1/3/1/1:2
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0.1/3/1/1:3
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0.1/3/1/1:4
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0.1/3/1/2:1
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0.1/3/1/2:2
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0.1/3/1/2:3
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0.1/3/1/2:4
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0.1/3/1/3:1
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0.1/3/1/3:2
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0.1/3/1/3:3
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0.1/3/1/3:4
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0.1/3/2/1:1
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0.1/3/2/1:2
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0.1/3/2/1:3
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0.1/3/2/1:4
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0.1/3/2/2:1
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0.1/3/2/2:2
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0.1/3/2/2:3
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0.1/3/2/2:4
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0.1/3/2/3:1
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0.1/3/2/3:2
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0.1/3/2/3:3
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0.1/3/2/3:4
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0.1/3/3/1:1
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0.1/3/3/1:2
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0.1/3/3/1:3
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0.1/3/3/1:4
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0.1/3/3/2:1
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0.1/3/3/2:2
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0.1/3/3/2:3
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0.1/3/3/2:4
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0.1/3/3/3:1
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0.1/3/3/3:2
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0.1/3/3/3:3
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0.1/3/3/3:4
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0.1/3/4/1:1
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0.1/3/4/1:2
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0.1/3/4/1:3
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0.1/3/4/1:4
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0.1/3/4/2:1
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0.1/3/4/2:2
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0.1/3/4/2:3
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0.1/3/4/2:4
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0.1/3/4/3:1
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0.1/3/4/3:2
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0.1/3/4/3:3
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0.1/3/4/3:4
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0.1/3/5/1:1
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0.1/3/5/1:2
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0.1/3/5/1:3
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0.1/3/5/1:4
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0.1/3/5/2:1
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0.1/3/5/2:2
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0.1/3/5/2:3
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0.1/3/5/2:4
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0.1/3/5/3:1
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0.1/3/5/3:2
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0.1/3/5/3:3
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0.1/3/5/3:4
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0.1/3/6/1:1
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0.1/3/6/1:2
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0.1/3/6/1:3
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0.1/3/6/1:4
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0.1/3/6/2:1
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0.1/3/6/2:2
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0.1/3/6/2:3
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0.1/3/6/2:4
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0.1/3/6/3:1
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0.1/3/6/3:2
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0.1/3/6/3:3
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0.1/3/6/3:4
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0.1/3/7/1:1
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0.1/3/7/1:2
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0.1/3/7/1:3
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0.1/3/7/1:4
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/2/0:0
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/2/0:1
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/2/0:2
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/2/0:3
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/2/0:4
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/2/0:5
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/2/0:6
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/2/0:7
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/2/0:8
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/2/0:9
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/2/0:10
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/2/0:11
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/2/0:12
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/2/0:13
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/2/0:14
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+!
+interface Serial0/2/0:15
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/2/0:16
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+!
+interface Serial0/2/0:17
+ bandwidth 64
+ ip unnumbered Loopback1
+ encapsulation ppp
+ load-interval 30
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/2/0:18
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/2/0:19
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+!
+interface Serial0/2/0:20
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/2/0:21
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/2/0:22
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/2/0:23
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/2/0:24
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/2/0:25
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/2/0:26
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/2/0:27
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/2/0:28
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/2/0:29
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/2/0:30
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/2/1:0
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/2/1:1
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/2/1:2
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/2/1:3
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/2/1:4
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/2/1:5
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/2/1:6
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/2/1:7
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/2/1:8
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/2/1:9
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/2/1:10
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/2/1:11
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+!
+interface Serial0/2/1:12
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+!
+interface Serial0/2/1:13
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+!
+interface Serial0/2/1:14
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/2/1:15
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/2/1:16
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/2/1:17
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+!
+interface Serial0/2/1:18
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/2/1:19
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/2/1:20
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/2/1:21
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/2/1:22
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/2/1:23
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/2/1:24
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/2/1:25
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/2/1:26
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/2/1:27
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/2/1:28
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/2/1:29
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/2/1:30
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/2/2:0
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/2/2:1
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/2/2:2
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/2/2:3
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/2/2:4
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/2/2:5
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/2/2:6
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/2/2:7
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/2/2:8
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/2/2:9
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/2/2:10
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/2/2:11
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/2/2:12
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/2/2:13
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/2/2:14
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/2/2:15
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/2/2:16
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/2/2:17
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/2/2:18
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/2/2:19
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/2/2:20
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/2/2:21
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/2/2:22
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/2/2:23
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/2/2:24
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/2/2:25
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/2/2:26
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/2/2:27
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/2/2:28
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/2/2:29
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/2/2:30
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/2/3:0
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+!
+interface Serial0/2/3:1
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/2/3:2
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/2/3:3
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/2/3:4
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/2/3:5
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/2/3:6
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/2/3:7
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/2/3:8
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/2/3:9
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/2/3:10
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/2/3:11
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/2/3:12
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/2/3:13
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/2/3:14
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/2/3:15
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/2/3:16
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/2/3:17
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/2/3:18
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/2/3:19
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/2/3:20
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/2/3:21
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/2/3:22
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/2/3:23
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/2/3:24
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/2/3:25
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/2/3:26
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/2/3:27
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/2/3:28
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/2/3:29
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/2/3:30
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/2/4:0
+ description ***ZIRSAKHT***
+ bandwidth 6000
+ no ip address
+ encapsulation ppp
+ ppp multilink
+ ppp multilink group 10
+!
+interface Serial0/2/5:0
+ description ***ZIRSAKHT***
+ bandwidth 6000
+ no ip address
+ encapsulation ppp
+ ppp multilink
+ ppp multilink group 10
+!
+interface Serial0/2/6:0
+ description ***ZIRSAKHT***
+ bandwidth 6000
+ no ip address
+ encapsulation ppp
+ ppp multilink
+ ppp multilink group 10
+!
+interface Serial0/2/7:0
+ description ** ATM-TMJahad **
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+!
+interface Serial0/2/7:1
+ description ** ATM-SheykhSaquq-Smrm **
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/2/7:2
+ description ** ATM-Dampezeshki **
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/2/7:3
+ description ** ATM-Farmandehi - 512 **
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/2/7:10
+ description ** ATM-Ostandari **
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/2/7:12
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/2/7:13
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/2/7:14
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/2/7:15
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/2/7:16
+ description ** ATM-BeheshtiArd **
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/2/7:17
+ description ** ATM-Havaniroz **
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/2/7:18
+ description ** ATM-Manazel **
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/2/7:19
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/2/7:20
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/2/7:21
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/2/7:22
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/2/7:23
+ description ** ATM-Khansaar **
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/2/7:24
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/2/7:29
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface Serial0/2/7:30
+ description ** ATM-ManabeT **
+ ip unnumbered Loopback1
+ encapsulation ppp
+ cdp enable
+ service-policy output QOS-MEHR
+!
+interface GigabitEthernet0/3/0
+ no ip address
+ negotiation auto
+!
+interface GigabitEthernet0/3/1
+ no ip address
+ negotiation auto
+!
+interface GigabitEthernet0/3/2
+ no ip address
+ negotiation auto
+!
+interface GigabitEthernet0/3/3
+ no ip address
+ negotiation auto
+!
+interface GigabitEthernet0/3/4
+ no ip address
+ negotiation auto
+!
+interface GigabitEthernet0
+ vrf forwarding Mgmt-intf
+ no ip address
+ negotiation auto
+ cdp enable
+!
+router ospf 1
+ router-id 10.10.254.1
+ ispf
+ area 10 range 100.100.100.0 255.255.255.0 not-advertise
+ area 10 filter-list prefix OSPF-FILTER in
+ redistribute ospf 2 subnets route-map OSPF2-to-OSPF1
+ network 10.0.250.9 0.0.0.0 area 0
+ network 10.10.0.1 0.0.0.0 area 10
+ network 10.10.0.3 0.0.0.0 area 10
+ network 10.10.253.1 0.0.0.0 area 10
+ network 10.10.254.1 0.0.0.0 area 10
+ network 10.255.50.1 0.0.0.0 area 0
+ network 10.255.240.0 0.0.0.255 area 0
+ network 10.255.241.0 0.0.0.255 area 0
+ network 100.100.100.0 0.0.0.255 area 10
+ distribute-list OSPF-PERMIT in
+!
+router ospf 2
+ router-id 10.156.10.1
+ redistribute connected subnets route-map Connected-to-OSPF2
+ redistribute ospf 1 subnets route-map OSPF1-to-OSPF2
+ passive-interface default
+ no passive-interface Tunnel156
+ network 10.156.100.109 0.0.0.0 area 10
+ network 10.156.100.0 0.0.0.255 area 23
+ distribute-list OSPF2-PERMIT in
+ distance 120
+!
+router ospf 200
+ router-id 10.210.10.1
+ network 10.200.2.113 0.0.0.0 area 10
+ network 10.201.2.113 0.0.0.0 area 10
+ network 10.210.10.1 0.0.0.0 area 10
+ distribute-list NewINTACL in
+!
+ip nat inside source static 10.10.1.6 interface GigabitEthernet0/0/0
+ip nat inside source list intnat interface Loopback2 overload
+ip forward-protocol nd
+!
+no ip http server
+no ip http secure-server
+ip tftp source-interface GigabitEthernet0/0/0
+ip route 0.0.0.0 0.0.0.0 10.10.1.1
+ip route 10.0.34.95 255.255.255.255 Tunnel156 name lib.bki.ir
+ip route 10.0.34.96 255.255.255.255 Tunnel156 name parslib
+ip route 10.0.34.112 255.255.255.255 Tunnel156 name Portal
+ip route 10.0.54.112 255.255.255.255 Tunnel156 name AV-GILANET
+ip route 10.0.56.52 255.255.255.255 Tunnel156 name AV-GILANET
+ip route 10.0.56.53 255.255.255.255 Tunnel156 name AV-GILANET
+ip route 10.0.151.0 255.255.255.0 10.139.192.13
+ip route 10.7.95.26 255.255.255.255 10.139.192.13 name cs.sabka.ir
+ip route 10.10.251.4 255.255.255.252 10.10.251.2 name ATM-JKeshavarziSemirom
+ip route 10.10.251.8 255.255.255.252 10.10.251.2 name Pegah-Golpaygan
+ip route 10.10.251.12 255.255.255.252 10.10.251.2 name NajafAbad
+ip route 10.10.251.14 255.255.255.255 10.10.100.12
+ip route 10.10.251.16 255.255.255.252 10.10.251.2 name NekuAbad
+ip route 10.10.251.24 255.255.255.252 10.10.251.2 name Vist
+ip route 10.10.251.28 255.255.255.252 10.10.251.2 name ATM-BazarGol-Esf
+ip route 10.10.251.32 255.255.255.252 10.10.251.2 name ATM-Jahad
+ip route 10.10.251.36 255.255.255.252 10.10.251.2 name ATM-QarzLHasane
+ip route 10.10.251.40 255.255.255.252 10.10.251.2 name Payaneh-Sharq
+ip route 10.10.251.44 255.255.255.252 10.10.251.2 name Ziar
+ip route 10.10.251.52 255.255.255.252 10.10.251.2 name Kafran
+ip route 10.10.251.56 255.255.255.252 10.10.251.2 name ATM-PompJandaq
+ip route 10.10.251.60 255.255.255.252 10.10.251.2 name Taad
+ip route 10.10.251.64 255.255.255.252 10.10.251.2 name Ashkavand
+ip route 10.10.251.68 255.255.255.252 10.10.251.2 name ATM-Vanak
+ip route 10.10.251.72 255.255.255.252 10.10.251.2 name Bideh
+ip route 10.10.251.76 255.255.255.252 10.10.251.2 name Dastja
+ip route 10.10.251.80 255.255.255.252 10.10.251.2 name VahdatAbad
+ip route 10.10.251.88 255.255.255.252 10.10.251.2 name PeykanJarquyeh
+ip route 10.10.251.92 255.255.255.252 10.10.251.2 name IslamAbad-Kuhpayeh
+ip route 10.10.251.100 255.255.255.252 10.10.251.2
+ip route 10.10.251.108 255.255.255.252 10.10.251.2 name ATM-Mojtama-AlMahdi
+ip route 10.10.251.112 255.255.255.252 10.10.251.2 name MehrGerd
+ip route 10.10.251.116 255.255.255.252 10.10.251.2 name Muqar
+ip route 10.10.251.120 255.255.255.252 10.10.251.2 name Eskandari
+ip route 10.10.251.124 255.255.255.252 10.10.251.2 name Chupanan
+ip route 10.10.251.128 255.255.255.252 10.10.251.2 name EsfarJan
+ip route 10.10.251.132 255.255.255.252 10.10.251.2 name Bustan
+ip route 10.10.251.156 255.255.255.252 10.10.251.2 name Mahyar
+ip route 10.10.251.160 255.255.255.252 10.10.251.2 name MeydanTarebarKashan
+ip route 10.10.251.164 255.255.255.252 10.10.251.2 name Bj-Yazdel
+ip route 10.10.251.168 255.255.255.252 10.10.251.2 name Jandan
+ip route 10.10.251.172 255.255.255.252 10.10.251.2 name RahmatAbad
+ip route 10.10.251.176 255.255.255.252 10.10.251.2 name Pudeh
+ip route 10.10.251.180 255.255.255.252 10.10.251.2 name Garmaseh
+ip route 10.10.251.184 255.255.255.252 10.10.251.2 name PegahIsfahan
+ip route 10.10.251.192 255.255.255.252 10.10.251.2 name Jandaq
+ip route 10.10.251.196 255.255.255.252 10.10.251.2 name ATM-KeshavarziUni
+ip route 10.10.251.200 255.255.255.252 10.10.251.2 name Rehnan
+ip route 10.10.251.204 255.255.255.252 10.10.251.2 name Gorgab
+ip route 10.10.251.208 255.255.255.252 10.10.251.2 name SefidShahr
+ip route 10.10.251.212 255.255.255.252 10.10.251.2 name Talkhuncheh
+ip route 10.10.251.216 255.255.255.252 10.10.251.2 name ATM-Sarafi-Afshar
+ip route 10.10.251.220 255.255.255.252 10.10.251.2 name Meymeh
+ip route 10.30.42.0 255.255.255.0 10.139.192.13 name SSL-VPN-INTRANET
+ip route 10.30.176.184 255.255.255.248 10.139.192.13 name SandoqToseeMelli-Route
+ip route 10.134.44.2 255.255.255.255 10.134.64.1 name MPLS-ShahinShahr
+ip route 10.134.45.0 255.255.255.252 10.134.64.1 15 name MPLS-TB
+ip route 10.138.0.38 255.255.255.255 10.139.192.13 name INT-Charmahin
+ip route 10.138.1.42 255.255.255.255 10.139.192.13 name INT-NekuAbad
+ip route 10.138.1.46 255.255.255.255 10.139.192.13 name INT-ZibaShahr
+ip route 10.138.1.66 255.255.255.255 10.139.192.13 name INT-Dizicheh
+ip route 10.138.2.18 255.255.255.255 10.139.192.13 name INT-Karkavand
+ip route 10.138.2.42 255.255.255.255 10.139.192.13 name INT-ShahrakSan
+ip route 10.138.2.46 255.255.255.255 10.139.192.13 name INT-Talkhuncheh
+ip route 10.138.4.10 255.255.255.255 10.139.192.13 name INT-BaqBahadoran
+ip route 10.138.5.10 255.255.255.255 10.139.192.13 name INT-ImanShahr
+ip route 10.138.6.34 255.255.255.255 10.139.192.13 name INT-Qahdarijan
+ip route 10.138.7.10 255.255.255.255 10.139.192.13 name INT-PirBakran
+ip route 10.138.7.14 255.255.255.255 10.139.192.13 name INT-Taad
+ip route 10.138.80.186 255.255.255.255 10.139.192.13 name INT-Garmaseh
+ip route 10.138.96.10 255.255.255.255 10.139.192.13 name INT-Semirom
+ip route 10.138.96.98 255.255.255.255 10.139.192.13 name INT-ImamShahrza
+ip route 10.138.97.82 255.255.255.255 10.139.192.13 name INT-Shahreza
+ip route 10.138.98.10 255.255.255.255 10.139.192.13 name INT-Bideh
+ip route 10.138.98.98 255.255.255.255 10.139.192.13 name INT-Hana
+ip route 10.138.99.10 255.255.255.255 10.139.192.13 name INT-Dahaqan
+ip route 10.138.99.90 255.255.255.255 10.139.192.13 name INT-Pudeh
+ip route 10.138.99.162 255.255.255.255 10.139.192.13 name INT-EsfarJan
+ip route 10.138.122.194 255.255.255.255 10.139.192.13 name INT-Mahyar
+ip route 10.138.126.73 255.255.255.255 10.139.192.13 name INT-MehrGerd
+ip route 10.138.128.242 255.255.255.255 10.139.192.13 name INT-NajafAbad
+ip route 10.138.132.10 255.255.255.255 10.139.192.13 name INT-Tiran
+ip route 10.138.133.10 255.255.255.255 10.139.192.13 name INT-Dehaq
+ip route 10.138.134.10 255.255.255.255 10.139.192.13 name INT-GolDasht
+ip route 10.138.160.2 255.255.255.255 10.139.192.13 name INT-KhanSaar
+ip route 10.138.160.14 255.255.255.255 10.139.192.13 name INT-FreydunShahr
+ip route 10.138.160.34 255.255.255.255 10.139.192.13 name INT-Chadegan
+ip route 10.138.162.14 255.255.255.255 10.139.192.13 name INT-RahmatAbad
+ip route 10.138.162.50 255.255.255.255 10.139.192.13 name INT-Gugad
+ip route 10.138.162.54 255.255.255.255 10.139.192.13 name INT-GolShahr
+ip route 10.138.167.10 255.255.255.255 10.139.192.13 name INT-Afus
+ip route 10.138.167.38 255.255.255.255 10.139.192.13 name INT-Damaneh
+ip route 10.138.200.74 255.255.255.255 10.139.192.13 name INT-SaeidAbad
+ip route 10.138.200.122 255.255.255.255 10.139.192.13 name INT-Rozveh
+ip route 10.138.206.69 255.255.255.255 10.139.192.13 name INT-VahdatAbad
+ip route 10.138.206.70 255.255.255.255 10.139.192.13 name INT-Vist
+ip route 10.139.0.10 255.255.255.255 10.139.192.13 name INT-DowlatAbad
+ip route 10.139.0.14 255.255.255.255 10.139.192.13 name INT-ShahinShahr
+ip route 10.139.0.110 255.255.255.255 10.139.192.13 name INT-DastGerd
+ip route 10.139.0.130 255.255.255.255 10.139.192.13 name INT-Gaz
+ip route 10.139.5.158 255.255.255.255 10.139.192.13 name INT-Gorgab
+ip route 10.139.9.46 255.255.255.255 10.139.192.13 name INT-Meymeh
+ip route 10.139.35.10 255.255.255.255 10.139.192.13 name INT-Dorcheh
+ip route 10.139.64.10 255.255.255.255 10.139.192.13 name INT-SefidShahr
+ip route 10.139.64.14 255.255.255.255 10.139.192.13 name INT-ValiAsrAran
+ip route 10.139.64.38 255.255.255.255 10.139.192.13 name INT-Natanz
+ip route 10.139.64.58 255.255.255.255 10.139.192.13 name INT-BaadRud
+ip route 10.139.64.74 255.255.255.255 10.139.192.13 name INT-Aran
+ip route 10.139.64.78 255.255.255.255 10.139.192.13 name INT-Zavareh
+ip route 10.139.64.122 255.255.255.255 10.139.192.13 name INT-QamSar
+ip route 10.139.64.126 255.255.255.255 10.139.192.13 name INT-TareBarKshn
+ip route 10.139.65.34 255.255.255.255 10.139.192.13 name INT-AbuZeydAbad
+ip route 10.139.66.10 255.255.255.255 10.139.192.13 name INT-Mahabad
+ip route 10.139.69.10 255.255.255.255 10.139.192.13 name INT-Kashan
+ip route 10.139.70.122 255.255.255.255 10.139.192.13 name INT-KhaledAbad
+ip route 10.139.71.10 255.255.255.255 10.139.192.13 name INT-Raavand
+ip route 10.139.113.50 255.255.255.255 10.139.192.13 name INT-Muqar
+ip route 10.139.124.53 255.255.255.255 10.139.192.13 name INT-Yazdel
+ip route 10.139.160.38 255.255.255.255 10.139.192.13 name INT-Buein
+ip route 10.139.192.2 255.255.255.255 10.139.192.13
+ip route 10.139.192.10 255.255.255.255 10.139.192.13 name INT-Esfahan
+ip route 10.139.192.38 255.255.255.255 10.139.192.13 name INT-Manuchehri
+ip route 10.139.192.86 255.255.255.255 10.139.192.13 name INT-ShamsAbadi
+ip route 10.139.194.14 255.255.255.255 10.139.192.13 name INT-BazarCheNo
+ip route 10.139.194.54 255.255.255.255 10.139.192.13 name INT-4Baq
+ip route 10.139.197.118 255.255.255.255 10.139.192.13 name INT-ImamAli
+ip route 10.140.32.22 255.255.255.255 10.139.192.13 name INT-SheykhSaduq
+ip route 10.140.34.10 255.255.255.255 10.139.192.13 name INT-BustanSadi
+ip route 10.140.35.10 255.255.255.255 10.139.192.13 name INT-Ashkavand
+ip route 10.140.35.38 255.255.255.255 10.139.192.13 name INT-Ziyar
+ip route 10.140.39.10 255.255.255.255 10.139.192.13 name INT-AmirHamze
+ip route 10.140.128.10 255.255.255.255 10.139.192.13 name INT-Jomhuri
+ip route 10.140.128.14 255.255.255.255 10.139.192.13 name INT-Shohada
+ip route 10.140.244.10 255.255.255.255 10.139.192.13 name INT-DastJa
+ip route 10.140.252.4 255.255.255.255 10.139.192.13 name INT-Eskandari
+ip route 10.140.252.46 255.255.255.255 10.139.192.13 name INT-PeykanJrqyh
+ip route 10.140.252.201 255.255.255.255 10.139.192.13 name INT-IslamAbadKhpyh
+ip route 10.141.0.42 255.255.255.255 10.139.192.13 name INT-Varzaneh
+ip route 10.141.0.46 255.255.255.255 10.139.192.13 name INT-Khur
+ip route 10.141.0.86 255.255.255.255 10.139.192.13 name INT-TareBar
+ip route 10.141.0.162 255.255.255.255 10.139.192.13 name INT-AhmadAbad
+ip route 10.141.1.10 255.255.255.255 10.139.192.13 name INT-Zeynabiyeh
+ip route 10.141.2.10 255.255.255.255 10.139.192.13 name INT-Abar
+ip route 10.141.2.14 255.255.255.255 10.139.192.13 name INT-Khurasgan
+ip route 10.141.80.62 255.255.255.255 10.139.192.13 name INT-Jarquyeh
+ip route 10.141.80.98 255.255.255.255 10.139.192.13 name INT-ImamZdHarand
+ip route 10.141.80.102 255.255.255.255 10.139.192.13 name INT-Ejeyeh
+ip route 10.141.88.90 255.255.255.255 10.139.192.13 name INT-Jandaq
+ip route 10.141.130.10 255.255.255.255 10.139.192.13 name INT-Pegah
+ip route 10.141.131.10 255.255.255.255 10.139.192.13 name INT-AmirKabir
+ip route 10.141.133.10 255.255.255.255 10.139.192.13 name INT-Rahnan
+ip route 10.141.192.26 255.255.255.255 10.139.192.13 name INT-1000Jarib
+ip route 10.141.192.82 255.255.255.255 10.139.192.13 name INT-Jahad
+ip route 10.142.17.82 255.255.255.255 10.139.192.13 name INT-Ardestan
+ip route 10.142.70.242 255.255.255.255 10.139.192.13 name INT-ZarinShahr
+ip route 10.142.85.122 255.255.255.255 10.139.192.13 name INT-Mobarakeh
+ip route 10.142.96.106 255.255.255.255 10.139.192.13 name INT-Falavarjan
+ip route 10.142.134.74 255.255.255.255 10.139.192.13 name INT-Faridan
+ip route 10.142.197.174 255.255.255.255 10.139.192.13 name INT-Golpaygan
+ip route 10.143.48.38 255.255.255.255 10.139.192.13 name INT-KhomeyniShahr
+ip route 10.143.89.122 255.255.255.255 10.139.192.13 name INT-PayanehSharq
+ip route 10.143.90.74 255.255.255.255 10.139.192.13 name INT-HasanAbadJrqy
+ip route 10.143.90.82 255.255.255.255 10.139.192.13 name INT-Kafran
+ip route 10.143.90.90 255.255.255.255 10.139.192.13 name INT-NasrAbad
+ip route 10.143.91.54 255.255.255.255 10.139.192.13 name INT-Jandaan
+ip route 10.143.112.242 255.255.255.255 10.139.192.13 name INT-KuhPayeh
+ip route 10.143.126.170 255.255.255.255 10.139.192.13 name INT-Naein
+ip route 10.143.170.162 255.255.255.255 10.139.192.13 name INT-Bustan
+ip route 10.241.0.0 255.255.255.252 10.134.64.1 name MPLS-HQ
+ip route 10.244.0.0 255.255.255.252 10.134.64.1 name MPLS-HQ-Tohid
+ip route 91.240.180.40 255.255.255.255 10.139.192.13 name SP.SEP.IR
+ip route 91.240.180.133 255.255.255.255 10.139.192.13 name SSPM.SEP.IR
+ip route 91.240.181.1 255.255.255.255 10.139.192.13 name SP.SEP.IR-GW
+ip tacacs source-interface GigabitEthernet0/0/0
+ip ssh authentication-retries 2
+ip ssh port 2002 rotary 1
+ip ssh version 2
+!
+ip access-list standard Branch_Subnets
+ permit 10.10.0.0 0.0.255.255
+ip access-list standard Connected-to-OSPF2
+ permit 10.10.0.0 0.0.7.255
+ permit 10.10.254.0 0.0.0.255
+ip access-list standard NewINTACL
+ deny   10.0.76.91
+ deny   10.0.68.223
+ deny   10.0.68.150
+ deny   10.0.68.187
+ permit any
+ip access-list standard OSPF-PERMIT
+ remark -----------------------------
+ permit 10.10.0.0 0.0.255.255
+ permit 192.168.65.0 0.0.0.255
+ remark -----------------------------
+ permit 10.60.3.0 0.0.0.255
+ remark -----------------------------
+ permit 10.50.0.0 0.0.255.255
+ permit 10.0.0.0 0.0.255.255
+ permit 192.168.15.0 0.0.0.255
+ permit 10.40.11.0 0.0.0.255
+ permit 192.168.72.0 0.0.0.255
+ permit 10.60.66.0 0.0.0.255
+ permit 192.168.112.0 0.0.0.255
+ip access-list standard OSPF1-to-OSPF2
+ permit 10.10.0.0 0.0.255.255
+ip access-list standard OSPF2-PERMIT
+ permit 192.168.65.0 0.0.0.255
+ permit 192.168.72.0 0.0.0.255
+ permit 10.0.0.0 0.0.255.255
+ip access-list standard OSPF2-to-OSPF1
+ permit 10.0.0.0
+ permit 192.168.65.0 0.0.0.255
+ permit 192.168.72.0 0.0.0.255
+ip access-list standard SNMP-READ
+ permit 10.0.50.0 0.0.1.255
+ip access-list standard SNMP-WRITE
+ permit 10.0.51.49
+ permit 10.0.51.48
+ permit 10.0.51.50
+ip access-list standard StaticRedist-OSPF2-VideoConf
+ permit 10.10.1.230 0.0.0.1
+ip access-list standard TELNET-ACCESS
+ remark -----------------------------
+ permit 10.10.0.0
+ permit 10.10.0.2
+ permit 10.0.51.25
+ permit 10.30.42.2
+ permit 10.255.241.80
+ permit 10.255.240.80
+ permit 10.134.45.2
+ permit 10.250.46.1
+ permit 10.0.201.36
+ permit 10.0.250.8
+ permit 10.241.0.2
+ permit 10.0.201.62
+ permit 10.10.253.2
+ permit 10.0.50.64 0.0.0.63
+!
+ip access-list extended ACL-ISF
+ permit ip 10.10.1.0 0.0.0.255 10.0.151.0 0.0.0.255
+ip access-list extended BKI-INT-Tunnel-ACL-Faridan
+ permit gre host 10.139.192.14 host 10.142.134.74
+ip access-list extended BKI-INT-Tunnel-ACL-Markazi
+ permit gre host 10.139.192.14 host 10.139.192.10
+ip access-list extended CAP
+ permit ip any host 10.10.1.71
+ permit ip host 10.10.1.71 any
+ip access-list extended FTPANY
+ permit ip any any
+ip access-list extended FTPSrv-1000Jarib
+ permit ip host 10.10.1.71 10.10.8.0 0.0.0.255
+ip access-list extended FTPSrv-4Baq
+ permit ip host 10.10.1.71 10.10.15.0 0.0.0.255
+ip access-list extended FTPSrv-Abar
+ permit ip host 10.10.1.71 10.10.70.0 0.0.0.255
+ip access-list extended FTPSrv-AbuZeydAbad
+ permit ip host 10.10.1.71 10.10.113.0 0.0.0.255
+ip access-list extended FTPSrv-Afus
+ permit ip host 10.10.1.71 10.10.87.0 0.0.0.255
+ip access-list extended FTPSrv-AhmadAbad
+ permit ip host 10.10.1.71 10.10.147.0 0.0.0.255
+ip access-list extended FTPSrv-AmirHamze
+ permit ip host 10.10.1.71 10.10.23.0 0.0.0.255
+ip access-list extended FTPSrv-AmirKabir
+ permit ip host 10.10.1.71 10.10.67.0 0.0.0.255
+ip access-list extended FTPSrv-Aran
+ permit ip host 10.10.1.71 10.10.51.0 0.0.0.255
+ip access-list extended FTPSrv-Ardestan
+ permit ip host 10.10.1.71 10.10.14.0 0.0.0.255
+ip access-list extended FTPSrv-Ashkavand
+ permit ip host 10.10.1.71 10.10.145.0 0.0.0.255
+ip access-list extended FTPSrv-BaadRud
+ permit ip host 10.10.1.71 10.10.49.0 0.0.0.255
+ip access-list extended FTPSrv-BaqBahadoran
+ permit ip host 10.10.1.71 10.10.92.0 0.0.0.255
+ip access-list extended FTPSrv-BazarCheNo
+ permit ip host 10.10.1.71 10.10.21.0 0.0.0.255
+ip access-list extended FTPSrv-Bideh
+ permit ip host 10.10.1.71 10.10.65.0 0.0.0.255
+ip access-list extended FTPSrv-Buein
+ permit ip host 10.10.1.71 10.10.47.0 0.0.0.255
+ip access-list extended FTPSrv-Bustan
+ permit ip host 10.10.1.71 10.10.31.0 0.0.0.255
+ip access-list extended FTPSrv-BustanSadi
+ permit ip host 10.10.1.71 10.10.17.0 0.0.0.255
+ip access-list extended FTPSrv-Chadegan
+ permit ip host 10.10.1.71 10.10.50.0 0.0.0.255
+ip access-list extended FTPSrv-Charmahin
+ permit ip host 10.10.1.71 10.10.75.0 0.0.0.255
+ip access-list extended FTPSrv-Dahaqan
+ permit ip host 10.10.1.71 10.10.44.0 0.0.0.255
+ip access-list extended FTPSrv-Damaneh
+ permit ip host 10.10.1.71 10.10.105.0 0.0.0.255
+ip access-list extended FTPSrv-DastGerd
+ permit ip host 10.10.1.71 10.10.137.0 0.0.0.255
+ip access-list extended FTPSrv-DastJa
+ permit ip host 10.10.1.71 10.10.83.0 0.0.0.255
+ip access-list extended FTPSrv-Dehaq
+ permit ip host 10.10.1.71 10.10.129.0 0.0.0.255
+ip access-list extended FTPSrv-Dizicheh
+ permit ip host 10.10.1.71 10.10.123.0 0.0.0.255
+ip access-list extended FTPSrv-Dorcheh
+ permit ip host 10.10.1.71 10.10.90.0 0.0.0.255
+ip access-list extended FTPSrv-DowlatAbad
+ permit ip host 10.10.1.71 10.10.55.0 0.0.0.255
+ip access-list extended FTPSrv-Ejeyeh
+ permit ip host 10.10.1.71 10.10.115.0 0.0.0.255
+ip access-list extended FTPSrv-Esfahan
+ permit ip host 10.10.1.71 10.10.16.0 0.0.0.255
+ip access-list extended FTPSrv-EsfarJan
+ permit ip host 10.10.1.71 10.10.99.0 0.0.0.255
+ip access-list extended FTPSrv-Eskandari
+ permit ip host 10.10.1.71 10.10.28.0 0.0.0.255
+ip access-list extended FTPSrv-Falavarjan
+ permit ip host 10.10.1.71 10.10.30.0 0.0.0.255
+ip access-list extended FTPSrv-Faridan
+ permit ip host 10.10.1.71 10.10.27.0 0.0.0.255
+ip access-list extended FTPSrv-FreydunShahr
+ permit ip host 10.10.1.71 10.10.41.0 0.0.0.255
+ip access-list extended FTPSrv-Garmaseh
+ permit ip host 10.10.1.71 10.10.112.0 0.0.0.255
+ip access-list extended FTPSrv-Gaz
+ permit ip host 10.10.1.71 10.10.138.0 0.0.0.255
+ip access-list extended FTPSrv-GolDasht
+ permit ip host 10.10.1.71 10.10.130.0 0.0.0.255
+ip access-list extended FTPSrv-GolShahr
+ permit ip host 10.10.1.71 10.10.119.0 0.0.0.255
+ip access-list extended FTPSrv-Golpaygan
+ permit ip host 10.10.1.71 10.10.32.0 0.0.0.255
+ip access-list extended FTPSrv-Gorgab
+ permit ip host 10.10.1.71 10.10.136.0 0.0.0.255
+ip access-list extended FTPSrv-Gugad
+ permit ip host 10.10.1.71 10.10.120.0 0.0.0.255
+ip access-list extended FTPSrv-Hana
+ permit ip host 10.10.1.71 10.10.95.0 0.0.0.255
+ip access-list extended FTPSrv-HasanAbadJrqy
+ permit ip host 10.10.1.71 10.10.141.0 0.0.0.255
+ip access-list extended FTPSrv-ImamAli
+ permit ip host 10.10.1.71 10.10.69.0 0.0.0.255
+ip access-list extended FTPSrv-ImamShahrza
+ permit ip host 10.10.1.71 10.10.103.0 0.0.0.255
+ip access-list extended FTPSrv-ImamZdHarand
+ permit ip host 10.10.1.71 10.10.117.0 0.0.0.255
+ip access-list extended FTPSrv-ImanShahr
+ permit ip host 10.10.1.71 10.10.107.0 0.0.0.255
+ip access-list extended FTPSrv-IslamAbadKhpyh
+ permit ip host 10.10.1.71 10.10.116.0 0.0.0.255
+ip access-list extended FTPSrv-Jahad
+ permit ip host 10.10.1.71 10.10.148.0 0.0.0.255
+ip access-list extended FTPSrv-Jandaan
+ permit ip host 10.10.1.71 10.10.143.0 0.0.0.255
+ip access-list extended FTPSrv-Jandaq
+ permit ip host 10.10.1.71 10.10.139.0 0.0.0.255
+ip access-list extended FTPSrv-Jarquyeh
+ permit ip host 10.10.1.71 10.10.56.0 0.0.0.255
+ip access-list extended FTPSrv-Jomhuri
+ permit ip host 10.10.1.71 10.10.12.0 0.0.0.255
+ip access-list extended FTPSrv-Kafran
+ permit ip host 10.10.1.71 10.10.144.0 0.0.0.255
+ip access-list extended FTPSrv-Karkavand
+ permit ip host 10.10.1.71 10.10.82.0 0.0.0.255
+ip access-list extended FTPSrv-Kashan
+ permit ip host 10.10.1.71 10.10.71.0 0.0.0.255
+ip access-list extended FTPSrv-KhaledAbad
+ permit ip host 10.10.1.71 10.10.132.0 0.0.0.255
+ip access-list extended FTPSrv-KhanSaar
+ permit ip host 10.10.1.71 10.10.24.0 0.0.0.255
+ip access-list extended FTPSrv-KhomeyniShahr
+ permit ip host 10.10.1.71 10.10.38.0 0.0.0.255
+ip access-list extended FTPSrv-Khur
+ permit ip host 10.10.1.71 10.10.58.0 0.0.0.255
+ip access-list extended FTPSrv-Khurasgan
+ permit ip host 10.10.1.71 10.10.77.0 0.0.0.255
+ip access-list extended FTPSrv-KuhPayeh
+ permit ip host 10.10.1.71 10.10.46.0 0.0.0.255
+ip access-list extended FTPSrv-Mahabad
+ permit ip host 10.10.1.71 10.10.86.0 0.0.0.255
+ip access-list extended FTPSrv-Mahyar
+ permit ip host 10.10.1.71 10.10.153.0 0.0.0.255
+ip access-list extended FTPSrv-Manuchehri
+ permit ip host 10.10.1.71 10.10.48.0 0.0.0.255
+ip access-list extended FTPSrv-MehrGerd
+ permit ip host 10.10.1.71 10.10.61.0 0.0.0.255
+ip access-list extended FTPSrv-Meymeh
+ permit ip host 10.10.1.71 10.10.39.0 0.0.0.255
+ip access-list extended FTPSrv-Mobarakeh
+ permit ip host 10.10.1.71 10.10.45.0 0.0.0.255
+ip access-list extended FTPSrv-Muqar
+ permit ip host 10.10.1.71 10.10.85.0 0.0.0.255
+ip access-list extended FTPSrv-Naein
+ permit ip host 10.10.1.71 10.10.33.0 0.0.0.255
+ip access-list extended FTPSrv-NajafAbad
+ permit ip host 10.10.1.71 10.10.34.0 0.0.0.255
+ip access-list extended FTPSrv-NasrAbad
+ permit ip host 10.10.1.71 10.10.142.0 0.0.0.255
+ip access-list extended FTPSrv-Natanz
+ permit ip host 10.10.1.71 10.10.37.0 0.0.0.255
+ip access-list extended FTPSrv-NekuAbad
+ permit ip host 10.10.1.71 10.10.126.0 0.0.0.255
+ip access-list extended FTPSrv-PayanehSharq
+ permit ip host 10.10.1.71 10.10.76.0 0.0.0.255
+ip access-list extended FTPSrv-Pegah
+ permit ip host 10.10.1.71 10.10.63.0 0.0.0.255
+ip access-list extended FTPSrv-PeykanJrqyh
+ permit ip host 10.10.1.71 10.10.57.0 0.0.0.255
+ip access-list extended FTPSrv-PirBakran
+ permit ip host 10.10.1.71 10.10.80.0 0.0.0.255
+ip access-list extended FTPSrv-Pudeh
+ permit ip host 10.10.1.71 10.10.91.0 0.0.0.255
+ip access-list extended FTPSrv-Qahdarijan
+ permit ip host 10.10.1.71 10.10.108.0 0.0.0.255
+ip access-list extended FTPSrv-QamSar
+ permit ip host 10.10.1.71 10.10.73.0 0.0.0.255
+ip access-list extended FTPSrv-Raavand
+ permit ip host 10.10.1.71 10.10.114.0 0.0.0.255
+ip access-list extended FTPSrv-RahmatAbad
+ permit ip host 10.10.1.71 10.10.89.0 0.0.0.255
+ip access-list extended FTPSrv-Rahnan
+ permit ip host 10.10.1.71 10.10.84.0 0.0.0.255
+ip access-list extended FTPSrv-Rozveh
+ permit ip host 10.10.1.71 10.10.133.0 0.0.0.255
+ip access-list extended FTPSrv-SaeidAbad
+ permit ip host 10.10.1.71 10.10.118.0 0.0.0.255
+ip access-list extended FTPSrv-SefidShahr
+ permit ip host 10.10.1.71 10.10.52.0 0.0.0.255
+ip access-list extended FTPSrv-Semirom
+ permit ip host 10.10.1.71 10.10.40.0 0.0.0.255
+ip access-list extended FTPSrv-ShahinShahr
+ permit ip host 10.10.1.71 10.10.68.0 0.0.0.255
+ip access-list extended FTPSrv-ShahrakSan
+ permit ip host 10.10.1.71 10.10.125.0 0.0.0.255
+ip access-list extended FTPSrv-Shahreza
+ permit ip host 10.10.1.71 10.10.26.0 0.0.0.255
+ip access-list extended FTPSrv-ShamsAbadi
+ permit ip host 10.10.1.71 10.10.149.0 0.0.0.255
+ip access-list extended FTPSrv-SheykhSaduq
+ permit ip host 10.10.1.71 10.10.11.0 0.0.0.255
+ip access-list extended FTPSrv-Shohada
+ permit ip host 10.10.1.71 10.10.13.0 0.0.0.255
+ip access-list extended FTPSrv-Taad
+ permit ip host 10.10.1.71 10.10.109.0 0.0.0.255
+ip access-list extended FTPSrv-Talkhuncheh
+ permit ip host 10.10.1.71 10.10.122.0 0.0.0.255
+ip access-list extended FTPSrv-TareBar
+ permit ip host 10.10.1.71 10.10.64.0 0.0.0.255
+ip access-list extended FTPSrv-TareBarKshn
+ permit ip host 10.10.1.71 10.10.72.0 0.0.0.255
+ip access-list extended FTPSrv-Tiran
+ permit ip host 10.10.1.71 10.10.62.0 0.0.0.255
+ip access-list extended FTPSrv-VahdatAbad
+ permit ip host 10.10.1.71 10.10.42.0 0.0.0.255
+ip access-list extended FTPSrv-ValiAsrAran
+ permit ip host 10.10.1.71 10.10.53.0 0.0.0.255
+ip access-list extended FTPSrv-Varzaneh
+ permit ip host 10.10.1.71 10.10.60.0 0.0.0.255
+ip access-list extended FTPSrv-Vist
+ permit ip host 10.10.1.71 10.10.25.0 0.0.0.255
+ip access-list extended FTPSrv-Yazdel
+ permit ip host 10.10.1.71 10.10.134.0 0.0.0.255
+ip access-list extended FTPSrv-ZarinShahr
+ permit ip host 10.10.1.71 10.10.43.0 0.0.0.255
+ip access-list extended FTPSrv-Zavareh
+ permit ip host 10.10.1.71 10.10.59.0 0.0.0.255
+ip access-list extended FTPSrv-Zeynabiyeh
+ permit ip host 10.10.1.71 10.10.78.0 0.0.0.255
+ip access-list extended FTPSrv-ZibaShahr
+ permit ip host 10.10.1.71 10.10.124.0 0.0.0.255
+ip access-list extended FTPSrv-Ziyar
+ permit ip host 10.10.1.71 10.10.81.0 0.0.0.255
+ip access-list extended FTPSrvBranch
+ permit ip host 10.139.192.14 host 10.142.17.82
+ permit ip host 10.139.192.14 host 10.139.192.2
+ip access-list extended GILANET-ACL
+ permit gre host 10.250.46.52 host 10.250.46.1
+ip access-list extended HQ-ACCESS-IN
+ permit gre any any
+ permit ospf any any
+ permit ip 192.168.65.0 0.0.0.255 any
+ permit ip 10.0.0.0 0.255.255.255 any
+ permit ip 192.168.15.0 0.0.0.255 any
+ permit ip 192.168.72.0 0.0.0.255 any
+ permit ip 192.168.112.0 0.0.0.255 any
+ip access-list extended HQ-ACCESS-OUT
+ permit gre any any
+ permit eigrp any any
+ permit ip any 192.168.65.0 0.0.0.255
+ permit ip any 10.0.0.0 0.255.255.255
+ permit ip any 192.168.15.0 0.0.0.255
+ permit ip any 192.168.72.0 0.0.0.255
+ permit ip any 192.168.112.0 0.0.0.255
+ip access-list extended INTR1ACL
+ permit gre host 10.139.192.14 host 10.30.42.200
+ip access-list extended INTR2ACL
+ permit gre host 10.139.192.14 host 10.30.42.201
+ip access-list extended INTR@NET
+ permit gre any any
+ permit udp any any eq isakmp
+ permit esp any any
+ permit icmp any any
+ deny   udp any any eq tftp
+ deny   udp any any eq 135
+ deny   udp any any eq netbios-ns
+ deny   udp any any eq netbios-dgm
+ deny   udp any any eq netbios-ss
+ deny   udp any any eq snmp
+ deny   udp any any eq snmptrap
+ deny   udp any any eq 18999
+ deny   tcp any any eq msrpc
+ deny   tcp any any eq 139
+ deny   tcp any any eq 445
+ deny   tcp any any eq 593
+ deny   tcp any any eq 4444
+ deny   tcp any any eq 1433
+ deny   tcp any any eq 4786
+ permit ip 10.30.42.0 0.0.0.255 any
+ permit ip host 91.240.180.40 any
+ permit ip host 91.240.181.1 any
+ permit ip 10.30.176.184 0.0.0.7 any
+ permit ip host 91.240.180.133 any
+ permit ip host 10.142.17.70 any
+ permit ip host 10.7.95.26 any
+ip access-list extended PTMP-IN
+ permit gre any any
+ permit eigrp any any
+ permit ip 192.168.65.0 0.0.0.255 any
+ permit ip 10.0.0.0 0.255.255.255 any
+ permit ip 192.168.15.0 0.0.0.255 any
+ip access-list extended PTMP-OUT
+ permit gre any any
+ permit eigrp any any
+ permit ip any 192.168.65.0 0.0.0.255
+ permit ip any 10.0.0.0 0.255.255.255
+ deny   ip any 10.0.151.0 0.0.0.7
+ permit ip any 192.168.15.0 0.0.0.255
+ip access-list extended QOS-MEHR
+ permit ip 10.0.64.0 0.0.1.255 10.0.0.0 0.255.255.255
+ip access-list extended SFTP-On-INT-Faridan-10-10-27
+ permit ip host 10.10.1.71 10.10.27.0 0.0.0.255
+ip access-list extended SFTP-On-INT-Markazi-10-10-16
+ permit ip host 10.10.1.71 10.10.16.0 0.0.0.255
+ip access-list extended intnat
+ permit ip 10.10.1.0 0.0.0.255 10.0.0.0 0.0.255.255
+ip access-list extended natlist
+ permit ip 10.10.1.0 0.0.0.255 10.30.42.0 0.0.0.255
+ permit ip 10.10.3.0 0.0.0.255 10.30.42.0 0.0.0.255
+ permit ip 10.10.1.0 0.0.0.255 host 91.240.180.40
+ permit ip 10.10.1.0 0.0.0.255 host 91.240.181.1
+ permit ip 10.10.3.0 0.0.0.255 host 91.240.180.40
+ permit ip 10.10.3.0 0.0.0.255 host 91.240.181.1
+ permit ip 10.30.176.184 0.0.0.7 any
+ permit ip 10.10.1.0 0.0.0.255 10.30.176.184 0.0.0.7
+ permit ip 10.10.3.0 0.0.0.255 10.30.176.184 0.0.0.7
+ permit ip 10.10.1.0 0.0.0.255 host 91.240.180.133
+ permit ip 10.10.1.0 0.0.0.255 host 10.7.95.26
+!
+!
+ip prefix-list OSPF-FILTER seq 10 permit 10.0.0.0/16
+ip prefix-list OSPF-FILTER seq 20 permit 10.10.0.0/21
+ip prefix-list OSPF-FILTER seq 30 permit 10.60.3.0/24
+logging trap notifications
+logging source-interface Loopback1
+logging host 10.0.51.63
+logging host 10.0.51.58
+logging host 10.0.51.25
+access-list 198 deny   ip any any fragments
+access-list 198 permit udp any any eq 18999
+access-list 199 permit icmp any any echo
+access-list 199 permit icmp any any echo-reply
+!
+route-map OSPF1-to-OSPF2 permit 10
+ match ip address OSPF1-to-OSPF2
+ match route-type internal
+ set metric 10000
+!
+route-map OSPF2-to-OSPF1 permit 10
+ match ip address OSPF2-to-OSPF1
+ set metric 10000
+!
+route-map FTPSrv-RM permit 10
+ match ip address FTPSrv-Ardestan
+ set ip next-hop 10.10.100.2
+!
+route-map FTPSrv-RM permit 20
+ match ip address FTPSrv-Esfahan
+ set ip next-hop 10.10.100.3
+!
+route-map FTPSrv-RM permit 30
+ match ip address FTPSrv-Faridan
+ set ip next-hop 10.10.100.4
+!
+route-map FTPSrv-RM permit 40
+ match ip address FTPSrv-KhanSaar
+ set ip next-hop 10.10.100.5
+!
+route-map FTPSrv-RM permit 50
+ match ip address FTPSrv-Vist
+ set ip next-hop 10.10.100.6
+!
+route-map FTPSrv-RM permit 60
+ match ip address FTPSrv-Shahreza
+ set ip next-hop 10.10.100.7
+!
+route-map FTPSrv-RM permit 70
+ match ip address FTPSrv-Eskandari
+ set ip next-hop 10.10.100.8
+!
+route-map FTPSrv-RM permit 80
+ match ip address FTPSrv-Falavarjan
+ set ip next-hop 10.10.100.9
+!
+route-map FTPSrv-RM permit 90
+ match ip address FTPSrv-Bustan
+ set ip next-hop 10.10.100.10
+!
+route-map FTPSrv-RM permit 100
+ match ip address FTPSrv-Golpaygan
+ set ip next-hop 10.10.100.11
+!
+route-map FTPSrv-RM permit 110
+ match ip address FTPSrv-NajafAbad
+ set ip next-hop 10.10.100.12
+!
+route-map FTPSrv-RM permit 120
+ match ip address FTPSrv-Naein
+ set ip next-hop 10.10.100.13
+!
+route-map FTPSrv-RM permit 130
+ match ip address FTPSrv-Natanz
+ set ip next-hop 10.10.100.14
+!
+route-map FTPSrv-RM permit 140
+ match ip address FTPSrv-KhomeyniShahr
+ set ip next-hop 10.10.100.15
+!
+route-map FTPSrv-RM permit 150
+ match ip address FTPSrv-Meymeh
+ set ip next-hop 10.10.100.16
+!
+route-map FTPSrv-RM permit 160
+ match ip address FTPSrv-Semirom
+ set ip next-hop 10.10.100.17
+!
+route-map FTPSrv-RM permit 170
+ match ip address FTPSrv-FreydunShahr
+ set ip next-hop 10.10.100.18
+!
+route-map FTPSrv-RM permit 180
+ match ip address FTPSrv-VahdatAbad
+ set ip next-hop 10.10.100.19
+!
+route-map FTPSrv-RM permit 190
+ match ip address FTPSrv-ZarinShahr
+ set ip next-hop 10.10.100.20
+!
+route-map FTPSrv-RM permit 200
+ match ip address FTPSrv-Dahaqan
+ set ip next-hop 10.10.100.21
+!
+route-map FTPSrv-RM permit 210
+ match ip address FTPSrv-Mobarakeh
+ set ip next-hop 10.10.100.22
+!
+route-map FTPSrv-RM permit 220
+ match ip address FTPSrv-KuhPayeh
+ set ip next-hop 10.10.100.23
+!
+route-map FTPSrv-RM permit 230
+ match ip address FTPSrv-Buein
+ set ip next-hop 10.10.100.24
+!
+route-map FTPSrv-RM permit 250
+ match ip address FTPSrv-Manuchehri
+ set ip next-hop 10.10.100.25
+!
+route-map FTPSrv-RM permit 260
+ match ip address FTPSrv-1000Jarib
+ set ip next-hop 10.10.100.26
+!
+route-map FTPSrv-RM permit 270
+ match ip address FTPSrv-BaadRud
+ set ip next-hop 10.10.100.27
+!
+route-map FTPSrv-RM permit 280
+ match ip address FTPSrv-Chadegan
+ set ip next-hop 10.10.100.28
+!
+route-map FTPSrv-RM permit 290
+ match ip address FTPSrv-Aran
+ set ip next-hop 10.10.100.29
+!
+route-map FTPSrv-RM permit 300
+ match ip address FTPSrv-SefidShahr
+ set ip next-hop 10.10.100.30
+!
+route-map FTPSrv-RM permit 310
+ match ip address FTPSrv-ValiAsrAran
+ set ip next-hop 10.10.100.31
+!
+route-map FTPSrv-RM permit 320
+ match ip address FTPSrv-DowlatAbad
+ set ip next-hop 10.10.100.32
+!
+route-map FTPSrv-RM permit 330
+ match ip address FTPSrv-Jarquyeh
+ set ip next-hop 10.10.100.33
+!
+route-map FTPSrv-RM permit 340
+ match ip address FTPSrv-PeykanJrqyh
+ set ip next-hop 10.10.100.34
+!
+route-map FTPSrv-RM permit 350
+ match ip address FTPSrv-Khur
+ set ip next-hop 10.10.100.35
+!
+route-map FTPSrv-RM permit 360
+ match ip address FTPSrv-Zavareh
+ set ip next-hop 10.10.100.36
+!
+route-map FTPSrv-RM permit 370
+ match ip address FTPSrv-Varzaneh
+ set ip next-hop 10.10.100.37
+!
+route-map FTPSrv-RM permit 380
+ match ip address FTPSrv-MehrGerd
+ set ip next-hop 10.10.100.74
+!
+route-map FTPSrv-RM permit 390
+ match ip address FTPSrv-BustanSadi
+ set ip next-hop 10.10.100.39
+!
+route-map FTPSrv-RM permit 400
+ match ip address FTPSrv-Tiran
+ set ip next-hop 10.10.100.40
+!
+route-map FTPSrv-RM permit 410
+ match ip address FTPSrv-Pegah
+ set ip next-hop 10.10.100.41
+!
+route-map FTPSrv-RM permit 420
+ match ip address FTPSrv-TareBar
+ set ip next-hop 10.10.100.42
+!
+route-map FTPSrv-RM permit 430
+ match ip address FTPSrv-SheykhSaduq
+ set ip next-hop 10.10.100.43
+!
+route-map FTPSrv-RM permit 440
+ match ip address FTPSrv-Bideh
+ set ip next-hop 10.10.100.44
+!
+route-map FTPSrv-RM permit 450
+ match ip address FTPSrv-AmirKabir
+ set ip next-hop 10.10.100.45
+!
+route-map FTPSrv-RM permit 460
+ match ip address FTPSrv-ShahinShahr
+ set ip next-hop 10.10.100.46
+!
+route-map FTPSrv-RM permit 470
+ match ip address FTPSrv-Jomhuri
+ set ip next-hop 10.10.100.47
+!
+route-map FTPSrv-RM permit 480
+ match ip address FTPSrv-ImamAli
+ set ip next-hop 10.10.100.48
+!
+route-map FTPSrv-RM permit 490
+ match ip address FTPSrv-Abar
+ set ip next-hop 10.10.100.49
+!
+route-map FTPSrv-RM permit 500
+ match ip address FTPSrv-BazarCheNo
+ set ip next-hop 10.10.100.50
+!
+route-map FTPSrv-RM permit 510
+ match ip address FTPSrv-Kashan
+ set ip next-hop 10.10.100.51
+!
+route-map FTPSrv-RM permit 520
+ match ip address FTPSrv-TareBarKshn
+ set ip next-hop 10.10.100.52
+!
+route-map FTPSrv-RM permit 530
+ match ip address FTPSrv-QamSar
+ set ip next-hop 10.10.100.53
+!
+route-map FTPSrv-RM permit 540
+ match ip address FTPSrv-Charmahin
+ set ip next-hop 10.10.100.54
+!
+route-map FTPSrv-RM permit 550
+ match ip address FTPSrv-PayanehSharq
+ set ip next-hop 10.10.100.55
+!
+route-map FTPSrv-RM permit 560
+ match ip address FTPSrv-Khurasgan
+ set ip next-hop 10.10.100.56
+!
+route-map FTPSrv-RM permit 570
+ match ip address FTPSrv-Zeynabiyeh
+ set ip next-hop 10.10.100.57
+!
+route-map FTPSrv-RM permit 580
+ match ip address FTPSrv-PirBakran
+ set ip next-hop 10.10.100.58
+!
+route-map FTPSrv-RM permit 590
+ match ip address FTPSrv-Ziyar
+ set ip next-hop 10.10.100.59
+!
+route-map FTPSrv-RM permit 600
+ match ip address FTPSrv-Karkavand
+ set ip next-hop 10.10.100.60
+!
+route-map FTPSrv-RM permit 610
+ match ip address FTPSrv-DastJa
+ set ip next-hop 10.10.100.61
+!
+route-map FTPSrv-RM permit 620
+ match ip address FTPSrv-Rahnan
+ set ip next-hop 10.10.100.62
+!
+route-map FTPSrv-RM permit 630
+ match ip address FTPSrv-Shohada
+ set ip next-hop 10.10.100.63
+!
+route-map FTPSrv-RM permit 640
+ match ip address FTPSrv-AmirHamze
+ set ip next-hop 10.10.100.64
+!
+route-map FTPSrv-RM permit 650
+ match ip address FTPSrv-Muqar
+ set ip next-hop 10.10.100.65
+!
+route-map FTPSrv-RM permit 660
+ match ip address FTPSrv-Mahabad
+ set ip next-hop 10.10.100.66
+!
+route-map FTPSrv-RM permit 670
+ match ip address FTPSrv-Afus
+ set ip next-hop 10.10.100.67
+!
+route-map FTPSrv-RM permit 680
+ match ip address FTPSrv-RahmatAbad
+ set ip next-hop 10.10.100.68
+!
+route-map FTPSrv-RM permit 690
+ match ip address FTPSrv-Dorcheh
+ set ip next-hop 10.10.100.69
+!
+route-map FTPSrv-RM permit 700
+ match ip address FTPSrv-Pudeh
+ set ip next-hop 10.10.100.70
+!
+route-map FTPSrv-RM permit 710
+ match ip address FTPSrv-BaqBahadoran
+ set ip next-hop 10.10.100.71
+!
+route-map FTPSrv-RM permit 720
+ match ip address FTPSrv-Hana
+ set ip next-hop 10.10.100.72
+!
+route-map FTPSrv-RM permit 730
+ match ip address FTPSrv-EsfarJan
+ set ip next-hop 10.10.100.73
+!
+route-map FTPSrv-RM permit 740
+ match ip address FTPSrv-Mahyar
+ set ip next-hop 10.10.100.75
+!
+route-map FTPSrv-RM permit 750
+ match ip address FTPSrv-ImamShahrza
+ set ip next-hop 10.10.100.115
+!
+route-map FTPSrv-RM permit 760
+ match ip address FTPSrv-Damaneh
+ set ip next-hop 10.10.100.76
+!
+route-map FTPSrv-RM permit 770
+ match ip address FTPSrv-ImanShahr
+ set ip next-hop 10.10.100.77
+!
+route-map FTPSrv-RM permit 780
+ match ip address FTPSrv-Qahdarijan
+ set ip next-hop 10.10.100.78
+!
+route-map FTPSrv-RM permit 790
+ match ip address FTPSrv-Taad
+ set ip next-hop 10.10.100.79
+!
+route-map FTPSrv-RM permit 810
+ match ip address FTPSrv-Garmaseh
+ set ip next-hop 10.10.100.81
+!
+route-map FTPSrv-RM permit 820
+ match ip address FTPSrv-AbuZeydAbad
+ set ip next-hop 10.10.100.82
+!
+route-map FTPSrv-RM permit 830
+ match ip address FTPSrv-Raavand
+ set ip next-hop 10.10.100.83
+!
+route-map FTPSrv-RM permit 840
+ match ip address FTPSrv-Ejeyeh
+ set ip next-hop 10.10.100.84
+!
+route-map FTPSrv-RM permit 850
+ match ip address FTPSrv-IslamAbadKhpyh
+ set ip next-hop 10.10.100.85
+!
+route-map FTPSrv-RM permit 860
+ match ip address FTPSrv-ImamZdHarand
+ set ip next-hop 10.10.100.86
+!
+route-map FTPSrv-RM permit 870
+ match ip address FTPSrv-SaeidAbad
+ set ip next-hop 10.10.100.87
+!
+route-map FTPSrv-RM permit 880
+ match ip address FTPSrv-GolShahr
+ set ip next-hop 10.10.100.88
+!
+route-map FTPSrv-RM permit 890
+ match ip address FTPSrv-Gugad
+ set ip next-hop 10.10.100.89
+!
+route-map FTPSrv-RM permit 900
+ match ip address FTPSrv-Talkhuncheh
+ set ip next-hop 10.10.100.90
+!
+route-map FTPSrv-RM permit 910
+ match ip address FTPSrv-Dizicheh
+ set ip next-hop 10.10.100.91
+!
+route-map FTPSrv-RM permit 920
+ match ip address FTPSrv-ZibaShahr
+ set ip next-hop 10.10.100.92
+!
+route-map FTPSrv-RM permit 930
+ match ip address FTPSrv-ShahrakSan
+ set ip next-hop 10.10.100.93
+!
+route-map FTPSrv-RM permit 940
+ match ip address FTPSrv-NekuAbad
+ set ip next-hop 10.10.100.94
+!
+route-map FTPSrv-RM permit 950
+ match ip address FTPSrv-Dehaq
+ set ip next-hop 10.10.100.95
+!
+route-map FTPSrv-RM permit 960
+ match ip address FTPSrv-GolDasht
+ set ip next-hop 10.10.100.96
+!
+route-map FTPSrv-RM permit 970
+ match ip address FTPSrv-KhaledAbad
+ set ip next-hop 10.10.100.97
+!
+route-map FTPSrv-RM permit 980
+ match ip address FTPSrv-Rozveh
+ set ip next-hop 10.10.100.98
+!
+route-map FTPSrv-RM permit 990
+ match ip address FTPSrv-Gorgab
+ set ip next-hop 10.10.100.99
+!
+route-map FTPSrv-RM permit 1000
+ match ip address FTPSrv-DastGerd
+ set ip next-hop 10.10.100.100
+!
+route-map FTPSrv-RM permit 1010
+ match ip address FTPSrv-Gaz
+ set ip next-hop 10.10.100.101
+!
+route-map FTPSrv-RM permit 1020
+ match ip address FTPSrv-Jandaq
+ set ip next-hop 10.10.100.102
+!
+route-map FTPSrv-RM permit 1030
+ match ip address FTPSrv-HasanAbadJrqy
+ set ip next-hop 10.10.100.103
+!
+route-map FTPSrv-RM permit 1040
+ match ip address FTPSrv-NasrAbad
+ set ip next-hop 10.10.100.104
+!
+route-map FTPSrv-RM permit 1050
+ match ip address FTPSrv-Jandaan
+ set ip next-hop 10.10.100.105
+!
+route-map FTPSrv-RM permit 1060
+ match ip address FTPSrv-Kafran
+ set ip next-hop 10.10.100.106
+!
+route-map FTPSrv-RM permit 1070
+ match ip address FTPSrv-Ashkavand
+ set ip next-hop 10.10.100.107
+!
+route-map FTPSrv-RM permit 1080
+ match ip address FTPSrv-AhmadAbad
+ set ip next-hop 10.10.100.108
+!
+route-map FTPSrv-RM permit 1090
+ match ip address FTPSrv-4Baq
+ set ip next-hop 10.10.100.109
+!
+route-map FTPSrv-RM permit 1100
+ match ip address FTPSrv-Jahad
+ set ip next-hop 10.10.100.110
+!
+route-map FTPSrv-RM permit 1110
+ match ip address FTPSrv-ShamsAbadi
+ set ip next-hop 10.10.100.111
+!
+route-map FTPSrv-RM permit 1130
+ match ip address FTPSrv-Yazdel
+ set ip next-hop 10.10.100.113
+!
+route-map FTPSrv-RM permit 1200
+ match ip address FTPANY
+!
+route-map Backup_Return_Routes permit 10
+ match ip address Branch_Subnets
+!
+route-map nachi-worm permit 10
+ match ip address 199
+ match length 92 92
+ set interface Null0
+!
+route-map StaticRedist-OSPF2-VideoConf permit 10
+ match ip address StaticRedist-OSPF2-VideoConf
+ set metric 5000
+!
+route-map SFTP-On-INT permit 10
+ match ip address SFTP-On-INT-Faridan-10-10-27
+ set ip next-hop 200.200.200.3
+!
+route-map SFTP-On-INT permit 20
+ match ip address SFTP-On-INT-Markazi-10-10-16
+ set ip next-hop 200.200.200.5
+!
+route-map Connected-to-OSPF2 permit 10
+ match ip address Connected-to-OSPF2
+ set metric 1000
+!
+snmp-server group LMS v3 priv read myview write myview access SNMP-WRITE
+snmp-server group NMS v3 priv access SNMP-READ
+snmp-server view myview mib-2 included
+snmp-server view myview system included
+snmp-server view myview cisco included
+snmp ifmib ifindex persist
+!
+tacacs-server host 10.0.51.56
+tacacs-server host 10.0.51.57
+tacacs-server timeout 10
+tacacs-server directed-request
+tacacs-server key 7 153318424B7B7874
+!
+!
+!
+control-plane
+ service-policy input drop-udp
+!
+ !
+ !
+ !
+ !
+!
+!
+!
+!
+privilege interface level 3 shutdown
+privilege interface level 3 no shutdown
+privilege interface level 3 no
+privilege configure level 3 interface
+privilege exec level 3 traceroute
+privilege exec level 3 ping
+privilege exec level 2 configure terminal
+privilege exec level 2 configure
+privilege exec level 3 terminal monitor
+privilege exec level 3 terminal
+privilege exec all level 2 show
+banner motd 
+        ===
+       -+ +-
+       | | |
+    <--\ | /-->
+   ##| ||||| |##
+  ###| |+++| |###
+ /____\\ | //____\ ********************************************************
+   <###\|||/###>                  Keshavarzi Bank Network
+    +====+====+     WARNING: Access is restricted to authorized users only.
+    | WAN-BKI |     Unauthorized access is a violation of state , civil and
+    +===+=+===+                       criminal laws.
+        +=+        ********************************************************
+
+!
+line con 0
+ authorization exec CACS
+ login authentication CACS
+ stopbits 1
+line aux 0
+ no exec
+ stopbits 1
+line vty 0 4
+ access-class TELNET-ACCESS in
+ privilege level 15
+ authorization commands 2 CACS
+ authorization exec CACS
+ accounting commands 15 CACS
+ accounting exec CACS
+ login authentication CACS
+ transport input ssh
+ transport output telnet ssh
+line vty 5 15
+ access-class TELNET-ACCESS in
+ privilege level 15
+ authorization commands 2 CACS
+ authorization exec CACS
+ accounting exec CACS
+ login authentication CACS
+ transport input ssh
+ transport output telnet ssh
+!
+scheduler max-task-time 5000
+ntp authentication-key 1 md5 000514140D160907012A 7
+ntp authenticate
+ntp trusted-key 1
+ntp source Loopback1
+ntp server 10.0.51.27
+!
+!
+end

@@ -428,7 +428,8 @@ document.addEventListener('DOMContentLoaded', function() {
               <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:10px;">
                 <div>
                   <label style="font-size:13px;">Tunnel Number</label>
-                  <input type="number" id="tunnelNumber" placeholder="79" min="1" max="65535">
+                  <input type="number" id="tunnelNumber" placeholder="auto: XY" min="1" max="65535">
+                  <div style="font-size:11px; color:var(--text-muted,#94a3b8); margin-top:3px;">Default: <span id="autoTunnelNum" style="font-weight:700; color:#06b6d4;">-</span> (XY from branch) - can be changed</div>
                 </div>
                 <div>
                   <label style="font-size:13px;">Tunnel Mask</label>
@@ -754,8 +755,23 @@ document.addEventListener('DOMContentLoaded', function() {
                 document.getElementById('autoProvince').textContent = prov.en + ' (' + prov.abbr + ')';
                 document.getElementById('autoArea').textContent = 'Area ' + x;
 
+                // Auto-generate tunnel number as XY (e.g. X=3,Y=14 → 314, X=12,Y=1 → 1201)
+                const yPad = parseInt(y) < 10 ? '0' + y : y;
+                const autoTunNum = x + yPad;
+                document.getElementById('autoTunnelNum').textContent = autoTunNum;
+                // Only auto-fill if user hasn't manually entered a value
+                const tunnelNumEl = document.getElementById('tunnelNumber');
+                if (!tunnelNumEl.dataset.manual) {
+                    tunnelNumEl.value = autoTunNum;
+                }
+
                 document.getElementById('autoFieldsPanel').style.display = 'block';
             }
+        });
+
+        // Mark tunnel number as manually edited when user changes it
+        document.getElementById('tunnelNumber').addEventListener('input', function() {
+            this.dataset.manual = 'true';
         });
 
         // ==================== SERVICE TYPE TOGGLE ====================

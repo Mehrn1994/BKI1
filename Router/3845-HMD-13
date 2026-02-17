@@ -1,0 +1,1306 @@
+
+!
+! Last configuration change at 11:52:29 Tehran Mon Feb 16 2026 by m-hossain
+! NVRAM config last updated at 11:52:30 Tehran Mon Feb 16 2026 by m-hossain
+!
+version 12.4
+service timestamps debug datetime msec localtime
+service timestamps log datetime localtime
+service password-encryption
+!
+hostname 3845-HMD
+!
+boot-start-marker
+boot system flash c3845-adventerprisek9-mz.124-11.XW7.bin
+boot-end-marker
+!
+card type e1 0 0
+card type e1 0 1
+card type e1 0 2
+card type e1 1
+card type e1 3
+card type e1 4
+logging exception 512000
+logging buffered 4096
+no logging rate-limit
+enable secret level 3 5 $1$bPY2$9jA6x/FvI5wNLJlBxS0441
+enable secret 5 $1$eQL/$m4Qkksthx3lyOHc2/QYDI/
+!
+aaa new-model
+!
+!
+aaa authentication login CACS group tacacs+ local
+aaa authentication enable default group tacacs+ enable
+aaa authorization console
+aaa authorization config-commands
+aaa authorization exec CACS group tacacs+ local 
+aaa authorization commands 0 CACS group tacacs+ local 
+aaa authorization commands 1 CACS group tacacs+ local 
+aaa authorization commands 2 CACS group tacacs+ local 
+aaa authorization commands 3 CACS group tacacs+ local 
+aaa authorization commands 15 CACS group tacacs+ local 
+aaa accounting exec CACS start-stop group tacacs+
+aaa accounting commands 0 CACS start-stop group tacacs+
+aaa accounting commands 1 CACS start-stop group tacacs+
+aaa accounting commands 2 CACS start-stop group tacacs+
+aaa accounting commands 3 CACS start-stop group tacacs+
+aaa accounting commands 15 CACS start-stop group tacacs+
+!
+!
+aaa session-id common
+clock timezone Tehran 3 30
+clock calendar-valid
+no network-clock-participate slot 1 
+no network-clock-participate slot 3 
+no network-clock-participate slot 4 
+no network-clock-participate wic 0 
+no network-clock-participate wic 1 
+no network-clock-participate wic 2 
+!
+!
+ip traffic-export profile ISC mode capture
+  bidirectional
+ip cef
+!
+!
+!
+!
+no ip domain lookup
+ip domain name agri-bank.com
+!
+multilink bundle-name authenticated
+!
+!
+voice-card 0
+ no dspfarm
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+crypto pki token default removal timeout 0
+!
+!
+! 
+!
+crypto isakmp policy 10
+ encr aes
+ authentication pre-share
+ group 2
+!
+crypto isakmp policy 102
+ encr aes
+ authentication pre-share
+ group 2
+crypto isakmp key G!l@n3tAcc3ss address 10.250.46.1
+crypto isakmp key N3w1ntr@n3t address 10.30.42.200
+crypto isakmp key N3w1ntr@n3t address 10.30.42.201
+crypto isakmp invalid-spi-recovery
+!
+!
+crypto ipsec transform-set GILANETTS esp-aes esp-sha-hmac 
+crypto ipsec transform-set BK!-TR esp-aes 256 esp-sha-hmac 
+crypto ipsec transform-set INTR1 esp-aes 256 esp-sha-hmac 
+crypto ipsec transform-set INTR2 esp-aes 256 esp-sha-hmac 
+!
+crypto map BKI-MAP-INT local-address Loopback2000
+crypto map BKI-MAP-INT 1 ipsec-isakmp 
+ ! Incomplete
+ set peer 10.30.42.2
+ set transform-set BK!-TR 
+ match address INTRANET-CRYPTO
+crypto map BKI-MAP-INT 2 ipsec-isakmp 
+ set peer 10.30.42.200
+ set transform-set INTR1 
+ match address INTR1ACL
+crypto map BKI-MAP-INT 3 ipsec-isakmp 
+ set peer 10.30.42.201
+ set transform-set INTR2 
+ match address INTR2ACL
+!
+crypto map GILANET 10 ipsec-isakmp 
+ set peer 10.250.46.1
+ set transform-set GILANETTS 
+ match address GILANET-ACL
+!
+!
+!
+username bkroot privilege 15 secret 5 $1$iRjO$tRmJPidIs6LjVks/d6Oyz0
+archive
+ log config
+  hidekeys
+ path tftp://10.0.51.40/Pro/$h
+ write-memory
+!
+!
+controller E1 0/0/0
+ framing NO-CRC4 
+ channel-group 0 timeslots 1-31
+ description ** E1-ZirSakht **
+!
+controller E1 0/0/1
+ framing NO-CRC4 
+ channel-group 0 timeslots 1-8
+ channel-group 1 timeslots 9-16
+ channel-group 2 timeslots 17-24
+ channel-group 3 timeslots 25-31
+!
+controller E1 0/1/0
+ framing NO-CRC4 
+ channel-group 0 timeslots 1-8
+ channel-group 1 timeslots 9-16
+ channel-group 2 timeslots 17-24
+ channel-group 3 timeslots 25-26
+!
+controller E1 0/1/1
+ framing NO-CRC4 
+ channel-group 0 timeslots 1-8
+ channel-group 1 timeslots 9-16
+ channel-group 2 timeslots 17-24
+ channel-group 3 timeslots 25-31
+!
+controller E1 0/2/0
+ framing NO-CRC4 
+ channel-group 0 timeslots 1-8
+ channel-group 1 timeslots 9-16
+ channel-group 2 timeslots 17-24
+ channel-group 3 timeslots 25-26
+!
+controller E1 0/2/1
+ framing NO-CRC4 
+ channel-group 0 timeslots 1-8
+ channel-group 1 timeslots 9-16
+ channel-group 2 timeslots 17-24
+ channel-group 3 timeslots 25-31
+!
+controller E1 1/0
+ framing NO-CRC4 
+ channel-group 1 timeslots 1-8
+ channel-group 2 timeslots 9-16
+ channel-group 3 timeslots 17-24
+ channel-group 6 timeslots 27-28
+ channel-group 7 timeslots 26
+ channel-group 10 timeslots 25
+ description ** ATM-Shrdri-Bahar ** 
+!
+controller E1 1/1
+ framing NO-CRC4 
+ channel-group 0 timeslots 1-8
+ channel-group 1 timeslots 9-16
+ channel-group 2 timeslots 17-18
+ channel-group 3 timeslots 25-31
+!
+controller E1 3/0
+ framing NO-CRC4 
+ channel-group 0 timeslots 1-8
+ channel-group 1 timeslots 9-16
+ channel-group 2 timeslots 17-24
+ channel-group 3 timeslots 25-31
+!
+controller E1 3/1
+ framing NO-CRC4 
+ channel-group 0 timeslots 1-8
+ channel-group 1 timeslots 9-16
+ channel-group 2 timeslots 17-24
+ channel-group 3 timeslots 25-31
+!
+controller E1 4/0
+ framing NO-CRC4 
+ channel-group 0 timeslots 1-8
+ channel-group 1 timeslots 9-16
+ channel-group 2 timeslots 17-24
+ channel-group 3 timeslots 25-31
+!
+controller E1 4/1
+ framing NO-CRC4 
+ channel-group 0 timeslots 1-8
+ channel-group 1 timeslots 9-16
+ channel-group 2 timeslots 17-24
+ channel-group 3 timeslots 25-31
+!
+ip tftp source-interface GigabitEthernet0/0
+ip ssh authentication-retries 2
+ip ssh port 2001 rotary 1
+ip ssh version 2
+!
+class-map match-all undesireable-udp
+ match access-group 198
+class-map match-all QOS-MEHR
+ match access-group name QOS-MEHR
+!
+!
+policy-map drop-udp
+ class undesireable-udp
+   drop
+policy-map QOS-MEHR
+ class QOS-MEHR
+  bandwidth percent 50
+ class class-default
+  fair-queue
+!
+!
+!
+!
+!
+interface Loopback0
+ no ip address
+!
+interface Loopback1
+ description ** HQ **
+ ip address 10.15.254.1 255.255.255.0
+!
+interface Loopback2
+ ip address 10.210.15.1 255.255.255.255
+!
+interface Loopback2000
+ description ** LAN -Intranet **
+ ip address 10.254.218.25 255.255.255.248
+ ip virtual-reassembly
+!
+interface Tunnel20
+ description ** MPLS(6M)->50M **
+ bandwidth 768
+ ip address 10.255.241.45 255.255.255.254
+ ip mtu 1460
+ ip flow ingress
+ ip flow egress
+ ip route-cache flow
+ ip tcp adjust-mss 1420
+ ip ospf cost 500
+ keepalive 2 2
+ cdp enable
+ tunnel source 10.134.62.2
+ tunnel destination 10.241.0.2
+!
+interface Tunnel21
+ description ** MPLS(6M)->10M-TB **-Dont Change
+ bandwidth 512
+ ip address 10.255.240.45 255.255.255.254
+ ip access-group HQ-ACCESS-IN in
+ ip access-group HQ-ACCESS-OUT out
+ ip mtu 1460
+ ip tcp adjust-mss 1420
+ ip ospf cost 505
+ shutdown
+ keepalive 3 3
+ cdp enable
+ tunnel source 10.134.62.2
+ tunnel destination 10.134.45.2
+!
+interface Tunnel24
+ description ** MPLS(6M)->50M **
+ bandwidth 768
+ ip address 10.255.244.45 255.255.255.254
+ ip mtu 1460
+ ip flow ingress
+ ip flow egress
+ ip route-cache flow
+ ip tcp adjust-mss 1420
+ ip ospf cost 500
+ keepalive 2 2
+ cdp enable
+ tunnel source 10.134.62.2
+ tunnel destination 10.244.0.2
+!
+interface Tunnel30
+ description ** ShahinShahr **
+ ip address 10.255.50.59 255.255.255.254
+ ip mtu 1460
+ ip tcp adjust-mss 1420
+ ip ospf cost 700
+ keepalive 3 3
+ cdp enable
+ tunnel source 10.134.62.2
+ tunnel destination 10.134.44.2
+!
+interface Tunnel156
+ description ** Gilanet **
+ ip address 10.156.100.81 255.255.255.254
+ ip ospf hello-interval 100
+ ip ospf dead-interval 300
+ ip ospf priority 0
+ keepalive 100 3
+ tunnel source 10.250.46.38
+ tunnel destination 10.250.46.1
+!
+interface Tunnel200
+ description ** Intranet - R1 **
+ bandwidth 2000
+ ip address 10.200.9.37 255.255.255.254
+ ip mtu 1360
+ ip nat outside
+ ip virtual-reassembly
+ ip tcp adjust-mss 1320
+ ip ospf cost 200
+ keepalive 10 3
+ tunnel source 10.254.218.25
+ tunnel destination 10.30.42.200
+!
+interface Tunnel201
+ description ** Intranet - R2 **
+ bandwidth 2000
+ ip address 10.201.9.37 255.255.255.254
+ ip mtu 1360
+ ip nat outside
+ ip virtual-reassembly
+ ip tcp adjust-mss 1320
+ ip ospf cost 400
+ keepalive 10 3
+ tunnel source 10.254.218.25
+ tunnel destination 10.30.42.201
+!
+interface Tunnel15022
+ description ** DaqDaqAbd **
+ bandwidth 64
+ ip address 100.100.100.18 255.255.255.254
+ ip mtu 1460
+ ip tcp adjust-mss 1420
+ ip ospf hello-interval 40
+ ip ospf dead-interval 120
+ keepalive 40 3
+ cdp enable
+ tunnel source 10.15.251.1
+ tunnel destination 10.15.251.22
+!
+interface Tunnel15027
+ description ** ShrkFiruzan  ***
+ bandwidth 64
+ ip address 100.100.100.14 255.255.255.254
+ ip mtu 1460
+ ip tcp adjust-mss 1420
+ ip ospf hello-interval 40
+ ip ospf dead-interval 120
+ keepalive 40 3
+ cdp enable
+ tunnel source 10.15.251.1
+ tunnel destination 10.15.251.27
+!
+interface Tunnel15033
+ description ** Lalejin ***
+ ip address 100.100.100.32 255.255.255.254
+ ip mtu 1460
+ ip tcp adjust-mss 1420
+ ip ospf hello-interval 40
+ ip ospf dead-interval 120
+ keepalive 40 3
+ cdp enable
+ tunnel source 10.15.251.1
+ tunnel destination 10.15.251.33
+!
+interface Tunnel15037
+ description ** Avarzaman ***
+ bandwidth 64
+ ip address 100.100.100.16 255.255.255.254
+ ip mtu 1460
+ ip tcp adjust-mss 1420
+ ip ospf hello-interval 40
+ ip ospf dead-interval 120
+ keepalive 40 3
+ cdp enable
+ tunnel source 10.15.251.1
+ tunnel destination 10.15.251.37
+!
+interface Tunnel15038
+ description ** Besat **
+ bandwidth 64
+ ip address 100.100.100.44 255.255.255.254
+ ip mtu 1460
+ ip tcp adjust-mss 1420
+ ip ospf hello-interval 40
+ ip ospf dead-interval 120
+ keepalive 40 3
+ cdp enable
+ tunnel source 10.15.251.1
+ tunnel destination 10.15.251.38
+!
+interface Tunnel15046
+ description ** ZangeneOliya **
+ ip address 100.100.100.30 255.255.255.254
+ ip mtu 1460
+ ip tcp adjust-mss 1420
+ ip ospf hello-interval 40
+ ip ospf dead-interval 120
+ keepalive 40 3
+ cdp enable
+ tunnel source 10.15.251.1
+ tunnel destination 10.15.251.46
+!
+interface Tunnel15054
+ description ** Karafs ***
+ bandwidth 64
+ ip address 100.100.100.12 255.255.255.254
+ ip mtu 1460
+ ip tcp adjust-mss 1420
+ ip ospf hello-interval 40
+ ip ospf dead-interval 120
+ keepalive 40 3
+ cdp enable
+ tunnel source 10.15.251.1
+ tunnel destination 10.15.251.54
+!
+interface Tunnel15055
+ description ** Mohajeran ***
+ bandwidth 64
+ ip address 100.100.100.10 255.255.255.254
+ ip mtu 1460
+ ip tcp adjust-mss 1420
+ ip ospf hello-interval 40
+ ip ospf dead-interval 120
+ keepalive 40 3
+ cdp enable
+ tunnel source 10.15.251.1
+ tunnel destination 10.15.251.55
+!
+interface Tunnel15160
+ description ** BJ-Serkan **
+ bandwidth 64
+ ip address 100.100.100.26 255.255.255.254
+ ip mtu 1460
+ ip tcp adjust-mss 1420
+ ip ospf hello-interval 40
+ ip ospf dead-interval 120
+ keepalive 40 3
+ cdp enable
+ tunnel source 10.15.251.1
+ tunnel destination 10.15.251.160
+!
+interface Tunnel15182
+ description ** ATM-BabaTaher **
+ ip address 100.100.100.42 255.255.255.254
+ ip mtu 1460
+ ip tcp adjust-mss 1420
+ ip ospf hello-interval 40
+ ip ospf dead-interval 120
+ keepalive 40 3
+ cdp enable
+ tunnel source 10.15.251.1
+ tunnel destination 10.15.251.182
+!
+interface Tunnel15185
+ description ** ATM-JahadKaboudarAhang **
+ ip address 100.100.100.50 255.255.255.254
+ ip mtu 1460
+ ip tcp adjust-mss 1420
+ ip ospf hello-interval 40
+ ip ospf dead-interval 120
+ keepalive 40 3
+ cdp enable
+ tunnel source 10.15.251.1
+ tunnel destination 10.15.251.185
+!
+interface Tunnel15186
+ description ** ATM-JahadKaboudarAhang 2 **
+ bandwidth 64
+ ip address 100.100.100.52 255.255.255.254
+ ip mtu 1460
+ ip tcp adjust-mss 1420
+ ip ospf hello-interval 40
+ ip ospf dead-interval 120
+ keepalive 40 3
+ cdp enable
+ tunnel source 10.15.251.1
+ tunnel destination 10.15.251.186
+!
+interface Tunnel15188
+ description ** Bj-SeyedShahab **
+ bandwidth 64
+ ip address 100.100.100.22 255.255.255.254
+ ip mtu 1460
+ ip tcp adjust-mss 1420
+ ip ospf hello-interval 40
+ ip ospf dead-interval 120
+ keepalive 40 3
+ cdp enable
+ tunnel source 10.15.251.1
+ tunnel destination 10.15.251.188
+!
+interface Tunnel15192
+ description ** ATM-Kanun **
+ bandwidth 64
+ ip address 100.100.100.40 255.255.255.254
+ ip mtu 1460
+ ip tcp adjust-mss 1420
+ ip ospf hello-interval 40
+ ip ospf dead-interval 120
+ keepalive 40 3
+ cdp enable
+ tunnel source 10.15.251.1
+ tunnel destination 10.15.251.192
+!
+interface Tunnel15196
+ description ** ATM-PasazhShahrara **
+ ip address 100.100.100.36 255.255.255.254
+ ip mtu 1460
+ ip tcp adjust-mss 1420
+ ip ospf hello-interval 40
+ ip ospf dead-interval 120
+ keepalive 40 3
+ cdp enable
+ tunnel source 10.15.251.1
+ tunnel destination 10.15.251.196
+!
+interface Tunnel15198
+ description ** Kiosk-Mahsoolat-Keshavrzi-Masoomi **
+ ip address 100.100.100.48 255.255.255.254
+ ip mtu 1460
+ ip tcp adjust-mss 1420
+ ip ospf hello-interval 40
+ ip ospf dead-interval 120
+ keepalive 40 3
+ cdp enable
+ tunnel source 10.15.251.1
+ tunnel destination 10.15.251.198
+!
+interface Tunnel15199
+ description ** Kiosk-STRostaeiIraniyan **
+ bandwidth 64
+ ip address 100.100.100.46 255.255.255.254
+ ip mtu 1460
+ ip tcp adjust-mss 1420
+ ip ospf hello-interval 40
+ ip ospf dead-interval 120
+ keepalive 40 3
+ cdp enable
+ tunnel source 10.15.251.1
+ tunnel destination 10.15.251.199
+!
+interface Tunnel15200
+ description ** Kiosk-BakhshdariBahar **
+ ip address 100.100.100.28 255.255.255.254
+ ip mtu 1460
+ ip tcp adjust-mss 1420
+ ip ospf hello-interval 40
+ ip ospf dead-interval 120
+ keepalive 40 3
+ cdp enable
+ tunnel source 10.15.251.1
+ tunnel destination 10.15.251.200
+!
+interface Tunnel15201
+ description ** ATM-Qarkhlar ***
+ bandwidth 64
+ ip address 100.100.100.20 255.255.255.254
+ ip mtu 1460
+ ip tcp adjust-mss 1420
+ ip ospf hello-interval 40
+ ip ospf dead-interval 120
+ keepalive 40 3
+ cdp enable
+ tunnel source 10.15.251.1
+ tunnel destination 10.15.251.201
+!
+interface Tunnel15202
+ description ** Kiosk-TajarokFamanin **
+ bandwidth 64
+ ip address 100.100.100.54 255.255.255.254
+ ip mtu 1460
+ ip tcp adjust-mss 1420
+ ip ospf hello-interval 40
+ ip ospf dead-interval 120
+ keepalive 40 3
+ cdp enable
+ tunnel source 10.15.251.1
+ tunnel destination 10.15.251.202
+!
+interface GigabitEthernet0/0
+ description ** SW Core **
+ ip address 10.15.0.1 255.255.255.254
+ ip flow ingress
+ ip flow egress
+ ip nat inside
+ ip virtual-reassembly
+ ip route-cache flow
+ duplex auto
+ speed auto
+ media-type rj45
+!
+interface GigabitEthernet0/1
+ no ip address
+ ip flow ingress
+ ip flow egress
+ ip nat inside
+ ip virtual-reassembly
+ ip route-cache flow
+ duplex auto
+ speed auto
+ media-type rj45
+!
+interface GigabitEthernet0/1.405
+ description ** Intranet **
+ encapsulation dot1Q 405
+ ip address 172.16.193.14 255.255.255.252
+ ip access-group INTR@NET in
+ ip virtual-reassembly
+ crypto map BKI-MAP-INT
+!
+interface GigabitEthernet0/1.703
+!
+interface GigabitEthernet0/1.704
+ description ** MPLS-Ostani **
+ encapsulation dot1Q 704
+ ip address 10.15.251.1 255.255.255.0
+!
+interface GigabitEthernet0/1.2548
+ description ** MPLS-To-Tehran **
+ encapsulation dot1Q 2548
+ ip address 10.134.62.2 255.255.255.0
+!
+interface FastEthernet0/3/0
+ description ** APN **
+ switchport access vlan 155
+!
+interface FastEthernet0/3/1
+ description ** Branch **
+ switchport access vlan 20
+!
+interface FastEthernet0/3/2
+ shutdown
+!
+interface FastEthernet0/3/3
+ shutdown
+!
+interface Serial0/0/0:0
+ description ** Zirsakht **
+ ip address 10.0.250.29 255.255.255.254
+ ip flow ingress
+ ip flow egress
+ encapsulation ppp
+ ip ospf cost 500
+ ppp multilink
+ ppp multilink group 15
+!
+interface Serial0/0/1:0
+ description ** Famenin-512 **
+ ip unnumbered Loopback1
+ encapsulation ppp
+ service-policy output QOS-MEHR
+!
+interface Serial0/0/1:1
+ description ** BuAli-512 **
+ ip unnumbered Loopback1
+ encapsulation ppp
+ service-policy output QOS-MEHR
+!
+interface Serial0/0/1:2
+ description ** Shokri-512 **
+ ip unnumbered Loopback1
+ encapsulation ppp
+ service-policy output QOS-MEHR
+!
+interface Serial0/0/1:3
+ description ** Abuzar-448 **
+ ip unnumbered Loopback1
+ encapsulation ppp
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0:0
+ description ** Azandarian **
+ ip unnumbered Loopback1
+ encapsulation ppp
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0:1
+ description ** M-Shohada-512 **
+ ip unnumbered Loopback1
+ encapsulation ppp
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0:2
+ description ** BahonarTykn-512 **
+ ip unnumbered Loopback1
+ encapsulation ppp
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/0:3
+ ip unnumbered Loopback1
+ encapsulation ppp
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/1:0
+ description ** Razan-512 **
+ ip unnumbered Loopback1
+ encapsulation ppp
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/1:1
+ description ** Qahavand-512 **
+ ip unnumbered Loopback1
+ encapsulation ppp
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/1:2
+ description ** Bahar-512 **
+ ip unnumbered Loopback1
+ encapsulation ppp
+ service-policy output QOS-MEHR
+!
+interface Serial0/1/1:3
+ description ** Barzuul-448 **
+ ip unnumbered Loopback1
+ encapsulation ppp
+ service-policy output QOS-MEHR
+!
+interface Serial0/2/0:0
+ description ** Malayer-512 **
+ ip unnumbered Loopback1
+ encapsulation ppp
+ service-policy output QOS-MEHR
+!
+interface Serial0/2/0:1
+ no ip address
+!
+interface Serial0/2/0:2
+ description ** Farasfaj-512 **
+ ip unnumbered Loopback1
+ encapsulation ppp
+ service-policy output QOS-MEHR
+!
+interface Serial0/2/0:3
+ description ** Keshavarz-Blv **
+ ip unnumbered Loopback1
+ encapsulation ppp
+!
+interface Serial0/2/1:0
+ description ** AsadAbad-512 **
+ ip unnumbered Loopback1
+ encapsulation ppp
+ service-policy output QOS-MEHR
+!
+interface Serial0/2/1:1
+ description ** Damagh-512 **
+ ip unnumbered Loopback1
+ encapsulation ppp
+ service-policy output QOS-MEHR
+!
+interface Serial0/2/1:2
+ description ** 17Shahrivar-512 **
+ ip unnumbered Loopback1
+ encapsulation ppp
+ service-policy output QOS-MEHR
+!
+interface Serial0/2/1:3
+ description ** Gian-448 **
+ ip unnumbered Loopback1
+ encapsulation ppp
+ service-policy output QOS-MEHR
+!
+interface Serial1/0:1
+ description ** SalehAbad-512 **
+ ip unnumbered Loopback1
+ encapsulation ppp
+ service-policy output QOS-MEHR
+!
+interface Serial1/0:2
+ description ** Samen - 512 **
+ ip unnumbered Loopback1
+ encapsulation ppp
+ service-policy output QOS-MEHR
+!
+interface Serial1/0:3
+ description ** TaavonBahar-512 **
+ ip unnumbered Loopback1
+ encapsulation ppp
+ service-policy output QOS-MEHR
+!
+interface Serial1/0:6
+ ip unnumbered Loopback1
+ encapsulation ppp
+ service-policy output QOS-MEHR
+!
+interface Serial1/0:7
+ description ** ATM-Shrdri-Bahar ** 
+ ip unnumbered Loopback1
+ encapsulation ppp
+ service-policy output QOS-MEHR
+!
+interface Serial1/0:10
+ ip unnumbered Loopback1
+ encapsulation ppp
+ service-policy output QOS-MEHR
+!
+interface Serial1/1:0
+ description ** GolTape-512 **
+ ip unnumbered Loopback1
+ encapsulation ppp
+ service-policy output QOS-MEHR
+!
+interface Serial1/1:1
+ description ** EynOlQozat-512 **
+ ip unnumbered Loopback1
+ encapsulation ppp
+ service-policy output QOS-MEHR
+!
+interface Serial1/1:2
+ description ** Kiosk-Jahad2 **
+ ip unnumbered Loopback1
+ encapsulation ppp
+ service-policy output QOS-MEHR
+!
+interface Serial1/1:3
+ description ** Zanganeh-448 **
+ ip unnumbered Loopback1
+ encapsulation ppp
+ service-policy output QOS-MEHR
+!
+interface Serial3/0:0
+ description ** VafaeiMlyr-512 **
+ ip unnumbered Loopback1
+ encapsulation ppp
+ service-policy output QOS-MEHR
+!
+interface Serial3/0:1
+ description ** Tuyserkan-512 **
+ ip unnumbered Loopback1
+ encapsulation ppp
+ service-policy output QOS-MEHR
+!
+interface Serial3/0:2
+ description ** Mahdiyeh-512 **
+ ip unnumbered Loopback1
+ encapsulation ppp
+ service-policy output QOS-MEHR
+!
+interface Serial3/0:3
+ description ** PTMP-TEH-448 **
+ bandwidth 448
+ ip address 10.0.250.167 255.255.255.254
+ ip access-group PTMP-IN in
+ ip access-group PTMP-OUT out
+ encapsulation ppp
+!
+interface Serial3/1:0
+ description ** Nahavand-512 **
+ ip unnumbered Loopback1
+ encapsulation ppp
+ service-policy output QOS-MEHR
+!
+interface Serial3/1:1
+ description ** QorvehDrj-512 **
+ ip unnumbered Loopback1
+ encapsulation ppp
+ service-policy output QOS-MEHR
+!
+interface Serial3/1:2
+ description ** ImamKbdrAng-512 **
+ ip unnumbered Loopback1
+ encapsulation ppp
+ ip traffic-export apply ISC size 5242880
+ service-policy output QOS-MEHR
+!
+interface Serial3/1:3
+ description ** Meryanj-448 **
+ bandwidth 448
+ ip unnumbered Loopback1
+ ip access-group PTMP-IN in
+ ip access-group PTMP-OUT out
+ encapsulation ppp
+ ip ospf cost 1100
+ service-policy output QOS-MEHR
+!
+interface Serial4/0:0
+ ip unnumbered Loopback1
+ encapsulation ppp
+ service-policy output QOS-MEHR
+!
+interface Serial4/0:1
+ ip unnumbered Loopback1
+ encapsulation ppp
+ service-policy output QOS-MEHR
+!
+interface Serial4/0:2
+ ip unnumbered Loopback1
+ encapsulation ppp
+ service-policy output QOS-MEHR
+!
+interface Serial4/0:3
+ ip unnumbered Loopback1
+ encapsulation ppp
+ service-policy output QOS-MEHR
+!
+interface Serial4/1:0
+ description ** MBAzadi-512 **
+ ip unnumbered Loopback1
+ encapsulation ppp
+ service-policy output QOS-MEHR
+!
+interface Serial4/1:1
+ description ** Firuzan-512 **
+ ip unnumbered Loopback1
+ encapsulation ppp
+ service-policy output QOS-MEHR
+!
+interface Serial4/1:2
+ description ** Jokar-512 **
+ ip unnumbered Loopback1
+ encapsulation ppp
+ service-policy output QOS-MEHR
+!
+interface Serial4/1:3
+ description ** ShirinSu-448 **
+ ip unnumbered Loopback1
+ encapsulation ppp
+ service-policy output QOS-MEHR
+!
+interface Vlan1
+ no ip address
+ shutdown
+!
+interface Vlan20
+ description ** Branch **
+ ip address 10.15.253.1 255.255.255.252
+!
+interface Vlan30
+ no ip address
+!
+interface Vlan155
+ description ** APN **
+ ip address 10.250.46.38 255.255.255.0
+ crypto map GILANET
+!
+router ospf 1
+ router-id 10.15.254.1
+ ispf
+ log-adjacency-changes
+ area 15 range 100.100.100.0 255.255.255.0 not-advertise
+ area 15 filter-list prefix OSPF-FILTER in
+ redistribute ospf 2 subnets route-map OSPF2-to-OSPF1
+ network 10.0.250.29 0.0.0.0 area 0
+ network 10.15.0.1 0.0.0.0 area 15
+ network 10.15.0.0 0.0.0.255 area 15
+ network 10.15.253.1 0.0.0.0 area 15
+ network 10.15.254.1 0.0.0.0 area 15
+ network 10.255.50.59 0.0.0.0 area 0
+ network 10.255.240.45 0.0.0.0 area 0
+ network 10.255.241.45 0.0.0.0 area 0
+ network 100.100.100.0 0.0.0.255 area 15
+ distribute-list OSPF-PERMIT in
+!
+router ospf 2
+ router-id 10.156.15.1
+ log-adjacency-changes
+ redistribute connected subnets route-map Connected-to-OSPF2
+ redistribute ospf 1 subnets route-map OSPF1-to-OSPF2
+ passive-interface default
+ no passive-interface Tunnel156
+ network 10.156.100.81 0.0.0.0 area 15
+ network 10.156.100.0 0.0.0.255 area 15
+ distribute-list OSPF2-PERMIT in
+ distance 120
+!
+router ospf 200
+ router-id 10.210.15.1
+ log-adjacency-changes
+ network 10.200.9.37 0.0.0.0 area 15
+ network 10.201.9.37 0.0.0.0 area 15
+ network 10.210.15.1 0.0.0.0 area 15
+ distribute-list NewINTACL in
+!
+ip route 0.0.0.0 0.0.0.0 192.168.1.1
+ip route 10.0.0.0 255.255.0.0 Serial3/0:3 125 name PTMP
+ip route 10.0.34.95 255.255.255.255 Tunnel156 name lib.bki.ir
+ip route 10.0.34.96 255.255.255.255 Tunnel156 name parslib
+ip route 10.0.34.112 255.255.255.255 Tunnel156 name Portal
+ip route 10.0.54.112 255.255.255.255 Tunnel156 name AV-GILANET
+ip route 10.0.56.52 255.255.255.255 Tunnel156 name AV-GILANET
+ip route 10.0.56.53 255.255.255.255 Tunnel156 name AV-GILANET
+ip route 10.0.68.102 255.255.255.255 Tunnel20 name TEMP-VC
+ip route 10.0.68.103 255.255.255.255 Tunnel20 name TEMP-VC
+ip route 10.0.74.248 255.255.255.255 Tunnel20 name Info-HR
+ip route 10.0.118.102 255.255.255.255 Tunnel20 name TEMP-VC
+ip route 10.30.42.0 255.255.255.0 172.16.193.13 name SSL-VPN-INTRANET
+ip route 10.30.176.187 255.255.255.255 172.16.193.13 name SandoqTose'eMelli
+ip route 10.30.176.188 255.255.255.255 172.16.193.13 name SandoqTose'eMelli
+ip route 10.134.44.0 255.255.255.0 10.134.62.1 name MPLS-ShahinShahr
+ip route 10.134.45.0 255.255.255.252 10.134.62.1 10 name MPLS-TB
+ip route 10.241.0.0 255.255.255.252 10.134.62.1 name MPLS-HQ
+ip route 10.244.0.0 255.255.255.252 10.134.62.1 name MPLS-HQ-Tohid
+ip route 91.240.180.40 255.255.255.255 172.16.193.13 name sp.sep.ir-SamanKishRoute
+ip route 91.240.180.133 255.255.255.255 172.16.193.13 name SSPM.SEP.IR
+ip route 91.240.181.1 255.255.255.255 172.16.193.13 name sp.sep.ir-GW-SamanKishRoute
+!
+ip flow-cache timeout active 1
+ip flow-export source GigabitEthernet0/0
+ip flow-export version 5
+ip flow-export destination 10.0.51.61 9996
+!
+no ip http server
+no ip http secure-server
+ip nat inside source static 10.15.1.6 interface Vlan30
+ip nat inside source list intnat interface Loopback2 overload
+ip tacacs source-interface GigabitEthernet0/0
+!
+ip access-list standard Connected-to-OSPF2
+ permit 10.15.0.0 0.0.7.255
+ permit 10.15.254.0 0.0.0.255
+ permit 10.15.0.0 0.0.255.255
+ip access-list standard NewINTACL
+ deny   10.0.76.91
+ deny   10.0.68.223
+ deny   10.0.68.150
+ deny   10.0.68.187
+ permit any
+ip access-list standard OSPF-PERMIT
+ remark -----------------------------
+ permit 10.15.0.0 0.0.255.255
+ permit 10.60.3.0 0.0.0.255
+ remark -----------------------------
+ permit 10.50.0.0 0.0.255.255
+ permit 192.168.65.0 0.0.0.255
+ permit 10.0.0.0 0.0.255.255
+ permit 192.168.15.0 0.0.0.255
+ permit 10.40.11.0 0.0.0.255
+ permit 192.168.72.0 0.0.0.255
+ permit 10.60.66.0 0.0.0.255
+ permit 192.168.112.0 0.0.0.255
+ip access-list standard OSPF1-to-OSPF2
+ permit 10.15.0.0 0.0.255.255
+ip access-list standard OSPF2-PERMIT
+ permit 10.0.0.0 0.0.255.255
+ permit 192.168.65.0 0.0.0.255
+ permit 192.168.72.0 0.0.0.255
+ip access-list standard OSPF2-to-OSPF1
+ permit 10.0.0.0
+ permit 192.168.65.0 0.0.0.255
+ permit 192.168.72.0 0.0.0.255
+ip access-list standard SNMP-READ
+ permit 10.0.50.0 0.0.1.255
+ip access-list standard SNMP-WRITE
+ permit 10.0.51.49
+ permit 10.0.51.48
+ permit 10.0.51.50
+ip access-list standard StaticRedist-OSPF2-VideoConf
+ permit 10.15.1.230 0.0.0.1
+ip access-list standard TELNET-ACCESS
+ remark -----------------------------
+ permit 10.15.0.0
+ permit 10.15.0.2
+ permit 10.0.51.25
+ permit 10.255.241.44
+ permit 10.255.240.44
+ permit 10.30.42.2
+ permit 10.134.45.2
+ permit 10.250.46.1
+ permit 10.0.201.36
+ permit 10.0.250.28
+ permit 10.241.0.2
+ permit 10.15.253.2
+ permit 10.0.201.62
+ permit 10.0.50.64 0.0.0.63
+!
+ip access-list extended GILANET-ACL
+ permit gre host 10.250.46.38 host 10.250.46.1
+ip access-list extended HQ-ACCESS-IN
+ permit gre any any
+ permit ospf any any
+ permit ip 192.168.65.0 0.0.0.255 any
+ permit ip 10.0.0.0 0.255.255.255 any
+ permit ip 192.168.15.0 0.0.0.255 any
+ permit ip 192.168.72.0 0.0.0.255 any
+ permit ip 192.168.112.0 0.0.0.255 any
+ip access-list extended HQ-ACCESS-OUT
+ deny   ip any 10.0.151.0 0.0.0.7
+ permit gre any any
+ permit eigrp any any
+ permit ip any 192.168.65.0 0.0.0.255
+ permit ip any 10.0.0.0 0.255.255.255
+ permit ip any 192.168.15.0 0.0.0.255
+ permit ip any 192.168.72.0 0.0.0.255
+ permit ip any 192.168.112.0 0.0.0.255
+ip access-list extended INTR1ACL
+ permit gre host 10.254.218.25 host 10.30.42.200
+ip access-list extended INTR2ACL
+ permit gre host 10.254.218.25 host 10.30.42.201
+ip access-list extended INTR@NET
+ permit icmp any any
+ deny   udp any any eq tftp
+ deny   udp any any eq 135
+ deny   udp any any eq netbios-ns
+ deny   udp any any eq netbios-dgm
+ deny   udp any any eq netbios-ss
+ deny   udp any any eq snmp
+ deny   udp any any eq snmptrap
+ deny   udp any any eq 18999
+ deny   tcp any any eq 135
+ deny   tcp any any eq 139
+ deny   tcp any any eq 445
+ deny   tcp any any eq 593
+ deny   tcp any any eq 4444
+ deny   tcp any any eq 1433
+ deny   tcp any any eq 4786
+ permit ip 10.30.42.0 0.0.0.255 any
+ permit ip host 91.240.180.40 any
+ permit ip host 91.240.181.1 any
+ permit ip 10.30.176.184 0.0.0.7 any
+ permit ip host 91.240.180.133 any
+ip access-list extended INTRANET-CRYPTO
+ip access-list extended PTMP-IN
+ permit gre any any
+ permit eigrp any any
+ permit ip 192.168.65.0 0.0.0.255 any
+ permit ip 10.0.0.0 0.255.255.255 any
+ permit ip 192.168.15.0 0.0.0.255 any
+ip access-list extended PTMP-OUT
+ permit gre any any
+ permit eigrp any any
+ permit ip any 192.168.65.0 0.0.0.255
+ permit ip any 10.0.0.0 0.255.255.255
+ deny   ip any 10.0.151.0 0.0.0.7
+ permit ip any 192.168.15.0 0.0.0.255
+ip access-list extended QOS-MEHR
+ permit ip 10.0.64.0 0.0.1.255 10.0.0.0 0.0.0.255
+ip access-list extended intnat
+ permit ip 10.15.1.0 0.0.0.255 10.0.0.0 0.0.255.255
+ip access-list extended natlist
+ permit ip 10.15.1.0 0.0.0.255 10.30.42.0 0.0.0.255
+ permit ip 10.15.1.0 0.0.0.255 host 91.240.180.40
+ permit ip 10.15.1.0 0.0.0.255 host 91.240.181.1
+ permit ip 10.15.3.0 0.0.0.255 host 91.240.180.40
+ permit ip 10.15.3.0 0.0.0.255 host 91.240.181.1
+ permit ip 10.15.1.0 0.0.0.255 host 10.30.176.187
+ permit ip 10.15.1.0 0.0.0.255 host 10.30.176.188
+ permit ip 10.15.1.0 0.0.0.255 host 91.240.180.133
+!
+!
+ip prefix-list OSPF-FILTER seq 10 permit 10.0.0.0/16
+ip prefix-list OSPF-FILTER seq 20 permit 10.15.0.0/21
+ip prefix-list OSPF-FILTER seq 30 permit 10.60.3.0/24
+logging trap notifications
+logging source-interface Loopback1
+logging 10.0.51.25
+logging 10.0.51.63
+access-list 198 deny   ip any any fragments
+access-list 198 permit udp any any eq 18999
+access-list 199 permit icmp any any echo
+access-list 199 permit icmp any any echo-reply
+snmp-server group LMS v3 priv read myview write myview access SNMP-WRITE
+snmp-server group NMS v3 priv access SNMP-READ
+snmp-server view myview mib-2 included
+snmp-server view myview system included
+snmp-server view myview cisco included
+snmp-server ifindex persist
+!
+!
+!
+route-map OSPF1-to-OSPF2 permit 10
+ match ip address OSPF1-to-OSPF2
+ match route-type internal
+ set metric 10000
+!
+route-map OSPF2-to-OSPF1 permit 10
+ match ip address OSPF2-to-OSPF1
+ set metric 10000
+!
+route-map StaticRedist-OSPF2-VideoConf permit 10
+ match ip address StaticRedist-OSPF2-VideoConf
+ set metric 5000
+!
+route-map Connected-to-OSPF2 permit 10
+ match ip address Connected-to-OSPF2
+ set metric 1000
+!
+!
+!
+tacacs-server host 10.0.51.56
+tacacs-server host 10.0.51.57
+tacacs-server timeout 10
+tacacs-server directed-request
+tacacs-server key 7 1324045C445D577A
+!
+control-plane
+ service-policy input drop-udp
+!
+!
+!
+!
+!
+!
+!
+!
+!
+banner motd 
+
+                                      ===
+                                     -+ +-
+                                     | | |
+                                  <--\ | /-->
+                                 /#| ||||| |#\
+                                /##| |+++| |##\
+                               /____\\ | //____\
+                                 <###\|||/###>
+                                  +====+====+
+                                  | WAN-BKI |
+                                  +===+=+===+
+                                      +=+
+                            Keshavarzi Bank Network
+
+    WARNING:
+                Access is restricted to authorized users only.
+      Unauthorized access is a violation of state , civil and criminal laws.
+
+********************************************************************************
+
+privilege interface level 3 shutdown
+privilege interface level 3 no shutdown
+privilege interface level 3 no
+privilege configure level 3 interface
+privilege exec level 3 traceroute
+privilege exec level 3 ping
+privilege exec level 2 configure terminal
+privilege exec level 2 configure
+privilege exec level 15 reload
+privilege exec level 3 terminal monitor
+privilege exec level 3 terminal
+privilege exec level 15 show running-config
+privilege exec all level 2 show
+!
+line con 0
+ authorization exec CACS
+ logging synchronous
+ login authentication CACS
+line aux 0
+ no exec
+line vty 0 4
+ access-class TELNET-ACCESS in
+ privilege level 15
+ authorization commands 2 CACS
+ authorization exec CACS
+ accounting commands 15 CACS
+ accounting exec CACS
+ login authentication CACS
+ transport input ssh
+ transport output telnet ssh
+line vty 5 15
+ access-class TELNET-ACCESS in
+ privilege level 15
+ authorization commands 2 CACS
+ authorization exec CACS
+ accounting exec CACS
+ login authentication CACS
+ transport input ssh
+ transport output telnet ssh
+!
+scheduler max-task-time 5000
+scheduler allocate 20000 1000
+ntp authentication-key 1 md5 094D491B104815130507 7
+ntp authenticate
+ntp trusted-key 1
+ntp clock-period 17180327
+ntp source Loopback1
+ntp update-calendar
+ntp server 10.0.51.27
+
+!
+webvpn cef
+!
+end
