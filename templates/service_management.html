@@ -341,7 +341,7 @@ document.addEventListener('DOMContentLoaded', function() {
 function showAlert(type, msg) {
     var el = document.getElementById('alertBox');
     el.className = 'alert ' + type;
-    el.innerHTML = msg;
+    el.textContent = msg;
     el.style.display = 'flex';
     setTimeout(function() { el.style.display = 'none'; }, 5000);
 }
@@ -395,27 +395,38 @@ async function doSearch() {
         results.forEach(function(r) {
             var badge = getBadgeClass(r.table);
             html += '<tr>';
-            html += '<td><span class="service-badge ' + badge + '">' + r.service + '</span></td>';
-            html += '<td style="font-weight:600;">' + (r.branch_name || '-') + '</td>';
-            html += '<td>' + (r.province || '-') + '</td>';
-            html += '<td><span class="ip-text">' + (r.ip || '-') + '</span></td>';
-            html += '<td><span class="ip-text">' + (r.lan_ip || '-') + '</span></td>';
-            html += '<td>' + (r.username || '-') + '</td>';
-            html += '<td style="font-size:12px; color:var(--text-muted);">' + (r.date || '-') + '</td>';
-            html += '<td><button class="btn-delete" onclick="deleteService(\'' + r.table + '\',' + r.id + ',\'' + escHtml(r.branch_name) + '\',\'' + escHtml(r.service) + '\')">حذف</button></td>';
+            html += '<td><span class="service-badge ' + badge + '">' + escHtml(r.service) + '</span></td>';
+            html += '<td style="font-weight:600;">' + escHtml(r.branch_name || '-') + '</td>';
+            html += '<td>' + escHtml(r.province || '-') + '</td>';
+            html += '<td><span class="ip-text">' + escHtml(r.ip || '-') + '</span></td>';
+            html += '<td><span class="ip-text">' + escHtml(r.lan_ip || '-') + '</span></td>';
+            html += '<td>' + escHtml(r.username || '-') + '</td>';
+            html += '<td style="font-size:12px; color:var(--text-muted);">' + escHtml(r.date || '-') + '</td>';
+            html += '<td><button class="btn-delete" onclick="deleteService(\'' + escJs(r.table) + '\',' + parseInt(r.id) + ',\'' + escJs(r.branch_name) + '\',\'' + escJs(r.service) + '\')">حذف</button></td>';
             html += '</tr>';
         });
 
         html += '</tbody></table>';
         body.innerHTML = html;
     } catch(e) {
-        body.innerHTML = '<div class="empty-state"><div class="icon">&#10060;</div><div class="msg">خطا در جستجو</div><div class="sub">' + e.message + '</div></div>';
+        body.innerHTML = '<div class="empty-state"><div class="icon">&#10060;</div><div class="msg">خطا در جستجو</div><div class="sub">' + escHtml(e.message) + '</div></div>';
         countEl.textContent = '';
     }
 }
 
 function escHtml(s) {
-    return (s || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
+    if (!s) return '';
+    return String(s)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
+function escJs(s) {
+    if (!s) return '';
+    return String(s).replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/"/g, '\\"');
 }
 
 async function deleteService(table, id, branchName, serviceName) {
