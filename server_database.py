@@ -1442,6 +1442,55 @@ def reserve_tunnel():
 @app.route('/api/check-tunnel-name', methods=['POST'])
 def check_tunnel_name():
     """Check if a tunnel name is already used (reserved) in intranet_tunnels"""
+
+
+@app.route('/api/reserved-intranet', methods=['GET'])
+def get_reserved_intranet():
+    """Get all reserved intranet tunnels for re-config feature"""
+    try:
+        conn = get_db()
+        cursor = conn.cursor()
+        q = request.args.get('q', '').strip()
+
+        if q:
+            cursor.execute("""
+                SELECT id, ip_address, tunnel_name, ip_lan, ip_intranet,
+                       description, province, reserved_by, reserved_at
+                FROM intranet_tunnels
+                WHERE LOWER(status) = 'reserved'
+                AND (tunnel_name LIKE ? OR description LIKE ? OR province LIKE ? OR ip_address LIKE ? OR ip_lan LIKE ?)
+                ORDER BY reserved_at DESC
+            """, (f'%{q}%', f'%{q}%', f'%{q}%', f'%{q}%', f'%{q}%'))
+        else:
+            cursor.execute("""
+                SELECT id, ip_address, tunnel_name, ip_lan, ip_intranet,
+                       description, province, reserved_by, reserved_at
+                FROM intranet_tunnels
+                WHERE LOWER(status) = 'reserved'
+                ORDER BY reserved_at DESC
+            """)
+
+        results = []
+        for row in cursor.fetchall():
+            results.append({
+                'id': row[0],
+                'ip_address': row[1] or '',
+                'tunnel_name': row[2] or '',
+                'ip_lan': row[3] or '',
+                'ip_intranet': row[4] or '',
+                'description': row[5] or '',
+                'province': row[6] or '',
+                'reserved_by': row[7] or '',
+                'reserved_at': row[8] or ''
+            })
+        conn.close()
+        return jsonify(results)
+    except Exception as e:
+        print(f"Reserved intranet error: {e}")
+        return jsonify([])
+
+
+
     data = request.json
     tunnel_name = data.get('tunnel_name', '').strip()
     if not tunnel_name:
