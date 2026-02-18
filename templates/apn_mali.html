@@ -678,9 +678,9 @@ document.addEventListener('DOMContentLoaded', function() {
       </label>
       <div style="display: flex; align-items: center; gap: 0;">
         <span style="background: linear-gradient(135deg, #374151, #1f2937); color: #10b981; padding: 12px 16px; border-radius: 12px 0 0 12px; border: 1px solid rgba(16, 185, 129, 0.3); border-right: none; font-family: 'Courier New', monospace; font-weight: bold; font-size: 1rem;">Tunnel</span>
-        <input id="hubTunnelNumber" type="text" placeholder="Lan IP (xy) مثال: 3014" required style="border-radius: 0 12px 12px 0; flex: 1; direction: ltr; text-align: left;">
+        <input id="hubTunnelNumber" type="text" placeholder="Auto: XY (e.g. 3014)" required style="border-radius: 0 12px 12px 0; flex: 1; direction: ltr; text-align: left;">
       </div>
-      <div class="help-text">⚠️ از X و Y آدرس LAN شعبه استفاده کنید (مثال: اگر LAN = 10.30.14.0 → 3014)</div>
+      <div class="help-text">&#9889; با انتخاب LAN IP خودکار پر می‌شود (XY) - می‌توانید دستی تغییر دهید</div>
     </div>
 
     <!-- Hidden fields -->
@@ -1044,18 +1044,35 @@ document.getElementById('branchName').addEventListener('input', async function()
   }
 });
 
-// Auto-calculate OSPF Area from LAN IP
+// Auto-calculate OSPF Area + Tunnel Number from LAN IP
 document.getElementById('freeLanIp').addEventListener('change', function() {
   const lanIp = this.value;
 
   if (lanIp) {
     const parts = lanIp.split('.');
-    if (parts.length >= 2) {
-      const ospfArea = parts[1];
+    if (parts.length >= 3) {
+      const x = parts[1];
+      const y = parts[2];
+      const ospfArea = x;
       document.getElementById('ospfArea').value = ospfArea;
-      console.log(`✓ OSPF Area: ${ospfArea}`);
+
+      // Auto-fill tunnel number: XY (pad Y to 2 digits if needed)
+      const yPad = parseInt(y) < 10 ? '0' + y : y;
+      const autoTunNum = x + yPad;
+      const tunnelField = document.getElementById('hubTunnelNumber');
+      if (!tunnelField.dataset.manual) {
+        tunnelField.value = autoTunNum;
+        tunnelField.style.borderColor = 'rgba(16, 185, 129, 0.4)';
+      }
+      console.log(`✓ OSPF Area: ${ospfArea}, Auto Tunnel: ${autoTunNum}`);
     }
   }
+});
+
+// Allow manual override of tunnel number
+document.getElementById('hubTunnelNumber').addEventListener('input', function() {
+  this.dataset.manual = 'true';
+  this.style.borderColor = 'rgba(245, 158, 11, 0.4)';
 });
 
 document.getElementById('lanProvinceFilter').addEventListener('change', function() {

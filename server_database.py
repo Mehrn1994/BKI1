@@ -20,6 +20,7 @@ import threading
 
 app = Flask(__name__)
 CORS(app, origins=["http://localhost:5000", "http://127.0.0.1:5000"])
+app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max upload size
 
 # Optional: Remote connection module (SSH/Telnet/RDP)
 # Requires: pip install flask-socketio paramiko eventlet
@@ -56,6 +57,23 @@ def record_login_attempt(ip):
     if ip not in login_attempts:
         login_attempts[ip] = []
     login_attempts[ip].append(time.time())
+
+# General API rate limiting for sensitive write endpoints
+_api_rate = {}  # {ip+endpoint: [timestamps]}
+API_RATE_LIMIT = 30  # max requests per window
+API_RATE_WINDOW = 60  # seconds
+
+def is_api_rate_limited(ip, endpoint):
+    """Check if an IP has exceeded API rate limit for a specific endpoint"""
+    key = f"{ip}:{endpoint}"
+    now = time.time()
+    if key not in _api_rate:
+        _api_rate[key] = []
+    _api_rate[key] = [t for t in _api_rate[key] if now - t < API_RATE_WINDOW]
+    if len(_api_rate[key]) >= API_RATE_LIMIT:
+        return True
+    _api_rate[key].append(now)
+    return False
 
 def validate_octet(value):
     """Validate that value is a valid IP octet (0-255)"""
@@ -241,6 +259,18 @@ def init_tables():
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_intranet_tunnels_status ON intranet_tunnels(status)")
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_tunnel200_status ON tunnel200_ips(status)")
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_tunnel_mali_status ON tunnel_mali(status)")
+        # Additional indexes for frequently queried columns
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_lan_ips_status ON lan_ips(status)")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_lan_ips_octet2 ON lan_ips(octet2)")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_lan_ips_octet2_octet3 ON lan_ips(octet2, octet3)")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_reserved_ips_expiry ON reserved_ips(expiry_date)")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_reserved_ips_status ON reserved_ips(status)")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_vpls_tunnels_province ON vpls_tunnels(province)")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_vpls_tunnels_branch ON vpls_tunnels(branch_name)")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_apn_ips_branch ON apn_ips(branch_name)")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_apn_mali_branch ON apn_mali(branch_name)")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_tunnel_mali_branch ON tunnel_mali(branch_name)")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_tunnel200_branch ON tunnel200_ips(branch_name)")
         print("✓ Database indexes created")
     except Exception as e:
         print(f"⚠️ Index creation: {e}")
@@ -839,6 +869,8 @@ def search_services():
 def delete_service():
     """Delete/free a specific service from any table"""
     try:
+        if is_api_rate_limited(request.remote_addr, 'delete-service'):
+            return jsonify({'status': 'error', 'error': 'Too many requests. Please wait.'}), 429
         data = request.json
         table = data.get('table', '')
         record_id = data.get('id')
@@ -1079,7 +1111,8 @@ def get_recent_reservations():
                     'date': row['reservation_date'] or '',
                     'type': 'APN-INT'
                 })
-        except: pass
+        except Exception as e:
+            print(f"⚠️ Recent reservations query: {e}")
         
         # From apn_mali (APN مالی)
         try:
@@ -1099,7 +1132,8 @@ def get_recent_reservations():
                     'date': row['reservation_date'] or '',
                     'type': 'APN-MALI'
                 })
-        except: pass
+        except Exception as e:
+            print(f"⚠️ Recent reservations query: {e}")
         
         # From reserved_ips (LAN IPs)
         try:
@@ -1119,7 +1153,8 @@ def get_recent_reservations():
                     'date': row['reservation_date'] or '',
                     'type': 'LAN'
                 })
-        except: pass
+        except Exception as e:
+            print(f"⚠️ Recent reservations query: {e}")
         
         conn.close()
         
@@ -1442,7 +1477,34 @@ def reserve_tunnel():
 @app.route('/api/check-tunnel-name', methods=['POST'])
 def check_tunnel_name():
     """Check if a tunnel name is already used (reserved) in intranet_tunnels"""
+    try:
+        data = request.json
+        tunnel_name = data.get('tunnel_name', '').strip()
+        if not tunnel_name:
+            return jsonify({'status': 'error', 'error': 'Tunnel name is required'}), 400
 
+        conn = get_db()
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT id, ip_address, description, reserved_by, status
+            FROM intranet_tunnels
+            WHERE tunnel_name = ? AND LOWER(status) != 'free'
+        """, (tunnel_name,))
+        row = cursor.fetchone()
+        conn.close()
+
+        if row:
+            return jsonify({
+                'exists': True,
+                'ip_address': row['ip_address'] or '',
+                'description': row['description'] or '',
+                'reserved_by': row['reserved_by'] or '',
+                'status': row['status'] or ''
+            })
+        return jsonify({'exists': False})
+    except Exception as e:
+        print(f"Check tunnel name error: {e}")
+        return jsonify({'status': 'error', 'error': str(e)}), 500
 
 @app.route('/api/reserved-intranet', methods=['GET'])
 def get_reserved_intranet():
@@ -1640,12 +1702,13 @@ PROVINCE_TUNNEL_TEMPLATES = {
     'YZD':   {'x': 20, 'vpls': {'hub': '10.20.251.1',  'subnet': '10.20.251'},  'mpls': {'hub': '10.20.251.1',  'subnet': '10.20.251'}},
 }
 
-# Cache for Excel tunnel data (loaded once)
-_excel_tunnel_cache = {'data': None, 'loaded': False}
+# Cache for Excel tunnel data (refreshes every 30 minutes)
+_excel_tunnel_cache = {'data': None, 'loaded': False, 'time': 0}
+EXCEL_CACHE_TTL = 1800  # 30 minutes
 
 def _load_excel_tunnel_data():
     """Load and cache tunnel source/destination data from Excel"""
-    if _excel_tunnel_cache['loaded']:
+    if _excel_tunnel_cache['loaded'] and (time.time() - _excel_tunnel_cache['time']) < EXCEL_CACHE_TTL:
         return _excel_tunnel_cache['data']
     try:
         excel_path = os.path.join(os.path.dirname(__file__), 'data', 'VPLS_MPLS_Tunnel_IPs.xlsx')
@@ -1660,12 +1723,14 @@ def _load_excel_tunnel_data():
                         all_ips.add(ip_str)
             _excel_tunnel_cache['data'] = all_ips
             _excel_tunnel_cache['loaded'] = True
+            _excel_tunnel_cache['time'] = time.time()
             print(f"✓ Loaded {len(all_ips)} tunnel IPs from Excel cache")
             return all_ips
     except Exception as e:
         print(f"⚠️ Excel tunnel cache load error: {e}")
     _excel_tunnel_cache['data'] = set()
     _excel_tunnel_cache['loaded'] = True
+    _excel_tunnel_cache['time'] = time.time()
     return set()
 
 @app.route('/api/tunnel-template', methods=['GET'])
@@ -1750,7 +1815,7 @@ def get_tunnel_template():
         'used_ips': sorted(list(used_ips)),
         'used_count': len(used_ips),
         'total_capacity': 252,
-        'remaining': 252 - len(used_last_octets) + 3,  # +3 for .0, .255, hub
+        'remaining': max(0, 253 - len(used_last_octets)),  # 253 usable (.1-.254 minus hub)
         'service_type': service_type,
         'province_abbr': province_abbr
     })
@@ -2186,19 +2251,37 @@ def get_used_lan_ips():
 # ==================== LAN IPs API ====================
 @app.route('/api/lan-ips', methods=['GET'])
 def get_lan_ips():
-    """Get ALL LAN IPs from lan_ips table (for monitoring purposes)"""
+    """Get LAN IPs from lan_ips table with optional pagination"""
     try:
         conn = get_db()
         cursor = conn.cursor()
-        
-        cursor.execute("""
+
+        # Pagination support
+        page = request.args.get('page', type=int)
+        per_page = request.args.get('per_page', 200, type=int)
+        per_page = min(per_page, 500)  # Cap at 500
+
+        province_filter = request.args.get('province', '').strip()
+
+        query = """
             SELECT id, branch_name, province, octet2, octet3, wan_ip, status, username
-            FROM lan_ips 
+            FROM lan_ips
             WHERE branch_name IS NOT NULL AND branch_name != ''
             AND octet2 IS NOT NULL AND octet3 IS NOT NULL
-            ORDER BY province, branch_name
-        """)
-        
+        """
+        params = []
+        if province_filter:
+            query += " AND province = ?"
+            params.append(province_filter)
+        query += " ORDER BY province, branch_name"
+
+        if page is not None:
+            offset = (page - 1) * per_page
+            query += " LIMIT ? OFFSET ?"
+            params.extend([per_page, offset])
+
+        cursor.execute(query, params)
+
         ips = []
         for row in cursor.fetchall():
             ips.append({
@@ -2211,7 +2294,7 @@ def get_lan_ips():
                 'status': row['status'] or 'Active',
                 'username': row['username'] or ''
             })
-        
+
         conn.close()
         print(f"✓ LAN IPs for monitoring: {len(ips)}")
         return jsonify({'success': True, 'data': ips})
@@ -2342,10 +2425,76 @@ def activate_reservation():
         print(f"❌ Activate reservation error: {e}")
         return jsonify({'status': 'error', 'was_reserved': False, 'message': str(e)})
 
+# ==================== NEXT FREE LAN IP ====================
+@app.route('/api/next-free-lan-ip', methods=['GET'])
+def get_next_free_lan_ip():
+    """Get the next available free LAN IP for a given province (octet2).
+    Returns the first free 10.X.Y.0/24 for the selected province.
+    """
+    try:
+        province = request.args.get('province', '').strip()
+        if not province:
+            return jsonify({'available': False, 'message': 'Province is required'})
+
+        conn = get_db()
+        cursor = conn.cursor()
+
+        # Find octet2 values for this province
+        cursor.execute("""
+            SELECT DISTINCT octet2 FROM lan_ips
+            WHERE province = ? AND octet2 IS NOT NULL
+            ORDER BY octet2
+        """, (province,))
+        octet2_list = [row['octet2'] for row in cursor.fetchall()]
+
+        if not octet2_list:
+            conn.close()
+            return jsonify({'available': False, 'message': 'Province not found in database'})
+
+        # For each octet2, find free IPs
+        free_ips = []
+        for o2 in octet2_list:
+            cursor.execute("""
+                SELECT octet2, octet3, branch_name, status
+                FROM lan_ips
+                WHERE octet2 = ?
+                AND (username IS NULL OR username = '')
+                AND (branch_name IS NULL OR branch_name = '')
+                AND (status IS NULL OR status = '' OR LOWER(status) = 'free')
+                ORDER BY octet3
+                LIMIT 10
+            """, (o2,))
+            for row in cursor.fetchall():
+                free_ips.append({
+                    'octet2': row['octet2'],
+                    'octet3': row['octet3'],
+                    'lan_ip': f"10.{row['octet2']}.{row['octet3']}.0/24",
+                    'status': 'Free'
+                })
+
+        conn.close()
+
+        if not free_ips:
+            return jsonify({'available': False, 'message': 'No free IPs available for this province'})
+
+        return jsonify({
+            'available': True,
+            'next_free': free_ips[0],
+            'free_list': free_ips[:10],
+            'total_free': len(free_ips),
+            'province': province,
+            'octet2_values': octet2_list
+        })
+    except Exception as e:
+        print(f"Next free LAN IP error: {e}")
+        return jsonify({'available': False, 'message': str(e)})
+
 # ==================== RESERVE LAN IP ====================
 @app.route('/api/reserve-lan', methods=['POST'])
 def reserve_lan_ip():
     try:
+        if is_api_rate_limited(request.remote_addr, 'reserve-lan'):
+            return jsonify({'status': 'error', 'message': 'Too many requests. Please wait.'}), 429
         data = request.json
         
         # Handle both old and new parameter names
@@ -2376,31 +2525,41 @@ def reserve_lan_ip():
         
         conn = get_db()
         cursor = conn.cursor()
-        
+
         now = datetime.now()
         expiry = now + timedelta(days=60)
-        
-        # Update lan_ips table
-        cursor.execute("""
-            UPDATE lan_ips SET username = ?, reservation_date = ?, branch_name = ?, status = 'Reserved'
-            WHERE octet2 = ? AND octet3 = ?
-        """, (username, now.strftime('%Y-%m-%d'), branch_name, octet2, octet3))
-        
-        # Insert into reserved_ips table (check if status column exists)
+
+        # Use BEGIN IMMEDIATE to prevent race conditions on concurrent reservations
+        cursor.execute("BEGIN IMMEDIATE")
         try:
+            # Check if IP is still free before reserving
+            cursor.execute("""
+                SELECT status FROM lan_ips WHERE octet2 = ? AND octet3 = ?
+            """, (octet2, octet3))
+            row = cursor.fetchone()
+            if row and row['status'] and row['status'].lower() in ('reserved', 'used', 'activated'):
+                conn.rollback()
+                conn.close()
+                return jsonify({'status': 'error', 'message': 'این IP قبلاً رزرو شده است'}), 409
+
+            # Update lan_ips table
+            cursor.execute("""
+                UPDATE lan_ips SET username = ?, reservation_date = ?, branch_name = ?, status = 'Reserved'
+                WHERE octet2 = ? AND octet3 = ?
+            """, (username, now.strftime('%Y-%m-%d'), branch_name, octet2, octet3))
+
+            # Insert into reserved_ips table
             cursor.execute("""
                 INSERT INTO reserved_ips (province, octet2, octet3, branch_name, username, reservation_date, expiry_date, request_number, point_type, mehregostar_code, status)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'reserved')
             """, (province, octet2, octet3, branch_name, username, now.strftime('%Y-%m-%d'), expiry.strftime('%Y-%m-%d'), request_number, point_type, mehregostar_code))
-        except sqlite3.OperationalError:
-            # status column doesn't exist, insert without it
-            cursor.execute("""
-                INSERT INTO reserved_ips (province, octet2, octet3, branch_name, username, reservation_date, expiry_date, request_number, point_type, mehregostar_code)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """, (province, octet2, octet3, branch_name, username, now.strftime('%Y-%m-%d'), expiry.strftime('%Y-%m-%d'), request_number, point_type, mehregostar_code))
-        
-        conn.commit()
-        conn.close()
+
+            conn.commit()
+        except Exception as inner_e:
+            conn.rollback()
+            raise inner_e
+        finally:
+            conn.close()
         
         log_activity('success', 'رزرو IP LAN', f'10.{octet2}.{octet3}.0 برای {branch_name}', username)
         return jsonify({
