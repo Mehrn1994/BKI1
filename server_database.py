@@ -1605,6 +1605,156 @@ def reserve_vpls_tunnel():
         print(f"❌ Reserve VPLS tunnel error: {e}")
         return jsonify({'status': 'error', 'error': str(e)}), 500
 
+# ==================== PROVINCE TUNNEL TEMPLATES ====================
+# Auto-discovered from analysis of VPLS_MPLS_Tunnel_IPs.xlsx
+# Maps province abbreviation → hub IPs and branch WAN subnets
+# hub_ip = tunnel destination for branches / tunnel source for hub
+# subnet = first 3 octets of the WAN subnet used for branch tunnel source IPs
+PROVINCE_TUNNEL_TEMPLATES = {
+    'ARD':   {'x': 23, 'vpls': {'hub': '10.23.251.1',  'subnet': '10.23.251'},  'mpls': {'hub': '10.23.251.1',  'subnet': '10.23.251'}},
+    'AZGH':  {'x': 33, 'vpls': {'hub': '10.33.251.1',  'subnet': '10.33.251'},  'mpls': {'hub': '10.33.251.1',  'subnet': '10.33.251'}},
+    'AZSH':  {'x': 3,  'vpls': {'hub': '10.3.251.1',   'subnet': '10.3.251'},   'mpls': {'hub': '10.3.251.1',   'subnet': '10.3.251'}},
+    'BSH':   {'x': 18, 'vpls': {'hub': '10.18.251.2',  'subnet': '10.18.251'},  'mpls': {'hub': '10.18.251.2',  'subnet': '10.18.251'}},
+    'CHB':   {'x': 16, 'vpls': {'hub': '10.16.251.1',  'subnet': '10.16.251'},  'mpls': {'hub': '10.16.251.1',  'subnet': '10.16.251'}},
+    'ESF':   {'x': 10, 'vpls': {'hub': '10.10.251.1',  'subnet': '10.10.251'},  'mpls': {'hub': '10.10.251.1',  'subnet': '10.10.251'}},
+    'FRS':   {'x': 7,  'vpls': {'hub': '10.7.251.2',   'subnet': '10.7.251'},   'mpls': {'hub': '10.7.252.1',   'subnet': '10.7.252'}},
+    'GIL':   {'x': 21, 'vpls': {'hub': '10.21.251.1',  'subnet': '10.21.251'},  'mpls': {'hub': '10.21.251.1',  'subnet': '10.21.251'}},
+    'GLS':   {'x': 22, 'vpls': {'hub': '10.22.251.1',  'subnet': '10.22.251'},  'mpls': {'hub': '10.22.251.1',  'subnet': '10.22.251'}},
+    'HMD':   {'x': 15, 'vpls': {'hub': '10.15.251.1',  'subnet': '10.15.251'},  'mpls': {'hub': '10.15.251.1',  'subnet': '10.15.251'}},
+    'HMZ':   {'x': 17, 'vpls': {'hub': '10.17.251.1',  'subnet': '10.17.251'},  'mpls': {'hub': '10.17.251.1',  'subnet': '10.17.251'}},
+    'ILM':   {'x': 25, 'vpls': {'hub': '10.25.251.1',  'subnet': '10.25.251'},  'mpls': {'hub': '10.25.251.1',  'subnet': '10.25.251'}},
+    'KHB':   {'x': 26, 'vpls': {'hub': '10.26.251.2',  'subnet': '10.26.251'},  'mpls': {'hub': '10.26.251.2',  'subnet': '10.26.251'}},
+    'KHR':   {'x': 9,  'vpls': {'hub': '10.9.252.1',   'subnet': '10.9.252'},   'mpls': {'hub': '10.9.252.1',   'subnet': '10.9.252'}},
+    'KHRJ':  {'x': 29, 'vpls': {'hub': '10.29.250.1',  'subnet': '10.29.250'},  'mpls': {'hub': '10.29.250.1',  'subnet': '10.29.250'}},
+    'KHSH':  {'x': 30, 'vpls': {'hub': '10.30.251.1',  'subnet': '10.30.251'},  'mpls': {'hub': '10.30.251.1',  'subnet': '10.30.251'}},
+    'KHZ':   {'x': 6,  'vpls': {'hub': '10.6.253.1',   'subnet': '10.6.253'},   'mpls': {'hub': '10.6.249.1',   'subnet': '10.6.249'}},
+    'KRD':   {'x': 12, 'vpls': {'hub': '10.12.251.1',  'subnet': '10.12.251'},  'mpls': {'hub': '10.12.251.1',  'subnet': '10.12.251'}},
+    'KRMSH': {'x': 5,  'vpls': {'hub': '10.5.251.1',   'subnet': '10.5.251'},   'mpls': {'hub': '10.5.251.1',   'subnet': '10.5.251'}},
+    'LOR':   {'x': 14, 'vpls': {'hub': '10.14.251.1',  'subnet': '10.14.251'},  'mpls': {'hub': '10.14.251.1',  'subnet': '10.14.251'}},
+    'MAZ':   {'x': 32, 'vpls': {'hub': '10.32.251.2',  'subnet': '10.32.251'},  'mpls': {'hub': '10.32.251.2',  'subnet': '10.32.251'}},
+    'MRZ':   {'x': 24, 'vpls': {'hub': '10.24.251.1',  'subnet': '10.24.251'},  'mpls': {'hub': '10.24.251.1',  'subnet': '10.24.251'}},
+    'QOM':   {'x': 28, 'vpls': {'hub': '10.28.251.1',  'subnet': '10.28.251'},  'mpls': {'hub': '10.28.251.1',  'subnet': '10.28.251'}},
+    'QZV':   {'x': 27, 'vpls': {'hub': '10.27.251.1',  'subnet': '10.27.251'},  'mpls': {'hub': '10.27.251.1',  'subnet': '10.27.251'}},
+    'SMN':   {'x': 13, 'vpls': {'hub': '10.13.251.1',  'subnet': '10.13.251'},  'mpls': {'hub': '10.13.240.1',  'subnet': '10.13.240'}},
+    'SNB':   {'x': 11, 'vpls': {'hub': '10.11.251.1',  'subnet': '10.11.251'},  'mpls': {'hub': '10.11.251.1',  'subnet': '10.11.251'}},
+    'YZD':   {'x': 20, 'vpls': {'hub': '10.20.251.1',  'subnet': '10.20.251'},  'mpls': {'hub': '10.20.251.1',  'subnet': '10.20.251'}},
+}
+
+# Cache for Excel tunnel data (loaded once)
+_excel_tunnel_cache = {'data': None, 'loaded': False}
+
+def _load_excel_tunnel_data():
+    """Load and cache tunnel source/destination data from Excel"""
+    if _excel_tunnel_cache['loaded']:
+        return _excel_tunnel_cache['data']
+    try:
+        excel_path = os.path.join(os.path.dirname(__file__), 'data', 'VPLS_MPLS_Tunnel_IPs.xlsx')
+        if os.path.exists(excel_path):
+            df = pd.read_excel(excel_path, sheet_name='All_Tunnels')
+            # Collect all IPs from tunnel_source and tunnel_destination
+            all_ips = set()
+            for col in ['tunnel_source', 'tunnel_destination']:
+                for ip in df[col].dropna():
+                    ip_str = str(ip).strip()
+                    if ip_str and ip_str[0].isdigit():
+                        all_ips.add(ip_str)
+            _excel_tunnel_cache['data'] = all_ips
+            _excel_tunnel_cache['loaded'] = True
+            print(f"✓ Loaded {len(all_ips)} tunnel IPs from Excel cache")
+            return all_ips
+    except Exception as e:
+        print(f"⚠️ Excel tunnel cache load error: {e}")
+    _excel_tunnel_cache['data'] = set()
+    _excel_tunnel_cache['loaded'] = True
+    return set()
+
+@app.route('/api/tunnel-template', methods=['GET'])
+def get_tunnel_template():
+    """Get tunnel source/destination template for a province.
+    Returns hub IP, branch subnet, used IPs, and next available IP.
+    """
+    province_abbr = request.args.get('province_abbr', '').strip()
+    service_type = request.args.get('service_type', 'VPLS').strip().upper()
+
+    if province_abbr not in PROVINCE_TUNNEL_TEMPLATES:
+        return jsonify({
+            'available': False,
+            'message': 'No auto-fill template available for this province. Please enter IPs manually.'
+        })
+
+    template = PROVINCE_TUNNEL_TEMPLATES[province_abbr]
+    svc_key = 'vpls' if service_type == 'VPLS' else 'mpls'
+    hub_ip = template[svc_key]['hub']
+    subnet_prefix = template[svc_key]['subnet']  # e.g. '10.13.251'
+
+    # Collect all used IPs in this subnet
+    used_ips = set()
+
+    # 1. From Excel data (cached)
+    excel_ips = _load_excel_tunnel_data()
+    for ip in excel_ips:
+        if ip.startswith(subnet_prefix + '.'):
+            used_ips.add(ip)
+
+    # 2. From database (vpls_tunnels table - wan_ip and tunnel_dest columns)
+    try:
+        conn = get_db()
+        cursor = conn.cursor()
+        like_pattern = subnet_prefix + '.%'
+        cursor.execute(
+            "SELECT wan_ip, tunnel_dest FROM vpls_tunnels WHERE wan_ip LIKE ? OR tunnel_dest LIKE ?",
+            (like_pattern, like_pattern)
+        )
+        for row in cursor.fetchall():
+            if row['wan_ip'] and str(row['wan_ip']).startswith(subnet_prefix + '.'):
+                used_ips.add(str(row['wan_ip']))
+            if row['tunnel_dest'] and str(row['tunnel_dest']).startswith(subnet_prefix + '.'):
+                used_ips.add(str(row['tunnel_dest']))
+        conn.close()
+    except Exception as e:
+        print(f"⚠️ DB query for tunnel template: {e}")
+
+    # Parse last octets of all used IPs
+    used_last_octets = set()
+    for ip in used_ips:
+        parts = ip.split('.')
+        if len(parts) == 4:
+            try:
+                used_last_octets.add(int(parts[3]))
+            except ValueError:
+                pass
+
+    # Always reserve network (.0), broadcast (.255), and hub IP
+    used_last_octets.add(0)
+    used_last_octets.add(255)
+    hub_parts = hub_ip.split('.')
+    if len(hub_parts) == 4:
+        try:
+            used_last_octets.add(int(hub_parts[3]))
+        except ValueError:
+            pass
+
+    # Find next available IP (start from 3 to avoid common gateway IPs .1/.2)
+    next_free_ip = None
+    start_search = 3
+    for i in range(start_search, 255):
+        if i not in used_last_octets:
+            next_free_ip = f'{subnet_prefix}.{i}'
+            break
+
+    return jsonify({
+        'available': True,
+        'hub_ip': hub_ip,
+        'branch_subnet': subnet_prefix + '.0/24',
+        'next_free_ip': next_free_ip,
+        'used_ips': sorted(list(used_ips)),
+        'used_count': len(used_ips),
+        'total_capacity': 252,
+        'remaining': 252 - len(used_last_octets) + 3,  # +3 for .0, .255, hub
+        'service_type': service_type,
+        'province_abbr': province_abbr
+    })
+
 # ==================== TUNNEL200 IPs ====================
 @app.route('/api/tunnel200-ips', methods=['GET'])
 def get_tunnel200_ips():

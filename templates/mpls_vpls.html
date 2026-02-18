@@ -427,15 +427,73 @@ document.addEventListener('DOMContentLoaded', function() {
             <input type="hidden" id="branchX">
             <input type="hidden" id="branchY">
 
-            <!-- WAN Interface IP (user-entered - becomes tunnel source) -->
-            <label>WAN Interface IP (Tunnel Source)</label>
-            <input type="text" id="wanIp" placeholder="e.g. 10.126.251.5">
-            <div style="font-size:11px; color:var(--text-muted,#94a3b8); margin-top:3px;">IP address on the physical WAN interface - this becomes the tunnel source</div>
+            <!-- ========== AUTO-FILL TUNNEL SOURCE/DESTINATION ========== -->
+            <div id="tunnelAutoFillPanel" style="display:none; margin:14px 0; padding:16px; background:linear-gradient(135deg,rgba(16,185,129,0.08),rgba(6,182,212,0.06)); border:1.5px solid rgba(16,185,129,0.3); border-radius:12px;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+                    <div style="font-size:12px; text-transform:uppercase; letter-spacing:0.5px; color:#10b981; font-weight:700;">&#9889; Auto-Detected Tunnel IPs</div>
+                    <div id="tunnelAutoStats" style="font-size:11px; color:var(--text-muted,#94a3b8);"></div>
+                </div>
 
-            <!-- Tunnel Destination (user-entered) -->
-            <label>Tunnel Destination (HUB IP)</label>
-            <input type="text" id="tunnelDest" placeholder="e.g. 10.126.251.1">
-            <div style="font-size:11px; color:var(--text-muted,#94a3b8); margin-top:3px;">IP of the HUB/PE router (tunnel destination)</div>
+                <!-- Tunnel Destination (HUB IP) - Auto -->
+                <div style="margin-bottom:12px; padding:12px; background:rgba(139,92,246,0.06); border:1px solid rgba(139,92,246,0.2); border-radius:8px;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                        <label style="margin:0; font-size:13px; font-weight:700; color:#8b5cf6;">Tunnel Destination (HUB IP)</label>
+                        <label style="display:flex; align-items:center; gap:6px; margin:0; cursor:pointer; font-size:12px; color:var(--text-secondary,#94a3b8);">
+                            <input type="checkbox" id="overrideTunnelDest" style="width:16px;height:16px;accent-color:#ef4444;cursor:pointer;" onchange="toggleTunnelDestOverride()">
+                            <span>&#9998; Manual Override</span>
+                        </label>
+                    </div>
+                    <div id="autoTunnelDestDisplay" style="display:flex; align-items:center; gap:10px;">
+                        <span id="autoTunnelDestValue" style="font-size:16px; font-weight:700; color:#10b981; font-family:'Consolas','JetBrains Mono',monospace; background:rgba(16,185,129,0.1); padding:6px 14px; border-radius:6px; border:1px solid rgba(16,185,129,0.2);">-</span>
+                        <span id="autoTunnelDestLabel" style="font-size:11px; color:var(--text-muted,#94a3b8);">Hub router IP (auto-detected from province template)</span>
+                    </div>
+                    <div id="manualTunnelDestInput" style="display:none; margin-top:6px;">
+                        <input type="text" id="manualTunnelDest" placeholder="Enter HUB IP manually..." style="border-color:rgba(239,68,68,0.4) !important; background:rgba(239,68,68,0.04) !important;">
+                        <div style="font-size:11px; color:#ef4444; margin-top:3px;">&#9888; Manual mode - enter the correct HUB IP for this province</div>
+                    </div>
+                </div>
+
+                <!-- WAN Interface IP (Tunnel Source) - Auto -->
+                <div style="padding:12px; background:rgba(59,130,246,0.06); border:1px solid rgba(59,130,246,0.2); border-radius:8px;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                        <label style="margin:0; font-size:13px; font-weight:700; color:#3b82f6;">WAN Interface IP (Tunnel Source)</label>
+                        <label style="display:flex; align-items:center; gap:6px; margin:0; cursor:pointer; font-size:12px; color:var(--text-secondary,#94a3b8);">
+                            <input type="checkbox" id="overrideWanIp" style="width:16px;height:16px;accent-color:#ef4444;cursor:pointer;" onchange="toggleWanIpOverride()">
+                            <span>&#9998; Manual Override</span>
+                        </label>
+                    </div>
+                    <div id="autoWanIpDisplay" style="display:flex; align-items:center; gap:10px;">
+                        <span id="autoWanIpValue" style="font-size:16px; font-weight:700; color:#3b82f6; font-family:'Consolas','JetBrains Mono',monospace; background:rgba(59,130,246,0.1); padding:6px 14px; border-radius:6px; border:1px solid rgba(59,130,246,0.2);">-</span>
+                        <span id="autoWanIpLabel" style="font-size:11px; color:var(--text-muted,#94a3b8);">Next available IP from branch subnet (auto-assigned)</span>
+                    </div>
+                    <div id="manualWanIpInput" style="display:none; margin-top:6px;">
+                        <input type="text" id="manualWanIp" placeholder="Enter WAN IP manually..." style="border-color:rgba(239,68,68,0.4) !important; background:rgba(239,68,68,0.04) !important;">
+                        <div style="font-size:11px; color:#ef4444; margin-top:3px;">&#9888; Manual mode - ensure this IP is not already in use</div>
+                    </div>
+                </div>
+
+                <!-- Subnet Info -->
+                <div id="tunnelSubnetInfo" style="margin-top:10px; padding:8px 12px; background:rgba(245,158,11,0.06); border:1px solid rgba(245,158,11,0.2); border-radius:6px; font-size:11px; color:var(--text-muted,#94a3b8);">
+                    <span>&#128203; Subnet: <strong id="autoSubnetDisplay">-</strong></span>
+                    <span style="margin-left:12px;">Used: <strong id="autoUsedCount">-</strong></span>
+                    <span style="margin-left:12px;">Free: <strong id="autoFreeCount">-</strong></span>
+                </div>
+            </div>
+
+            <!-- Fallback: Manual-only fields (shown when no template available) -->
+            <div id="manualOnlyFields">
+                <label>WAN Interface IP (Tunnel Source)</label>
+                <input type="text" id="wanIpManualOnly" placeholder="e.g. 10.126.251.5">
+                <div style="font-size:11px; color:var(--text-muted,#94a3b8); margin-top:3px;">IP address on the physical WAN interface - this becomes the tunnel source</div>
+
+                <label>Tunnel Destination (HUB IP)</label>
+                <input type="text" id="tunnelDestManualOnly" placeholder="e.g. 10.126.251.1">
+                <div style="font-size:11px; color:var(--text-muted,#94a3b8); margin-top:3px;">IP of the HUB/PE router (tunnel destination)</div>
+            </div>
+
+            <!-- Hidden fields that hold the final values used in config generation -->
+            <input type="hidden" id="wanIp">
+            <input type="hidden" id="tunnelDest">
 
             <!-- Router-ID (hidden - auto-calculated as 10.X.254.Y) -->
             <input type="hidden" id="routerId">
@@ -686,6 +744,119 @@ document.addEventListener('DOMContentLoaded', function() {
         };
 
         let selectedBranchData = null;
+        let currentTunnelTemplate = null;  // Stores the current auto-fill template data
+
+        // ==================== TUNNEL AUTO-FILL FUNCTIONS ====================
+        async function loadTunnelTemplate(provinceAbbr, serviceType) {
+            /**
+             * Fetch tunnel template for a province and service type.
+             * Auto-fills WAN IP (tunnel source) and Tunnel Destination (hub IP).
+             */
+            try {
+                const url = `/api/tunnel-template?province_abbr=${encodeURIComponent(provinceAbbr)}&service_type=${encodeURIComponent(serviceType)}`;
+                const res = await fetch(url);
+                const data = await res.json();
+
+                if (data.available) {
+                    currentTunnelTemplate = data;
+
+                    // Show auto-fill panel, hide manual-only fields
+                    document.getElementById('tunnelAutoFillPanel').style.display = 'block';
+                    document.getElementById('manualOnlyFields').style.display = 'none';
+
+                    // Set Tunnel Destination (HUB IP)
+                    document.getElementById('autoTunnelDestValue').textContent = data.hub_ip;
+                    document.getElementById('autoTunnelDestLabel').textContent =
+                        `Hub IP for ${serviceType} in ${provinceAbbr} (${data.branch_subnet})`;
+
+                    // Set WAN IP (next free from range)
+                    if (data.next_free_ip) {
+                        document.getElementById('autoWanIpValue').textContent = data.next_free_ip;
+                        document.getElementById('autoWanIpLabel').textContent =
+                            `Next available from ${data.branch_subnet}`;
+                    } else {
+                        document.getElementById('autoWanIpValue').textContent = 'FULL';
+                        document.getElementById('autoWanIpValue').style.color = '#ef4444';
+                        document.getElementById('autoWanIpLabel').textContent =
+                            'No free IPs in this subnet! Use manual override.';
+                        // Force manual mode for WAN IP
+                        document.getElementById('overrideWanIp').checked = true;
+                        toggleWanIpOverride();
+                    }
+
+                    // Update subnet stats
+                    document.getElementById('autoSubnetDisplay').textContent = data.branch_subnet;
+                    document.getElementById('autoUsedCount').textContent = data.used_count;
+                    document.getElementById('autoFreeCount').textContent = data.remaining;
+                    document.getElementById('tunnelAutoStats').textContent =
+                        `${serviceType} | ${data.used_count} used / ${data.remaining} free`;
+
+                    // Sync to hidden fields (unless override is active)
+                    syncTunnelIpFields();
+
+                    console.log(`Tunnel template loaded: ${provinceAbbr}/${serviceType} - Hub: ${data.hub_ip}, Next: ${data.next_free_ip}`);
+                } else {
+                    // No template available - show manual-only fields
+                    currentTunnelTemplate = null;
+                    document.getElementById('tunnelAutoFillPanel').style.display = 'none';
+                    document.getElementById('manualOnlyFields').style.display = 'block';
+                    console.log(`No tunnel template for ${provinceAbbr}: ${data.message}`);
+                }
+            } catch (err) {
+                console.error('Error loading tunnel template:', err);
+                currentTunnelTemplate = null;
+                document.getElementById('tunnelAutoFillPanel').style.display = 'none';
+                document.getElementById('manualOnlyFields').style.display = 'block';
+            }
+        }
+
+        function syncTunnelIpFields() {
+            /**
+             * Sync the visible auto/manual values to the hidden fields used by config generation.
+             */
+            const wanIpField = document.getElementById('wanIp');
+            const tunnelDestField = document.getElementById('tunnelDest');
+
+            // WAN IP
+            if (document.getElementById('overrideWanIp').checked) {
+                wanIpField.value = document.getElementById('manualWanIp').value.trim();
+            } else if (currentTunnelTemplate && currentTunnelTemplate.next_free_ip) {
+                wanIpField.value = currentTunnelTemplate.next_free_ip;
+            } else {
+                // Fallback to manual-only field
+                wanIpField.value = document.getElementById('wanIpManualOnly').value.trim();
+            }
+
+            // Tunnel Destination
+            if (document.getElementById('overrideTunnelDest').checked) {
+                tunnelDestField.value = document.getElementById('manualTunnelDest').value.trim();
+            } else if (currentTunnelTemplate && currentTunnelTemplate.hub_ip) {
+                tunnelDestField.value = currentTunnelTemplate.hub_ip;
+            } else {
+                tunnelDestField.value = document.getElementById('tunnelDestManualOnly').value.trim();
+            }
+        }
+
+        function toggleTunnelDestOverride() {
+            const isOverride = document.getElementById('overrideTunnelDest').checked;
+            document.getElementById('autoTunnelDestDisplay').style.display = isOverride ? 'none' : 'flex';
+            document.getElementById('manualTunnelDestInput').style.display = isOverride ? 'block' : 'none';
+            syncTunnelIpFields();
+        }
+
+        function toggleWanIpOverride() {
+            const isOverride = document.getElementById('overrideWanIp').checked;
+            document.getElementById('autoWanIpDisplay').style.display = isOverride ? 'none' : 'flex';
+            document.getElementById('manualWanIpInput').style.display = isOverride ? 'block' : 'none';
+            syncTunnelIpFields();
+        }
+
+        // Sync on manual input change
+        document.addEventListener('input', function(e) {
+            if (['manualWanIp', 'manualTunnelDest', 'wanIpManualOnly', 'tunnelDestManualOnly'].includes(e.target.id)) {
+                syncTunnelIpFields();
+            }
+        });
 
         // ==================== LOAD BRANCHES ====================
         async function loadBranches() {
@@ -775,6 +946,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 // Load tunnel IPs filtered by this province
                 loadVplsTunnels(prov.en);
 
+                // Load tunnel source/dest template for this province
+                const svcType = document.querySelector('input[name="serviceType"]:checked').value;
+                loadTunnelTemplate(prov.abbr, svcType);
+
                 document.getElementById('autoFieldsPanel').style.display = 'block';
             }
         });
@@ -794,6 +969,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 document.getElementById('svcVpls').style.background = val === 'VPLS' ? 'rgba(139,92,246,0.08)' : '';
                 document.getElementById('svcMpls').style.borderColor = val === 'MPLS' ? 'rgba(59,130,246,0.4)' : '#374151';
                 document.getElementById('svcMpls').style.background = val === 'MPLS' ? 'rgba(59,130,246,0.08)' : '';
+
+                // Re-load tunnel template when service type changes (VPLS/MPLS may use different hubs)
+                if (selectedBranchData && selectedBranchData.provinceAbbr) {
+                    loadTunnelTemplate(selectedBranchData.provinceAbbr, val);
+                }
             });
         });
 
@@ -876,6 +1056,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // ==================== GENERATE CONFIG ====================
         document.getElementById('generateBtn').addEventListener('click', async function() {
+            // Sync auto/manual IP values to hidden fields before reading them
+            syncTunnelIpFields();
+
             const generateBtn = document.getElementById('generateBtn');
             const svcType = document.querySelector('input[name="serviceType"]:checked').value;
             const routerId = document.getElementById('routerId').value.trim();
