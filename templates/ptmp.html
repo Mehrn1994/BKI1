@@ -229,6 +229,9 @@ document.addEventListener('DOMContentLoaded', function() {
           <div class="router-tag">Serial</div>
         </div>
         <button class="copy-btn" type="button" onclick="copyText('branchOut')">Copy</button>
+        <button class="copy-btn" type="button" id="savePtmpBtn"
+                style="left:70px; background:linear-gradient(135deg,#10b981,#059669); border-color:#10b981; color:white; display:none;"
+                onclick="savePtmpToDb()">&#128190; ذخیره</button>
         <div id="branchOut" class="output"></div>
       </div>
     </div>
@@ -360,6 +363,12 @@ document.getElementById('configForm').addEventListener('submit', function(e) {
     document.getElementById('branchOut').textContent = cfg;
     document.getElementById('outputs').style.display = 'grid';
     document.getElementById('outputs').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+    // Show save button
+    var saveBtn = document.getElementById('savePtmpBtn');
+    saveBtn.style.display = 'inline-block';
+    saveBtn.disabled = false;
+    saveBtn.innerHTML = '&#128190; ذخیره';
 });
 
 function generatePtmpOnlyConfig(hostname, X, Y, area, pri, sec) {
@@ -693,6 +702,48 @@ function fallbackCopy(text) {
     document.body.appendChild(ta); ta.focus(); ta.select();
     try { document.execCommand('copy'); alert('کپی شد!'); } catch(e) { alert('خطا در کپی'); }
     document.body.removeChild(ta);
+}
+
+async function savePtmpToDb() {
+    var branchName = document.getElementById('branchName').value.trim();
+    // If branch selected from datalist, extract just the name
+    if (branchName.includes('|')) branchName = branchName.split('|')[0].trim();
+    if (branchName.includes('(10.')) branchName = branchName.split('(10.')[0].trim();
+
+    var hostname = document.getElementById('routerHostname').value.trim();
+    var lanIp = document.getElementById('freeLanIp').value;
+    var province = document.getElementById('lanProvinceFilter').value;
+
+    if (!hostname || !lanIp) {
+        alert('لطفاً ابتدا پیکربندی را تولید کنید');
+        return;
+    }
+
+    try {
+        var res = await fetch('/api/save-ptmp', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                branchName: branchName,
+                hostname: hostname,
+                lanIp: lanIp,
+                province: province,
+                serialPort: selectedSerial,
+                username: currentUsername
+            })
+        });
+        var data = await res.json();
+        if (data.status === 'ok') {
+            var btn = document.getElementById('savePtmpBtn');
+            btn.innerHTML = '&#10004; ذخیره شد!';
+            btn.style.opacity = '0.7';
+            btn.disabled = true;
+        } else {
+            alert('خطا: ' + (data.error || 'نامشخص'));
+        }
+    } catch(e) {
+        alert('خطا در اتصال: ' + e.message);
+    }
 }
 
 // Init
