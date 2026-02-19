@@ -274,8 +274,36 @@ def init_tables():
         print("✓ Database indexes created")
     except Exception as e:
         print(f"⚠️ Index creation: {e}")
-    
+
     # Tickets and Email tables removed - ticketing system disabled
+
+    # PTMP Serial connections table
+    cursor.execute("""CREATE TABLE IF NOT EXISTS ptmp_connections (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        interface_name TEXT NOT NULL,
+        description TEXT,
+        branch_name TEXT,
+        branch_name_en TEXT,
+        bandwidth TEXT,
+        ip_type TEXT,
+        ip_address TEXT,
+        ip_mask TEXT,
+        encapsulation TEXT,
+        province TEXT,
+        province_abbr TEXT,
+        router_hostname TEXT,
+        router_file TEXT,
+        status TEXT DEFAULT 'Used',
+        username TEXT,
+        reservation_date TEXT,
+        lan_ip TEXT)""")
+    try:
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_ptmp_branch ON ptmp_connections(branch_name)")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_ptmp_branch_en ON ptmp_connections(branch_name_en)")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_ptmp_province ON ptmp_connections(province)")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_ptmp_status ON ptmp_connections(status)")
+    except Exception as e:
+        print(f"⚠️ PTMP index creation: {e}")
 
     # VPLS/MPLS tunnels table
     cursor.execute("""CREATE TABLE IF NOT EXISTS vpls_tunnels (
@@ -310,6 +338,23 @@ def init_tables():
     conn.close()
 
 init_tables()
+
+# Auto-import PTMP from router configs if table is empty (first run only)
+def _check_ptmp_import():
+    try:
+        conn = get_db()
+        cursor = conn.cursor()
+        cursor.execute("SELECT COUNT(*) FROM ptmp_connections")
+        count = cursor.fetchone()[0]
+        conn.close()
+        if count == 0:
+            print("PTMP table empty, running initial import from router configs...")
+            from parse_router_configs import import_serial_to_db
+            import_serial_to_db()
+    except Exception as e:
+        print(f"PTMP auto-import check: {e}")
+
+_check_ptmp_import()
 
 def log_activity(atype, title, desc, user="System"):
     try:
@@ -782,6 +827,20 @@ def search_services():
             for r in cursor.fetchall():
                 add_result(r, 'tunnel200_ips', 'Tunnel200')
 
+            # 8. PTMP Serial connections (search both Persian and English names)
+            try:
+                cursor.execute("""
+                    SELECT id, COALESCE(branch_name, branch_name_en), province,
+                           interface_name, lan_ip, username, reservation_date
+                    FROM ptmp_connections
+                    WHERE (branch_name LIKE ? OR branch_name_en LIKE ?)
+                    AND (branch_name IS NOT NULL OR branch_name_en IS NOT NULL)
+                """, (like_q, like_q))
+                for r in cursor.fetchall():
+                    add_result(r, 'ptmp_connections', 'PTMP سریال')
+            except Exception:
+                pass  # Table may not exist yet
+
         elif search_type == 'ip_apn_mali':
             cursor.execute("""
                 SELECT id, branch_name, province, ip_wan, lan_ip, username, reservation_date
@@ -838,6 +897,19 @@ def search_services():
             for r in cursor.fetchall():
                 add_result(r, 'intranet_tunnels', 'Intranet')
 
+            # PTMP by LAN IP
+            try:
+                cursor.execute("""
+                    SELECT id, COALESCE(branch_name, branch_name_en), province,
+                           interface_name, lan_ip, username, reservation_date
+                    FROM ptmp_connections WHERE lan_ip LIKE ?
+                    AND (branch_name IS NOT NULL OR branch_name_en IS NOT NULL)
+                """, (like_q,))
+                for r in cursor.fetchall():
+                    add_result(r, 'ptmp_connections', 'PTMP سریال')
+            except Exception:
+                pass
+
         elif search_type == 'ip_intranet':
             cursor.execute("""
                 SELECT id, tunnel_name, province, ip_address, ip_lan, reserved_by, reserved_at
@@ -857,6 +929,21 @@ def search_services():
             """, (like_q, like_q))
             for r in cursor.fetchall():
                 add_result(r, 'vpls_tunnels', 'MPLS/VPLS')
+
+        elif search_type == 'ip_ptmp':
+            try:
+                cursor.execute("""
+                    SELECT id, COALESCE(branch_name, branch_name_en), province,
+                           interface_name, lan_ip, username, reservation_date
+                    FROM ptmp_connections
+                    WHERE (interface_name LIKE ? OR description LIKE ?
+                           OR branch_name LIKE ? OR branch_name_en LIKE ?)
+                    AND (branch_name IS NOT NULL OR branch_name_en IS NOT NULL)
+                """, (like_q, like_q, like_q, like_q))
+                for r in cursor.fetchall():
+                    add_result(r, 'ptmp_connections', 'PTMP سریال')
+            except Exception:
+                pass
 
         conn.close()
         return jsonify(results)
@@ -879,7 +966,7 @@ def delete_service():
         if not table or not record_id:
             return jsonify({'status': 'error', 'error': 'پارامترهای ناقص'}), 400
 
-        allowed_tables = ['lan_ips', 'apn_mali', 'apn_ips', 'intranet_tunnels', 'vpls_tunnels', 'tunnel_mali', 'tunnel200_ips']
+        allowed_tables = ['lan_ips', 'apn_mali', 'apn_ips', 'intranet_tunnels', 'vpls_tunnels', 'tunnel_mali', 'tunnel200_ips', 'ptmp_connections']
         if table not in allowed_tables:
             return jsonify({'status': 'error', 'error': 'جدول نامعتبر'}), 400
 
@@ -982,6 +1069,12 @@ def delete_service():
                 WHERE id = ?
             """, (record_id,))
             log_activity('warning', 'حذف سرویس Tunnel200', f'{branch}: {ip}', username)
+
+        elif table == 'ptmp_connections':
+            branch = row['branch_name'] or row['branch_name_en'] or ''
+            intf = row['interface_name'] or ''
+            cursor.execute("DELETE FROM ptmp_connections WHERE id = ?", (record_id,))
+            log_activity('warning', 'حذف سرویس PTMP', f'{branch}: {intf}', username)
 
         conn.commit()
         conn.close()
@@ -1819,6 +1912,95 @@ def get_tunnel_template():
         'service_type': service_type,
         'province_abbr': province_abbr
     })
+
+# ==================== PTMP MANAGEMENT ====================
+@app.route('/api/save-ptmp', methods=['POST'])
+def save_ptmp():
+    """Save a PTMP serial configuration to the database (from ptmp.html)"""
+    try:
+        data = request.json
+        branch_name = data.get('branchName', '').strip()
+        hostname = data.get('hostname', '').strip()
+        province = data.get('province', '').strip()
+        lan_ip = data.get('lanIp', '').strip()
+        serial_port = data.get('serialPort', '').strip() or 'Serial0/0/0'
+        username = data.get('username', '').strip()
+
+        if not hostname or not lan_ip:
+            return jsonify({'status': 'error', 'error': 'Hostname and LAN IP are required'}), 400
+
+        conn = get_db()
+        cursor = conn.cursor()
+        now = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+
+        desc = f'** {branch_name} - PTMP **' if branch_name else '** PTMP **'
+
+        cursor.execute("""
+            INSERT INTO ptmp_connections
+            (interface_name, description, branch_name, branch_name_en,
+             bandwidth, ip_type, encapsulation,
+             province, province_abbr, router_hostname, router_file,
+             status, username, reservation_date, lan_ip)
+            VALUES (?, ?, ?, ?, '64', 'unnumbered', 'ppp',
+                    ?, '', ?, 'manual', 'Manual', ?, ?, ?)
+        """, (
+            serial_port, desc,
+            branch_name or None, branch_name or None,
+            province, hostname, username, now, lan_ip
+        ))
+
+        conn.commit()
+        conn.close()
+
+        log_activity('success', 'ذخیره PTMP', f'{branch_name}: {hostname} ({serial_port})', username)
+        return jsonify({'status': 'ok', 'message': f'PTMP configuration saved for {branch_name or hostname}'})
+    except Exception as e:
+        print(f"Save PTMP error: {e}")
+        return jsonify({'status': 'error', 'error': str(e)}), 500
+
+
+@app.route('/api/import-ptmp', methods=['POST'])
+def import_ptmp_from_configs():
+    """Parse router configs and import/refresh PTMP Serial interfaces"""
+    try:
+        username = request.json.get('username', 'system') if request.json else 'system'
+        from parse_router_configs import import_serial_to_db
+        count = import_serial_to_db()
+        log_activity('info', 'وارد‌سازی PTMP', f'{count} Serial interface imported', username)
+        return jsonify({'status': 'ok', 'count': count})
+    except Exception as e:
+        print(f"Import PTMP error: {e}")
+        return jsonify({'status': 'error', 'error': str(e)}), 500
+
+
+@app.route('/api/ptmp-stats', methods=['GET'])
+def ptmp_stats():
+    """Get PTMP statistics per province"""
+    try:
+        conn = get_db()
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT province, province_abbr,
+                   COUNT(*) as total,
+                   SUM(CASE WHEN branch_name IS NOT NULL THEN 1 ELSE 0 END) as matched,
+                   SUM(CASE WHEN branch_name_en IS NOT NULL THEN 1 ELSE 0 END) as with_branch
+            FROM ptmp_connections
+            GROUP BY province
+            ORDER BY total DESC
+        """)
+        stats = []
+        for r in cursor.fetchall():
+            stats.append({
+                'province': r['province'] or '',
+                'province_abbr': r['province_abbr'] or '',
+                'total': r['total'],
+                'matched': r['matched'],
+                'with_branch': r['with_branch'],
+            })
+        conn.close()
+        return jsonify(stats)
+    except Exception as e:
+        return jsonify([])
 
 # ==================== TUNNEL200 IPs ====================
 @app.route('/api/tunnel200-ips', methods=['GET'])
