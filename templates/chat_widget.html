@@ -203,7 +203,7 @@
     const el = document.getElementById(containerId);
     if (!el) return;
     // Check if message already exists
-    if (el.querySelector(`[data-msg-id="${msg.id}"]`)) return;
+    if (el.querySelector(`[data-msg-id="${parseInt(msg.id)||0}"]`)) return;
     el.insertAdjacentHTML('beforeend', renderMsg(msg));
     scrollToBottom(containerId);
   }
@@ -219,7 +219,7 @@
       (data.messages || []).forEach(m => {
         if (m.id > lastMsgId) lastMsgId = m.id;
         const msgDate = m.timestamp.split(' ')[0];
-        if (msgDate !== lastDate) { lastDate = msgDate; el.innerHTML += `<div class="chat-date-sep">${msgDate}</div>`; }
+        if (msgDate !== lastDate) { lastDate = msgDate; el.innerHTML += `<div class="chat-date-sep">${escH(msgDate)}</div>`; }
         el.innerHTML += renderMsg(m);
       });
       scrollToBottom(containerId);
@@ -329,20 +329,22 @@
     fileInput.value = '';
   };
 
+  function escH(s) { if (!s) return ''; const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+
   function renderMsg(m) {
     const mine = m.sender === CHAT_USER;
     const time = m.timestamp ? m.timestamp.split(' ')[1] || '' : '';
     let fileHtml = '';
     if (m.file_name && m.file_path) {
-      fileHtml = `<a class="chat-msg-file" href="/data/chat_files/${m.file_path}" target="_blank" download="${m.file_name}">
+      fileHtml = `<a class="chat-msg-file" href="/data/chat_files/${encodeURIComponent(m.file_path)}" target="_blank" download="${escH(m.file_name)}">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
-        ${m.file_name}</a>`;
+        ${escH(m.file_name)}</a>`;
     }
-    return `<div class="chat-msg ${mine ? 'mine' : 'other'}" data-msg-id="${m.id}">
-      ${!mine ? `<div class="chat-msg-sender">${m.sender}</div>` : ''}
-      ${m.message ? `<div>${m.message}</div>` : ''}
+    return `<div class="chat-msg ${mine ? 'mine' : 'other'}" data-msg-id="${parseInt(m.id)||0}">
+      ${!mine ? `<div class="chat-msg-sender">${escH(m.sender)}</div>` : ''}
+      ${m.message ? `<div>${escH(m.message)}</div>` : ''}
       ${fileHtml}
-      <div class="chat-msg-time">${time}</div>
+      <div class="chat-msg-time">${escH(time)}</div>
     </div>`;
   }
 
