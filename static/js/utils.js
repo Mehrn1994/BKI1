@@ -8,22 +8,50 @@
 // ============================================
 const Auth = {
   getUsername() {
-    return localStorage.getItem('currentUser') || 
-           localStorage.getItem('username') || 
+    return localStorage.getItem('currentUser') ||
+           localStorage.getItem('username') ||
            sessionStorage.getItem('username');
   },
-  
+
+  getSessionToken() {
+    return localStorage.getItem('session_token') || '';
+  },
+
+  setSession(username, token, role) {
+    localStorage.setItem('currentUser', username);
+    sessionStorage.setItem('username', username);
+    if (token) localStorage.setItem('session_token', token);
+    if (role) localStorage.setItem('user_role', role);
+  },
+
   setUsername(username) {
     localStorage.setItem('currentUser', username);
     sessionStorage.setItem('username', username);
   },
-  
-  logout() {
+
+  getRole() {
+    return localStorage.getItem('user_role') || 'operator';
+  },
+
+  isAdmin() {
+    return this.getRole() === 'admin';
+  },
+
+  async logout() {
+    const token = this.getSessionToken();
+    const username = this.getUsername();
+    try {
+      await fetch('/api/logout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ session_token: token, username: username })
+      });
+    } catch (e) { /* ignore logout errors */ }
     localStorage.clear();
     sessionStorage.clear();
     window.location.href = 'login.html';
   },
-  
+
   requireAuth() {
     const username = this.getUsername();
     if (!username) {
@@ -32,7 +60,28 @@ const Auth = {
     }
     return username;
   },
-  
+
+  async validateSession() {
+    const token = this.getSessionToken();
+    if (!token) return false;
+    try {
+      const res = await fetch('/api/session/validate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ session_token: token })
+      });
+      const data = await res.json();
+      if (!data.valid) {
+        localStorage.clear();
+        sessionStorage.clear();
+        return false;
+      }
+      return true;
+    } catch (e) {
+      return false;
+    }
+  },
+
   displayUser(elementId = 'currentUser') {
     const el = document.getElementById(elementId);
     const username = this.getUsername();
@@ -57,41 +106,59 @@ const Toast = {
     document.body.appendChild(this.container);
   },
   
+  _escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+  },
+
   show(message, type = 'info', duration = 4000) {
     this.init();
-    
+
     const icons = {
       success: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>`,
       error: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M15 9l-6 6M9 9l6 6"/></svg>`,
       warning: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 9v4M12 17h.01"/><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>`,
       info: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>`
     };
-    
+
     const colors = {
       success: '#10b981',
       error: '#ef4444',
       warning: '#f59e0b',
       info: '#3b82f6'
     };
-    
+
     const toast = document.createElement('div');
     toast.className = 'toast';
     toast.style.borderLeftWidth = '4px';
-    toast.style.borderLeftColor = colors[type];
-    toast.innerHTML = `
-      <span style="color: ${colors[type]}">${icons[type]}</span>
-      <span style="flex: 1; color: var(--text-primary)">${message}</span>
-      <button onclick="Toast.remove(this.parentElement)" style="background: none; border: none; color: var(--text-muted); cursor: pointer; padding: 4px;">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
-      </button>
-    `;
-    
+    toast.style.borderLeftColor = colors[type] || colors.info;
+
+    // Build toast with safe text (prevent XSS)
+    const iconSpan = document.createElement('span');
+    iconSpan.style.color = colors[type] || colors.info;
+    iconSpan.innerHTML = icons[type] || icons.info;
+
+    const msgSpan = document.createElement('span');
+    msgSpan.style.flex = '1';
+    msgSpan.style.color = 'var(--text-primary)';
+    msgSpan.textContent = message; // textContent prevents XSS
+
+    const closeBtn = document.createElement('button');
+    closeBtn.style.cssText = 'background:none;border:none;color:var(--text-muted);cursor:pointer;padding:4px;';
+    closeBtn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>';
+    closeBtn.addEventListener('click', () => Toast.remove(toast));
+
+    toast.appendChild(iconSpan);
+    toast.appendChild(msgSpan);
+    toast.appendChild(closeBtn);
+
     this.container.appendChild(toast);
-    
+
     if (duration > 0) {
       setTimeout(() => this.remove(toast), duration);
     }
-    
+
     return toast;
   },
   
@@ -131,24 +198,47 @@ const Modal = {
     return new Promise((resolve) => {
       const overlay = document.createElement('div');
       overlay.className = 'modal-overlay active';
-      overlay.innerHTML = `
-        <div class="modal">
-          <div class="modal-header">
-            <h3 class="modal-title">${title}</h3>
-          </div>
-          <div class="modal-body">
-            <p>${message}</p>
-          </div>
-          <div class="modal-footer">
-            <button class="btn btn-secondary" data-action="cancel">انصراف</button>
-            <button class="btn btn-primary" data-action="confirm">تایید</button>
-          </div>
-        </div>
-      `;
-      
+
+      const modal = document.createElement('div');
+      modal.className = 'modal';
+
+      const header = document.createElement('div');
+      header.className = 'modal-header';
+      const h3 = document.createElement('h3');
+      h3.className = 'modal-title';
+      h3.textContent = title; // safe: textContent
+      header.appendChild(h3);
+
+      const body = document.createElement('div');
+      body.className = 'modal-body';
+      const p = document.createElement('p');
+      p.textContent = message; // safe: textContent
+      body.appendChild(p);
+
+      const footer = document.createElement('div');
+      footer.className = 'modal-footer';
+      const cancelBtn = document.createElement('button');
+      cancelBtn.className = 'btn btn-secondary';
+      cancelBtn.textContent = 'انصراف';
+      cancelBtn.dataset.action = 'cancel';
+      const confirmBtn = document.createElement('button');
+      confirmBtn.className = 'btn btn-primary';
+      confirmBtn.textContent = 'تایید';
+      confirmBtn.dataset.action = 'confirm';
+      footer.appendChild(cancelBtn);
+      footer.appendChild(confirmBtn);
+
+      modal.appendChild(header);
+      modal.appendChild(body);
+      modal.appendChild(footer);
+      overlay.appendChild(modal);
+
       document.body.appendChild(overlay);
       document.body.style.overflow = 'hidden';
-      
+
+      // Focus trap for accessibility
+      confirmBtn.focus();
+
       overlay.addEventListener('click', (e) => {
         const action = e.target.dataset.action;
         if (action) {
@@ -158,6 +248,18 @@ const Modal = {
             document.body.style.overflow = '';
           }, 250);
           resolve(action === 'confirm');
+        }
+      });
+
+      // Allow Enter/Escape keyboard handling
+      overlay.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+          overlay.classList.remove('active');
+          setTimeout(() => {
+            overlay.remove();
+            document.body.style.overflow = '';
+          }, 250);
+          resolve(false);
         }
       });
     });
@@ -173,21 +275,26 @@ const Loading = {
       element = document.getElementById(element);
     }
     if (!element) return;
-    
+
     element.dataset.originalContent = element.innerHTML;
     element.disabled = true;
-    element.innerHTML = `
-      <span class="spinner spinner-sm"></span>
-      <span>${text}</span>
-    `;
+
+    // Build loading state safely
+    element.innerHTML = '';
+    const spinner = document.createElement('span');
+    spinner.className = 'spinner spinner-sm';
+    const label = document.createElement('span');
+    label.textContent = text; // safe: textContent
+    element.appendChild(spinner);
+    element.appendChild(label);
   },
-  
+
   hide(element) {
     if (typeof element === 'string') {
       element = document.getElementById(element);
     }
     if (!element) return;
-    
+
     element.disabled = false;
     if (element.dataset.originalContent) {
       element.innerHTML = element.dataset.originalContent;
@@ -200,35 +307,65 @@ const Loading = {
 // ============================================
 const API = {
   async request(url, options = {}) {
-    const defaultOptions = {
-      headers: {
-        'Content-Type': 'application/json'
-      }
+    const token = Auth.getSessionToken();
+    const defaultHeaders = {
+      'Content-Type': 'application/json'
     };
-    
+    if (token) {
+      defaultHeaders['X-Session-Token'] = token;
+    }
+
+    const mergedOptions = {
+      ...options,
+      headers: { ...defaultHeaders, ...(options.headers || {}) }
+    };
+
     try {
-      const response = await fetch(url, { ...defaultOptions, ...options });
+      const response = await fetch(url, mergedOptions);
+
+      // Handle auth failures
+      if (response.status === 401) {
+        const data = await response.json().catch(() => ({}));
+        if (data.need_register) {
+          throw new Error(data.message || 'Please register first');
+        }
+        // Session expired - redirect to login
+        localStorage.clear();
+        sessionStorage.clear();
+        window.location.href = 'login.html';
+        throw new Error('Session expired');
+      }
+
       const data = await response.json();
-      
+
       if (!response.ok) {
         throw new Error(data.error || data.message || 'Request failed');
       }
-      
+
       return data;
     } catch (error) {
-      console.error(`API Error [${url}]:`, error);
+      if (error.message !== 'Session expired') {
+        console.error(`API Error [${url}]:`, error);
+      }
       throw error;
     }
   },
-  
+
   get(url) {
     return this.request(url, { method: 'GET' });
   },
-  
+
   post(url, body) {
     return this.request(url, {
       method: 'POST',
       body: JSON.stringify(body)
+    });
+  },
+
+  delete(url, body) {
+    return this.request(url, {
+      method: 'DELETE',
+      body: body ? JSON.stringify(body) : undefined
     });
   }
 };
@@ -479,12 +616,148 @@ function throttle(func, limit = 300) {
 }
 
 // ============================================
+// PAGINATION HELPER
+// ============================================
+const Pagination = {
+  render(containerId, currentPage, totalPages, onPageChange) {
+    const container = document.getElementById(containerId);
+    if (!container || totalPages <= 1) {
+      if (container) container.innerHTML = '';
+      return;
+    }
+
+    container.innerHTML = '';
+    container.className = 'pagination';
+
+    const prevBtn = document.createElement('button');
+    prevBtn.className = 'btn btn-sm btn-secondary';
+    prevBtn.textContent = 'قبلی';
+    prevBtn.disabled = currentPage <= 1;
+    prevBtn.addEventListener('click', () => onPageChange(currentPage - 1));
+    container.appendChild(prevBtn);
+
+    const info = document.createElement('span');
+    info.className = 'pagination-info';
+    info.textContent = `${currentPage} / ${totalPages}`;
+    container.appendChild(info);
+
+    const nextBtn = document.createElement('button');
+    nextBtn.className = 'btn btn-sm btn-secondary';
+    nextBtn.textContent = 'بعدی';
+    nextBtn.disabled = currentPage >= totalPages;
+    nextBtn.addEventListener('click', () => onPageChange(currentPage + 1));
+    container.appendChild(nextBtn);
+  }
+};
+
+// ============================================
+// EMPTY STATE HELPER
+// ============================================
+const EmptyState = {
+  show(containerId, message = 'داده‌ای یافت نشد', icon = null) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+
+    container.innerHTML = '';
+    const wrapper = document.createElement('div');
+    wrapper.className = 'empty-state';
+
+    if (icon) {
+      const iconEl = document.createElement('div');
+      iconEl.className = 'empty-state-icon';
+      iconEl.innerHTML = icon; // SVG icons are safe (hardcoded)
+      wrapper.appendChild(iconEl);
+    }
+
+    const msg = document.createElement('p');
+    msg.className = 'empty-state-text';
+    msg.textContent = message;
+    wrapper.appendChild(msg);
+
+    container.appendChild(wrapper);
+  }
+};
+
+// ============================================
+// KEYBOARD SHORTCUTS
+// ============================================
+const Shortcuts = {
+  _handlers: {},
+
+  register(key, handler, description = '') {
+    this._handlers[key.toLowerCase()] = { handler, description };
+  },
+
+  init() {
+    document.addEventListener('keydown', (e) => {
+      // Don't trigger shortcuts when typing in inputs
+      if (['INPUT', 'TEXTAREA', 'SELECT'].includes(e.target.tagName)) return;
+
+      const key = [];
+      if (e.ctrlKey || e.metaKey) key.push('ctrl');
+      if (e.altKey) key.push('alt');
+      if (e.shiftKey) key.push('shift');
+      key.push(e.key.toLowerCase());
+
+      const combo = key.join('+');
+      const entry = this._handlers[combo];
+      if (entry) {
+        e.preventDefault();
+        entry.handler();
+      }
+    });
+  },
+
+  getAll() {
+    return Object.entries(this._handlers).map(([key, val]) => ({
+      key,
+      description: val.description
+    }));
+  }
+};
+
+// ============================================
+// NOTIFICATION BADGE
+// ============================================
+const NotificationBadge = {
+  async check() {
+    try {
+      const data = await API.get('/api/notifications?unread_only=true');
+      const count = (data.notifications || []).length;
+      this._updateBadge(count);
+      return count;
+    } catch (e) {
+      return 0;
+    }
+  },
+
+  _updateBadge(count) {
+    let badge = document.getElementById('notificationBadge');
+    if (!badge) return;
+    if (count > 0) {
+      badge.textContent = count > 99 ? '99+' : String(count);
+      badge.classList.remove('hidden');
+    } else {
+      badge.classList.add('hidden');
+    }
+  },
+
+  startPolling(intervalMs = 60000) {
+    this.check();
+    setInterval(() => this.check(), intervalMs);
+  }
+};
+
+// ============================================
 // INITIALIZATION
 // ============================================
 document.addEventListener('DOMContentLoaded', () => {
   // Initialize toast container
   Toast.init();
-  
+
+  // Initialize keyboard shortcuts
+  Shortcuts.init();
+
   // Close modals on escape key
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') {
@@ -494,7 +767,7 @@ document.addEventListener('DOMContentLoaded', () => {
       });
     }
   });
-  
+
   // Close modals on overlay click
   document.addEventListener('click', (e) => {
     if (e.target.classList.contains('modal-overlay')) {
@@ -502,14 +775,20 @@ document.addEventListener('DOMContentLoaded', () => {
       document.body.style.overflow = '';
     }
   });
-  
-  console.log('🚀 Config Portal Utilities Loaded');
+
+  // Start notification polling if user is logged in
+  if (Auth.getUsername() && Auth.getSessionToken()) {
+    NotificationBadge.startPolling();
+  }
+
+  console.log('Config Portal Utilities Loaded');
 });
 
 // Export for module usage
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = {
     Auth, Toast, Modal, Loading, API, Clipboard, Form, DateTime, IPUtils, Storage,
+    Pagination, EmptyState, Shortcuts, NotificationBadge,
     debounce, throttle
   };
 }
