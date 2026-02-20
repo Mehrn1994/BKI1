@@ -985,99 +985,99 @@ def delete_service():
 
             # Free the record (set fields to NULL/Free) based on table type
             if table == 'lan_ips':
-            branch = row['branch_name'] or ''
-            octet2 = row['octet2']
-            octet3 = row['octet3']
-            ip = f"10.{octet2}.{octet3}.0/24"
-            cursor.execute("""
-                UPDATE lan_ips SET username = NULL, reservation_date = NULL,
-                branch_name = NULL, status = 'Free', notes = NULL, wan_ip = NULL
-                WHERE id = ?
-            """, (record_id,))
-            # Also delete from reserved_ips if exists
-            cursor.execute("""
-                DELETE FROM reserved_ips WHERE octet2 = ? AND octet3 = ?
-            """, (octet2, octet3))
-            log_activity('warning', 'حذف IP LAN', f'{branch}: {ip}', username)
+                branch = row['branch_name'] or ''
+                octet2 = row['octet2']
+                octet3 = row['octet3']
+                ip = f"10.{octet2}.{octet3}.0/24"
+                cursor.execute("""
+                    UPDATE lan_ips SET username = NULL, reservation_date = NULL,
+                    branch_name = NULL, status = 'Free', notes = NULL, wan_ip = NULL
+                    WHERE id = ?
+                """, (record_id,))
+                # Also delete from reserved_ips if exists
+                cursor.execute("""
+                    DELETE FROM reserved_ips WHERE octet2 = ? AND octet3 = ?
+                """, (octet2, octet3))
+                log_activity('warning', 'حذف IP LAN', f'{branch}: {ip}', username)
 
-        elif table == 'apn_mali':
-            branch = row['branch_name'] or ''
-            ip = row['ip_wan'] or ''
-            cursor.execute("""
-                UPDATE apn_mali SET username = NULL, branch_name = NULL, province = NULL,
-                type = NULL, lan_ip = NULL, reservation_date = NULL WHERE id = ?
-            """, (record_id,))
-            # Also free associated tunnel_mali
-            if ip:
+            elif table == 'apn_mali':
+                branch = row['branch_name'] or ''
+                ip = row['ip_wan'] or ''
+                cursor.execute("""
+                    UPDATE apn_mali SET username = NULL, branch_name = NULL, province = NULL,
+                    type = NULL, lan_ip = NULL, reservation_date = NULL WHERE id = ?
+                """, (record_id,))
+                # Also free associated tunnel_mali
+                if ip:
+                    cursor.execute("""
+                        UPDATE tunnel_mali SET status = NULL, username = NULL, branch_name = NULL,
+                        reservation_date = NULL, description = NULL, destination_ip = NULL
+                        WHERE destination_ip = ?
+                    """, (ip,))
+                log_activity('warning', 'حذف سرویس APN مالی', f'{branch}: {ip}', username)
+
+            elif table == 'apn_ips':
+                branch = row['branch_name'] or ''
+                ip = row['ip_wan_apn'] or ''
+                cursor.execute("""
+                    UPDATE apn_ips SET username = NULL, branch_name = NULL, province = NULL,
+                    type = NULL, lan_ip = NULL, reservation_date = NULL WHERE id = ?
+                """, (record_id,))
+                # Also free associated tunnel200
+                if branch:
+                    cursor.execute("""
+                        UPDATE tunnel200_ips SET status = NULL, username = NULL, branch_name = NULL,
+                        reservation_date = NULL, description = NULL
+                        WHERE branch_name = ?
+                    """, (branch,))
+                log_activity('warning', 'حذف سرویس APN غیرمالی', f'{branch}: {ip}', username)
+
+            elif table == 'intranet_tunnels':
+                name = row['tunnel_name'] or ''
+                ip = row['ip_address'] or ''
+                cursor.execute("""
+                    UPDATE intranet_tunnels SET status = 'Free', reserved_by = NULL, reserved_at = NULL,
+                    tunnel_name = NULL, description = NULL, ip_lan = NULL, ip_intranet = NULL
+                    WHERE id = ?
+                """, (record_id,))
+                log_activity('warning', 'حذف سرویس Intranet', f'{name}: {ip}', username)
+
+            elif table == 'vpls_tunnels':
+                branch = row['branch_name'] or ''
+                ip = row['ip_address'] or ''
+                cursor.execute("""
+                    UPDATE vpls_tunnels SET status = 'Free', username = NULL, branch_name = NULL,
+                    tunnel_name = NULL, description = NULL, wan_ip = NULL, tunnel_dest = NULL,
+                    reservation_date = NULL
+                    WHERE id = ?
+                """, (record_id,))
+                log_activity('warning', 'حذف سرویس MPLS/VPLS', f'{branch}: {ip}', username)
+
+            elif table == 'tunnel_mali':
+                branch = row['branch_name'] or ''
+                ip = row['ip_address'] or ''
                 cursor.execute("""
                     UPDATE tunnel_mali SET status = NULL, username = NULL, branch_name = NULL,
                     reservation_date = NULL, description = NULL, destination_ip = NULL
-                    WHERE destination_ip = ?
-                """, (ip,))
-            log_activity('warning', 'حذف سرویس APN مالی', f'{branch}: {ip}', username)
+                    WHERE id = ?
+                """, (record_id,))
+                log_activity('warning', 'حذف سرویس Tunnel مالی', f'{branch}: {ip}', username)
 
-        elif table == 'apn_ips':
-            branch = row['branch_name'] or ''
-            ip = row['ip_wan_apn'] or ''
-            cursor.execute("""
-                UPDATE apn_ips SET username = NULL, branch_name = NULL, province = NULL,
-                type = NULL, lan_ip = NULL, reservation_date = NULL WHERE id = ?
-            """, (record_id,))
-            # Also free associated tunnel200
-            if branch:
+            elif table == 'tunnel200_ips':
+                branch = row['branch_name'] or ''
+                ip = row['ip_address'] or ''
                 cursor.execute("""
                     UPDATE tunnel200_ips SET status = NULL, username = NULL, branch_name = NULL,
                     reservation_date = NULL, description = NULL
-                    WHERE branch_name = ?
-                """, (branch,))
-            log_activity('warning', 'حذف سرویس APN غیرمالی', f'{branch}: {ip}', username)
+                    WHERE id = ?
+                """, (record_id,))
+                log_activity('warning', 'حذف سرویس Tunnel200', f'{branch}: {ip}', username)
 
-        elif table == 'intranet_tunnels':
-            name = row['tunnel_name'] or ''
-            ip = row['ip_address'] or ''
-            cursor.execute("""
-                UPDATE intranet_tunnels SET status = 'Free', reserved_by = NULL, reserved_at = NULL,
-                tunnel_name = NULL, description = NULL, ip_lan = NULL, ip_intranet = NULL
-                WHERE id = ?
-            """, (record_id,))
-            log_activity('warning', 'حذف سرویس Intranet', f'{name}: {ip}', username)
-
-        elif table == 'vpls_tunnels':
-            branch = row['branch_name'] or ''
-            ip = row['ip_address'] or ''
-            cursor.execute("""
-                UPDATE vpls_tunnels SET status = 'Free', username = NULL, branch_name = NULL,
-                tunnel_name = NULL, description = NULL, wan_ip = NULL, tunnel_dest = NULL,
-                reservation_date = NULL
-                WHERE id = ?
-            """, (record_id,))
-            log_activity('warning', 'حذف سرویس MPLS/VPLS', f'{branch}: {ip}', username)
-
-        elif table == 'tunnel_mali':
-            branch = row['branch_name'] or ''
-            ip = row['ip_address'] or ''
-            cursor.execute("""
-                UPDATE tunnel_mali SET status = NULL, username = NULL, branch_name = NULL,
-                reservation_date = NULL, description = NULL, destination_ip = NULL
-                WHERE id = ?
-            """, (record_id,))
-            log_activity('warning', 'حذف سرویس Tunnel مالی', f'{branch}: {ip}', username)
-
-        elif table == 'tunnel200_ips':
-            branch = row['branch_name'] or ''
-            ip = row['ip_address'] or ''
-            cursor.execute("""
-                UPDATE tunnel200_ips SET status = NULL, username = NULL, branch_name = NULL,
-                reservation_date = NULL, description = NULL
-                WHERE id = ?
-            """, (record_id,))
-            log_activity('warning', 'حذف سرویس Tunnel200', f'{branch}: {ip}', username)
-
-        elif table == 'ptmp_connections':
-            branch = row['branch_name'] or row['branch_name_en'] or ''
-            intf = row['interface_name'] or ''
-            cursor.execute("DELETE FROM ptmp_connections WHERE id = ?", (record_id,))
-            log_activity('warning', 'حذف سرویس PTMP', f'{branch}: {intf}', username)
+            elif table == 'ptmp_connections':
+                branch = row['branch_name'] or row['branch_name_en'] or ''
+                intf = row['interface_name'] or ''
+                cursor.execute("DELETE FROM ptmp_connections WHERE id = ?", (record_id,))
+                log_activity('warning', 'حذف سرویس PTMP', f'{branch}: {intf}', username)
 
             conn.commit()
         except Exception as inner_e:
