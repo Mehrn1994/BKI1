@@ -5,8 +5,9 @@ flask-cors>=4.0.0
 # Security
 bcrypt>=4.0.0
 
-# Data processing
-pandas>=2.0.0
+# Data processing (Python 3.13 requires pandas>=2.2.0, numpy>=2.1.0)
+pandas>=2.2.0
+numpy>=2.1.0
 openpyxl>=3.1.0
 
 # PDF generation (optional)
