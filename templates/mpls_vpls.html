@@ -1339,12 +1339,35 @@ ip access-list standard OSPF-PERMIT
 !`;
             }
 
-            // ========== Tunnel + OSPF Config ==========
-            let tunnelConfig = `!
-! ===== ${svcType} Tunnel Configuration =====
-!
+            // ========== Determine if Base Config is included ==========
+            const includeBase = document.getElementById('includeBaseConfig').checked && bx && by;
+
+            // ========== Build Final Branch Config (ordered) ==========
+            let branchCfg = '';
+
+            // 1. ACLs (SERIAL_IN, ETHERNET_IN, OSPF-PERMIT)
+            if (aclConfig) branchCfg += aclConfig + '\n';
+
+            // 2. All Interfaces grouped together
+            branchCfg += `!
 interface Loopback0
  ip address ${routerId} 255.255.255.255
+!`;
+            if (includeBase && !tunnelOnly) {
+                branchCfg += `
+interface FastEthernet0/0
+ ip address 10.${bx}.${by}.5 255.255.255.0
+ ip access-group ETHERNET_IN in
+ duplex auto
+ speed auto
+ standby 1 ip 10.${bx}.${by}.1
+ standby 1 timers 1 3
+ standby 1 preempt
+ standby 1 track 5 decrement 25
+!`;
+            }
+            if (ifaceConfig) branchCfg += '\n' + ifaceConfig;
+            branchCfg += `
 !
 interface Tunnel79
  description ${branchDesc}
@@ -1354,22 +1377,21 @@ interface Tunnel79
  keepalive 10 3
  tunnel source ${wanIp}
  tunnel destination ${tunnelDest}
-!
+!`;
+
+            // 3. OSPF (single unified block with all networks)
+            branchCfg += `
 router ospf 1
  router-id ${routerId}
  network ${tunnelIpLocal} 0.0.0.0 area ${area}
- network ${routerId} 0.0.0.0 area ${area}
-!
-do wr`;
+ network ${routerId} 0.0.0.0 area ${area}`;
+            if (includeBase) {
+                branchCfg += `\n network 10.${bx}.${by}.5 0.0.0.0 area ${bx}`;
+            }
+            branchCfg += '\n!\ndo wr';
 
-            // ========== Build Final Branch Config ==========
-            let branchCfg = '';
-            if (ifaceConfig) branchCfg += ifaceConfig + '\n';
-            if (aclConfig) branchCfg += aclConfig + '\n';
-            branchCfg += tunnelConfig;
-
-            // ========== Base Config ==========
-            if (document.getElementById('includeBaseConfig').checked && bx && by) {
+            // ========== Base Config (prepended if checked) ==========
+            if (includeBase) {
                 const hostname = document.getElementById('hostnameName').value.trim();
                 const hostnameLine = hostname ? `\nhostname ${hostname}\n!` : '';
                 const baseConfig = `!
@@ -1411,19 +1433,6 @@ crypto key generate rsa
 768
 !
 track 5 ip route 10.0.0.0 255.255.0.0 reachability
-!
-interface FastEthernet0/0
- ip address 10.${bx}.${by}.5 255.255.255.0
- ip access-group ETHERNET_IN in
- duplex auto
- speed auto
- standby 1 ip 10.${bx}.${by}.1
- standby 1 timers 1 3
- standby 1 preempt
- standby 1 track 5 decrement 25
-!
-router ospf 1
- network 10.${bx}.${by}.5 0.0.0.0 area ${bx}
 !
 ip access-list standard SNMP-READ
  permit 10.0.50.0 0.0.1.255
