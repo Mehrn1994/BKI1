@@ -553,9 +553,8 @@ function generateBaseConfig(hostname, X, Y, area, pri, sec) {
 'ip access-list standard SNMP-READ\n' +
 ' permit 10.0.50.0 0.0.1.255\n' +
 'ip access-list standard SNMP-WRITE\n' +
-' permit 10.0.51.49\n' +
-' permit 10.0.51.48\n' +
-' permit 10.0.51.50\n' +
+' permit host 10.0.51.48\n' +
+' permit host 10.0.51.49\n' +
 'ip access-list standard TELNET_ACCESS\n' +
 ' permit 10.' + X + '.1.8\n' +
 ' permit 10.' + X + '.254.1\n' +
@@ -603,11 +602,15 @@ function generateBaseConfig(hostname, X, Y, area, pri, sec) {
 'logging 10.0.51.63\n' +
 'access-list 199 permit icmp any any echo\n' +
 'access-list 199 permit icmp any any echo-reply\n' +
-'snmp-server group LMS v3 priv read myview write myview access SNMP-WRITE\n' +
 'snmp-server group NMS v3 priv access SNMP-READ\n' +
+'snmp-server user nms-net NMS v3 auth md5 auth-agrinms2011 priv des priv-agrinms1390 access SNMP-READ\n' +
+'!\n' +
+'snmp-server group LMS v3 priv read myview write myview access SNMP-WRITE\n' +
+'snmp-server user lms-net LMS v3 auth md5 Auth-P@S$-2011 priv des PriV-p@$S-1390 access SNMP-WRITE\n' +
+'!\n' +
 'snmp-server view myview mib-2 included\n' +
-'snmp-server view myview system included\n' +
 'snmp-server view myview cisco included\n' +
+'snmp-server view myview system included\n' +
 'snmp-server ifindex persist\n' +
 '!\n' +
 'route-map nachi-worm permit 10\n' +
