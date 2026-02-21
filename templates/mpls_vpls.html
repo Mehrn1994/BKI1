@@ -400,6 +400,13 @@ document.addEventListener('DOMContentLoaded', function() {
                 <div style="font-size:12px; color:var(--text-secondary,#94a3b8); margin-top:5px; padding-right:34px;">Include base configuration template</div>
             </div>
 
+            <!-- Hostname field (shown when Base Config is checked) -->
+            <div id="hostnameFieldContainer" style="display:none; margin:10px 0; padding:12px 16px; background:linear-gradient(135deg,rgba(16,185,129,0.04),rgba(6,182,212,0.02)); border:1px solid rgba(16,185,129,0.15); border-radius:10px;">
+                <label style="font-size:13px; font-weight:700; color:#10b981;">Hostname</label>
+                <input type="text" id="hostnameName" placeholder="e.g. ILM-Mehran">
+                <div style="font-size:11px; color:var(--text-muted,#94a3b8); margin-top:3px;">Router hostname for initial configuration</div>
+            </div>
+
             <!-- Branch Selection -->
             <label>Select Branch</label>
             <input id="branchName" type="text" list="branchList"
@@ -508,9 +515,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
               <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:10px;">
                 <div>
-                  <label style="font-size:13px;">Tunnel Number</label>
+                  <label style="font-size:13px;">Tunnel Number (HUB)</label>
                   <input type="number" id="tunnelNumber" placeholder="auto: XY" min="1" max="65535">
-                  <div style="font-size:11px; color:var(--text-muted,#94a3b8); margin-top:3px;">Default: <span id="autoTunnelNum" style="font-weight:700; color:#06b6d4;">-</span> (XY from branch) - can be changed</div>
+                  <div style="font-size:11px; color:var(--text-muted,#94a3b8); margin-top:3px;">Default: <span id="autoTunnelNum" style="font-weight:700; color:#06b6d4;">-</span> (XY from branch) - for HUB only (Branch always uses Tunnel79)</div>
                 </div>
                 <div>
                   <label style="font-size:13px;">Tunnel Mask</label>
@@ -747,7 +754,7 @@ document.addEventListener('DOMContentLoaded', function() {
         let currentTunnelTemplate = null;  // Stores the current auto-fill template data
 
         // ==================== TUNNEL AUTO-FILL FUNCTIONS ====================
-        async function loadTunnelTemplate(provinceAbbr, serviceType) {
+        async function loadTunnelTemplate(provinceAbbr, serviceType, branchY) {
             /**
              * Fetch tunnel template for a province and service type.
              * Auto-fills WAN IP (tunnel source) and Tunnel Destination (hub IP).
@@ -769,20 +776,15 @@ document.addEventListener('DOMContentLoaded', function() {
                     document.getElementById('autoTunnelDestLabel').textContent =
                         `Hub IP for ${serviceType} in ${provinceAbbr} (${data.branch_subnet})`;
 
-                    // Set WAN IP (next free from range)
-                    if (data.next_free_ip) {
-                        document.getElementById('autoWanIpValue').textContent = data.next_free_ip;
-                        document.getElementById('autoWanIpLabel').textContent =
-                            `Next available from ${data.branch_subnet}`;
-                    } else {
-                        document.getElementById('autoWanIpValue').textContent = 'FULL';
-                        document.getElementById('autoWanIpValue').style.color = '#ef4444';
-                        document.getElementById('autoWanIpLabel').textContent =
-                            'No free IPs in this subnet! Use manual override.';
-                        // Force manual mode for WAN IP
-                        document.getElementById('overrideWanIp').checked = true;
-                        toggleWanIpOverride();
-                    }
+                    // Set WAN IP based on branch Y value (4th octet = Y from LAN IP)
+                    const subnetPrefix = data.branch_subnet.replace('.0/24', '');
+                    const computedWanIp = subnetPrefix + '.' + branchY;
+                    data.computed_wan_ip = computedWanIp;
+
+                    document.getElementById('autoWanIpValue').textContent = computedWanIp;
+                    document.getElementById('autoWanIpValue').style.color = '#3b82f6';
+                    document.getElementById('autoWanIpLabel').textContent =
+                        `Based on branch LAN Y=${branchY} \u2192 ${subnetPrefix}.${branchY}`;
 
                     // Update subnet stats
                     document.getElementById('autoSubnetDisplay').textContent = data.branch_subnet;
@@ -820,8 +822,8 @@ document.addEventListener('DOMContentLoaded', function() {
             // WAN IP
             if (document.getElementById('overrideWanIp').checked) {
                 wanIpField.value = document.getElementById('manualWanIp').value.trim();
-            } else if (currentTunnelTemplate && currentTunnelTemplate.next_free_ip) {
-                wanIpField.value = currentTunnelTemplate.next_free_ip;
+            } else if (currentTunnelTemplate && currentTunnelTemplate.computed_wan_ip) {
+                wanIpField.value = currentTunnelTemplate.computed_wan_ip;
             } else {
                 // Fallback to manual-only field
                 wanIpField.value = document.getElementById('wanIpManualOnly').value.trim();
@@ -948,7 +950,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
                 // Load tunnel source/dest template for this province
                 const svcType = document.querySelector('input[name="serviceType"]:checked').value;
-                loadTunnelTemplate(prov.abbr, svcType);
+                loadTunnelTemplate(prov.abbr, svcType, y);
 
                 document.getElementById('autoFieldsPanel').style.display = 'block';
             }
@@ -972,7 +974,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
                 // Re-load tunnel template when service type changes (VPLS/MPLS may use different hubs)
                 if (selectedBranchData && selectedBranchData.provinceAbbr) {
-                    loadTunnelTemplate(selectedBranchData.provinceAbbr, val);
+                    loadTunnelTemplate(selectedBranchData.provinceAbbr, val, selectedBranchData.y);
                 }
             });
         });
@@ -1053,6 +1055,11 @@ document.addEventListener('DOMContentLoaded', function() {
             const connBox = document.getElementById('connectionTypeBox');
             if (connBox) connBox.style.display = checked ? 'none' : 'block';
         }
+
+        // Toggle hostname field when Base Config checkbox changes
+        document.getElementById('includeBaseConfig').addEventListener('change', function() {
+            document.getElementById('hostnameFieldContainer').style.display = this.checked ? 'block' : 'none';
+        });
 
         // ==================== GENERATE CONFIG ====================
         document.getElementById('generateBtn').addEventListener('click', async function() {
@@ -1149,11 +1156,12 @@ document.addEventListener('DOMContentLoaded', function() {
 
             const tunnelOnly = document.getElementById('tunnelOnlyConfig').checked;
             const connType = document.querySelector('input[name="connectionType"]:checked').value;
-            const desc = branchNameEn ? `** ${svcType} - ${branchNameEn} **` : `** ${svcType} **`;
+            const branchDesc = `** ${svcType} **`;
+            const hubDesc = branchNameEn ? `** ${svcType} - ${branchNameEn} **` : `** ${svcType} **`;
 
             // ========== Interface Config ==========
             let ifaceConfig = '';
-            let natInterface = 'Loopback2';
+            let natInterface = 'Loopback0';
 
             if (!tunnelOnly) {
             if (connType === 'direct') {
@@ -1162,7 +1170,7 @@ document.addEventListener('DOMContentLoaded', function() {
 ! ===== WAN Interface (Direct - ${portName}) =====
 !
 interface ${portName}
- description ${desc}
+ description ${branchDesc}
  ip address ${wanIp} ${wanMask}
  ip access-group SERIAL_IN in
  ip virtual-reassembly
@@ -1191,7 +1199,7 @@ interface ${eswPort}
  switchport access vlan ${vlanNum}
 !
 interface Vlan${vlanNum}
- description ${desc}
+ description ${branchDesc}
  ip address ${wanIp} ${wanMask}
  ip access-group SERIAL_IN in
  ip virtual-reassembly
@@ -1235,7 +1243,7 @@ bridge ${bg} protocol ieee
 bridge ${bg} route ip
 !
 interface BVI${bg}
- description ${desc}
+ description ${branchDesc}
  ip address ${wanIp} ${wanMask}
  ip access-group SERIAL_IN in
  ip virtual-reassembly
@@ -1270,7 +1278,7 @@ bridge ${bg} protocol ieee
 bridge ${bg} route ip
 !
 interface BVI${bg}
- description ${desc}
+ description ${branchDesc}
  ip address ${wanIp} ${wanMask}
  ip access-group SERIAL_IN in
  ip virtual-reassembly
@@ -1335,11 +1343,11 @@ ip access-list standard OSPF-PERMIT
             let tunnelConfig = `!
 ! ===== ${svcType} Tunnel Configuration =====
 !
-interface Loopback2
+interface Loopback0
  ip address ${routerId} 255.255.255.255
 !
-interface Tunnel${tunnelNum}
- description ${desc}
+interface Tunnel79
+ description ${branchDesc}
  ip address ${tunnelIpLocal} ${tunnelMask}
  ip mtu 1360
  ip tcp adjust-mss 1320
@@ -1351,7 +1359,6 @@ router ospf 1
  router-id ${routerId}
  network ${tunnelIpLocal} 0.0.0.0 area ${area}
  network ${routerId} 0.0.0.0 area ${area}
- network ${wanIp} 0.0.0.0 area ${area}
 !
 do wr`;
 
@@ -1363,9 +1370,11 @@ do wr`;
 
             // ========== Base Config ==========
             if (document.getElementById('includeBaseConfig').checked && bx && by) {
+                const hostname = document.getElementById('hostnameName').value.trim();
+                const hostnameLine = hostname ? `\nhostname ${hostname}\n!` : '';
                 const baseConfig = `!
 ! ===== Base Config =====
-!
+!${hostnameLine}
 service timestamps debug datetime msec localtime
 service timestamps log datetime msec localtime
 service password-encryption
@@ -1393,13 +1402,28 @@ ip cef
 no ip domain lookup
 ip domain name agri-bank.com
 !
-username bkiadmin privilege 15 secret 0 BKI@dmin#2024
-username wanuser privilege 3 secret 0 W@nUs3r#2024
+username bkiadmin privilege 15 secret 5 $1$hGC0$.zYwqSMN0zrKSP/NazjgM0
 !
-ip ssh authentication-retries 2
+ip ssh time-out 120
 ip ssh version 2
+ip ssh port 2001 rotary 1
+crypto key generate rsa
+768
 !
 track 5 ip route 10.0.0.0 255.255.0.0 reachability
+!
+interface FastEthernet0/0
+ ip address 10.${bx}.${by}.5 255.255.255.0
+ ip access-group ETHERNET_IN in
+ duplex auto
+ speed auto
+ standby 1 ip 10.${bx}.${by}.1
+ standby 1 timers 1 3
+ standby 1 preempt
+ standby 1 track 5 decrement 25
+!
+router ospf 1
+ network 10.${bx}.${by}.5 0.0.0.0 area ${bx}
 !
 ip access-list standard SNMP-READ
  permit 10.0.50.0 0.0.1.255
@@ -1502,7 +1526,7 @@ ntp server 10.0.51.27
 ! ===== HUB ${svcType} Config for Branch (10.${bx}.${by}.0) =====
 !
 interface Tunnel${tunnelNum}
- description ${desc}
+ description ${hubDesc}
  ip address ${tunnelIpRemote} ${tunnelMask}
  ip mtu 1360
  ip tcp adjust-mss 1320
