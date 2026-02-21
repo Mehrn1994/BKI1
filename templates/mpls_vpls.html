@@ -921,7 +921,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 const y = match[3];
                 const prov = provinceMapping[provincePersian] || { en: provincePersian, abbr: provincePersian };
 
-                selectedBranchData = { x, y, provincePersian, provinceEn: prov.en, provinceAbbr: prov.abbr };
+                // Extract Farsi branch name (text before " - [province]")
+                const branchNameFa = val.split(' - [')[0].trim();
+
+                selectedBranchData = { x, y, name: branchNameFa, provincePersian, provinceEn: prov.en, provinceAbbr: prov.abbr };
 
                 document.getElementById('ospfArea').value = x;
                 document.getElementById('province').value = prov.en;
@@ -1130,7 +1133,7 @@ document.addEventListener('DOMContentLoaded', function() {
                             tunnel_name: 'Tunnel' + tunnelNum,
                             description: branchNameEn ? `${svcType}-${branchNameEn}` : svcType,
                             province: document.getElementById('province').value || '',
-                            branch_name: branchNameEn || '',
+                            branch_name: (selectedBranchData && selectedBranchData.name) ? selectedBranchData.name : (branchNameEn || ''),
                             username: currentUsername,
                             wan_ip: wanIp,
                             tunnel_dest: tunnelDest
