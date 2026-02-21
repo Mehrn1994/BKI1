@@ -1384,8 +1384,8 @@ ip access-list standard OSPF-PERMIT
 ip access-list standard SNMP-READ
  permit 10.0.50.0 0.0.1.255
 ip access-list standard SNMP-WRITE
- permit 10.0.51.49
- permit 10.0.51.48
+ permit host 10.0.51.48
+ permit host 10.0.51.49
 ip access-list standard TELNET_ACCESS
  permit 10.250.46.1
  permit 10.0.50.0 0.0.1.255
@@ -1410,11 +1410,15 @@ ip access-list extended GILANET-ACL
  permit gre host ${d.apnIpBranch} host ${d.hubIp}
 !
 logging 10.0.51.63
-snmp-server group LMS v3 priv read myview write myview access SNMP-WRITE
 snmp-server group NMS v3 priv access SNMP-READ
+snmp-server user nms-net NMS v3 auth md5 auth-agrinms2011 priv des priv-agrinms1390 access SNMP-READ
+!
+snmp-server group LMS v3 priv read myview write myview access SNMP-WRITE
+snmp-server user lms-net LMS v3 auth md5 Auth-P@S$-2011 priv des PriV-p@$S-1390 access SNMP-WRITE
+!
 snmp-server view myview mib-2 included
-snmp-server view myview system included
 snmp-server view myview cisco included
+snmp-server view myview system included
 snmp-server ifindex persist
 !
 tacacs-server host 10.0.51.56

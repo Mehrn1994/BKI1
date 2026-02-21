@@ -1058,9 +1058,8 @@ ip tacacs source-interface Loopback0
 ip access-list standard SNMP-READ
  permit 10.0.50.0 0.0.1.255
 ip access-list standard SNMP-WRITE
- permit 10.0.51.49
- permit 10.0.51.48
- permit 10.0.51.50
+ permit host 10.0.51.48
+ permit host 10.0.51.49
 ip access-list standard TELNET_ACCESS
  permit 10.${x}.1.8
  permit 10.${x}.254.1
@@ -1091,11 +1090,15 @@ ip access-list extended ETHERNET_IN
 logging 10.0.51.63
 access-list 199 permit icmp any any echo
 access-list 199 permit icmp any any echo-reply
-snmp-server group LMS v3 priv read myview write myview access SNMP-WRITE
 snmp-server group NMS v3 priv access SNMP-READ
+snmp-server user nms-net NMS v3 auth md5 auth-agrinms2011 priv des priv-agrinms1390 access SNMP-READ
+!
+snmp-server group LMS v3 priv read myview write myview access SNMP-WRITE
+snmp-server user lms-net LMS v3 auth md5 Auth-P@S$-2011 priv des PriV-p@$S-1390 access SNMP-WRITE
+!
 snmp-server view myview mib-2 included
-snmp-server view myview system included
 snmp-server view myview cisco included
+snmp-server view myview system included
 snmp-server ifindex persist
 !
 route-map nachi-worm permit 10
