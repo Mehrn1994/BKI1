@@ -1,0 +1,489 @@
+
+!
+! Last configuration change at 14:27:25 Tehran Sat May 31 2025 by m-hossain
+! NVRAM config last updated at 14:27:27 Tehran Sat May 31 2025 by m-hossain
+!
+version 12.4
+service timestamps debug datetime msec
+service timestamps log datetime localtime
+service password-encryption
+!
+hostname Router-HTSC
+!
+boot-start-marker
+boot-end-marker
+!
+card type e1 0 0
+card type e1 0 1
+enable secret 5 $1$aiFj$n5HwBs.uelg7OFR99XOGQ0
+!
+aaa new-model
+!
+!
+aaa authentication login CACS group tacacs+ local
+aaa authentication enable default group tacacs+ enable
+aaa authorization console
+aaa authorization config-commands
+aaa authorization exec CACS group tacacs+ local 
+aaa authorization commands 0 CACS group tacacs+ local 
+aaa authorization commands 1 CACS group tacacs+ local 
+aaa authorization commands 2 CACS group tacacs+ local 
+aaa authorization commands 3 CACS group tacacs+ local 
+aaa authorization commands 15 CACS group tacacs+ local 
+aaa accounting exec CACS start-stop group tacacs+
+aaa accounting commands 0 CACS start-stop group tacacs+
+aaa accounting commands 1 CACS start-stop group tacacs+
+aaa accounting commands 2 CACS start-stop group tacacs+
+aaa accounting commands 3 CACS start-stop group tacacs+
+aaa accounting commands 15 CACS start-stop group tacacs+
+!
+!
+aaa session-id common
+clock timezone Tehran 3 30
+no network-clock-participate wic 0 
+no network-clock-participate wic 1 
+!
+!
+ip traffic-export profile MJH mode capture
+  bidirectional
+ip cef
+!
+!
+!
+!
+ip domain name agri-bank.com
+!
+multilink bundle-name authenticated
+!
+!
+voice-card 0
+ no dspfarm
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+! 
+!
+crypto isakmp policy 10
+ encr aes
+ authentication pre-share
+ group 2
+crypto isakmp key G!#97 address 10.30.42.7
+!
+!
+crypto ipsec transform-set GS esp-aes esp-sha-hmac 
+!
+crypto map GS-MAP 1 ipsec-isakmp 
+ set peer 10.30.42.7
+ set transform-set GS 
+ match address GS-IPSEC-ACL
+!
+!
+!
+vtp domain HTSC
+vtp mode transparent
+username bkroot privilege 15 secret 5 $1$ELvA$jc0yenhIPTbl1gIq1jow..
+archive
+ log config
+  hidekeys
+ path tftp://10.0.51.40/Core/$h
+ write-memory
+!
+!
+controller E1 0/0/0
+ framing NO-CRC4 
+ channel-group 0 timeslots 1-31
+!
+controller E1 0/0/1
+!
+controller E1 0/1/0
+!
+controller E1 0/1/1
+!
+controller DSL 0/2/0
+ mode atm
+ line-term cpe
+ line-mode 2-wire line-zero
+ dsl-mode shdsl symmetric annex B
+ line-rate auto
+!
+vlan 42 
+!
+vlan 60
+ name INTRANET
+!
+vlan 100
+ name Management
+!
+vlan 250 
+!
+ip tftp source-interface Loopback0
+ip ssh authentication-retries 2
+ip ssh port 2001 rotary 1
+ip ssh source-interface GigabitEthernet0/0
+ip ssh version 2
+!
+class-map match-all Camera-Restriction
+ match access-group name Camera-Restriction
+class-map match-all undesireable-udp
+ match access-group 198
+!
+!
+policy-map Camera-Restriction-Child
+ class Camera-Restriction
+  priority 10000
+  set dscp ef
+policy-map Camera-Restriction
+ class class-default
+  shape average 32000000
+  service-policy Camera-Restriction-Child
+policy-map drop-udp
+ class undesireable-udp
+   drop
+policy-map Shaping
+ class Camera-Restriction
+    police 15000000 2000000 2000000 conform-action transmit  exceed-action drop 
+!
+bridge irb
+!
+!
+!
+!
+interface Loopback0
+ ip address 10.60.254.1 255.255.255.0
+!
+interface Tunnel100
+ description ** Intranet ** 
+ ip address 10.255.255.33 255.255.255.254
+ ip mtu 1400
+ ip tcp adjust-mss 1360
+ ip ospf cost 5
+ load-interval 30
+ keepalive 3 3
+ cdp enable
+ tunnel source 10.30.164.42
+ tunnel destination 10.30.42.7
+!
+interface GigabitEthernet0/0
+ description ** LAN -> Sw-Core **
+ ip address 10.60.0.1 255.255.255.0
+ ip flow ingress
+ ip flow egress
+ ip nat inside
+ ip virtual-reassembly
+ ip route-cache flow
+ duplex auto
+ speed auto
+ media-type rj45
+!
+interface GigabitEthernet0/1
+ no ip address
+ shutdown
+ duplex auto
+ speed auto
+ media-type rj45
+!
+interface FastEthernet0/3/0
+ description ** To Core Switch - Inside ** 
+ switchport access vlan 250
+!
+interface FastEthernet0/3/1
+ description ** To Core Switch - Inside ** 
+ switchport mode trunk
+ shutdown
+!
+interface FastEthernet0/3/2
+ description ** Intranet **
+ switchport access vlan 60
+!
+interface FastEthernet0/3/3
+!
+interface Serial0/0/0:0
+ description ** PTP-BKI **
+ ip address 10.0.250.226 255.255.255.252
+ encapsulation ppp
+ ip ospf cost 200
+ load-interval 30
+ fair-queue
+!
+interface ATM0/2/0
+ no ip address
+ shutdown
+ no atm ilmi-keepalive
+ bridge-group 1
+ bridge-group 1 spanning-disabled
+ pvc 0/35 
+  encapsulation aal5snap
+ !
+!
+interface Vlan1
+ no ip address
+ shutdown
+!
+interface Vlan60
+ description ** Intranet ** 
+ ip address 10.30.164.42 255.255.255.248
+ ip nat outside
+ ip virtual-reassembly max-reassemblies 1024
+ ip policy route-map nachi-worm
+ crypto map GS-MAP
+!
+interface Vlan100
+ description ** To-SwCore ** 
+ no ip address
+ ip nat inside
+ ip virtual-reassembly
+ load-interval 30
+!
+interface Vlan250
+ ip address 10.60.250.1 255.255.255.0
+ ip nat inside
+ ip virtual-reassembly
+!
+interface Vlan660
+ no ip address
+!
+router ospf 1
+ router-id 10.60.0.1
+ ispf
+ log-adjacency-changes
+ network 10.0.250.226 0.0.0.0 area 0
+ network 10.2.42.0 0.0.0.255 area 0
+ network 10.60.0.1 0.0.0.0 area 0
+ network 10.60.0.0 0.0.127.255 area 0
+ network 10.60.0.0 0.0.255.255 area 0
+ network 10.255.255.33 0.0.0.0 area 0
+ distribute-list OSPF-PERMIT in
+!
+ip route 10.0.0.0 255.0.0.0 10.30.164.41 130 name BACKUP-INTRANET
+ip route 10.0.0.0 255.255.0.0 10.30.164.41 130 name BACKUP-INTRANET
+ip route 10.0.207.0 255.255.255.0 10.0.250.225 name SecurityDepBWContraints
+ip route 10.30.42.0 255.255.255.0 10.30.164.41 name Intranet-New
+ip route 10.42.6.0 255.255.255.0 Tunnel100
+ip route 10.60.254.2 255.255.255.255 10.60.0.2
+ip route 192.167.67.0 255.255.255.0 Tunnel100
+ip route 192.168.10.14 255.255.255.255 Tunnel100 name Arya-Satna
+ip route 192.168.10.104 255.255.255.255 Tunnel100
+ip route 192.168.112.0 255.255.255.0 Tunnel100
+ip route 192.168.114.0 255.255.255.0 Tunnel100
+ip route 192.168.115.0 255.255.255.0 Tunnel100
+ip route 192.168.117.0 255.255.255.0 Tunnel100
+ip route 192.168.119.0 255.255.255.0 Tunnel100
+ip route 192.168.200.0 255.255.255.0 Tunnel100
+ip route 192.168.202.0 255.255.255.0 Tunnel100
+!
+ip flow-cache timeout active 1
+ip flow-export source GigabitEthernet0/0
+ip flow-export version 5
+ip flow-export destination 10.0.51.61 9996
+!
+no ip http server
+no ip http secure-server
+ip nat inside source list natlist interface Vlan60 overload
+ip tacacs source-interface Loopback0
+!
+ip access-list standard OSPF-PERMIT
+ permit 10.254.0.0 0.0.255.255
+ permit 10.60.0.0 0.0.0.255
+ permit 10.2.42.0 0.0.0.255
+ permit 10.60.3.0 0.0.0.255
+ permit 10.0.7.0 0.63.0.255
+ permit 10.0.0.0 0.255.255.0
+ permit 192.168.123.0 0.0.0.255
+ permit 192.168.65.0 0.0.0.255
+ permit 10.0.0.0 0.0.255.255
+ permit 10.60.0.0 0.0.127.255
+ip access-list standard SNMP-READ
+ permit 10.60.64.21
+ permit 10.0.50.0 0.0.1.255
+ip access-list standard SNMP-WRITE
+ permit 10.0.51.49
+ permit 10.0.51.48
+ permit 10.0.51.50
+ip access-list standard TELNET_ACCESS
+ remark ----------ALPHA Team----------
+ permit 10.0.201.36
+ permit 10.0.201.62
+!
+ip access-list extended Camera-Restriction
+ permit ip 10.60.5.0 0.0.0.255 10.0.207.0 0.0.0.255
+ip access-list extended GS-IPSEC-ACL
+ permit gre host 10.30.164.42 host 10.30.42.7
+ip access-list extended INTR@NET
+ permit icmp any any
+ deny   udp any any eq tftp
+ deny   udp any any eq 135
+ deny   udp any any eq netbios-ns
+ deny   udp any any eq netbios-dgm
+ deny   udp any any eq netbios-ss
+ deny   udp any any eq snmp
+ deny   udp any any eq snmptrap
+ deny   tcp any any eq 135
+ deny   tcp any any eq 139
+ deny   tcp any any eq 445
+ deny   tcp any any eq 593
+ deny   tcp any any eq 4444
+ deny   tcp any any eq 1433
+ permit ip 10.30.166.248 0.0.0.7 any
+ip access-list extended INTRANET-CRYPTO
+ permit ip 10.60.0.0 0.0.255.255 10.0.0.0 0.0.255.255
+ permit ip 10.60.0.0 0.0.255.255 10.0.0.0 0.63.255.255
+ip access-list extended PBR-FilerPro
+ permit ip host 10.60.1.47 any
+ip access-list extended natlist
+ permit ip 10.60.1.0 0.0.0.255 host 81.90.150.133
+ permit ip 10.60.1.0 0.0.0.255 host 10.19.171.220
+ permit ip 10.60.1.0 0.0.0.255 host 10.19.171.22
+ permit ip 10.60.1.0 0.0.0.255 host 10.19.171.137
+!
+ip sla 1
+ icmp-echo 10.0.51.40 source-ip 10.60.0.1
+ frequency 10
+ip sla schedule 1 life forever start-time now
+logging trap notifications
+logging source-interface Loopback0
+logging 10.60.64.21
+logging 10.0.51.63
+logging 10.0.51.25
+access-list 198 deny   ip any any fragments
+access-list 198 permit udp any any eq 18999
+access-list 199 permit icmp any any echo
+access-list 199 permit icmp any any echo-reply
+snmp-server group LMS v3 priv read myview write myview access SNMP-WRITE
+snmp-server group NMS v3 priv access SNMP-READ
+snmp-server view myview mib-2 included
+snmp-server view myview system included
+snmp-server view myview cisco included
+snmp-server ifindex persist
+!
+!
+!
+route-map nachi-worm permit 10
+ match ip address 199
+ match length 92 92
+ set interface Null0
+!
+route-map PBR-FilerPro permit 10
+ match ip address PBR-FilerPro
+ set ip next-hop 10.30.164.41
+!
+!
+!
+tacacs-server host 10.0.51.56
+tacacs-server host 10.0.51.57
+tacacs-server directed-request
+tacacs-server key 7 052A15416E1D1D59
+!
+control-plane
+ service-policy input drop-udp
+!
+bridge 1 protocol ieee
+bridge 1 route ip
+!
+!
+!
+!
+!
+!
+!
+!
+banner motd 
+============================================================================
+                                      $#*$*#*         $#*$*#*$*#*$*#*$*#*
+                                      $#*$*#*        $#*$*#*$*#*$*#*$*#*$*
+                                    $#*              $#*$*#*$*#*$*#*$*#*$*
+                        $#*$*#*$*#*$*#               $#*$*#*$*#*$*#*$*#*$*
+                  $#*$*#*$*#*$*#*$*#*$               $#*$*#*$*#*$*#*$*#*$*
+               $#*$*#*$*#*$*#*$*#*$*#*               $#*$*#*$*#*$*#*$*#*$*
+            $#*$*#*$*#*$*#*$*#*$*#*$*#               $#*$*#*$*#*$*#*$*#*$*
+         $#*$*#*$*#*$*#*$*#*$*#*$*#*$               $#*$*#*$*#*$*#*$*#*$*
+       $#*$*#*$*#*$*#*$*#*$*#                     $#*$*
+      $#*$*#*$*#*$*#*$*#               $#*$*#*$*#*$*#
+     $#*$*#*$*#*$*#*$                 $#*$*#*$*#*$*#
+    $#*$*#*$*#*$*#*                   $#*$*#*$*#*$*#
+   $#*$*#*$*#*$*#*                    $#*$*#*$*#*$*#
+  $#*$*#*$*#*$*#*                     $#*$*#*$*#*$*#
+  $#*$*#*$*#*$*#                     $#            $#*
+  $#*$*#*$*#*$*#               $#*$*#*               $#*$*#*$*#*$*
+  $#*$*#*$*#*$*#               $#*$*#*               $#*$*#*$*#*$*#
+  $#*$*#*$*#*$*#                                    $#*$*#*$*#*$*#*
+  $#*$*#*$*#*$*#*                                   $#*$*#*$*#*$*#
+   $#*$*#*$*#*$*#*                                 $#*$*#*$*#*$*#*
+   $#*$*#*$*#*$*#*$                               $#*$*#*$*#*$*#*
+    $#*$*#*$*#*$*#*$*                           $#*$*#*$*#*$*#*$
+      $#*$*#*$*#*$*#*$*                      $#*$*#*$*#*$*#*$*#
+       $#*$*#*$*#*$*#*$*#*$*            $#*$*#*$*#*$*#*$*#*$*
+         $#*$*#*$*#*$*#*$*#*$*#*$*#*$*#*$*#*$*#*$*#*$*#*$*#
+           $#*$*#*$*#*$*#*$*#*$*#*$*#*$*#*$*#*$*#*$*#*$*#
+              $#*$*#*$*#*$*#*$*#*$*#*$*#*$*#*$*#*$*#*$
+                  $#*$*#*$*#*$*#*$*#*$*#*$*#*$*#*$*
+                       $#*$*#*$*#*$*#*$*#*$*#*
+                                HTSC
+============================================================================
+    WARNING:
+              Access is restricted to authorized users only.
+               Unauthorized access is a violation of state,
+                        civil and criminal laws.
+*****************************************************************************
+
+privilege interface level 3 shutdown
+privilege interface level 3 no shutdown
+privilege interface level 3 no
+privilege configure level 3 interface
+privilege exec level 3 traceroute
+privilege exec level 3 ping
+privilege exec level 3 configure terminal
+privilege exec level 3 configure
+privilege exec level 3 reload
+privilege exec level 3 terminal monitor
+privilege exec level 3 terminal
+privilege exec level 3 show running-config
+privilege exec level 3 show
+!
+line con 0
+ authorization exec CACS
+ login authentication CACS
+line aux 0
+ no exec
+line vty 0 4
+ privilege level 15
+ authorization exec CACS
+ accounting commands 15 CACS
+ accounting exec CACS
+ login authentication CACS
+ transport input ssh
+ transport output telnet ssh
+line vty 5 15
+ privilege level 15
+ authorization exec CACS
+ accounting exec CACS
+ login authentication CACS
+ transport input ssh
+ transport output telnet ssh
+!
+scheduler max-task-time 5000
+scheduler allocate 20000 1000
+ntp clock-period 17179691
+ntp source Loopback0
+ntp master 7
+ntp update-calendar
+ntp server 10.0.51.27
+
+!
+webvpn cef
+!
+end

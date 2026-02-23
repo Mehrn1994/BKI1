@@ -1,0 +1,1650 @@
+
+!
+! Last configuration change at 09:31:56 Tehran Mon Feb 23 2026 by s-sattari
+! NVRAM config last updated at 09:31:58 Tehran Mon Feb 23 2026 by s-sattari
+!
+version 12.4
+service timestamps debug datetime msec
+service timestamps log datetime localtime
+service password-encryption
+!
+hostname 3825-NIBN
+!
+boot-start-marker
+boot system flash:c3825-adventerprisek9-mz.124-11.XW7.bin
+boot-end-marker
+!
+enable secret 5 $1$LHp7$riLsyTSXlkx9fE9vWCTWq.
+!
+aaa new-model
+!
+!
+aaa group server tacacs+ ACSServers
+ server-private 10.0.51.56 key 7 106F1A574A46415B
+ server-private 10.0.51.57 key 7 047A184840701F1E
+ ip vrf forwarding VRF-Mgmt
+ ip tacacs source-interface Vlan51
+!
+aaa authentication login CACS group ACSServers local
+aaa authentication enable default group ACSServers enable
+aaa authentication ppp default local-case
+aaa authorization console
+aaa authorization config-commands
+aaa authorization exec CACS group ACSServers local 
+aaa authorization commands 0 CACS group ACSServers local 
+aaa authorization commands 1 CACS group ACSServers local 
+aaa authorization commands 2 CACS group ACSServers local 
+aaa authorization commands 3 CACS group ACSServers local 
+aaa authorization commands 15 CACS group ACSServers local 
+aaa accounting exec CACS start-stop group ACSServers
+aaa accounting commands 0 CACS start-stop group ACSServers
+aaa accounting commands 1 CACS start-stop group ACSServers
+aaa accounting commands 2 CACS start-stop group ACSServers
+aaa accounting commands 3 CACS start-stop group ACSServers
+aaa accounting commands 15 CACS start-stop group ACSServers
+aaa accounting system default start-stop group ACSServers
+!
+!
+aaa session-id common
+clock timezone Tehran 3 30
+!
+!
+ip traffic-export profile MyCAP mode capture
+  bidirectional
+ip cef
+!
+!
+!
+!
+ip vrf VRF-Mgmt
+!
+no ip domain lookup
+ip domain name agri-bank.com
+!
+multilink bundle-name authenticated
+!
+!
+voice-card 0
+ no dspfarm
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+! 
+!
+!
+!
+username bkiadmin privilege 15 secret 5 $1$wxun$ppxaGRSpQDsCvZysEwAiu.
+username wanuser privilege 3 secret 5 $1$lTjc$hdsaVYKmWxlyw69ZM6312.
+archive
+ log config
+  hidekeys
+ path tftp://10.0.51.40/Core/$h
+ write-memory
+!
+!
+ip telnet source-interface Vlan90
+ip tftp source-interface Vlan51
+ip ssh time-out 30
+ip ssh authentication-retries 2
+ip ssh port 2001 rotary 1
+ip ssh version 2
+!
+class-map match-all undesireable-udp
+ match access-group 198
+!
+!
+policy-map drop-udp
+ class undesireable-udp
+   drop
+!
+!
+!
+!
+!
+interface GigabitEthernet0/0
+ description AGG-EXT-SW-Twe1/0/12
+ no ip address
+ ip flow ingress
+ ip flow egress
+ ip virtual-reassembly
+ ip traffic-export apply MyCAP size 10485760
+ duplex auto
+ speed auto
+ media-type rj45
+!
+interface GigabitEthernet0/0.157
+ encapsulation dot1Q 157
+ ip address 10.0.157.5 255.255.255.0
+ ip flow ingress
+ ip flow egress
+ ip nat inside
+ ip virtual-reassembly
+ ip traffic-export apply MyCAP size 10485760
+!
+interface GigabitEthernet0/1
+ description ** To ISC-2960-f0/11 **
+ ip address 192.168.106.6 255.255.255.240
+ ip flow ingress
+ ip flow egress
+ ip nat outside
+ ip virtual-reassembly
+ ip traffic-export apply MyCAP size 10485760
+ duplex auto
+ speed auto
+ media-type rj45
+!
+interface FastEthernet2/0
+ description ** To ISC-2960-f0/1 **
+ switchport access vlan 20
+!
+interface FastEthernet2/1
+ description ** Moghayerat Shetabi-To-2960-F0/6**
+ switchport access vlan 30
+!
+interface FastEthernet2/2
+ description ** Nahab -> port f0/16 **
+ switchport access vlan 50
+!
+interface FastEthernet2/3
+ description ** SAA6 ->port f0/18 **
+ switchport access vlan 60
+!
+interface FastEthernet2/4
+ description ** SEPAM-WEB  ->port f0/19 **
+ switchport access vlan 60
+!
+interface FastEthernet2/5
+ description ** SEPAM-printer  ->port f0/20 **
+ switchport access vlan 60
+!
+interface FastEthernet2/6
+ description ** SAA7 -> port f0/21 **
+ switchport access vlan 60
+!
+interface FastEthernet2/7
+ description ** Chakavak-MQ -> Port f0/22 **
+ switchport access vlan 60
+!
+interface FastEthernet2/8
+ description ** CBI-Portal-> Port f0/23**
+ switchport access vlan 70
+!
+interface FastEthernet2/9
+ description ** Sepam-MQ-> Port f0/4 **
+ switchport access vlan 60
+!
+interface FastEthernet2/10
+ description ** Shaparak=>CardToCard **
+ switchport access vlan 90
+!
+interface FastEthernet2/11
+ description ** NIBN-Hamoon **
+ switchport access vlan 35
+!
+interface FastEthernet2/12
+!
+interface FastEthernet2/13
+!
+interface FastEthernet2/14
+!
+interface FastEthernet2/15
+ description ** MGMT **
+ switchport access vlan 51
+ ip vrf forwarding VRF-Mgmt
+!
+interface Vlan1
+ no ip address
+!
+interface Vlan10
+ no ip address
+!
+interface Vlan20
+ ip address 192.168.106.131 255.255.255.240
+ ip flow ingress
+ ip flow egress
+ ip nat outside
+ ip virtual-reassembly
+!
+interface Vlan30
+ description ** Moghayerat-Shetabi **
+ ip address 192.168.106.148 255.255.255.240
+ ip flow ingress
+ ip flow egress
+ ip nat outside
+ ip virtual-reassembly
+!
+interface Vlan35
+ ip address 192.168.106.35 255.255.255.240
+ ip flow ingress
+ ip flow egress
+ ip nat outside
+ ip virtual-reassembly
+!
+interface Vlan40
+ no ip address
+!
+interface Vlan50
+ description *** Nahab ***
+ ip address 192.168.106.195 255.255.255.240
+ ip flow ingress
+ ip flow egress
+ ip nat outside
+ ip virtual-reassembly
+!
+interface Vlan51
+ description ** MGMT **
+ ip vrf forwarding VRF-Mgmt
+ ip address 10.0.51.42 255.255.255.0
+!
+interface Vlan60
+ description **  SAA6 & SEPAM **
+ ip address 192.168.106.163 255.255.255.240
+ ip flow ingress
+ ip flow egress
+ ip nat outside
+ ip virtual-reassembly
+!
+interface Vlan70
+ description ** CBI-Portal **
+ ip address 192.168.106.114 255.255.255.240
+ ip flow ingress
+ ip flow egress
+ ip nat outside
+ ip virtual-reassembly
+!
+interface Vlan80
+ no ip address
+!
+interface Vlan90
+ ip address 192.168.106.66 255.255.255.240
+ ip flow ingress
+ ip flow egress
+ ip nat outside
+ ip virtual-reassembly
+!
+interface Group-Async0
+ physical-layer async
+ no ip address
+ encapsulation slip
+ no group-range
+!
+ip route 10.0.0.0 255.0.0.0 10.0.157.1
+ip route 10.0.89.17 255.255.255.255 192.168.106.145 name FTP-ARZI-DEP.
+ip route 10.42.7.156 255.255.255.255 192.168.106.65 name ShaparakC2C
+ip route 10.42.7.157 255.255.255.255 192.168.106.65 name ShaparakC2C
+ip route 192.168.65.0 255.255.255.0 192.168.106.1 name RTGS
+ip route 192.168.65.21 255.255.255.255 192.168.106.129 name ACH
+ip route 192.168.65.37 255.255.255.255 192.168.106.193 name Nahab-MAP
+ip route 192.168.65.38 255.255.255.255 192.168.106.193 name Nahab-QAMAP
+ip route 192.168.65.39 255.255.255.255 192.168.106.193 name NAHAB
+ip route 192.168.65.47 255.255.255.255 192.168.106.193 name Nahab
+ip route 192.168.65.48 255.255.255.255 192.168.106.193 name Nahab-Gwaye
+ip route 192.168.65.50 255.255.255.255 192.168.106.113 name CBI-Portal
+ip route 192.168.65.54 255.255.255.255 192.168.106.161 name Sayad
+ip route 192.168.65.57 255.255.255.255 192.168.106.129 name ACH-MMS
+ip route 192.168.65.58 255.255.255.255 192.168.106.129 name ACH-DD
+ip route 192.168.65.60 255.255.255.255 192.168.106.161 name Pichak-Chakad
+ip route 192.168.65.65 255.255.255.255 192.168.106.161 name DNS-SEPAM
+ip route 192.168.65.69 255.255.255.255 192.168.106.161 name Monitoring-NIBN
+ip route 192.168.65.74 255.255.255.255 192.168.106.129 name RamzRial
+ip route 192.168.65.75 255.255.255.255 192.168.106.145 name Peyvand
+ip route 192.168.65.81 255.255.255.255 192.168.106.161 name Imen.nibn.ir
+ip route 192.168.65.90 255.255.255.255 192.168.106.145 name Moghayerat-Shetabi
+ip route 192.168.65.94 255.255.255.255 192.168.106.129 name Makna-Mana
+ip route 192.168.65.100 255.255.255.255 192.168.106.145 name Switch-Shetab
+ip route 192.168.65.107 255.255.255.255 192.168.106.161 name CIS3-WEB-Chakavak
+ip route 192.168.65.108 255.255.255.255 192.168.106.161 name Test-SIMA
+ip route 192.168.65.110 255.255.255.255 192.168.106.161 name CSD-SIMA
+ip route 192.168.65.111 255.255.255.255 192.168.106.161 name Chakavak-FTP(MQ-CISTest)
+ip route 192.168.65.112 255.255.255.255 192.168.106.161 name CISTrain(Test-web-Chakavak)
+ip route 192.168.65.113 255.255.255.255 192.168.106.161 name CISFileSrv(Print-Chakavak)
+ip route 192.168.65.115 255.255.255.255 192.168.106.161 name Chakavak
+ip route 192.168.65.116 255.255.255.255 192.168.106.161 name Chakavak-FTP(MQ)
+ip route 192.168.65.122 255.255.255.255 192.168.106.161 name CISFileSrv(TESTPrint-Chakavak)
+ip route 192.168.65.123 255.255.255.255 192.168.106.161 name Core2MQ-Chakavak
+ip route 192.168.65.138 255.255.255.255 Vlan60 name ebarat.sepam.nibn.ir
+ip route 192.168.65.145 255.255.255.255 192.168.106.161 name GAM.nibn.ir
+ip route 192.168.65.170 255.255.255.255 192.168.106.161 name barsa
+ip route 192.168.65.184 255.255.255.255 Vlan60 name Arzi.nibn.ir
+ip route 192.168.65.185 255.255.255.255 192.168.106.145 name SITA2Web
+ip route 192.168.65.197 255.255.255.255 192.168.106.161 name Dorna
+ip route 192.168.65.211 255.255.255.255 192.168.106.161 name SEPAMARZI2
+ip route 192.168.65.212 255.255.255.255 192.168.106.161 name SEPAMARZI2MW
+ip route 192.168.65.214 255.255.255.255 192.168.106.161 name SEPAM-Printer
+ip route 192.168.65.216 255.255.255.255 192.168.106.161 name Sepam-WS
+ip route 192.168.65.217 255.255.255.255 192.168.106.161 name Sepam-MQ
+ip route 192.168.65.220 255.255.255.255 192.168.106.161 name SAA6(swift)
+ip route 192.168.65.221 255.255.255.255 192.168.106.161 name SAA6(Swift)
+ip route 192.168.65.222 255.255.255.255 192.168.106.161 name SEPAM-Server
+ip route 192.168.65.223 255.255.255.255 192.168.106.161 name Backup-SEPAM
+ip route 192.168.65.224 255.255.255.255 192.168.106.161 name SEPAM-Printer
+ip route 192.168.65.225 255.255.255.255 192.168.106.161 name SAA7-Server
+ip route 192.168.65.226 255.255.255.255 192.168.106.161 name SEPAM-Secure
+ip route 192.168.65.227 255.255.255.255 192.168.106.161 name SAA7-DisasterRecovery
+ip route 192.168.65.229 255.255.255.255 192.168.106.161 name Metis
+ip route 192.168.65.243 255.255.255.255 192.168.106.33 name Hamoon
+ip route 192.168.65.247 255.255.255.255 192.168.106.161 name AryaTaba
+ip route 192.168.65.249 255.255.255.255 192.168.106.145 name SITA2FTP
+ip route 192.168.66.66 255.255.255.255 192.168.106.161 name DNS-SEPAM
+ip route 192.168.72.109 255.255.255.255 192.168.106.161 name New-CSD.nibn.net
+ip route 192.168.72.110 255.255.255.255 192.168.106.129 name New-CSD.nibn.net
+ip route 192.168.199.28 255.255.255.255 192.168.106.65 name Fanavaran-Shaparak
+ip route 192.168.199.92 255.255.255.255 192.168.106.65 name Sahaparak-Ferdosi
+ip route vrf VRF-Mgmt 0.0.0.0 0.0.0.0 10.0.51.1 name OOB-MGMT
+!
+ip flow-cache timeout active 1
+ip flow-export source GigabitEthernet0/0.157
+ip flow-export version 5
+ip flow-export destination 10.0.51.61 9996
+!
+no ip http server
+no ip http secure-server
+ip nat pool ACH-1 192.168.106.4 192.168.106.4 netmask 255.255.255.0
+ip nat pool SEPAM-Print 192.168.106.164 192.168.106.164 netmask 255.255.255.248
+ip nat pool SHEBA 192.168.106.12 192.168.106.12 netmask 255.255.255.248
+ip nat pool Chakavak-MQ 192.168.106.167 192.168.106.167 netmask 255.255.255.240
+ip nat pool Chakavak-WAN 192.168.106.165 192.168.106.165 netmask 255.255.255.240
+ip nat pool Peyvand 192.168.106.150 192.168.106.150 netmask 255.255.255.248
+ip nat pool Arya-Test 192.168.106.6 192.168.106.6 netmask 255.255.255.0
+ip nat pool Pichak-Chakad 192.168.106.170 192.168.106.170 netmask 255.255.255.240
+ip nat pool POL 192.168.106.10 192.168.106.10 netmask 255.255.255.0
+ip nat pool AryaTaba 192.168.106.173 192.168.106.173 netmask 255.255.255.240
+ip nat pool Shaparak 192.168.106.146 192.168.106.146 netmask 255.255.255.248
+ip nat pool SITA2 192.168.106.149 192.168.106.149 netmask 255.255.255.248
+ip nat pool SIMQ-MQ 192.168.106.135 192.168.106.135 netmask 255.255.255.240
+ip nat pool SepamArzi2MQ 192.168.106.162 192.168.106.162 netmask 255.255.255.240
+ip nat pool RamzRialPool 192.168.106.136 192.168.106.136 netmask 255.255.255.240
+ip nat inside source list ACH pool ACH-1 overload
+ip nat inside source list Arya-Test pool Arya-Test overload
+ip nat inside source list AryaTabaACL pool AryaTaba overload
+ip nat inside source list Barsa interface Vlan60 overload
+ip nat inside source list CBI-PORTAL interface Vlan70 overload
+ip nat inside source list Chakavak-SepamWeb interface Vlan60 overload
+ip nat inside source list Hamoon interface Vlan35 overload
+ip nat inside source list MOGH-SHETAB interface Vlan30 overload
+ip nat inside source list Makna-Mana interface Vlan20 overload
+ip nat inside source list Nahab interface Vlan50 overload
+ip nat inside source list POL pool POL overload
+ip nat inside source list Peyvand-Azmoon pool Peyvand overload
+ip nat inside source list Pichak-Chakad pool Pichak-Chakad overload
+ip nat inside source list RamzRialACL pool RamzRialPool overload
+ip nat inside source list SEPAM-Print pool SEPAM-Print overload
+ip nat inside source list SEPAM2MQ pool SepamArzi2MQ overload
+ip nat inside source list SHAPARAK pool Shaparak overload
+ip nat inside source list SHEBA pool SHEBA overload
+ip nat inside source list SITA2 pool SITA2 overload
+ip nat inside source list Sima-MQ pool SIMQ-MQ overload
+ip nat inside source static 10.0.52.36 192.168.106.2
+ip nat inside source static 10.0.92.105 192.168.106.5
+ip nat inside source static tcp 10.0.52.34 14014 192.168.106.6 14014 extendable
+ip nat inside source static tcp 10.0.55.119 443 192.168.106.10 443 extendable
+ip nat inside source static 10.0.54.133 192.168.106.12
+ip nat inside source static tcp 10.0.55.139 18087 192.168.106.35 18087 extendable
+ip nat inside source static 10.0.76.56 192.168.106.56
+ip nat inside source static 10.0.76.191 192.168.106.66
+ip nat inside source static 10.0.7.61 192.168.106.134
+ip nat inside source static 10.0.57.99 192.168.106.135
+ip nat inside source static 10.0.65.171 192.168.106.147
+ip nat inside source static 10.0.52.20 192.168.106.162
+ip nat inside source static tcp 10.0.85.144 1423 192.168.106.166 1423 extendable
+ip nat inside source static tcp 10.0.85.144 1523 192.168.106.166 1523 extendable
+ip nat inside source static tcp 10.0.85.144 14023 192.168.106.166 14023 extendable
+ip nat inside source static tcp 10.0.85.144 15023 192.168.106.166 15023 extendable
+ip nat inside source static 10.0.85.144 192.168.106.166
+ip nat inside source static 10.0.57.19 192.168.106.167
+ip nat inside source static tcp 10.0.57.44 1919 192.168.106.168 1919 extendable
+ip nat inside source static 10.0.57.44 192.168.106.168
+ip nat inside source static tcp 10.0.57.163 2020 192.168.106.195 2020 extendable
+ip nat outside source static 192.168.199.28 10.42.7.156
+ip nat outside source static 192.168.199.92 10.42.7.157
+!
+ip access-list standard SHAPARAK
+ permit 10.0.92.91
+ permit 10.0.92.68
+ permit 10.0.92.67
+ permit 10.0.92.122
+ permit 10.0.73.37
+ permit 10.0.92.62
+ permit 10.0.92.131
+ip access-list standard SNMP-READ
+ permit 10.0.50.0 0.0.1.255
+ip access-list standard SNMP-WRITE
+ permit 10.0.51.49
+ permit 10.0.51.48
+ permit 10.0.51.50
+ip access-list standard TELNET
+ permit 10.0.50.0 0.0.1.255
+!
+ip access-list extended ACH
+ permit ip host 10.0.92.106 host 192.168.65.21
+ permit ip host 10.0.92.104 host 192.168.65.21
+ permit ip host 10.0.92.106 host 192.168.65.201
+ permit ip host 10.0.92.104 host 192.168.65.201
+ permit ip host 10.0.92.22 host 192.168.65.201
+ permit ip host 10.0.92.40 host 192.168.65.201
+ permit ip host 10.0.92.92 host 192.168.65.201
+ permit ip host 10.0.92.93 host 192.168.65.201
+ permit ip host 10.0.92.96 host 192.168.65.201
+ permit ip host 10.0.92.36 host 192.168.65.201
+ permit ip host 10.0.92.95 host 192.168.65.201
+ permit ip host 10.0.92.39 host 192.168.65.201
+ permit ip host 10.0.92.103 host 192.168.65.201
+ permit ip host 10.0.92.54 host 192.168.65.201
+ permit ip host 10.0.92.100 host 192.168.65.201
+ permit ip host 10.0.92.67 host 192.168.65.201
+ permit ip host 10.0.50.67 host 192.168.65.201
+ip access-list extended Arya-Test
+ permit tcp host 10.60.1.174 host 192.168.65.207 eq 443 www
+ permit tcp host 10.60.1.161 host 192.168.65.207 eq 443 www
+ permit tcp host 10.60.1.151 host 192.168.65.207 eq 443 www
+ permit ip host 10.0.52.34 host 192.168.65.207
+ permit ip host 10.0.203.19 host 192.168.65.207
+ permit ip host 10.0.203.160 host 192.168.65.207
+ip access-list extended Barsa
+ permit ip host 10.0.50.67 host 192.168.65.170
+ permit ip host 10.0.92.97 host 192.168.65.170
+ permit ip host 10.0.92.100 host 192.168.65.170
+ permit ip host 10.0.92.62 host 192.168.65.170
+ permit ip host 10.0.92.68 host 192.168.65.170
+ permit ip host 10.0.92.20 host 192.168.65.170
+ permit ip host 10.0.4.106 host 192.168.65.170
+ permit ip host 10.0.92.103 host 192.168.65.170
+ permit ip host 10.0.92.22 host 192.168.65.170
+ permit ip host 10.0.92.93 host 192.168.65.170
+ permit ip host 10.0.92.54 host 192.168.65.170
+ permit ip host 10.0.3.185 host 192.168.65.170
+ permit ip host 10.0.3.50 host 192.168.65.170
+ permit ip host 10.0.20.39 host 192.168.65.170
+ permit ip host 10.0.109.168 host 192.168.65.170
+ permit ip host 10.0.92.67 host 192.168.65.170
+ip access-list extended CBI-PORTAL
+ permit ip host 10.0.13.76 host 192.168.65.50
+ permit ip host 10.0.92.60 host 192.168.65.50
+ permit ip host 10.0.92.37 host 192.168.65.50
+ permit ip host 10.0.92.34 host 192.168.65.50
+ permit ip host 10.0.92.40 host 192.168.65.50
+ permit ip host 10.0.92.146 host 192.168.65.50
+ permit ip host 10.0.98.32 host 192.168.65.50
+ permit ip host 10.0.90.20 host 192.168.65.50
+ permit ip host 10.0.109.18 host 192.168.65.50
+ permit ip host 10.0.109.29 host 192.168.65.50
+ permit ip host 10.0.109.17 host 192.168.65.50
+ permit ip host 10.0.92.93 host 192.168.65.50
+ permit ip host 10.0.61.132 host 192.168.65.50
+ permit ip host 10.0.109.141 host 192.168.65.50
+ permit ip host 10.0.109.146 host 192.168.65.50
+ permit ip host 10.0.90.22 host 192.168.65.50
+ permit ip host 10.0.90.46 host 192.168.65.50
+ permit ip host 10.0.18.119 host 192.168.65.50
+ permit ip host 10.0.18.175 host 192.168.65.50
+ permit ip host 10.0.109.118 host 192.168.65.50
+ permit ip host 10.0.50.41 host 192.168.65.50
+ permit ip host 10.0.109.140 host 192.168.65.50
+ permit ip host 10.0.109.42 host 192.168.65.50
+ permit ip host 10.0.109.45 host 192.168.65.50
+ permit ip host 10.0.109.44 host 192.168.65.50
+ permit ip host 10.0.109.162 host 192.168.65.50
+ permit ip host 10.0.109.168 host 192.168.65.50
+ permit ip host 10.0.92.141 host 192.168.65.50
+ permit ip host 10.0.109.152 host 192.168.65.50
+ permit ip host 10.0.109.59 host 192.168.65.50
+ permit ip host 10.0.109.70 host 192.168.65.50
+ permit ip host 10.0.109.19 host 192.168.65.50
+ permit ip host 10.0.109.40 host 19.168.65.50
+ permit ip host 10.0.109.19 host 192.168.65.211
+ permit ip host 10.0.50.94 host 192.168.65.50
+ permit ip host 10.0.1.61 host 192.168.65.50
+ permit ip host 10.0.11.161 host 192.168.65.50
+ permit ip host 10.0.11.68 host 192.168.65.50
+ permit ip host 10.0.11.47 host 192.168.65.50
+ permit ip host 10.0.11.164 host 192.168.65.50
+ permit ip host 10.0.11.64 host 192.168.65.50
+ permit ip host 10.0.16.165 host 192.168.65.50
+ permit ip host 10.0.50.65 host 192.168.65.50
+ip access-list extended Chakavak-MQ
+ permit ip host 10.0.57.19 host 192.168.65.123
+ip access-list extended Chakavak-SepamWeb
+ permit ip host 10.0.50.64 host 192.168.65.184
+ permit ip any host 192.168.65.115
+ permit ip any host 192.168.65.113
+ permit ip any host 192.168.65.222
+ permit ip any host 192.168.65.65
+ permit ip any host 192.168.66.66
+ permit ip any host 192.168.65.111
+ permit ip any host 192.168.65.112
+ permit ip any host 192.168.65.116
+ permit ip any host 192.168.65.122
+ permit ip any host 192.168.65.220
+ permit ip any host 192.168.65.221
+ permit ip any host 192.168.65.223
+ permit ip any host 192.168.65.226
+ permit ip any host 192.168.65.69
+ permit ip any host 192.168.65.110
+ permit ip any host 192.168.65.108
+ permit ip any host 192.168.65.107
+ permit ip host 10.0.57.87 host 192.168.65.54
+ permit ip host 10.0.57.16 host 192.168.65.54
+ permit ip any host 192.168.65.54
+ permit ip 10.0.109.52 0.0.0.1 host 192.168.65.197
+ permit ip host 10.0.57.88 host 192.168.65.54
+ permit ip any host 192.168.65.216
+ permit ip 10.0.90.0 0.0.0.255 host 192.168.65.211
+ permit ip 10.0.18.0 0.0.0.255 host 192.168.65.211
+ permit ip host 10.0.1.74 host 192.168.65.211
+ permit ip host 10.0.203.22 host 192.168.65.197
+ permit ip host 10.0.203.23 host 192.168.65.197
+ permit ip host 10.0.1.47 host 192.168.65.197
+ permit ip host 10.0.90.46 host 192.168.65.197
+ permit ip host 10.0.90.113 host 192.168.65.197
+ permit ip 10.0.109.166 0.0.0.1 host 192.168.65.197
+ permit ip host 10.0.109.54 host 192.168.65.197
+ permit ip host 10.0.109.170 host 192.168.65.197
+ permit ip 10.0.109.56 0.0.0.1 host 192.168.65.197
+ permit ip host 10.0.1.47 host 192.168.65.212
+ permit ip host 10.0.90.46 host 192.168.65.211
+ permit ip host 10.0.90.49 host 192.168.65.211
+ permit ip host 10.0.109.62 host 192.168.65.211
+ permit ip host 10.0.90.52 host 192.168.65.211
+ permit ip host 10.0.90.122 host 192.168.65.211
+ permit ip host 10.0.90.121 host 192.168.65.211
+ permit ip host 10.0.90.113 host 192.168.65.211
+ permit ip host 10.0.90.38 host 192.168.65.211
+ permit ip host 10.0.1.74 host 192.168.65.229
+ permit ip host 10.0.212.25 host 192.168.65.229
+ permit ip host 10.0.90.46 host 192.168.65.229
+ permit ip host 10.0.90.49 host 192.168.65.229
+ permit ip host 10.0.90.49 host 192.168.65.197
+ permit ip host 10.0.109.62 host 192.168.65.229
+ permit ip host 10.0.90.122 host 192.168.65.229
+ permit ip host 10.0.90.121 host 192.168.65.197
+ permit ip host 10.0.90.121 host 192.168.65.229
+ permit ip host 10.0.90.122 host 192.168.65.197
+ permit ip host 10.0.90.52 host 192.168.65.197
+ permit ip host 10.0.109.62 host 192.168.65.197
+ permit ip host 10.0.50.64 host 192.168.65.211
+ permit ip host 10.0.109.64 host 192.168.65.197
+ permit ip host 10.0.109.164 host 192.168.65.197
+ permit ip host 10.0.90.109 host 192.168.65.197
+ permit ip host 10.0.90.109 host 192.168.65.211
+ permit ip host 10.0.90.128 host 192.168.65.229
+ permit ip host 10.0.90.92 host 192.168.65.229
+ permit ip host 10.0.90.44 host 192.168.65.229
+ permit ip host 10.0.90.74 host 192.168.65.229
+ permit ip host 10.0.90.20 host 192.168.65.229
+ permit ip host 10.0.90.22 host 192.168.65.229
+ permit ip host 10.0.90.22 host 192.168.65.211
+ permit ip host 10.0.90.41 host 192.168.65.229
+ permit ip host 10.0.90.21 host 192.168.65.229
+ permit ip host 10.0.90.142 host 192.168.65.229
+ permit ip host 10.0.90.96 host 192.168.65.229
+ permit ip host 10.0.90.35 host 192.168.65.229
+ permit ip host 10.0.90.111 host 192.168.65.229
+ permit ip host 10.0.90.29 host 192.168.65.229
+ permit ip host 10.0.90.38 host 192.168.65.229
+ permit ip host 10.0.90.45 host 192.168.65.229
+ permit ip host 10.0.90.112 host 192.168.65.229
+ permit ip host 10.0.90.43 host 192.168.65.229
+ permit ip host 10.0.90.43 host 192.168.65.197
+ permit ip host 10.0.90.36 host 192.168.65.229
+ permit ip host 10.0.90.93 host 192.168.65.229
+ permit ip host 10.0.90.33 host 192.168.65.229
+ permit ip host 10.0.90.89 host 192.168.65.229
+ permit ip host 10.0.90.97 host 192.168.65.229
+ permit ip host 10.0.90.113 host 192.168.65.229
+ permit ip host 10.0.90.42 host 192.168.65.229
+ permit ip host 10.0.7.160 host 192.168.65.197
+ remark -------Imen.nibn.ir -----------
+ permit ip host 10.0.92.100 host 192.168.65.81
+ permit ip host 10.0.92.93 host 192.168.65.81
+ permit ip host 10.0.92.96 host 192.168.65.81
+ permit ip host 10.0.92.37 host 192.168.65.81
+ permit ip host 10.0.92.102 host 192.168.65.81
+ permit ip host 10.0.92.103 host 192.168.65.81
+ permit ip host 10.0.92.54 host 192.168.65.81
+ permit ip host 10.0.109.71 host 192.168.65.229
+ permit ip host 10.0.109.107 host 192.168.65.229
+ permit ip host 10.0.90.117 host 192.168.65.229
+ permit ip host 10.0.90.117 host 192.168.65.211
+ permit ip host 10.0.109.179 host 192.168.65.229
+ permit ip host 10.0.90.120 host 192.168.65.229
+ permit ip host 10.0.90.33 host 192.168.65.211
+ permit ip host 10.0.90.40 host 192.168.65.211
+ permit ip host 10.0.90.116 host 192.168.65.211
+ permit ip host 10.0.90.40 host 192.168.65.229
+ permit ip host 10.0.90.116 host 192.168.65.229
+ permit ip host 10.0.90.52 host 192.168.65.229
+ permit ip host 10.0.109.182 host 192.168.65.197
+ permit ip host 10.0.109.183 host 192.168.65.197
+ permit ip host 10.0.109.68 host 192.168.65.197
+ permit ip host 10.0.109.76 host 192.168.65.197
+ permit ip host 10.0.109.77 host 192.168.65.197
+ permit ip host 10.0.109.187 host 192.168.65.197
+ permit ip host 10.0.90.102 host 192.168.65.197
+ permit ip host 10.0.90.36 host 192.168.65.197
+ permit ip host 10.0.90.36 host 192.168.65.211
+ permit ip host 10.0.90.102 host 192.168.65.229
+ permit ip host 10.0.90.119 host 192.168.65.211
+ permit ip host 10.0.90.119 host 192.168.65.229
+ permit ip host 10.0.90.102 host 192.168.65.211
+ permit ip host 10.0.90.118 host 192.168.65.197
+ permit ip host 10.0.109.57 host 192.168.65.197
+ permit ip host 10.0.90.112 host 192.168.65.197
+ permit ip host 10.0.90.118 host 192.168.65.211
+ permit ip host 10.0.90.118 host 192.168.65.229
+ permit ip 10.0.90.0 0.0.0.255 host 192.168.65.225
+ permit ip 10.0.90.0 0.0.0.255 host 192.168.65.227
+ permit ip 10.0.50.64 0.0.0.15 host 192.168.65.225
+ permit ip host 10.0.90.50 host 192.168.65.229
+ permit ip host 10.0.90.50 host 192.168.65.197
+ permit ip host 10.0.90.50 host 192.168.65.184
+ permit ip host 10.0.90.124 host 192.168.65.229
+ permit ip host 10.0.90.115 host 192.168.65.229
+ permit ip host 10.0.90.115 host 192.168.65.197
+ permit ip host 10.0.90.47 host 192.168.65.229
+ permit ip host 10.0.90.66 host 192.168.65.211
+ permit ip host 10.0.90.66 host 192.168.65.227
+ permit ip host 10.0.90.51 host 192.168.65.197
+ permit ip host 10.0.90.99 host 192.168.65.229
+ permit ip host 10.0.203.59 host 192.168.65.197
+ permit ip host 10.0.90.112 host 192.168.65.227
+ permit ip host 10.17.12.29 host 192.168.65.229
+ permit ip host 10.0.109.60 host 192.168.65.211
+ permit ip host 10.0.109.60 host 192.168.65.229
+ permit ip host 10.0.109.60 host 192.168.65.227
+ permit ip host 10.0.109.81 host 192.168.65.227
+ permit ip host 10.0.109.81 host 192.168.65.229
+ permit ip host 10.0.90.51 host 192.168.65.229
+ permit ip host 10.0.18.176 host 192.168.65.229
+ permit ip host 10.0.109.81 host 192.168.65.211
+ remark ------ Proviences->GAM.nibn.ir -----------
+ permit icmp 10.0.0.0 0.63.255.255 host 192.168.65.145
+ permit tcp 10.0.0.0 0.63.255.255 host 192.168.65.145 eq 8090
+ permit ip host 10.0.74.182 host 192.168.65.197
+ permit ip host 10.0.74.127 host 192.168.65.197
+ permit ip host 10.0.85.104 host 192.168.65.197
+ permit ip host 10.0.109.62 host 192.168.65.227
+ permit ip host 10.0.109.80 host 192.168.65.197
+ permit ip host 10.0.109.84 host 192.168.65.197
+ permit ip host 10.0.109.84 host 192.168.65.184
+ permit ip host 10.0.109.71 host 192.168.65.197
+ permit ip host 10.0.109.71 host 192.168.65.184
+ permit ip host 10.0.50.67 host 192.168.65.184
+ permit ip host 10.0.109.53 host 192.168.65.184
+ permit ip host 10.0.1.47 host 192.168.65.184
+ permit ip host 10.0.90.46 host 192.168.65.184
+ permit ip host 10.0.90.113 host 192.168.65.184
+ permit ip 10.0.109.166 0.0.0.1 host 192.168.65.184
+ permit ip host 10.0.109.54 host 192.168.65.184
+ permit ip host 10.0.109.170 host 192.168.65.184
+ permit ip 10.0.109.56 0.0.0.1 host 192.168.65.184
+ permit ip 10.0.109.52 0.0.0.1 host 192.168.65.184
+ permit ip host 10.0.90.121 host 192.168.65.184
+ permit ip host 10.0.90.122 host 192.168.65.184
+ permit ip host 10.0.90.52 host 192.168.65.184
+ permit ip host 10.0.109.62 host 192.168.65.184
+ permit ip host 10.0.109.64 host 192.168.65.184
+ permit ip host 10.0.109.164 host 192.168.65.184
+ permit ip host 10.0.90.109 host 192.168.65.184
+ permit ip host 10.0.109.182 host 192.168.65.184
+ permit ip host 10.0.109.183 host 192.168.65.184
+ permit ip host 10.0.109.68 host 192.168.65.184
+ permit ip host 10.0.109.76 host 192.168.65.184
+ permit ip host 10.0.109.77 host 192.168.65.184
+ permit ip host 10.0.109.187 host 192.168.65.184
+ permit ip host 10.0.90.102 host 192.168.65.184
+ permit ip host 10.0.90.36 host 192.168.65.184
+ permit ip host 10.0.90.118 host 192.168.65.184
+ permit ip host 10.0.109.57 host 192.168.65.184
+ permit ip host 10.0.90.112 host 192.168.65.184
+ permit ip host 10.0.90.51 host 192.168.65.184
+ permit ip host 10.0.203.59 host 192.168.65.184
+ permit ip host 10.0.74.182 host 192.168.65.184
+ permit ip host 10.0.74.127 host 192.168.65.184
+ permit ip host 10.0.85.104 host 192.168.65.184
+ permit ip host 10.0.109.80 host 192.168.65.184
+ permit ip host 10.0.55.60 host 192.168.65.54
+ permit ip host 10.0.55.61 host 192.168.65.54
+ permit ip host 10.0.90.101 host 192.168.65.211
+ permit ip host 10.0.90.101 host 192.168.65.227
+ permit ip host 10.0.109.180 host 192.168.65.227
+ permit ip host 10.0.109.180 host 192.168.65.211
+ permit ip host 10.0.203.22 host 192.168.65.227
+ permit ip host 10.0.203.59 host 192.168.65.227
+ permit ip host 10.60.1.140 host 192.168.65.227
+ permit ip host 10.0.109.19 host 192.168.65.197
+ permit ip host 10.0.109.19 host 192.168.65.211
+ permit ip host 10.0.109.41 host 192.168.65.197
+ permit ip host 10.0.109.43 host 192.168.65.197
+ permit ip host 10.0.18.175 host 192.168.65.197
+ permit ip host 10.0.18.175 host 192.168.65.184
+ permit ip host 10.0.109.179 host 192.168.65.211
+ permit ip host 10.0.109.179 host 192.168.65.227
+ permit ip host 10.0.109.179 host 192.168.65.184
+ permit ip host 10.0.8.71 host 192.168.65.211
+ permit ip host 10.0.8.71 host 192.168.65.227
+ permit ip host 10.0.8.48 host 192.168.65.211
+ permit ip host 10.0.8.48 host 192.168.65.227
+ permit ip host 10.0.7.194 host 192.168.65.197
+ permit ip host 10.0.7.195 host 192.168.65.197
+ permit ip host 10.0.7.55 host 192.168.65.197
+ permit ip host 10.0.57.87 host 192.168.65.197
+ permit ip host 10.0.57.88 host 192.168.65.197
+ permit ip host 10.0.18.20 host 192.168.65.197
+ permit ip host 10.0.18.86 host 192.168.65.184
+ permit ip host 10.0.18.86 host 192.168.65.197
+ permit ip host 10.0.50.67 host 192.168.65.197
+ permit ip host 10.0.109.70 host 192.168.65.184
+ permit ip host 10.0.18.20 host 192.168.65.184
+ permit ip host 10.0.18.207 host 192.168.65.184
+ permit ip host 10.0.109.81 host 192.168.65.184
+ permit ip host 10.0.18.51 host 192.168.65.184
+ permit ip host 10.0.18.176 host 192.168.65.184
+ permit ip host 10.0.109.70 host 192.168.65.197
+ permit ip host 10.0.18.207 host 192.168.65.197
+ permit ip host 10.0.109.81 host 192.168.65.197
+ permit ip host 10.0.18.51 host 192.168.65.197
+ permit ip host 10.0.18.176 host 192.168.65.197
+ permit ip host 10.0.50.64 host 192.168.65.197
+ permit ip host 10.0.90.66 host 192.168.65.197
+ permit ip host 10.0.90.66 host 192.168.65.184
+ permit ip host 10.0.90.55 host 192.168.65.184
+ permit ip host 10.0.90.55 host 192.168.65.197
+ permit ip host 10.0.90.47 host 192.168.65.184
+ permit ip host 10.0.90.47 host 192.168.65.197
+ permit ip host 10.0.18.207 host 192.168.65.211
+ permit ip host 10.0.18.207 host 192.168.65.227
+ permit ip host 10.0.90.120 host 192.168.65.197
+ permit ip host 10.0.90.120 host 192.168.65.184
+ permit ip host 10.0.90.207 host 192.168.65.197
+ permit ip host 10.0.90.207 host 192.168.65.184
+ permit ip host 10.0.90.81 host 192.168.65.197
+ permit ip host 10.0.90.81 host 192.168.65.184
+ permit ip host 10.0.90.43 host 192.168.65.184
+ permit ip host 10.0.90.176 host 192.168.65.197
+ permit ip host 10.0.90.176 host 192.168.65.184
+ permit ip host 10.0.109.71 host 192.168.65.211
+ permit ip host 10.0.8.153 host 192.168.65.184
+ permit ip host 10.0.8.153 host 192.168.65.197
+ permit ip host 10.0.8.71 host 192.168.65.197
+ permit ip host 10.0.8.71 host 192.168.65.184
+ permit ip host 10.0.18.210 host 192.168.65.197
+ permit ip host 10.0.18.210 host 192.168.65.184
+ permit ip host 10.0.18.210 host 192.168.65.211
+ permit ip host 10.0.18.210 host 192.168.65.227
+ permit ip host 10.0.8.48 host 192.168.65.197
+ permit ip host 10.0.8.48 host 192.168.65.184
+ permit ip host 10.0.109.72 host 192.168.65.197
+ permit ip host 10.0.109.72 host 192.168.65.184
+ permit ip 10.1.77.0 0.0.0.255 host 192.168.65.197
+ permit ip 10.1.77.0 0.0.0.255 host 192.168.65.211
+ permit ip 10.1.77.0 0.0.0.255 host 192.168.65.229
+ permit ip 10.1.77.0 0.0.0.255 host 192.168.65.225
+ permit ip 10.1.77.0 0.0.0.255 host 192.168.65.227
+ permit ip 10.1.77.0 0.0.0.255 host 192.168.65.184
+ permit ip 10.1.35.0 0.0.0.255 host 192.168.65.197
+ permit ip 10.1.35.0 0.0.0.255 host 192.168.65.211
+ permit ip 10.1.35.0 0.0.0.255 host 192.168.65.229
+ permit ip 10.1.35.0 0.0.0.255 host 192.168.65.225
+ permit ip 10.1.35.0 0.0.0.255 host 192.168.65.227
+ permit ip 10.1.35.0 0.0.0.255 host 192.168.65.184
+ permit ip 10.1.8.0 0.0.0.255 host 192.168.65.184
+ permit ip 10.1.8.0 0.0.0.255 host 192.168.65.197
+ permit ip 10.1.8.0 0.0.0.255 host 192.168.65.211
+ permit ip 10.1.8.0 0.0.0.255 host 192.168.65.225
+ permit ip 10.1.8.0 0.0.0.255 host 192.168.65.227
+ permit ip 10.1.8.0 0.0.0.255 host 192.168.65.229
+ permit ip 10.1.18.0 0.0.0.255 host 192.168.65.184
+ permit ip 10.1.18.0 0.0.0.255 host 192.168.65.197
+ permit ip 10.1.18.0 0.0.0.255 host 192.168.65.211
+ permit ip 10.1.18.0 0.0.0.255 host 192.168.65.225
+ permit ip 10.1.18.0 0.0.0.255 host 192.168.65.227
+ permit ip 10.1.18.0 0.0.0.255 host 192.168.65.229
+ permit ip 10.1.22.0 0.0.0.255 host 192.168.65.184
+ permit ip 10.1.22.0 0.0.0.255 host 192.168.65.197
+ permit ip 10.1.22.0 0.0.0.255 host 192.168.65.211
+ permit ip 10.1.22.0 0.0.0.255 host 192.168.65.225
+ permit ip 10.1.22.0 0.0.0.255 host 192.168.65.227
+ permit ip 10.1.22.0 0.0.0.255 host 192.168.65.229
+ permit ip 10.1.34.0 0.0.0.255 host 192.168.65.184
+ permit ip 10.1.34.0 0.0.0.255 host 192.168.65.197
+ permit ip 10.1.34.0 0.0.0.255 host 192.168.65.211
+ permit ip 10.1.34.0 0.0.0.255 host 192.168.65.225
+ permit ip 10.1.34.0 0.0.0.255 host 192.168.65.227
+ permit ip 10.1.34.0 0.0.0.255 host 192.168.65.229
+ permit ip 10.1.45.0 0.0.0.255 host 192.168.65.184
+ permit ip 10.1.45.0 0.0.0.255 host 192.168.65.197
+ permit ip 10.1.45.0 0.0.0.255 host 192.168.65.211
+ permit ip 10.1.45.0 0.0.0.255 host 192.168.65.225
+ permit ip 10.1.45.0 0.0.0.255 host 192.168.65.227
+ permit ip 10.1.45.0 0.0.0.255 host 192.168.65.229
+ permit ip 10.1.62.0 0.0.0.255 host 192.168.65.184
+ permit ip 10.1.62.0 0.0.0.255 host 192.168.65.197
+ permit ip 10.1.62.0 0.0.0.255 host 192.168.65.211
+ permit ip 10.1.62.0 0.0.0.255 host 192.168.65.225
+ permit ip 10.1.62.0 0.0.0.255 host 192.168.65.227
+ permit ip 10.1.62.0 0.0.0.255 host 192.168.65.229
+ permit ip 10.1.67.0 0.0.0.255 host 192.168.65.184
+ permit ip 10.1.67.0 0.0.0.255 host 192.168.65.197
+ permit ip 10.1.67.0 0.0.0.255 host 192.168.65.211
+ permit ip 10.1.67.0 0.0.0.255 host 192.168.65.225
+ permit ip 10.1.67.0 0.0.0.255 host 192.168.65.227
+ permit ip 10.1.67.0 0.0.0.255 host 192.168.65.229
+ permit ip 10.1.71.0 0.0.0.255 host 192.168.65.184
+ permit ip 10.1.71.0 0.0.0.255 host 192.168.65.197
+ permit ip 10.1.71.0 0.0.0.255 host 192.168.65.211
+ permit ip 10.1.71.0 0.0.0.255 host 192.168.65.225
+ permit ip 10.1.71.0 0.0.0.255 host 192.168.65.227
+ permit ip 10.1.71.0 0.0.0.255 host 192.168.65.229
+ permit ip 10.1.74.0 0.0.0.255 host 192.168.65.184
+ permit ip 10.1.74.0 0.0.0.255 host 192.168.65.197
+ permit ip 10.1.74.0 0.0.0.255 host 192.168.65.211
+ permit ip 10.1.74.0 0.0.0.255 host 192.168.65.225
+ permit ip 10.1.74.0 0.0.0.255 host 192.168.65.227
+ permit ip 10.1.74.0 0.0.0.255 host 192.168.65.229
+ permit ip 10.1.95.0 0.0.0.255 host 192.168.65.184
+ permit ip 10.1.95.0 0.0.0.255 host 192.168.65.197
+ permit ip 10.1.95.0 0.0.0.255 host 192.168.65.211
+ permit ip 10.1.95.0 0.0.0.255 host 192.168.65.225
+ permit ip 10.1.95.0 0.0.0.255 host 192.168.65.227
+ permit ip 10.1.95.0 0.0.0.255 host 192.168.65.229
+ permit ip 10.1.99.0 0.0.0.255 host 192.168.65.184
+ permit ip 10.1.99.0 0.0.0.255 host 192.168.65.197
+ permit ip 10.1.99.0 0.0.0.255 host 192.168.65.211
+ permit ip 10.1.99.0 0.0.0.255 host 192.168.65.225
+ permit ip 10.1.99.0 0.0.0.255 host 192.168.65.227
+ permit ip 10.1.99.0 0.0.0.255 host 192.168.65.229
+ permit ip 10.1.101.0 0.0.0.255 host 192.168.65.184
+ permit ip 10.1.101.0 0.0.0.255 host 192.168.65.197
+ permit ip 10.1.101.0 0.0.0.255 host 192.168.65.211
+ permit ip 10.1.101.0 0.0.0.255 host 192.168.65.225
+ permit ip 10.1.101.0 0.0.0.255 host 192.168.65.227
+ permit ip 10.1.101.0 0.0.0.255 host 192.168.65.229
+ permit ip 10.1.112.0 0.0.0.255 host 192.168.65.184
+ permit ip 10.1.112.0 0.0.0.255 host 192.168.65.197
+ permit ip 10.1.112.0 0.0.0.255 host 192.168.65.211
+ permit ip 10.1.112.0 0.0.0.255 host 192.168.65.225
+ permit ip 10.1.112.0 0.0.0.255 host 192.168.65.227
+ permit ip 10.1.112.0 0.0.0.255 host 192.168.65.229
+ permit ip 10.1.121.0 0.0.0.255 host 192.168.65.184
+ permit ip 10.1.121.0 0.0.0.255 host 192.168.65.197
+ permit ip 10.1.121.0 0.0.0.255 host 192.168.65.211
+ permit ip 10.1.121.0 0.0.0.255 host 192.168.65.225
+ permit ip 10.1.121.0 0.0.0.255 host 192.168.65.227
+ permit ip 10.1.121.0 0.0.0.255 host 192.168.65.229
+ permit ip 10.2.10.0 0.0.0.255 host 192.168.65.184
+ permit ip 10.2.10.0 0.0.0.255 host 192.168.65.197
+ permit ip 10.2.10.0 0.0.0.255 host 192.168.65.211
+ permit ip 10.2.10.0 0.0.0.255 host 192.168.65.225
+ permit ip 10.2.10.0 0.0.0.255 host 192.168.65.227
+ permit ip 10.2.10.0 0.0.0.255 host 192.168.65.229
+ permit ip 10.3.8.0 0.0.0.255 host 192.168.65.184
+ permit ip 10.3.8.0 0.0.0.255 host 192.168.65.197
+ permit ip 10.3.8.0 0.0.0.255 host 192.168.65.211
+ permit ip 10.3.8.0 0.0.0.255 host 192.168.65.225
+ permit ip 10.3.8.0 0.0.0.255 host 192.168.65.227
+ permit ip 10.3.8.0 0.0.0.255 host 192.168.65.229
+ permit ip 10.4.19.0 0.0.0.255 host 192.168.65.184
+ permit ip 10.4.19.0 0.0.0.255 host 192.168.65.197
+ permit ip 10.4.19.0 0.0.0.255 host 192.168.65.211
+ permit ip 10.4.19.0 0.0.0.255 host 192.168.65.225
+ permit ip 10.4.19.0 0.0.0.255 host 192.168.65.227
+ permit ip 10.4.19.0 0.0.0.255 host 192.168.65.229
+ permit ip 10.4.55.0 0.0.0.255 host 192.168.65.184
+ permit ip 10.4.55.0 0.0.0.255 host 192.168.65.197
+ permit ip 10.4.55.0 0.0.0.255 host 192.168.65.211
+ permit ip 10.4.55.0 0.0.0.255 host 192.168.65.225
+ permit ip 10.4.55.0 0.0.0.255 host 192.168.65.227
+ permit ip 10.4.55.0 0.0.0.255 host 192.168.65.229
+ permit ip 10.4.62.0 0.0.0.255 host 192.168.65.184
+ permit ip 10.4.62.0 0.0.0.255 host 192.168.65.197
+ permit ip 10.4.62.0 0.0.0.255 host 192.168.65.211
+ permit ip 10.4.62.0 0.0.0.255 host 192.168.65.225
+ permit ip 10.4.62.0 0.0.0.255 host 192.168.65.227
+ permit ip 10.4.62.0 0.0.0.255 host 192.168.65.229
+ permit ip 10.5.17.0 0.0.0.255 host 192.168.65.184
+ permit ip 10.5.17.0 0.0.0.255 host 192.168.65.197
+ permit ip 10.5.17.0 0.0.0.255 host 192.168.65.211
+ permit ip 10.5.17.0 0.0.0.255 host 192.168.65.225
+ permit ip 10.5.17.0 0.0.0.255 host 192.168.65.227
+ permit ip 10.5.17.0 0.0.0.255 host 192.168.65.229
+ permit ip 10.6.8.0 0.0.0.255 host 192.168.65.184
+ permit ip 10.6.8.0 0.0.0.255 host 192.168.65.197
+ permit ip 10.6.8.0 0.0.0.255 host 192.168.65.211
+ permit ip 10.6.8.0 0.0.0.255 host 192.168.65.225
+ permit ip 10.6.8.0 0.0.0.255 host 192.168.65.227
+ permit ip 10.6.8.0 0.0.0.255 host 192.168.65.229
+ permit ip 10.6.22.0 0.0.0.255 host 192.168.65.184
+ permit ip 10.6.22.0 0.0.0.255 host 192.168.65.197
+ permit ip 10.6.22.0 0.0.0.255 host 192.168.65.211
+ permit ip 10.6.22.0 0.0.0.255 host 192.168.65.225
+ permit ip 10.6.22.0 0.0.0.255 host 192.168.65.227
+ permit ip 10.6.22.0 0.0.0.255 host 192.168.65.229
+ permit ip 10.6.44.0 0.0.0.255 host 192.168.65.184
+ permit ip 10.6.44.0 0.0.0.255 host 192.168.65.197
+ permit ip 10.6.44.0 0.0.0.255 host 192.168.65.211
+ permit ip 10.6.44.0 0.0.0.255 host 192.168.65.225
+ permit ip 10.6.44.0 0.0.0.255 host 192.168.65.227
+ permit ip 10.6.44.0 0.0.0.255 host 192.168.65.229
+ permit ip 10.7.12.0 0.0.0.255 host 192.168.65.184
+ permit ip 10.7.12.0 0.0.0.255 host 192.168.65.197
+ permit ip 10.7.12.0 0.0.0.255 host 192.168.65.211
+ permit ip 10.7.12.0 0.0.0.255 host 192.168.65.225
+ permit ip 10.7.12.0 0.0.0.255 host 192.168.65.227
+ permit ip 10.7.12.0 0.0.0.255 host 192.168.65.229
+ permit ip 10.8.8.0 0.0.0.255 host 192.168.65.184
+ permit ip 10.8.8.0 0.0.0.255 host 192.168.65.197
+ permit ip 10.8.8.0 0.0.0.255 host 192.168.65.211
+ permit ip 10.8.8.0 0.0.0.255 host 192.168.65.225
+ permit ip 10.8.8.0 0.0.0.255 host 192.168.65.227
+ permit ip 10.8.8.0 0.0.0.255 host 192.168.65.229
+ permit ip 10.8.98.0 0.0.0.255 host 192.168.65.184
+ permit ip 10.8.98.0 0.0.0.255 host 192.168.65.197
+ permit ip 10.8.98.0 0.0.0.255 host 192.168.65.211
+ permit ip 10.8.98.0 0.0.0.255 host 192.168.65.225
+ permit ip 10.8.98.0 0.0.0.255 host 192.168.65.227
+ permit ip 10.8.98.0 0.0.0.255 host 192.168.65.229
+ permit ip 10.9.62.0 0.0.0.255 host 192.168.65.184
+ permit ip 10.9.62.0 0.0.0.255 host 192.168.65.197
+ permit ip 10.9.62.0 0.0.0.255 host 192.168.65.211
+ permit ip 10.9.62.0 0.0.0.255 host 192.168.65.225
+ permit ip 10.9.62.0 0.0.0.255 host 192.168.65.227
+ permit ip 10.9.62.0 0.0.0.255 host 192.168.65.229
+ permit ip 10.10.16.0 0.0.0.255 host 192.168.65.184
+ permit ip 10.10.16.0 0.0.0.255 host 192.168.65.197
+ permit ip 10.10.16.0 0.0.0.255 host 192.168.65.211
+ permit ip 10.10.16.0 0.0.0.255 host 192.168.65.225
+ permit ip 10.10.16.0 0.0.0.255 host 192.168.65.227
+ permit ip 10.10.16.0 0.0.0.255 host 192.168.65.229
+ permit ip 10.11.13.0 0.0.0.255 host 192.168.65.184
+ permit ip 10.11.13.0 0.0.0.255 host 192.168.65.197
+ permit ip 10.11.13.0 0.0.0.255 host 192.168.65.211
+ permit ip 10.11.13.0 0.0.0.255 host 192.168.65.225
+ permit ip 10.11.13.0 0.0.0.255 host 192.168.65.227
+ permit ip 10.11.13.0 0.0.0.255 host 192.168.65.229
+ permit ip 10.12.13.0 0.0.0.255 host 192.168.65.184
+ permit ip 10.12.13.0 0.0.0.255 host 192.168.65.197
+ permit ip 10.12.13.0 0.0.0.255 host 192.168.65.211
+ permit ip 10.12.13.0 0.0.0.255 host 192.168.65.225
+ permit ip 10.12.13.0 0.0.0.255 host 192.168.65.227
+ permit ip 10.12.13.0 0.0.0.255 host 192.168.65.229
+ permit ip 10.13.12.0 0.0.0.255 host 192.168.65.184
+ permit ip 10.13.12.0 0.0.0.255 host 192.168.65.197
+ permit ip 10.13.12.0 0.0.0.255 host 192.168.65.211
+ permit ip 10.13.12.0 0.0.0.255 host 192.168.65.225
+ permit ip 10.13.12.0 0.0.0.255 host 192.168.65.227
+ permit ip 10.13.12.0 0.0.0.255 host 192.168.65.229
+ permit ip 10.14.20.0 0.0.0.255 host 192.168.65.184
+ permit ip 10.14.20.0 0.0.0.255 host 192.168.65.197
+ permit ip 10.14.20.0 0.0.0.255 host 192.168.65.211
+ permit ip 10.14.20.0 0.0.0.255 host 192.168.65.225
+ permit ip 10.14.20.0 0.0.0.255 host 192.168.65.227
+ permit ip 10.14.20.0 0.0.0.255 host 192.168.65.229
+ permit ip 10.15.8.0 0.0.0.255 host 192.168.65.184
+ permit ip 10.15.8.0 0.0.0.255 host 192.168.65.197
+ permit ip 10.15.8.0 0.0.0.255 host 192.168.65.211
+ permit ip 10.15.8.0 0.0.0.255 host 192.168.65.225
+ permit ip 10.15.8.0 0.0.0.255 host 192.168.65.227
+ permit ip 10.15.8.0 0.0.0.255 host 192.168.65.229
+ permit ip 10.16.44.0 0.0.0.255 host 192.168.65.184
+ permit ip 10.16.44.0 0.0.0.255 host 192.168.65.197
+ permit ip 10.16.44.0 0.0.0.255 host 192.168.65.211
+ permit ip 10.16.44.0 0.0.0.255 host 192.168.65.225
+ permit ip 10.16.44.0 0.0.0.255 host 192.168.65.227
+ permit ip 10.16.44.0 0.0.0.255 host 192.168.65.229
+ permit ip 10.17.10.0 0.0.0.255 host 192.168.65.184
+ permit ip 10.17.10.0 0.0.0.255 host 192.168.65.197
+ permit ip 10.17.10.0 0.0.0.255 host 192.168.65.211
+ permit ip 10.17.10.0 0.0.0.255 host 192.168.65.225
+ permit ip 10.17.10.0 0.0.0.255 host 192.168.65.227
+ permit ip 10.17.10.0 0.0.0.255 host 192.168.65.229
+ permit ip 10.17.65.0 0.0.0.255 host 192.168.65.184
+ permit ip 10.17.65.0 0.0.0.255 host 192.168.65.197
+ permit ip 10.17.65.0 0.0.0.255 host 192.168.65.211
+ permit ip 10.17.65.0 0.0.0.255 host 192.168.65.225
+ permit ip 10.17.65.0 0.0.0.255 host 192.168.65.227
+ permit ip 10.17.65.0 0.0.0.255 host 192.168.65.229
+ permit ip 10.17.70.0 0.0.0.255 host 192.168.65.184
+ permit ip 10.17.70.0 0.0.0.255 host 192.168.65.197
+ permit ip 10.17.70.0 0.0.0.255 host 192.168.65.211
+ permit ip 10.17.70.0 0.0.0.255 host 192.168.65.225
+ permit ip 10.17.70.0 0.0.0.255 host 192.168.65.227
+ permit ip 10.17.70.0 0.0.0.255 host 192.168.65.229
+ permit ip 10.18.8.0 0.0.0.255 host 192.168.65.184
+ permit ip 10.18.8.0 0.0.0.255 host 192.168.65.197
+ permit ip 10.18.8.0 0.0.0.255 host 192.168.65.211
+ permit ip 10.18.8.0 0.0.0.255 host 192.168.65.225
+ permit ip 10.18.8.0 0.0.0.255 host 192.168.65.227
+ permit ip 10.18.8.0 0.0.0.255 host 192.168.65.229
+ permit ip 10.19.12.0 0.0.0.255 host 192.168.65.184
+ permit ip 10.19.12.0 0.0.0.255 host 192.168.65.197
+ permit ip 10.19.12.0 0.0.0.255 host 192.168.65.211
+ permit ip 10.19.12.0 0.0.0.255 host 192.168.65.225
+ permit ip 10.19.12.0 0.0.0.255 host 192.168.65.227
+ permit ip 10.19.12.0 0.0.0.255 host 192.168.65.229
+ permit ip 10.20.8.0 0.0.0.255 host 192.168.65.184
+ permit ip 10.20.8.0 0.0.0.255 host 192.168.65.197
+ permit ip 10.20.8.0 0.0.0.255 host 192.168.65.211
+ permit ip 10.20.8.0 0.0.0.255 host 192.168.65.225
+ permit ip 10.20.8.0 0.0.0.255 host 192.168.65.227
+ permit ip 10.20.8.0 0.0.0.255 host 192.168.65.229
+ permit ip 10.21.8.0 0.0.0.255 host 192.168.65.184
+ permit ip 10.21.8.0 0.0.0.255 host 192.168.65.197
+ permit ip 10.21.8.0 0.0.0.255 host 192.168.65.211
+ permit ip 10.21.8.0 0.0.0.255 host 192.168.65.225
+ permit ip 10.21.8.0 0.0.0.255 host 192.168.65.227
+ permit ip 10.21.8.0 0.0.0.255 host 192.168.65.229
+ permit ip 10.22.10.0 0.0.0.255 host 192.168.65.184
+ permit ip 10.22.10.0 0.0.0.255 host 192.168.65.197
+ permit ip 10.22.10.0 0.0.0.255 host 192.168.65.211
+ permit ip 10.22.10.0 0.0.0.255 host 192.168.65.225
+ permit ip 10.22.10.0 0.0.0.255 host 192.168.65.227
+ permit ip 10.22.10.0 0.0.0.255 host 192.168.65.229
+ permit ip 10.23.10.0 0.0.0.255 host 192.168.65.184
+ permit ip 10.23.10.0 0.0.0.255 host 192.168.65.197
+ permit ip 10.23.10.0 0.0.0.255 host 192.168.65.211
+ permit ip 10.23.10.0 0.0.0.255 host 192.168.65.225
+ permit ip 10.23.10.0 0.0.0.255 host 192.168.65.227
+ permit ip 10.23.10.0 0.0.0.255 host 192.168.65.229
+ permit ip host 10.24.1.58 host 192.168.65.197
+ permit ip 10.24.71.0 0.0.0.255 host 192.168.65.184
+ permit ip 10.24.71.0 0.0.0.255 host 192.168.65.197
+ permit ip 10.24.71.0 0.0.0.255 host 192.168.65.211
+ permit ip 10.24.71.0 0.0.0.255 host 192.168.65.225
+ permit ip 10.24.71.0 0.0.0.255 host 192.168.65.227
+ permit ip 10.24.71.0 0.0.0.255 host 192.168.65.229
+ permit ip 10.27.8.0 0.0.0.255 host 192.168.65.184
+ permit ip 10.27.8.0 0.0.0.255 host 192.168.65.197
+ permit ip 10.27.8.0 0.0.0.255 host 192.168.65.211
+ permit ip 10.27.8.0 0.0.0.255 host 192.168.65.225
+ permit ip 10.27.8.0 0.0.0.255 host 192.168.65.227
+ permit ip 10.27.8.0 0.0.0.255 host 192.168.65.229
+ permit ip 10.28.33.0 0.0.0.255 host 192.168.65.184
+ permit ip 10.28.33.0 0.0.0.255 host 192.168.65.197
+ permit ip 10.28.33.0 0.0.0.255 host 192.168.65.211
+ permit ip 10.28.33.0 0.0.0.255 host 192.168.65.225
+ permit ip 10.28.33.0 0.0.0.255 host 192.168.65.227
+ permit ip 10.28.33.0 0.0.0.255 host 192.168.65.229
+ permit ip 10.29.10.0 0.0.0.255 host 192.168.65.184
+ permit ip 10.29.10.0 0.0.0.255 host 192.168.65.197
+ permit ip 10.29.10.0 0.0.0.255 host 192.168.65.211
+ permit ip 10.29.10.0 0.0.0.255 host 192.168.65.225
+ permit ip 10.29.10.0 0.0.0.255 host 192.168.65.227
+ permit ip 10.29.10.0 0.0.0.255 host 192.168.65.229
+ permit ip 10.31.15.0 0.0.0.255 host 192.168.65.184
+ permit ip 10.31.15.0 0.0.0.255 host 192.168.65.197
+ permit ip 10.31.15.0 0.0.0.255 host 192.168.65.211
+ permit ip 10.31.15.0 0.0.0.255 host 192.168.65.225
+ permit ip 10.31.15.0 0.0.0.255 host 192.168.65.227
+ permit ip 10.31.15.0 0.0.0.255 host 192.168.65.229
+ permit ip 10.31.19.0 0.0.0.255 host 192.168.65.184
+ permit ip 10.31.19.0 0.0.0.255 host 192.168.65.197
+ permit ip 10.31.19.0 0.0.0.255 host 192.168.65.211
+ permit ip 10.31.19.0 0.0.0.255 host 192.168.65.225
+ permit ip 10.31.19.0 0.0.0.255 host 192.168.65.227
+ permit ip 10.31.19.0 0.0.0.255 host 192.168.65.229
+ permit ip 10.32.8.0 0.0.0.255 host 192.168.65.184
+ permit ip 10.32.8.0 0.0.0.255 host 192.168.65.197
+ permit ip 10.32.8.0 0.0.0.255 host 192.168.65.211
+ permit ip 10.32.8.0 0.0.0.255 host 192.168.65.225
+ permit ip 10.32.8.0 0.0.0.255 host 192.168.65.227
+ permit ip 10.32.8.0 0.0.0.255 host 192.168.65.229
+ permit ip 10.32.15.0 0.0.0.255 host 192.168.65.184
+ permit ip 10.32.15.0 0.0.0.255 host 192.168.65.197
+ permit ip 10.32.15.0 0.0.0.255 host 192.168.65.211
+ permit ip 10.32.15.0 0.0.0.255 host 192.168.65.225
+ permit ip 10.32.15.0 0.0.0.255 host 192.168.65.227
+ permit ip 10.32.15.0 0.0.0.255 host 192.168.65.229
+ permit ip 10.33.12.0 0.0.0.255 host 192.168.65.184
+ permit ip 10.33.12.0 0.0.0.255 host 192.168.65.197
+ permit ip 10.33.12.0 0.0.0.255 host 192.168.65.211
+ permit ip 10.33.12.0 0.0.0.255 host 192.168.65.225
+ permit ip 10.33.12.0 0.0.0.255 host 192.168.65.227
+ permit ip 10.33.12.0 0.0.0.255 host 192.168.65.229
+ permit ip 10.33.18.0 0.0.0.255 host 192.168.65.184
+ permit ip 10.33.18.0 0.0.0.255 host 192.168.65.197
+ permit ip 10.33.18.0 0.0.0.255 host 192.168.65.211
+ permit ip 10.33.18.0 0.0.0.255 host 192.168.65.225
+ permit ip 10.33.18.0 0.0.0.255 host 192.168.65.227
+ permit ip 10.33.18.0 0.0.0.255 host 192.168.65.229
+ permit ip 10.7.29.0 0.0.0.255 host 192.168.65.184
+ permit ip 10.7.29.0 0.0.0.255 host 192.168.65.197
+ permit ip 10.7.29.0 0.0.0.255 host 192.168.65.211
+ permit ip 10.7.29.0 0.0.0.255 host 192.168.65.225
+ permit ip 10.7.29.0 0.0.0.255 host 192.168.65.227
+ permit ip 10.7.29.0 0.0.0.255 host 192.168.65.229
+ permit ip host 10.0.50.67 host 192.168.65.138
+ permit ip host 10.0.18.70 host 192.168.65.197
+ permit ip host 10.0.18.70 host 192.168.65.184
+ permit ip host 10.0.109.9 host 192.168.65.211
+ permit ip host 10.0.109.9 host 192.168.65.197
+ permit ip host 10.0.109.9 host 192.168.65.184
+ permit ip host 10.0.50.64 host 192.168.65.138
+ permit ip host 10.0.57.16 host 192.168.65.138
+ permit ip host 10.0.57.17 host 192.168.65.138
+ permit ip host 10.0.50.71 host 192.168.65.138
+ permit ip host 10.0.92.22 host 192.168.65.81
+ permit ip host 10.0.50.67 host 192.168.65.81
+ permit ip host 10.0.11.74 host 192.168.65.197
+ permit ip host 10.0.11.194 host 192.168.65.197
+ permit ip host 10.1.150.128 host 192.168.65.197
+ permit ip host 10.1.150.128 host 192.168.65.184
+ permit ip host 10.0.50.67 host 192.168.65.229
+ permit icmp host 10.0.157.1 host 192.168.106.161
+ permit ip host 10.0.18.131 host 192.168.65.184
+ permit ip host 10.0.18.135 host 192.168.65.184
+ permit ip host 10.0.18.138 host 192.168.65.184
+ip access-list extended DF
+ permit tcp any any
+ip access-list extended Hamoon
+ permit ip host 10.0.50.67 host 192.168.65.243
+ permit ip host 10.0.50.64 host 192.168.65.243
+ permit ip host 10.0.57.26 host 192.168.65.243
+ permit ip host 10.0.57.27 host 192.168.65.243
+ permit ip host 10.0.55.139 host 192.168.65.243
+ip access-list extended MOGH-SHETAB
+ permit ip host 10.0.61.51 host 192.168.65.90
+ permit ip host 10.0.53.56 host 192.168.65.90
+ permit ip host 10.0.62.51 host 192.168.65.90
+ permit ip host 10.0.61.37 host 192.168.65.90
+ permit ip host 10.0.92.44 host 192.168.65.90
+ permit ip host 10.0.92.66 host 192.168.65.90
+ permit ip host 10.0.53.19 host 192.168.65.90
+ permit ip host 10.0.53.185 host 192.168.65.90
+ permit ip host 10.0.51.10 host 192.168.65.90
+ permit ip host 10.0.51.13 host 192.168.65.90
+ permit ip host 10.0.90.20 host 192.168.65.90
+ permit ip host 10.0.90.22 host 192.168.65.90
+ permit ip host 10.0.53.118 host 192.168.65.90
+ permit ip host 10.0.33.118 host 192.168.65.90
+ permit ip host 10.0.75.33 host 192.168.65.90
+ permit ip host 10.0.53.78 host 192.168.65.90
+ permit ip host 10.0.90.42 host 192.168.65.90
+ permit ip host 10.0.90.41 host 192.168.65.90
+ permit ip host 10.0.203.43 host 192.168.65.90
+ permit ip host 10.0.212.20 host 192.168.65.90
+ permit ip host 10.0.213.20 host 192.168.65.90
+ permit ip host 10.0.109.18 host 192.168.65.90
+ permit ip host 10.0.109.22 host 192.168.65.90
+ permit ip host 10.0.109.29 host 192.168.65.90
+ permit ip host 10.0.92.93 host 192.168.65.90
+ permit ip host 10.0.92.97 host 192.168.65.90
+ permit ip host 10.0.90.21 host 192.168.65.90
+ permit ip host 10.0.92.38 host 192.168.65.90
+ permit ip host 10.0.95.41 host 192.168.65.90
+ permit ip host 10.0.92.96 host 192.168.65.90
+ permit ip host 10.0.109.152 host 192.168.65.90
+ permit ip host 10.0.3.188 host 192.168.65.90
+ permit ip host 10.0.92.141 host 192.168.65.90
+ permit ip host 10.0.53.73 host 192.168.65.90
+ permit ip host 10.0.204.38 host 192.168.65.90
+ permit ip host 10.0.212.38 host 192.168.65.90
+ permit ip host 10.0.57.16 host 192.168.65.90
+ permit ip host 10.0.57.17 host 192.168.65.90
+ permit ip host 10.0.66.140 host 192.168.65.90
+ permit ip host 10.0.13.194 host 192.168.65.90
+ permit ip host 10.0.13.193 host 192.168.65.90
+ permit ip host 10.0.13.129 host 192.168.65.90
+ remark ---------------- GiftCard -----------------
+ permit ip 10.0.57.32 0.0.0.1 host 192.168.65.90
+ permit ip host 10.0.109.35 host 192.168.65.90
+ permit ip host 10.0.109.36 host 192.168.65.90
+ permit ip host 10.0.50.18 host 192.168.65.90
+ permit ip host 10.0.53.120 host 192.168.65.90
+ permit ip 10.0.110.0 0.0.0.255 host 192.168.65.90
+ permit ip host 10.0.109.38 host 192.168.65.90
+ permit ip host 10.0.56.16 host 192.168.65.90
+ permit ip host 10.0.56.17 host 192.168.65.90
+ permit ip host 10.0.109.143 host 192.168.65.90
+ permit ip host 10.0.53.81 host 192.168.65.90
+ permit ip host 10.0.202.33 host 192.168.65.90
+ permit ip host 10.0.202.40 host 192.168.65.90
+ permit ip host 10.0.13.164 host 192.168.65.90
+ permit ip host 10.0.10.36 host 192.168.65.90
+ permit ip host 10.0.109.154 host 192.168.65.90
+ permit ip host 10.0.5.164 host 192.168.65.90
+ permit ip host 10.0.18.115 host 192.168.65.90
+ permit ip host 10.0.202.169 host 192.168.65.90
+ permit ip host 10.0.92.95 host 192.168.65.90
+ permit ip host 10.0.53.235 host 192.168.65.90
+ permit ip host 10.0.212.25 host 192.168.65.90
+ permit ip host 10.0.1.47 host 192.168.65.90
+ permit ip host 10.0.109.140 host 192.168.65.90
+ permit ip host 10.0.92.108 host 192.168.65.90
+ permit ip host 10.0.92.100 host 192.168.65.90
+ permit ip host 10.0.74.42 host 192.168.65.90
+ permit ip host 10.0.202.80 host 192.168.65.90
+ permit ip host 10.0.202.159 host 192.168.65.90
+ permit tcp host 10.0.109.161 host 192.168.65.90 eq ftp
+ permit tcp host 10.0.109.44 host 192.168.65.90 eq ftp
+ permit tcp host 10.0.109.154 host 192.168.65.90 eq ftp
+ permit ip host 10.0.13.168 host 192.168.65.90
+ permit ip host 10.0.13.74 host 192.168.65.90
+ permit ip host 10.0.13.189 host 192.168.65.90
+ permit ip host 10.0.74.77 host 192.168.65.90
+ permit ip host 10.0.74.137 host 192.168.65.90
+ permit ip host 10.0.74.79 host 192.168.65.90
+ permit ip host 10.0.13.165 host 192.168.65.90
+ permit ip host 10.0.204.234 host 192.168.65.90
+ permit ip host 10.0.204.248 host 192.168.65.90
+ permit ip host 10.0.109.173 host 192.168.65.90
+ permit ip host 10.0.109.39 host 192.168.65.90
+ permit ip host 10.0.52.137 host 192.168.65.90
+ permit ip host 10.0.92.62 host 192.168.65.90
+ permit ip host 10.0.92.68 host 192.168.65.90
+ permit ip host 10.0.92.43 host 192.168.65.90
+ permit ip host 10.0.176.25 host 192.168.65.90
+ permit ip host 10.0.74.116 host 192.168.65.90
+ permit ip host 10.0.74.234 host 192.168.65.90
+ permit ip host 10.0.13.118 host 192.168.65.90
+ permit ip host 10.0.3.103 host 192.168.65.90
+ permit ip host 10.0.13.208 host 192.168.65.90
+ permit ip host 10.0.50.67 host 192.168.65.90
+ permit ip host 10.0.50.64 host 192.168.65.90
+ permit ip host 10.0.13.211 host 192.168.65.90
+ permit ip host 10.0.202.31 host 192.168.65.90
+ permit ip host 10.0.13.66 host 192.168.65.90
+ permit ip host 10.0.92.162 host 192.168.65.90
+ permit ip host 10.0.75.77 host 192.168.65.161
+ permit ip host 10.0.75.161 host 192.168.65.90
+ permit ip host 10.0.75.35 host 192.168.65.90
+ permit ip host 10.0.75.77 host 192.168.65.90
+ip access-list extended Makna-Mana
+ permit ip host 10.0.86.80 host 192.168.65.94
+ permit ip host 10.0.86.81 host 192.168.65.94
+ permit ip host 10.0.57.43 host 192.168.65.94
+ permit ip host 10.0.57.42 host 192.168.65.94
+ permit ip host 10.0.52.28 host 192.168.65.94
+ permit ip host 10.0.57.17 host 192.168.65.94
+ permit ip host 10.0.52.29 host 192.168.65.94
+ permit ip host 10.0.57.16 host 192.168.65.94
+ permit ip host 10.0.57.25 host 192.168.65.94
+ permit ip host 10.0.57.24 host 192.168.65.94
+ permit ip host 10.0.202.169 host 192.168.65.94
+ permit ip host 10.0.5.166 host 192.168.65.94
+ permit ip host 10.0.75.20 host 192.168.65.94
+ permit ip host 10.0.5.164 host 192.168.65.94
+ permit ip host 10.0.18.115 host 192.168.65.94
+ permit ip host 10.0.18.109 host 192.168.65.94
+ permit ip host 10.0.109.27 host 192.168.65.94
+ permit ip host 10.0.140.16 host 192.168.65.94
+ permit ip host 10.0.18.186 host 192.168.65.94
+ permit ip host 10.0.13.164 host 192.168.65.94
+ permit ip host 10.0.18.210 host 192.168.65.94
+ permit ip host 10.0.5.175 host 192.168.65.94
+ permit ip host 10.0.204.248 host 192.168.65.94
+ permit ip host 10.0.204.234 host 192.168.65.94
+ permit ip host 10.0.109.144 host 192.168.65.94
+ permit ip host 10.0.50.94 host 192.168.65.94
+ permit ip host 10.0.74.234 host 192.168.65.94
+ permit ip host 10.0.13.194 host 192.168.65.94
+ permit ip host 10.0.52.137 host 192.168.65.21
+ permit ip host 10.0.50.67 host 192.168.65.21
+ip access-list extended Nahab
+ permit ip host 10.0.52.18 host 192.168.65.37
+ permit ip host 10.0.52.18 host 192.168.65.38
+ permit ip host 10.0.52.18 host 192.168.65.47
+ permit ip host 10.0.52.18 host 192.168.65.48
+ permit ip host 10.0.85.154 host 192.168.65.37
+ permit ip host 10.0.85.154 host 192.168.65.38
+ permit ip host 10.0.85.154 host 192.168.65.47
+ permit ip host 10.0.85.154 host 192.168.65.48
+ permit ip host 10.0.18.119 host 192.168.65.37
+ permit ip host 10.0.18.119 host 192.168.65.38
+ permit ip host 10.0.18.59 host 192.168.65.37
+ permit ip host 10.0.18.59 host 192.168.65.38
+ permit ip host 10.0.48.32 host 192.168.65.37
+ permit ip host 10.0.48.33 host 192.168.65.37
+ remark ------ Nahab MQ-> Najari -----------
+ permit ip host 10.0.57.61 host 192.168.65.39
+ permit ip host 10.0.57.62 host 192.168.65.39
+ permit ip host 10.0.109.175 host 192.168.65.37
+ permit ip host 10.0.57.160 host 192.168.65.39
+ permit ip host 10.0.57.161 host 192.168.65.39
+ permit ip host 10.0.57.163 host 192.168.65.39
+ip access-list extended POL
+ permit tcp host 10.0.57.26 host 192.168.65.164 eq 443 8443
+ permit tcp host 10.0.57.27 host 192.168.65.164 eq 443 8443
+ permit tcp host 10.0.57.39 host 192.168.65.164 eq 443 8443
+ permit tcp host 10.0.57.26 host 192.168.65.166
+ permit tcp host 10.0.57.27 host 192.168.65.166
+ permit tcp host 10.0.57.39 host 192.168.65.166
+ permit tcp host 10.0.55.16 host 192.168.65.166
+ permit tcp host 10.0.55.16 host 192.168.65.164
+ permit tcp host 10.0.55.16 host 192.168.65.165
+ permit tcp host 10.0.55.17 host 192.168.65.166
+ permit tcp host 10.0.55.17 host 192.168.65.164
+ permit tcp host 10.0.55.17 host 192.168.65.165
+ permit tcp host 10.0.55.60 host 192.168.65.166
+ permit tcp host 10.0.92.20 host 192.168.65.166
+ permit tcp host 10.0.92.96 host 192.168.65.166
+ permit tcp host 10.0.92.97 host 192.168.65.166
+ permit tcp host 10.0.92.67 host 192.168.65.166
+ permit tcp host 10.0.92.100 host 192.168.65.166
+ permit tcp host 10.0.92.68 host 192.168.65.166
+ permit tcp host 10.0.92.62 host 192.168.65.166
+ permit tcp host 10.0.92.101 host 192.168.65.166
+ permit tcp host 10.0.92.60 host 192.168.65.166
+ permit tcp host 10.0.92.92 host 192.168.65.166
+ permit tcp host 10.0.92.41 host 192.168.65.166
+ permit tcp host 10.0.202.74 host 192.168.65.166
+ permit ip host 10.0.57.26 host 192.168.65.164
+ permit ip host 10.0.57.26 host 192.168.65.165
+ permit ip host 10.0.57.27 host 192.168.65.164
+ permit ip host 10.0.57.27 host 192.168.65.165
+ permit ip host 10.0.57.39 host 192.168.65.165
+ permit ip host 10.0.57.39 host 192.168.65.164
+ permit tcp host 10.0.74.127 host 192.168.65.166
+ permit tcp host 10.0.74.182 host 192.168.65.166
+ permit ip host 10.0.53.78 host 192.168.65.166
+ permit ip host 10.0.202.78 host 192.168.65.166
+ permit ip host 10.0.202.68 host 192.168.65.166
+ permit ip host 10.0.202.82 host 192.168.65.166
+ permit ip host 10.0.139.16 host 192.168.65.166
+ permit ip host 10.0.139.17 host 192.168.65.166
+ permit ip host 10.0.55.90 host 192.168.65.164
+ permit ip host 10.0.55.90 host 192.168.65.165
+ permit ip host 10.0.55.90 host 192.168.65.166
+ permit ip host 10.0.55.91 host 192.168.65.166
+ permit ip host 10.0.55.91 host 192.168.65.165
+ permit ip host 10.0.55.91 host 192.168.65.164
+ip access-list extended Peyvand-Azmoon
+ permit tcp host 10.0.57.26 host 192.168.65.75 eq 8888
+ permit tcp host 10.0.57.27 host 192.168.65.75 eq 8888
+ permit tcp host 10.0.50.41 host 192.168.65.75 eq 8888
+ip access-list extended Pichak-Chakad
+ permit ip host 10.0.50.6 host 192.168.65.60
+ permit ip host 10.0.57.16 host 192.168.65.60
+ permit ip host 10.0.57.17 host 192.168.65.60
+ permit ip host 10.0.202.159 host 192.168.65.60
+ permit ip host 10.0.50.64 host 192.168.65.247
+ permit ip host 10.0.50.67 host 192.168.65.247
+ permit ip host 10.0.92.102 host 192.168.65.247
+ permit ip host 10.0.92.95 host 192.168.65.247
+ permit ip host 10.0.92.92 host 192.168.65.247
+ permit ip host 10.0.92.40 host 192.168.65.247
+ permit ip host 10.0.92.96 host 192.168.65.247
+ permit ip host 10.0.92.93 host 192.168.65.247
+ permit ip host 10.0.92.39 host 192.168.65.247
+ permit ip host 10.0.92.22 host 192.168.65.247
+ permit ip host 10.0.92.103 host 192.168.65.247
+ permit ip host 10.0.92.106 host 192.168.65.247
+ permit ip host 10.0.92.100 host 192.168.65.247
+ip access-list extended RamzRialACL
+ permit ip host 10.0.50.67 host 192.168.65.74
+ permit ip host 10.0.57.40 host 192.168.65.74
+ permit ip host 10.0.57.41 host 192.168.65.74
+ip access-list extended SEPAM-Print
+ permit ip host 10.0.52.24 host 192.168.65.225
+ permit ip host 10.0.52.24 host 192.168.65.227
+ permit ip host 10.0.90.12 host 192.168.65.227
+ permit ip host 10.0.90.12 host 192.168.65.225
+ permit ip host 10.0.52.24 host 192.168.65.224
+ permit ip host 10.0.52.24 host 192.168.65.214
+ permit ip host 10.0.90.33 host 192.168.65.227
+ip access-list extended SEPAM2MQ
+ permit ip host 10.0.50.67 host 192.168.65.212
+ permit ip host 10.0.140.42 host 192.168.65.212
+ permit ip host 10.0.140.43 host 192.168.65.212
+ permit ip host 10.0.140.45 host 192.168.65.212
+ip access-list extended SHEBA
+ permit ip host 10.0.54.17 host 192.168.65.118
+ permit ip host 10.0.54.16 host 192.168.65.118
+ permit ip host 10.0.85.17 host 192.168.65.118
+ permit ip host 10.0.85.18 host 192.168.65.118
+ permit ip host 10.0.85.18 host 192.168.65.126
+ permit ip host 10.0.50.67 host 192.168.65.118
+ permit ip host 10.0.85.80 host 192.168.65.126
+ permit ip host 10.0.54.16 host 192.168.65.126
+ permit ip host 10.0.54.17 host 192.168.65.126
+ permit ip host 10.0.54.133 host 192.168.65.118
+ permit ip host 10.0.54.133 host 192.168.65.126
+ permit ip host 10.0.50.67 host 192.168.65.126
+ permit ip host 10.0.85.17 host 192.168.65.126
+ permit ip host 10.0.50.64 host 192.168.65.126
+ permit ip host 10.0.50.64 host 192.168.65.118
+ permit ip host 10.0.202.78 host 192.168.65.126
+ permit ip host 10.0.54.34 host 192.168.65.126
+ permit ip host 10.0.54.35 host 192.168.65.126
+ip access-list extended SITA2
+ permit ip host 10.0.109.175 host 192.168.65.185
+ permit ip host 10.0.109.175 host 192.168.65.249
+ permit ip host 10.0.109.174 host 192.168.65.185
+ permit ip host 10.0.109.174 host 192.168.65.249
+ permit ip host 10.0.109.143 host 192.168.65.185
+ permit ip host 10.0.109.143 host 192.168.65.249
+ permit ip host 10.0.74.117 host 192.168.65.249
+ permit ip host 10.0.74.117 host 192.168.65.185
+ permit ip host 10.0.53.118 host 192.168.65.249
+ permit ip host 10.0.33.118 host 192.168.65.249
+ permit ip host 10.0.53.118 host 192.168.65.185
+ permit ip host 10.0.33.118 host 192.168.65.185
+ permit ip host 10.0.95.41 host 192.168.65.249
+ permit ip host 10.0.95.41 host 192.168.65.185
+ permit ip host 10.0.53.81 host 192.168.65.249
+ permit ip host 10.0.53.81 host 192.168.65.185
+ permit ip host 10.0.74.77 host 192.168.65.249
+ permit ip host 10.0.74.77 host 192.168.65.185
+ permit ip host 10.0.74.79 host 192.168.65.249
+ permit ip host 10.0.74.79 host 192.168.65.185
+ permit ip host 10.0.74.137 host 192.168.65.249
+ permit ip host 10.0.74.137 host 192.168.65.185
+ permit ip host 10.0.53.235 host 192.168.65.249
+ permit ip host 10.0.53.235 host 192.168.65.185
+ permit ip host 10.0.13.194 host 192.168.65.249
+ permit ip host 10.0.13.189 host 192.168.65.249
+ permit ip host 10.0.13.118 host 192.168.65.249
+ permit ip host 10.0.13.74 host 192.168.65.249
+ permit ip host 10.0.13.164 host 192.168.65.249
+ permit ip host 10.0.92.97 host 192.168.65.249
+ permit ip host 10.0.92.97 host 192.168.65.185
+ permit ip host 10.0.92.100 host 192.168.65.249
+ permit ip host 10.0.92.100 host 192.168.65.185
+ permit ip host 10.0.92.62 host 192.168.65.249
+ permit ip host 10.0.92.62 host 192.168.65.185
+ permit ip host 10.0.92.68 host 192.168.65.249
+ permit ip host 10.0.92.68 host 192.168.65.185
+ permit ip host 10.0.13.194 host 192.168.65.185
+ permit ip host 10.0.13.74 host 192.168.65.185
+ permit ip host 10.0.13.164 host 192.168.65.185
+ permit ip host 10.0.13.189 host 192.168.65.185
+ permit ip host 10.0.13.118 host 192.168.65.185
+ permit ip host 10.0.50.67 host 192.168.65.249
+ permit ip host 10.0.50.67 host 192.168.65.185
+ permit ip host 10.0.90.22 host 192.168.65.249
+ permit ip host 10.0.90.22 host 192.168.65.185
+ permit ip host 10.0.90.142 host 192.168.65.185
+ permit ip host 10.0.90.142 host 192.168.65.249
+ permit ip host 10.0.90.20 host 192.168.65.185
+ permit ip host 10.0.13.208 host 192.168.65.185
+ permit ip host 10.0.109.140 host 192.168.65.249
+ permit ip host 10.0.48.19 host 192.168.65.185
+ permit ip host 10.0.48.19 host 192.168.65.249
+ permit ip host 10.0.202.85 host 192.168.65.185
+ permit ip host 10.0.92.166 host 192.168.65.185
+ permit ip host 10.0.92.166 host 192.168.65.249
+ permit ip host 10.0.13.208 host 192.168.65.249
+ permit ip host 10.0.90.20 host 192.168.65.249
+ permit ip host 10.0.13.193 host 192.168.65.185
+ permit ip host 10.0.13.193 host 192.168.65.249
+ permit ip host 10.0.13.72 host 192.168.65.249
+ permit ip host 10.0.13.217 host 192.168.65.249
+ permit ip host 10.0.13.86 host 192.168.65.185
+ permit ip host 10.0.13.86 host 192.168.65.249
+ permit ip host 10.0.13.129 host 192.168.65.249
+ permit ip host 10.0.13.129 host 192.168.65.185
+ permit ip host 10.0.13.211 host 192.168.65.185
+ permit ip host 10.0.13.211 host 192.168.65.249
+ permit ip host 10.0.109.38 host 192.168.65.185
+ permit ip host 10.0.109.38 host 192.168.65.249
+ permit ip host 10.0.65.249 host 192.168.65.249
+ permit ip host 10.0.65.249 host 192.168.65.185
+ permit ip host 10.0.74.234 host 192.168.65.185
+ permit ip host 10.0.74.234 host 192.168.65.249
+ permit ip host 10.0.203.172 host 192.168.65.185
+ permit ip host 10.0.5.164 host 192.168.65.185
+ permit ip host 10.0.5.164 host 192.168.65.249
+ permit ip host 10.0.202.78 host 192.168.65.249
+ permit ip host 10.0.202.82 host 192.168.65.249
+ permit ip host 10.0.202.68 host 192.168.65.249
+ permit ip host 10.0.202.41 host 192.168.65.249
+ permit ip host 10.0.202.95 host 192.168.65.185
+ permit ip host 10.0.202.173 host 192.168.65.185
+ permit ip host 10.0.202.31 host 192.168.65.185
+ permit ip host 10.0.13.66 host 192.168.65.249
+ permit ip host 10.0.13.66 host 192.168.65.185
+ permit ip host 10.0.203.31 host 192.168.65.249
+ permit ip host 10.0.203.32 host 192.168.65.249
+ permit ip host 10.0.203.95 host 192.168.65.249
+ permit ip host 10.0.203.96 host 192.168.65.249
+ permit ip host 10.0.203.172 host 192.168.65.249
+ permit ip host 10.0.203.173 host 192.168.65.249
+ permit ip host 10.0.203.174 host 192.168.65.249
+ permit ip host 10.0.203.33 host 192.168.65.185
+ permit ip host 10.0.203.97 host 192.168.65.185
+ permit ip host 10.0.203.174 host 192.168.65.185
+ permit ip host 10.0.203.175 host 192.168.65.185
+ permit ip host 10.0.13.162 host 192.168.65.249
+ permit ip host 10.0.13.162 host 192.168.65.185
+ permit ip host 10.0.110.18 host 192.168.65.249
+ permit ip host 10.0.92.43 host 192.168.65.249
+ permit ip host 10.0.92.67 host 192.168.65.185
+ permit ip host 10.0.92.162 host 192.168.65.249
+ permit ip host 10.0.57.33 host 192.168.65.249
+ permit ip host 10.0.57.32 host 192.168.65.249
+ permit ip host 10.0.57.32 host 192.168.65.185
+ permit ip host 10.0.75.161 host 192.168.65.249
+ permit ip host 10.0.75.35 host 192.168.65.249
+ permit ip host 10.0.75.77 host 192.168.65.249
+ permit ip host 10.0.109.154 host 192.168.65.249
+ permit ip host 10.0.52.137 host 192.168.65.249
+ permit ip host 10.0.85.160 host 192.168.65.249
+ permit ip host 10.0.48.32 host 192.168.65.249
+ permit ip host 10.0.48.40 host 192.168.65.249
+ permit ip host 10.0.48.45 host 192.168.65.249
+ permit ip host 10.0.48.32 host 192.168.65.185
+ permit ip host 10.0.48.40 host 192.168.65.185
+ permit ip host 10.0.48.45 host 192.168.65.185
+ip access-list extended Sima-MQ
+ permit ip host 10.0.57.96 host 192.168.72.110
+ permit ip host 10.0.57.97 host 192.168.72.110
+ permit ip host 10.0.50.67 host 192.168.72.110
+!
+logging trap notifications
+logging host 10.0.51.63 vrf VRF-Mgmt
+logging host 10.0.51.25 vrf VRF-Mgmt
+logging host 10.0.51.58 vrf VRF-Mgmt
+access-list 198 deny   ip any any fragments
+access-list 198 permit udp any any eq 18999
+access-list 199 permit icmp any any echo
+access-list 199 permit icmp any any echo-reply
+snmp-server group LMS v3 priv read myview write myview access SNMP-WRITE
+snmp-server group NMS v3 auth notify *tv.FFFFFFFF.FFFFFFFF.FFFFFFFF.FFFFFFFF7F 
+snmp-server group NMS v3 priv access SNMP-READ
+snmp-server view myview mib-2 included
+snmp-server view myview system included
+snmp-server view myview cisco included
+snmp-server ifindex persist
+snmp-server enable traps frame-relay multilink bundle-mismatch
+snmp-server enable traps frame-relay
+snmp-server enable traps frame-relay subif
+snmp-server host 10.0.51.32 vrf VRF-Mgmt version 3 auth nms-net 
+snmp-server host 10.0.51.58 vrf VRF-Mgmt version 3 auth nms-net 
+snmp-server host 10.0.51.60 vrf VRF-Mgmt version 3 auth nms-net 
+snmp-server host 10.0.51.72 vrf VRF-Mgmt version 3 auth nms-net 
+!
+!
+!
+route-map DF permit 10
+ match ip address DF
+ set ip df 0
+!
+!
+!
+!
+control-plane
+ service-policy input drop-udp
+!
+!
+!
+!
+!
+!
+!
+!
+!
+banner motd 
+        ===
+       -+ +-
+       | | |
+    <--\ | /-->
+ /____\\ | //____\ ********************************************************
+   <###\|||/###>                  Keshavarzi Bank Network
+    +====+====+     WARNING: Access is restricted to authorized users only.
+    | WAN-BKI |     Unauthorized access is a violation of state , civil and
+    +===+=+===+                       criminal laws.
+        +=+        ********************************************************
+
+privilege interface level 3 shutdown
+privilege interface level 3 no shutdown
+privilege interface level 3 no
+privilege configure level 3 interface
+privilege exec level 3 traceroute
+privilege exec level 3 ping
+privilege exec level 2 configure terminal
+privilege exec level 2 configure
+privilege exec level 3 terminal monitor
+privilege exec level 3 terminal
+privilege exec all level 2 show
+!
+line con 0
+ authorization exec CACS
+ login authentication CACS
+line aux 0
+line vty 0 4
+ access-class TELNET in vrf-also
+ privilege level 15
+ authorization commands 2 CACS
+ authorization exec CACS
+ accounting commands 15 CACS
+ accounting exec CACS
+ login authentication CACS
+ transport input ssh
+ transport output telnet ssh
+line vty 5 15
+ access-class TELNET in vrf-also
+ privilege level 15
+ authorization commands 2 CACS
+ authorization exec CACS
+ accounting exec CACS
+ login authentication CACS
+ transport input ssh
+ transport output telnet ssh
+!
+scheduler max-task-time 5000
+scheduler allocate 20000 1000
+ntp authentication-key 1 md5 06565E711F1E2F492442425A2E547D7B757B66617B4624 7
+ntp authenticate
+ntp trusted-key 1
+ntp clock-period 17180165
+ntp source Vlan51
+ntp server vrf VRF-Mgmt 10.0.51.27
+
+!
+webvpn cef
+!
+end

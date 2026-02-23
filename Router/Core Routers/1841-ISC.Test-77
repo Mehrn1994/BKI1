@@ -1,0 +1,794 @@
+
+!
+version 12.4
+service timestamps debug datetime msec
+service timestamps log datetime localtime
+service password-encryption
+!
+hostname 1841-ISC.Test
+!
+boot-start-marker
+boot-end-marker
+!
+logging buffered 64000 notifications
+enable secret 5 $1$CUjh$t0hZaiNKWEZu2c3YK8AoF/
+!
+aaa new-model
+!
+!
+aaa group server tacacs+ ACSServers
+ server-private 10.0.51.56 key 7 106F1A574A46415B
+ server-private 10.0.51.57 key 7 047A184840701F1E
+ ip vrf forwarding mgmt-intf
+ ip tacacs source-interface Vlan51
+!
+aaa authentication login CACS group ACSServers local
+aaa authentication enable default group ACSServers enable
+aaa authentication ppp default local-case
+aaa authorization console
+aaa authorization config-commands
+aaa authorization exec CACS group ACSServers local 
+aaa authorization commands 0 CACS group ACSServers local 
+aaa authorization commands 1 CACS group ACSServers local 
+aaa authorization commands 2 CACS group ACSServers local 
+aaa authorization commands 3 CACS group ACSServers local 
+aaa authorization commands 15 CACS group ACSServers local 
+aaa accounting exec CACS start-stop group ACSServers
+aaa accounting commands 0 CACS start-stop group ACSServers
+aaa accounting commands 1 CACS start-stop group ACSServers
+aaa accounting commands 2 CACS start-stop group ACSServers
+aaa accounting commands 3 CACS start-stop group ACSServers
+aaa accounting commands 15 CACS start-stop group ACSServers
+aaa accounting system default start-stop group ACSServers
+!
+aaa session-id common
+clock timezone Tehran 3 30
+!
+ip traffic-export profile MJH
+  interface FastEthernet0/0
+  bidirectional
+! No destination mac-address configured
+ip cef
+!
+!
+!
+!
+ip vrf mgmt-intf
+!
+ip flow-cache timeout active 1
+no ip domain lookup
+ip domain name test.local
+ip auth-proxy max-nodata-conns 3
+ip admission max-nodata-conns 3
+login on-failure log
+login on-success log
+!
+!
+!
+username test privilege 15 secret 5 $1$Fiap$q7EPN23LH0/Ss8H0VM73V1
+archive
+ log config
+  hidekeys
+ path tftp://10.0.51.40/Core/$h
+ write-memory
+!
+!
+ip telnet source-interface FastEthernet0/1
+ip tftp source-interface Vlan51
+ip ssh time-out 30
+ip ssh authentication-retries 2
+ip ssh port 2001 rotary 1
+ip ssh version 2
+!
+class-map match-all undesireable-udp
+ match access-group 198
+!
+!
+policy-map drop-udp
+ class undesireable-udp
+   drop
+!
+! 
+!
+crypto isakmp policy 50
+ encr aes 256
+ authentication pre-share
+ group 5
+crypto isakmp key 12345tyUU address 192.168.10.2 no-xauth
+crypto isakmp keepalive 60 5
+!
+!
+crypto ipsec transform-set DEV esp-aes 256 esp-sha-hmac 
+!
+crypto map dev 10 ipsec-isakmp 
+ set peer 192.168.10.2
+ set transform-set DEV 
+ match address LAN->ISC
+!
+!
+!
+interface Loopback1
+ no ip address
+!
+interface FastEthernet0/0
+ description ** To-ISC-Comm-Router **
+ ip address 192.168.218.2 255.255.255.0
+ ip nat outside
+ ip virtual-reassembly
+ load-interval 30
+ duplex auto
+ speed auto
+!
+interface FastEthernet0/1
+ description AGG-EXT-SW-Twe1/0/16
+ ip address 10.0.157.10 255.255.255.0
+ ip flow ingress
+ ip flow egress
+ ip nat inside
+ ip virtual-reassembly
+ duplex auto
+ speed auto
+!
+interface FastEthernet0/0/0
+ description ** OOB **
+ switchport access vlan 51
+!
+interface FastEthernet0/0/1
+!
+interface FastEthernet0/0/2
+!
+interface FastEthernet0/0/3
+!
+interface Vlan1
+ no ip address
+!
+interface Vlan51
+ description ** OOB **
+ ip vrf forwarding mgmt-intf
+ ip address 10.0.51.39 255.255.255.0
+!
+ip forward-protocol nd
+ip route 10.0.0.0 255.0.0.0 10.0.157.1
+ip route 10.0.89.200 255.255.255.255 192.168.218.1
+ip route 192.168.10.0 255.255.255.0 192.168.218.1 name Test-Srv-ISC
+ip route 192.168.10.13 255.255.255.255 192.168.218.1 name Nahab
+ip route 192.168.10.14 255.255.255.255 192.168.218.1 name Arya-Taba
+ip route 192.168.10.70 255.255.255.255 192.168.218.1 name SEPAM
+ip route 192.168.10.101 255.255.255.255 192.168.218.1 name Dispatcher
+ip route 192.168.10.102 255.255.255.255 192.168.218.1 name Test-LIne-64
+ip route 192.168.10.106 255.255.255.255 192.168.218.1 name APPlicationFW
+ip route vrf mgmt-intf 10.0.50.0 255.255.254.0 10.0.51.1
+!
+ip flow-export source Vlan51
+ip flow-export version 5
+!
+no ip http server
+no ip http secure-server
+ip nat translation timeout 300
+ip nat translation tcp-timeout 3600
+ip nat translation finrst-timeout 30
+ip nat translation syn-timeout 30
+ip nat pool Channel-Ussd 192.168.218.51 192.168.218.51 netmask 255.255.255.0
+ip nat pool Peyvand-Azmon 192.168.218.50 192.168.218.50 netmask 255.255.255.0
+ip nat pool Makna-Test 192.168.218.13 192.168.218.13 netmask 255.255.255.0
+ip nat pool Sayad-Azmon 192.168.218.40 192.168.218.40 netmask 255.255.255.0
+ip nat pool ATM-Test 192.168.218.14 192.168.218.14 netmask 255.255.255.0
+ip nat pool MQ-Test 192.168.218.52 192.168.218.52 netmask 255.255.255.0
+ip nat pool SEPAM-Test 192.168.218.167 192.168.218.167 netmask 255.255.255.0
+ip nat pool New-Arz 192.168.218.10 192.168.218.10 netmask 255.255.255.0
+ip nat pool ShebaEstelamTest 192.168.218.140 192.168.218.140 netmask 255.255.255.0
+ip nat pool Pol 192.168.218.70 192.168.218.70 netmask 255.255.255.0
+ip nat pool Chakavak-Test 192.168.218.20 192.168.218.20 netmask 255.255.255.0
+ip nat pool Hamoun-Test 192.168.218.25 192.168.218.25 netmask 255.255.255.0
+ip nat pool EstelamSheba-Test 192.168.218.200 192.168.218.200 netmask 255.255.255.0
+ip nat pool Pichak-Test 192.168.218.11 192.168.218.11 netmask 255.255.255.0
+ip nat pool NAHAB 192.168.218.215 192.168.218.215 netmask 255.255.255.0
+ip nat pool HarimPool 192.168.218.16 192.168.218.16 netmask 255.255.255.0
+ip nat pool Mana-Test 192.168.218.19 192.168.218.19 netmask 255.255.255.0
+ip nat pool Borna 192.168.218.24 192.168.218.24 netmask 255.255.255.0
+ip nat pool Sima-Test 192.168.218.60 192.168.218.60 netmask 255.255.255.0
+ip nat pool ManaTest-Channel 192.168.218.91 192.168.218.91 netmask 255.255.255.0
+ip nat pool SATNA-POOL 192.168.218.17 192.168.218.17 netmask 255.255.255.0
+ip nat pool PinPadKey-POOL 192.168.218.72 192.168.218.72 netmask 255.255.255.0
+ip nat pool SandBox-BARAT 192.168.218.22 192.168.218.22 netmask 255.255.255.0
+ip nat pool ShebaEstelam1.8 192.168.218.160 192.168.218.160 netmask 255.255.255.0
+ip nat pool Mana-NEW 192.168.218.41 192.168.218.41 netmask 255.255.255.0
+ip nat pool CardDev 192.168.218.141 192.168.218.141 netmask 255.255.255.0
+ip nat pool Rima-Tokenizer 192.168.218.145 192.168.218.145 netmask 255.255.255.0
+ip nat pool PSPSKish 192.168.141.95 192.168.141.95 netmask 255.255.255.0
+ip nat inside source list ATM-Azmon pool ATM-Test overload
+ip nat inside source list Borna pool Borna overload
+ip nat inside source list CardDev pool CardDev overload
+ip nat inside source list Chakavak-Test pool Chakavak-Test overload
+ip nat inside source list Channel-Manager pool Channel-Ussd overload
+ip nat inside source list Hamoun-Test pool Hamoun-Test overload
+ip nat inside source list Harim pool HarimPool overload
+ip nat inside source list MQ-Azmon pool MQ-Test overload
+ip nat inside source list Makna-Azmon pool Makna-Test overload
+ip nat inside source list Mana-NEW pool Mana-NEW overload
+ip nat inside source list Mana-Test pool Mana-Test overload
+ip nat inside source list ManaTest-Channel pool ManaTest-Channel overload
+ip nat inside source list NAHAB pool NAHAB overload
+ip nat inside source list New-Arz-Portal pool New-Arz overload
+ip nat inside source list PSPSKish pool PSPSKish overload
+ip nat inside source list Peyvand pool Peyvand-Azmon overload
+ip nat inside source list Pichak-Test pool Pichak-Test overload
+ip nat inside source list PinPadKey-Test pool PinPadKey-POOL overload
+ip nat inside source list Pol pool Pol overload
+ip nat inside source list Rima-Tokenizer pool Rima-Tokenizer
+ip nat inside source list SATNA-TEST pool SATNA-POOL overload
+ip nat inside source list SEPAM-Azmon pool SEPAM-Test overload
+ip nat inside source list SEPAM-SandBox pool SandBox-BARAT overload
+ip nat inside source list Sayad pool Sayad-Azmon overload
+ip nat inside source list ShebaEstelam1.8 pool ShebaEstelam1.8 overload
+ip nat inside source list ShebaEstelamTest pool ShebaEstelamTest overload
+ip nat inside source list Sima-Test pool Sima-Test overload
+ip nat inside source static 10.0.156.8 192.168.218.8
+ip nat inside source static 10.0.156.9 192.168.218.9
+ip nat inside source static tcp 10.0.85.160 18087 192.168.218.10 18087 extendable
+ip nat inside source static 10.0.85.99 192.168.218.12
+ip nat inside source static tcp 10.0.85.29 1922 192.168.218.17 1922 extendable
+ip nat inside source static tcp 10.0.140.45 1922 192.168.218.17 1923 extendable
+ip nat inside source static tcp 10.0.85.144 1423 192.168.218.20 1423 extendable
+ip nat inside source static tcp 10.0.85.144 1523 192.168.218.20 1523 extendable
+ip nat inside source static tcp 10.0.85.144 14023 192.168.218.20 14023 extendable
+ip nat inside source static tcp 10.0.85.144 15023 192.168.218.20 15023 extendable
+ip nat inside source static tcp 10.0.85.176 80 192.168.218.30 80 extendable
+ip nat inside source static 10.0.85.176 192.168.218.30
+ip nat inside source static 10.0.212.38 192.168.218.38
+ip nat inside source static tcp 10.0.85.42 14000 192.168.218.42 34001 extendable
+ip nat inside source static 10.0.85.42 192.168.218.42
+ip nat inside source static tcp 10.0.82.94 14114 192.168.218.50 14114 extendable
+ip nat inside source static tcp 10.0.56.64 1616 192.168.218.52 1616 extendable
+ip nat inside source static 10.0.56.64 192.168.218.52
+ip nat inside source static tcp 10.0.140.45 4045 192.168.218.60 4045 extendable
+ip nat inside source static tcp 10.0.85.83 53128 192.168.218.62 53128 extendable
+ip nat inside source static tcp 10.0.85.53 80 192.168.218.70 80 extendable
+ip nat inside source static tcp 10.0.85.18 30 192.168.218.70 8090 extendable
+ip nat inside source static tcp 10.0.85.18 30 192.168.218.70 8091 extendable
+ip nat inside source static tcp 10.0.85.85 18659 192.168.218.72 18659 extendable
+ip nat inside source static 10.0.85.188 192.168.218.80
+ip nat inside source static tcp 10.0.85.102 39125 192.168.218.102 39125 extendable
+ip nat inside source static 10.0.85.102 192.168.218.102
+ip nat inside source static tcp 10.0.66.108 23300 192.168.218.108 23300 extendable
+ip nat inside source static 10.0.66.108 192.168.218.108
+ip nat inside source static 10.0.85.125 192.168.218.125
+ip nat inside source static 10.0.85.139 192.168.218.136
+ip nat inside source static 10.0.85.137 192.168.218.137
+ip nat inside source static 10.0.58.139 192.168.218.139
+ip nat inside source static tcp 10.0.85.114 443 192.168.218.140 443 extendable
+ip nat inside source static tcp 10.0.85.132 2007 192.168.218.140 2007 extendable
+ip nat inside source static tcp 10.0.85.132 2008 192.168.218.140 2008 extendable
+ip nat inside source static tcp 10.0.85.132 2012 192.168.218.140 2012 extendable
+ip nat inside source static tcp 10.0.85.114 8443 192.168.218.140 8443 extendable
+ip nat inside source static tcp 10.0.85.83 45050 192.168.218.140 45050 extendable
+ip nat inside source static tcp 10.0.85.132 2006 192.168.218.141 2006 extendable
+ip nat inside source static tcp 10.0.85.132 2007 192.168.218.141 2007 extendable
+ip nat inside source static tcp 10.0.85.132 2008 192.168.218.141 2008 extendable
+ip nat inside source static tcp 10.0.85.132 3430 192.168.218.141 3430 extendable
+ip nat inside source static tcp 10.0.85.132 7000 192.168.218.141 7000 extendable
+ip nat inside source static tcp 10.0.85.132 7001 192.168.218.141 7001 extendable
+ip nat inside source static tcp 10.0.85.132 7002 192.168.218.141 7002 extendable
+ip nat inside source static tcp 10.0.85.132 7003 192.168.218.141 7003 extendable
+ip nat inside source static tcp 10.0.85.132 7004 192.168.218.141 7004 extendable
+ip nat inside source static tcp 10.0.85.132 7005 192.168.218.141 7005 extendable
+ip nat inside source static tcp 10.0.85.132 7006 192.168.218.141 7006 extendable
+ip nat inside source static tcp 10.0.85.65 4848 192.168.218.141 46050 extendable
+ip nat inside source static tcp 10.0.85.65 4850 192.168.218.141 46052 extendable
+ip nat inside source static tcp 10.0.85.65 46052 192.168.218.141 46053 extendable
+ip nat inside source static tcp 10.0.85.18 80 192.168.218.160 80 extendable
+ip nat inside source static tcp 10.0.85.18 443 192.168.218.160 443 extendable
+ip nat inside source static tcp 10.0.140.45 1919 192.168.218.167 1919 extendable
+ip nat inside source static 10.0.85.105 192.168.218.201
+ip nat inside source static tcp 10.0.85.132 3430 192.168.218.213 18658 extendable
+ip nat inside source static tcp 10.0.85.85 53128 192.168.218.213 53128 extendable
+ip nat inside source static tcp 10.0.140.99 1414 192.168.218.215 1414 extendable
+ip nat inside source static tcp 10.0.56.59 1421 192.168.218.215 1421 extendable
+ip nat inside source static tcp 10.0.140.45 1414 192.168.218.215 1515 extendable
+ip nat inside source static tcp 10.0.140.45 1421 192.168.218.215 1521 extendable
+ip nat inside source static tcp 10.0.140.99 2020 192.168.218.215 2020 extendable
+ip nat inside source static tcp 10.0.140.45 2020 192.168.218.215 2121 extendable
+!
+ip access-list standard SEPAM-TEST
+ permit 10.0.13.58
+ permit 10.0.90.20
+ permit 10.0.90.21
+ permit 10.0.90.22
+ permit 10.0.212.20
+ip access-list standard SNMP-READ
+ permit 10.0.50.0 0.0.1.255
+ip access-list standard SNMP-WRITE
+ permit 10.0.51.49
+ permit 10.0.51.48
+ip access-list standard TELNET-ACCESS
+ permit 10.0.50.0 0.0.1.255
+!
+ip access-list extended ATM-Azmon
+ permit tcp host 10.0.156.13 host 192.168.10.46 eq 40004
+ permit tcp host 10.0.156.12 host 192.168.10.46 eq 40004
+ permit tcp host 10.0.156.12 host 192.168.10.92 eq 40001
+ permit tcp host 10.0.156.12 host 192.168.10.91 eq 40002
+ permit tcp host 10.0.50.67 host 192.168.10.92 eq 40001
+ permit tcp host 10.0.50.67 host 192.168.10.91 eq 40002
+ permit tcp host 10.0.50.68 host 192.168.10.92 eq 40001
+ permit icmp host 10.0.156.12 host 192.168.10.92
+ permit icmp host 10.0.156.13 host 192.168.10.92
+ permit icmp host 10.0.156.13 host 192.168.10.91
+ permit icmp host 10.0.156.12 host 192.168.10.91
+ permit icmp host 10.0.156.12 host 192.168.10.141
+ permit icmp host 10.0.156.13 host 192.168.10.141
+ permit tcp host 10.0.156.12 host 192.168.10.141 eq 40001
+ permit tcp host 10.0.156.13 host 192.168.10.141 eq 40001
+ip access-list extended Borna
+ permit tcp host 10.0.202.41 host 192.168.10.8 eq www
+ permit tcp host 10.0.202.37 host 192.168.10.8 eq www
+ permit tcp host 10.0.202.72 host 192.168.10.8 eq www
+ permit tcp host 10.0.85.160 host 192.168.10.8 eq www
+ permit tcp host 10.0.140.16 host 192.168.10.8
+ permit tcp host 10.0.140.17 host 192.168.10.8
+ permit ip host 10.0.202.83 host 192.168.10.8
+ permit ip host 10.0.50.67 host 192.168.10.8
+ permit ip host 10.0.202.78 host 192.168.10.8
+ permit ip host 10.0.202.82 host 192.168.10.8
+ permit ip host 10.0.202.68 host 192.168.10.8
+ permit tcp host 10.0.202.163 host 192.168.10.8
+ permit tcp host 10.0.85.18 host 192.168.10.8
+ permit ip host 10.0.202.164 host 192.168.10.8
+ip access-list extended CardDev
+ permit tcp host 10.0.85.65 host 192.168.10.101 eq 50050
+ permit tcp host 10.0.85.65 host 192.168.10.106 eq 46052
+ permit tcp host 10.0.85.132 host 192.168.10.106 eq 46052
+ permit tcp host 10.0.85.65 host 192.168.10.106 eq 45024
+ permit ip host 10.42.26.1 host 192.168.10.106
+ permit ip host 10.42.26.2 host 192.168.10.106
+ permit tcp host 10.0.85.216 host 192.168.10.106 eq 45024
+ permit tcp host 10.0.50.67 host 192.168.10.106 eq 50050
+ permit tcp host 10.0.85.216 host 192.168.10.101 eq 50050
+ permit tcp host 10.0.203.31 host 192.168.10.101 eq 50050
+ permit tcp host 10.0.203.172 host 192.168.10.101 eq 50050
+ permit tcp host 10.0.203.98 host 192.168.10.101 eq 50050
+ permit tcp host 10.0.203.95 host 192.168.10.101 eq 50050
+ permit tcp host 10.0.203.173 host 192.168.10.101 eq 50050
+ permit tcp host 10.0.85.65 host 192.168.10.101 eq 50051
+ permit tcp host 10.0.85.216 host 192.168.10.101 eq 50051
+ permit tcp host 10.0.50.65 host 192.168.10.106 eq 46052
+ permit tcp host 10.0.50.65 host 192.168.10.101 eq 46052
+ permit tcp host 10.0.203.98 host 192.168.10.101 eq 50051
+ permit tcp host 10.0.50.67 host 192.168.10.106 eq 45024
+ip access-list extended Chakavak-Test
+ permit ip host 10.0.85.144 host 192.168.10.18
+ permit ip host 10.0.85.144 host 192.168.10.19
+ permit ip host 10.0.203.37 host 192.168.10.19
+ permit ip host 10.0.203.65 host 192.168.10.19
+ permit ip host 10.0.203.57 host 192.168.10.19
+ permit ip host 10.0.203.84 host 192.168.10.19
+ permit ip host 10.0.203.38 host 192.168.10.19
+ permit ip host 10.0.74.50 host 192.168.10.19
+ permit ip host 10.0.109.168 host 192.168.10.19
+ permit ip host 10.0.3.185 host 192.168.10.19
+ permit ip host 10.0.13.83 host 192.168.10.19
+ permit ip host 10.0.3.50 host 192.168.10.19
+ permit ip host 10.0.3.152 host 192.168.10.19
+ permit ip host 10.0.3.60 host 192.168.10.19
+ permit ip host 10.0.50.67 host 192.168.10.18
+ permit ip host 10.0.50.67 host 192.168.10.19
+ permit ip host 10.0.157.10 host 192.168.10.19
+ip access-list extended Channel-Manager
+ permit ip host 10.0.140.16 host 192.168.10.101
+ permit tcp host 10.0.85.65 host 192.168.10.101 eq 18556 18557
+ permit ip host 10.0.202.37 host 192.168.10.101
+ permit icmp host 10.0.85.65 host 192.168.10.101
+ permit tcp host 10.0.202.163 host 192.168.10.101 eq 18556
+ permit tcp host 10.0.203.65 host 192.168.10.101 eq 18556
+ permit tcp host 10.0.203.95 host 192.168.10.101 eq 18556
+ permit tcp host 10.0.203.31 host 192.168.10.101 eq 18556
+ permit ip host 10.0.50.67 host 192.168.10.101
+ permit tcp host 10.0.203.172 host 192.168.10.101 eq 18556
+ permit tcp host 10.0.203.98 host 192.168.10.101 eq 18556
+ permit tcp host 10.0.203.173 host 192.168.10.101 eq 18556
+ permit tcp host 10.0.85.216 host 192.168.10.101 eq 18556
+ip access-list extended Hamoun-Test
+ permit tcp host 10.0.202.24 host 192.168.10.206 eq 8089
+ permit tcp host 10.0.202.145 host 192.168.10.206 eq 8089
+ permit tcp host 10.0.202.24 host 192.168.10.207 eq 8088
+ permit tcp host 10.0.202.145 host 192.168.10.207 eq 8088
+ permit tcp host 10.0.202.24 host 192.168.10.25 eq 8087
+ permit tcp host 10.0.202.145 host 192.168.10.25 eq 8087
+ permit tcp host 10.0.85.160 host 192.168.10.207 eq 8088
+ permit tcp host 10.0.85.160 host 192.168.10.206 eq 8089
+ permit tcp host 10.0.209.35 host 192.168.10.207 eq 8088
+ permit tcp host 10.0.209.35 host 192.168.10.25 eq 8087
+ permit tcp host 10.0.209.35 host 192.168.10.206 eq 8089
+ remark ----------------- Arya&Taba -------------------
+ permit tcp host 10.0.92.95 host 192.168.10.14 eq www 443
+ permit tcp host 10.0.92.40 host 192.168.10.14 eq www 443
+ permit tcp host 10.0.92.92 host 192.168.10.14 eq www 443
+ permit tcp host 10.0.92.103 host 192.168.10.14 eq www 443
+ permit tcp host 10.0.50.67 host 192.168.10.14 eq www 443
+ permit tcp host 10.0.209.33 host 192.168.10.206 eq 8089
+ permit tcp host 10.0.209.33 host 192.168.10.207 eq 8088
+ permit tcp host 10.0.209.33 host 192.168.10.25 eq 8087
+ remark ------UAT->Hamoon -------
+ permit tcp host 10.0.140.16 host 192.168.10.25 eq 8087
+ permit tcp host 10.0.140.16 host 192.168.10.206 eq 8089
+ permit tcp host 10.0.140.16 host 192.168.10.207 eq 8088
+ permit tcp host 10.0.140.17 host 192.168.10.207 eq 8088
+ permit tcp host 10.0.140.17 host 192.168.10.206 eq 8089
+ permit tcp host 10.0.140.17 host 192.168.10.25 eq 8087
+ permit tcp host 10.0.209.34 host 192.168.10.207 eq 8088
+ permit tcp host 10.0.209.34 host 192.168.10.206 eq 8089
+ permit tcp host 10.0.209.34 host 192.168.10.25 eq 8087
+ permit tcp host 10.0.209.36 host 192.168.10.207 eq 8088
+ permit tcp host 10.0.209.36 host 192.168.10.206 eq 8089
+ permit tcp host 10.0.209.36 host 192.168.10.25 eq 8087
+ permit tcp host 10.0.209.37 host 192.168.10.207 eq 8088
+ permit tcp host 10.0.209.37 host 192.168.10.206 eq 8089
+ permit tcp host 10.0.209.37 host 192.168.10.25 eq 8087
+ permit tcp host 10.0.209.38 host 192.168.10.207 eq 8088
+ permit tcp host 10.0.209.38 host 192.168.10.206 eq 8089
+ permit tcp host 10.0.209.38 host 192.168.10.25 eq 8087
+ permit tcp host 10.0.209.39 host 192.168.10.207 eq 8088
+ permit tcp host 10.0.209.39 host 192.168.10.206 eq 8089
+ permit tcp host 10.0.209.39 host 192.168.10.25 eq 8087
+ permit tcp host 10.0.209.40 host 192.168.10.207 eq 8088
+ permit tcp host 10.0.209.40 host 192.168.10.206 eq 8089
+ permit tcp host 10.0.209.40 host 192.168.10.25 eq 8087
+ permit tcp host 10.0.220.160 host 192.168.10.25 eq 8087
+ permit tcp host 10.0.220.160 host 192.168.10.206 eq 8089
+ permit tcp host 10.0.220.160 host 192.168.10.207 eq 8088
+ permit tcp host 10.0.220.159 host 192.168.10.25 eq 8087
+ permit tcp host 10.0.220.159 host 192.168.10.206 eq 8089
+ permit tcp host 10.0.220.159 host 192.168.10.207 eq 8088
+ permit tcp host 10.0.220.174 host 192.168.10.25 eq 8087
+ permit tcp host 10.0.220.174 host 192.168.10.206 eq 8089
+ permit tcp host 10.0.220.174 host 192.168.10.207 eq 8088
+ permit tcp host 10.0.220.181 host 192.168.10.25 eq 8087
+ permit tcp host 10.0.220.181 host 192.168.10.206 eq 8089
+ permit tcp host 10.0.220.181 host 192.168.10.207 eq 8088
+ permit tcp host 10.0.202.156 host 192.168.10.206 eq 8089
+ permit tcp host 10.0.202.156 host 192.168.10.207 eq 8088
+ remark ------------- Harim -----------------
+ permit tcp host 10.0.202.74 host 192.168.10.171 eq 8443
+ permit tcp host 10.0.85.53 host 192.168.10.171 eq 8443
+ permit ip host 10.0.50.67 host 192.168.10.25
+ip access-list extended Harim
+ permit ip host 10.0.202.74 host 192.168.10.50
+ permit ip host 10.0.202.37 host 192.168.10.50
+ permit ip host 10.0.85.53 host 192.168.10.50
+ permit ip 10.0.50.0 0.0.0.255 host 192.168.10.50
+ permit ip host 10.0.202.75 host 192.168.10.50
+ip access-list extended IPSEC
+ permit tcp 192.168.10.0 0.0.0.255 host 192.168.9.2 eq 22
+ permit udp host 192.168.10.2 host 192.168.9.2 eq isakmp
+ permit esp host 192.168.10.2 host 192.168.9.2
+ permit icmp host 192.168.10.2 host 192.168.9.2
+ permit icmp any any
+ permit tcp host 192.168.10.2 host 192.168.9.2 eq 22
+ deny   ip any any log
+ip access-list extended LAN->ISC
+ permit ip 192.168.218.0 0.0.0.255 192.168.10.0 0.0.0.255
+ip access-list extended MQ-Azmon
+ permit tcp host 10.0.56.61 host 192.168.10.91 eq 1447
+ permit tcp host 10.0.56.62 host 192.168.10.91 eq 1447
+ permit icmp host 10.0.56.61 host 192.168.10.91
+ permit icmp host 10.0.56.62 host 192.168.10.91
+ permit tcp host 10.0.56.61 host 192.168.10.163 eq 1447
+ permit tcp host 10.0.56.62 host 192.168.10.163 eq 1447
+ip access-list extended Makna-Azmon
+ permit tcp host 10.0.202.37 host 192.168.10.63 eq 8444
+ permit tcp host 10.0.85.65 host 192.168.10.63 eq 8444
+ permit tcp host 10.0.85.160 host 192.168.10.63 eq 8444
+ip access-list extended Mana-NEW
+ permit tcp host 10.0.50.64 host 192.168.10.41
+ permit tcp host 10.0.85.160 host 192.168.10.41
+ permit tcp host 10.0.202.41 host 192.168.10.41
+ip access-list extended Mana-Test
+ permit tcp host 10.0.202.75 host 192.168.10.171 eq 8447
+ permit tcp host 10.0.202.37 host 192.168.10.171 eq 8447
+ permit tcp host 10.0.202.41 host 192.168.10.171 eq 8447
+ permit tcp host 10.0.85.53 host 192.168.10.171 eq 8443
+ permit tcp host 10.0.202.37 host 192.168.10.171 eq 8443
+ permit tcp host 10.0.202.74 host 192.168.10.171 eq 8443
+ip access-list extended ManaTest-Channel
+ permit tcp host 10.0.202.75 host 192.168.10.177 eq 8447
+ permit tcp host 10.0.202.41 host 192.168.10.177 eq 8447
+ permit tcp host 10.0.85.160 host 192.168.10.177 eq 8447
+ permit tcp host 10.0.202.37 host 192.168.10.177 eq 8447
+ permit tcp host 10.0.85.53 host 192.168.10.177 eq 8443
+ permit tcp host 10.0.202.37 host 192.168.10.177 eq 8443
+ permit tcp host 10.0.50.67 host 192.168.10.177 eq 8443
+ip access-list extended NAHAB
+ permit ip host 10.0.56.59 host 192.168.10.13
+ permit ip host 10.0.140.42 host 192.168.10.13
+ permit ip host 10.0.140.43 host 192.168.10.13
+ permit ip host 10.0.140.45 host 192.168.10.13
+ permit ip host 10.0.140.96 host 192.168.10.13
+ permit ip host 10.0.140.97 host 192.168.10.13
+ permit ip host 10.0.140.99 host 192.168.10.13
+ip access-list extended New-Arz-Portal
+ permit tcp host 10.0.50.6 host 192.168.10.135 eq 8181
+ permit tcp host 10.0.18.133 host 192.168.10.135 eq 8181
+ permit tcp host 10.0.50.67 host 192.168.10.160 eq 2009 2010
+ permit tcp host 10.0.85.208 host 192.168.10.14 eq 8443
+ permit tcp host 10.0.85.208 host 192.168.10.160 eq 2009 2010
+ permit tcp host 10.0.202.156 host 192.168.10.25 eq 8087
+ permit tcp host 10.0.85.160 host 192.168.10.25 eq 8087
+ permit ip host 10.0.50.67 host 192.168.10.14
+ permit tcp host 10.60.1.151 host 192.168.10.14 eq 8443
+ permit tcp host 10.60.1.31 host 192.168.10.14 eq 8443
+ permit tcp host 10.0.92.103 host 192.168.10.14 eq 8443
+ permit tcp host 10.0.85.23 host 192.168.10.14 eq 8443
+ permit tcp host 10.0.176.25 host 192.168.10.14 eq 8443
+ip access-list extended PSPSKish
+ permit ip host 10.0.50.67 host 192.168.10.106
+ip access-list extended Peyvand
+ permit tcp host 10.0.140.16 host 192.168.10.58 eq 8888
+ permit tcp host 10.0.140.16 host 192.168.10.53 eq 8888
+ permit tcp host 10.0.85.65 host 192.168.10.58 eq 8888
+ permit tcp host 10.0.85.65 host 192.168.10.53 eq 8888
+ permit tcp host 10.0.52.34 host 192.168.10.87
+ permit icmp host 10.0.52.34 host 192.168.10.87
+ permit tcp host 10.0.50.67 host 192.168.10.105
+ permit ip host 10.0.82.92 host 192.168.10.105
+ permit ip host 10.0.82.93 host 192.168.10.105
+ permit ip host 10.0.82.94 host 192.168.10.105
+ip access-list extended Pichak-Test
+ permit tcp host 10.0.85.104 host 192.168.10.246 eq 8080
+ permit tcp host 10.0.85.104 host 192.168.10.246 eq 443
+ permit tcp host 10.0.202.74 host 192.168.10.246 eq 443
+ permit tcp host 10.0.202.74 host 192.168.10.246 eq 8080
+ permit tcp host 10.0.202.75 host 192.168.10.246
+ permit tcp host 10.0.202.37 host 192.168.10.246 eq 443
+ permit tcp host 10.0.202.37 host 192.168.10.246 eq 8080
+ permit tcp host 10.0.202.156 host 192.168.10.246
+ permit ip host 10.0.50.6 host 192.168.10.246
+ permit ip host 10.0.50.64 host 192.168.10.246
+ permit ip host 10.0.50.67 host 192.168.10.246
+ permit tcp host 10.0.202.89 host 192.168.10.246
+ip access-list extended PinPadKey-Test
+ permit tcp host 10.0.50.64 host 192.168.10.147
+ permit ip host 10.0.50.67 host 192.168.10.147
+ permit ip host 10.0.157.10 host 192.168.10.147
+ip access-list extended Pol
+ permit ip host 10.0.85.53 host 192.168.10.196
+ permit ip host 10.0.85.53 host 192.168.10.200
+ permit ip host 10.0.202.37 host 192.168.10.200
+ permit ip host 10.0.202.74 host 192.168.10.200
+ permit ip host 10.0.203.88 host 192.168.10.200
+ permit ip host 10.0.203.88 host 192.168.10.216
+ permit ip host 10.0.202.40 host 192.168.10.216
+ permit ip host 10.0.85.53 host 192.168.10.216
+ permit ip host 10.0.202.74 host 192.168.10.216
+ permit ip host 10.0.202.37 host 192.168.10.216
+ permit ip host 10.0.202.75 host 192.168.10.200
+ permit ip host 10.0.50.67 host 192.168.10.200
+ permit ip host 10.0.50.67 host 192.168.10.216
+ permit ip host 10.0.50.64 host 192.168.10.80
+ permit ip host 10.0.202.68 host 192.168.10.80
+ permit ip host 10.0.85.53 host 192.168.10.80
+ permit ip host 10.0.202.68 host 192.168.10.200
+ permit ip host 10.0.157.10 host 192.168.10.80
+ permit ip host 10.0.50.67 host 192.168.10.80
+ permit ip host 10.60.1.163 host 192.168.10.80
+ permit ip host 10.0.50.71 host 192.168.10.80
+ permit ip host 10.0.203.82 host 192.168.10.200
+ permit ip host 10.0.203.78 host 192.168.10.200
+ permit ip host 10.0.203.78 host 192.168.10.216
+ permit ip host 10.0.203.82 host 192.168.10.216
+ permit ip host 10.0.202.78 host 192.168.10.80
+ permit ip host 10.0.202.82 host 192.168.10.80
+ permit ip host 10.0.202.166 host 192.168.10.80
+ permit ip host 10.0.202.41 host 192.168.10.80
+ permit ip host 10.0.92.159 host 192.168.10.80
+ permit ip host 10.0.92.20 host 192.168.10.80
+ permit ip host 10.0.85.18 host 192.168.10.80
+ permit ip host 10.0.202.164 host 192.168.10.80
+ip access-list extended Rima-Tokenizer
+ permit ip host 10.0.50.64 host 192.168.10.57
+ permit ip host 10.0.50.67 host 192.168.10.57
+ permit ip host 10.0.85.160 host 192.168.10.57
+ permit ip host 10.0.202.156 host 192.168.10.57
+ permit ip host 10.0.202.67 host 192.168.10.57
+ permit ip host 10.0.202.83 host 192.168.10.57
+ permit ip host 10.0.202.75 host 192.168.10.57
+ permit ip host 10.0.202.44 host 192.168.10.57
+ip access-list extended SATNA-TEST
+ permit tcp host 10.0.52.34 host 192.168.10.160 eq 2022
+ permit tcp host 10.0.85.23 host 192.168.10.160 eq 2022
+ permit tcp host 10.0.50.67 host 192.168.10.160 eq 2022
+ permit tcp host 10.0.140.45 host 192.168.10.160 eq 2022
+ permit tcp host 10.0.140.42 host 192.168.10.160 eq 2022
+ permit tcp host 10.0.140.43 host 192.168.10.160 eq 2022
+ permit tcp host 10.0.50.67 host 192.168.10.160
+ permit tcp host 10.0.85.29 host 192.168.10.160 eq 2022
+ip access-list extended SEPAM-Azmon
+ permit tcp host 10.0.90.20 host 192.168.10.104 eq 8181
+ permit tcp host 10.0.90.21 host 192.168.10.104 eq 8181
+ permit tcp host 10.0.90.22 host 192.168.10.104 eq 8181
+ permit tcp host 10.0.90.35 host 192.168.10.104 eq 8181
+ permit tcp host 10.0.90.41 host 192.168.10.104 eq 8181
+ permit tcp host 10.0.90.96 host 192.168.10.104 eq 8181
+ permit tcp host 10.0.90.111 host 192.168.10.104 eq 8181
+ permit tcp host 10.0.90.142 host 192.168.10.104 eq 8181
+ permit ip host 10.60.1.27 host 192.168.10.104
+ permit ip 10.0.9.0 0.0.0.127 host 192.168.10.104
+ permit ip host 10.0.212.25 host 192.168.10.105
+ permit tcp host 10.0.85.104 host 192.168.10.195 eq 9911
+ permit tcp host 10.0.85.104 host 192.168.10.195 eq 9913
+ permit tcp host 10.0.85.104 host 192.168.10.195 eq 9915
+ permit tcp host 10.0.202.159 host 192.168.10.195 eq 9915
+ permit icmp host 10.0.85.104 host 192.168.10.195
+ permit tcp host 10.0.202.159 host 192.168.10.195 eq 9911
+ permit ip host 10.0.109.66 host 192.168.10.104
+ permit tcp host 10.0.202.74 host 192.168.10.195 eq 9911
+ permit tcp host 10.0.212.20 host 192.168.10.195 eq 9911
+ permit tcp host 10.0.85.104 host 192.168.10.195 eq 9914
+ permit tcp host 10.0.140.42 host 192.168.10.70 eq 1919
+ permit tcp host 10.0.140.43 host 192.168.10.70 eq 1919
+ permit tcp host 10.0.140.45 host 192.168.10.70 eq 1919
+ permit ip host 10.0.74.127 host 192.168.10.105
+ permit tcp host 10.0.202.37 host 192.168.10.106 eq 45024
+ permit ip host 10.0.203.59 host 192.168.10.104
+ permit ip host 10.0.203.19 host 192.168.10.104
+ permit ip host 10.0.203.156 host 192.168.10.104
+ permit ip host 10.0.202.163 host 192.168.10.104
+ permit ip host 10.0.202.163 host 192.168.10.106
+ permit ip host 10.42.26.4 host 192.168.10.106
+ permit ip host 10.42.26.2 host 192.168.10.106
+ permit ip host 10.42.26.1 host 192.168.10.106
+ permit ip host 10.0.50.67 host 10.0.89.200
+ permit tcp host 10.0.203.172 host 192.168.10.106 eq 45024
+ permit tcp host 10.0.203.173 host 192.168.10.106 eq 45024
+ permit tcp host 10.0.203.95 host 192.168.10.106 eq 45024
+ permit tcp host 10.0.203.98 host 192.168.10.106 eq 45024
+ permit tcp host 10.0.203.31 host 192.168.10.106 eq 45024
+ip access-list extended SEPAM-SandBox
+ permit ip host 10.0.50.64 host 192.168.10.32
+ permit ip host 10.0.50.67 host 192.168.10.32
+ permit ip host 10.0.85.160 host 192.168.10.32
+ permit ip host 10.0.202.74 host 192.168.10.32
+ permit ip host 10.0.202.156 host 192.168.10.32
+ permit ip host 10.0.202.89 host 192.168.10.32
+ip access-list extended SEPAM-Test
+ permit ip host 10.0.50.64 host 192.168.10.105
+ip access-list extended Sayad
+ permit tcp host 10.0.85.53 host 192.168.10.54 eq 4000 7000 7002
+ permit tcp host 10.0.204.52 host 192.168.10.54 eq 4000 7000 7002
+ permit tcp host 10.0.204.25 host 192.168.10.54 eq 4000 7000 7002
+ permit tcp host 10.0.213.27 host 192.168.10.54 eq 4000 7000 7002
+ permit tcp host 10.0.74.73 host 192.168.10.54 eq 4000 7000 7002
+ permit tcp host 10.0.202.37 host 192.168.10.54 eq 4000 7000 7002
+ permit tcp host 10.0.212.38 host 192.168.10.54 eq ftp 4000 7000 7002
+ permit tcp host 10.0.92.141 host 192.168.10.54 eq ftp
+ permit tcp host 10.0.109.152 host 192.168.10.54
+ permit tcp host 10.0.92.141 host 192.168.10.54
+ permit tcp host 10.0.3.188 host 192.168.10.54
+ permit tcp host 10.0.85.104 host 192.168.10.54 eq 4030
+ permit tcp host 10.0.74.182 host 192.168.10.54 eq 4030
+ permit tcp host 10.0.212.20 host 192.168.10.54 eq 4030
+ permit tcp host 10.0.202.160 host 192.168.10.54 eq 4030
+ permit tcp host 10.0.202.69 host 192.168.10.54 eq 4030
+ permit tcp host 10.0.202.73 host 192.168.10.54 eq 4030
+ permit tcp host 10.0.57.16 host 192.168.10.54 eq 4030
+ permit tcp host 10.0.57.88 host 192.168.10.54 eq 4030
+ permit tcp host 10.0.57.87 host 192.168.10.54 eq 4030
+ permit tcp host 10.0.74.75 host 192.168.10.54 eq 4030
+ permit tcp host 10.0.74.71 host 192.168.10.54 eq 4030
+ permit tcp host 10.0.74.127 host 192.168.10.54 eq 4030
+ permit ip host 10.0.50.67 host 192.168.10.54
+ip access-list extended ShebaEstelam1.8
+ permit ip host 10.0.50.64 host 192.168.10.38
+ permit ip host 10.0.85.18 host 192.168.10.38
+ permit ip host 10.0.157.10 host 192.168.10.36
+ permit ip host 10.0.50.67 host 192.168.10.38
+ip access-list extended ShebaEstelamTest
+ permit tcp host 10.0.85.114 host 192.168.10.85 eq 443 8443
+ permit tcp host 10.0.85.160 host 192.168.10.140
+ permit tcp host 10.0.202.37 host 192.168.10.140
+ permit ip host 10.0.50.67 host 192.168.10.140
+ permit ip host 10.0.157.10 host 192.168.10.101
+ permit ip host 10.0.50.67 host 192.168.10.101
+ip access-list extended Sima-Test
+ permit ip host 10.0.50.67 host 192.168.10.132
+ permit ip host 10.0.140.42 host 192.168.10.132
+ permit ip host 10.0.140.43 host 192.168.10.132
+ permit ip host 10.0.140.45 host 192.168.10.132
+ip access-list extended Test
+ permit ip any host 192.168.218.30 log
+ permit ip host 192.168.119.50 any log
+ permit ip host 192.168.10.50 any log
+ permit ip any any
+!
+logging history size 250
+logging trap notifications
+logging 1.1.1.1
+access-list 198 deny   ip any any fragments
+access-list 198 permit udp any any eq 18999
+access-list 199 permit icmp any any echo
+access-list 199 permit icmp any any echo-reply
+snmp-server group LMS v3 priv read myview write myview access SNMP-WRITE
+snmp-server group NMS v3 priv access SNMP-READ
+snmp-server view myview mib-2 included
+snmp-server view myview system included
+snmp-server view myview cisco included
+snmp-server ifindex persist
+!
+!
+!
+!
+control-plane
+ service-policy input drop-udp
+!
+!
+banner motd 
+                                        ===
+                                       -+ +-
+                                       | | |
+                                    <--\ | /-->
+                                   ##| ||||| |##
+                                  ###| |+++| |###
+                                 /____\\ | //____\ 
+                                   <###\|||/###>   
+                                    +====+====+    
+                                    | WAN-BKI |    
+                                    +===+=+===+    
+                                        +=+        
+                              Keshavarzi Bank Network
+
+WARNING: Access is restricted to authorized users only.
+         Unauthorized access is a violation of state , civil and criminal laws.
+          
+          
+          
+          
+          
+          
+
+privilege exec level 2 configure terminal
+privilege exec level 2 configure
+privilege exec level 3 terminal monitor
+privilege exec level 3 terminal
+privilege exec all level 2 show
+!
+line con 0
+ authorization commands 0 CACS
+ authorization commands 1 CACS
+ authorization commands 3 CACS
+ authorization commands 15 CACS
+ authorization exec CACS
+ login authentication CACS
+line aux 0
+line vty 0 4
+ access-class TELNET-ACCESS in vrf-also
+ privilege level 15
+ authorization commands 0 CACS
+ authorization commands 1 CACS
+ authorization commands 2 CACS
+ authorization commands 3 CACS
+ authorization commands 15 CACS
+ authorization exec CACS
+ accounting commands 15 CACS
+ accounting exec CACS
+ login authentication CACS
+ transport input telnet ssh
+ transport output telnet ssh
+line vty 5 15
+ access-class TELNET-ACCESS in vrf-also
+ privilege level 15
+ authorization commands 0 CACS
+ authorization commands 1 CACS
+ authorization commands 2 CACS
+ authorization commands 3 CACS
+ authorization commands 15 CACS
+ authorization exec CACS
+ accounting commands 15 CACS
+ accounting exec CACS
+ login authentication CACS
+ transport input ssh
+ transport output ssh
+!
+scheduler max-task-time 5000
+scheduler allocate 20000 1000
+ntp authenticate
+ntp clock-period 17178244
+end

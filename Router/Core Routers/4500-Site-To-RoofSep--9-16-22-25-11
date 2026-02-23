@@ -1,0 +1,439 @@
+
+!
+! Last configuration change at 16:22:23 Tehran Tue Sep 9 2025 by m-hossain
+! NVRAM config last updated at 16:22:23 Tehran Tue Sep 9 2025 by m-hossain
+!
+version 12.2
+no service pad
+service timestamps debug datetime msec
+service timestamps log datetime localtime
+service password-encryption
+service compress-config
+!
+hostname 4500-Site-To-Roof
+!
+boot-start-marker
+boot system flash bootflash:cat4500-entservicesk9-mz.122-50.SG1.bin
+boot-end-marker
+!
+enable secret 5 $1$3P/H$9N/KZAKrmtd8wg1beUSGt1
+!
+username bkroot privilege 15 secret 5 $1$21ME$zhrc1Zi2adQy3Z8O8TbLw.
+username reza privilege 15 secret 5 $1$k921$S2AfS8YvsRQnhqJZfY9Tb.
+ethernet cfm enable
+aaa new-model
+!
+!
+aaa group server tacacs+ ACSServers
+ server 10.0.51.56
+ server 10.0.51.57
+ ip vrf forwarding mgmtVrf
+ ip tacacs source-interface FastEthernet1
+!
+aaa authentication login CACS group ACSServers local
+aaa authentication enable default group ACSServers enable
+aaa authorization console
+aaa authorization config-commands
+aaa authorization exec CACS group ACSServers local 
+aaa accounting exec CACS start-stop group ACSServers
+!
+!
+!
+aaa session-id common
+clock timezone Tehran 3 30
+ip subnet-zero
+ip domain-name agri-bank.com
+!
+ip vrf mgmtVrf
+!
+!
+!
+!
+power redundancy-mode redundant
+!
+!
+!
+!
+!
+archive
+ log config
+  hidekeys
+ path tftp://10.0.51.40/Core/$h
+ write-memory
+!
+spanning-tree mode pvst
+spanning-tree extend system-id
+spanning-tree vlan 238 priority 61440
+!
+vlan internal allocation policy ascending
+!
+ip tftp source-interface FastEthernet1
+ip ssh version 2
+!
+!
+interface Port-channel1
+ switchport
+ switchport trunk encapsulation dot1q
+ switchport trunk allowed vlan 1-99,105,107-4094
+ switchport mode trunk
+!
+interface FastEthernet1
+ ip vrf forwarding mgmtVrf
+ ip address 10.0.51.20 255.255.255.0
+ speed auto
+ duplex auto
+!
+interface GigabitEthernet1/1
+ switchport access vlan 3
+ switchport mode access
+!
+interface GigabitEthernet1/2
+ description Description: ** IPPone-Dakal -> OOB-251 **
+ switchport access vlan 51
+ switchport mode access
+ switchport voice vlan 44
+ spanning-tree portfast
+!
+interface GigabitEthernet1/3
+ description ** HTSC-Chamran **
+ switchport access vlan 3
+ switchport mode access
+ speed 100
+!
+interface GigabitEthernet1/4
+ switchport access vlan 51
+ switchport mode access
+ switchport voice vlan 44
+!
+interface GigabitEthernet1/5
+ description ** Gilanet **
+ switchport access vlan 5
+ switchport mode access
+!
+interface GigabitEthernet1/6
+ description ** APN-Mobinnet **
+ switchport access vlan 803
+ switchport mode access
+!
+interface GigabitEthernet1/7
+ description ** HiWeb-HUB-2821 **
+ switchport access vlan 7
+ switchport mode access
+!
+interface GigabitEthernet1/8
+ description ** APN-INT-4ESW-2ndPort **
+ switchport mode access
+!
+interface GigabitEthernet1/9
+ description ** APN-INT-4ESW-3rdPort **
+ switchport access vlan 7
+ switchport mode access
+!
+interface GigabitEthernet1/10
+ description ** RahyabPayamGostaran **
+ switchport access vlan 10
+ switchport mode access
+!
+interface GigabitEthernet1/11
+ description ** VJahad-APN **
+ switchport access vlan 238
+ switchport mode access
+!
+interface GigabitEthernet1/12
+ description ** Iran Solar **
+ switchport access vlan 122
+!
+interface GigabitEthernet1/13
+ switchport access vlan 13
+ switchport mode access
+!
+interface GigabitEthernet1/14
+ switchport access vlan 14
+ switchport mode access
+!
+interface GigabitEthernet1/15
+ switchport mode access
+ spanning-tree portfast
+!
+interface GigabitEthernet1/16
+ switchport access vlan 16
+ switchport mode access
+!
+interface GigabitEthernet1/17
+ switchport access vlan 17
+ switchport mode access
+ spanning-tree portfast
+!
+interface GigabitEthernet1/18
+ description ** Wireless EDGE-ISC-SW-Out-P5 **
+ switchport access vlan 17
+ switchport mode access
+ spanning-tree portfast
+!
+interface GigabitEthernet1/19
+ switchport access vlan 19
+ switchport mode access
+ spanning-tree portfast
+!
+interface GigabitEthernet1/20
+ switchport access vlan 155
+ switchport mode access
+!
+interface GigabitEthernet1/21
+!
+interface GigabitEthernet1/22
+ switchport access vlan 22
+ switchport mode access
+!
+interface GigabitEthernet1/23
+ switchport access vlan 153
+!
+interface GigabitEthernet1/24
+!
+interface GigabitEthernet1/25
+ switchport access vlan 25
+ switchport mode access
+ spanning-tree portfast
+!
+interface GigabitEthernet1/26
+ switchport trunk allowed vlan 153
+ shutdown
+!
+interface GigabitEthernet1/27
+!
+interface GigabitEthernet1/28
+ description ** MPLS-BimehIran **
+ switchport access vlan 101
+ switchport mode access
+ spanning-tree portfast
+!
+interface GigabitEthernet1/29
+ switchport access vlan 29
+ switchport mode access
+!
+interface GigabitEthernet1/30
+ switchport access vlan 30
+ switchport mode access
+!
+interface GigabitEthernet1/31
+!
+interface GigabitEthernet1/32
+ switchport access vlan 32
+ switchport mode access
+ spanning-tree portfast
+!
+interface GigabitEthernet1/33
+ switchport access vlan 33
+ switchport mode access
+!
+interface GigabitEthernet1/34
+ switchport access vlan 34
+ switchport mode access
+!
+interface GigabitEthernet1/35
+ switchport access vlan 35
+ switchport mode access
+!
+interface GigabitEthernet1/36
+ switchport access vlan 36
+ switchport mode access
+!
+interface GigabitEthernet1/37
+ switchport access vlan 17
+ switchport mode access
+ spanning-tree portfast
+!
+interface GigabitEthernet1/38
+ switchport access vlan 38
+ switchport mode access
+!
+interface GigabitEthernet1/39
+ description ** Shaparak **
+ switchport access vlan 102
+ switchport mode access
+ spanning-tree portfast
+!
+interface GigabitEthernet1/40
+!
+interface GigabitEthernet1/41
+ description ** MPLS-Main-Trunk-MPLS-PSP&Sabt&NIX&Shaparak **
+ switchport trunk encapsulation dot1q
+ switchport trunk allowed vlan 101-104,106
+ switchport mode trunk
+!
+interface GigabitEthernet1/42
+ switchport mode access
+ spanning-tree portfast
+!
+interface GigabitEthernet1/43
+ description ** MPLS-PSP 6M **
+ switchport access vlan 101
+ switchport mode access
+ spanning-tree portfast
+!
+interface GigabitEthernet1/44
+!
+interface GigabitEthernet1/45
+ description ** Uplink-to-Roof-Dakal **
+ switchport trunk encapsulation dot1q
+ switchport trunk allowed vlan 1-99,105,107-4094
+ switchport mode trunk
+ channel-group 1 mode on
+!
+interface GigabitEthernet1/46
+ switchport mode access
+ shutdown
+ spanning-tree portfast
+!
+interface GigabitEthernet1/47
+ switchport trunk encapsulation dot1q
+ switchport trunk allowed vlan 1-99,105,107-4094
+ switchport mode trunk
+ shutdown
+ channel-group 1 mode on
+!
+interface GigabitEthernet1/48
+ switchport trunk encapsulation dot1q
+ switchport trunk allowed vlan 1-99,105,107-4094
+ switchport mode trunk
+ shutdown
+ channel-group 1 mode on
+!
+interface Vlan1
+ no ip address
+ no ip route-cache cef
+ no ip route-cache
+ shutdown
+!
+interface Vlan17
+ ip address 10.10.10.100 255.255.255.0
+ no ip route-cache cef
+ no ip route-cache
+ shutdown
+!
+interface Vlan155
+ no ip address
+ shutdown
+!
+interface Vlan666
+ ip address 6.6.6.1 255.255.255.252
+!
+ip default-gateway 10.0.153.1
+ip route 172.29.0.64 255.255.255.252 172.29.0.69
+ip route vrf mgmtVrf 10.0.0.0 255.0.0.0 10.0.51.1
+no ip http server
+no ip http secure-server
+!
+ip tacacs source-interface FastEthernet1
+!
+ip access-list standard SNMP-READ
+ permit 10.0.50.0 0.0.1.255
+ip access-list standard SNMP-WRITE
+ permit 10.0.51.49
+ permit 10.0.51.48
+ permit 10.0.51.50
+ip access-list standard TELNET-ACCESS
+ permit 10.0.112.53
+ permit 10.0.162.21
+ permit 10.0.201.36
+ permit 10.0.201.62
+ permit 10.0.50.0 0.0.1.255
+ permit 10.0.152.0 0.0.1.255
+ permit 10.0.162.0 0.0.0.255
+ deny   any log
+ip access-list standard TELNET_ACCESS
+ remark ----------ALPHA Team----------
+ permit 10.0.201.36
+ permit 10.0.201.62
+!
+!
+no logging trap
+logging 10.0.51.42
+logging 10.0.51.63
+logging host 10.0.51.25 vrf mgmtVrf
+logging host 10.0.51.63 vrf mgmtVrf
+logging host 10.0.51.42 vrf mgmtVrf
+!
+!
+snmp-server group LMS v3 priv read myview write myview access SNMP-WRITE
+snmp-server group NMS v3 auth notify *tv.FFFFFFFF.FFFFFFFF.FFFFFFFF.FFFFFFFF7F 
+snmp-server group NMS v3 priv access SNMP-READ
+snmp-server view myview mib-2 included
+snmp-server view myview system included
+snmp-server view myview cisco included
+snmp-server host 10.0.51.32 vrf mgmtVrf version 3 auth nms-net 
+snmp-server host 10.0.51.58 vrf mgmtVrf version 3 auth nms-net 
+snmp-server host 10.0.51.60 vrf mgmtVrf version 3 auth nms-net 
+snmp-server host 10.0.51.72 vrf mgmtVrf version 3 auth nms-net 
+snmp ifmib ifindex persist
+tacacs-server host 10.0.51.56 key 7 0132154A145A555F
+tacacs-server host 10.0.51.57 key 7 096D5D4756544442
+no tacacs-server directed-request
+!
+control-plane
+!
+banner motd 
+
+
+
+
+       ===                                                           ===
+      -+ +-                                                         -+ +-
+      | | |                Keshavarzi Bank Network                  | | |
+   <--\ | /-->                                                   <--\ | /-->
+  ##| ||||| |##                                                 ##| ||||| |##
+ ###| |+++| |###                                               ###| |+++| |###
+/____\\ | //____\                 WARNING:                    /____\\ | //____\
+  <###\|||/###>                                                 <###\|||/###>
+   +====+====+   Access is restricted to authorized users only.  +====+====+
+   | WAN-BKI |    Unauthorized access is a violation of state,   | WAN-BKI |
+   +===+=+===+             civil and criminal laws.              +===+=+===+
+       +=+                                                           +=+
+
+
+
+
+
+
+privilege interface level 3 shutdown
+privilege interface level 3 no shutdown
+privilege interface level 3 no
+privilege configure level 3 interface
+privilege exec level 3 reload
+privilege exec level 3 show
+privilege exec level 3 traceroute
+privilege exec level 3 ping
+privilege exec level 3 configure terminal
+privilege exec level 3 configure
+privilege exec level 3 terminal monitor
+privilege exec level 3 terminal
+!
+line con 0
+ authorization exec CACS
+ login authentication CACS
+ stopbits 1
+line vty 0 4
+ access-class TELNET-ACCESS in
+ privilege level 15
+ authorization exec CACS
+ accounting commands 15 CACS
+ login authentication CACS
+ transport input ssh
+ transport output all
+line vty 5 15
+ access-class TELNET-ACCESS in
+ privilege level 15
+ authorization exec CACS
+ login authentication CACS
+ transport input ssh
+ transport output all
+!
+scheduler max-task-time 5000
+ntp authentication-key 1 md5 045A0C14066C4E4F0712 7
+ntp authenticate
+ntp trusted-key 1
+ntp clock-period 17179440
+ntp source FastEthernet1
+ntp server 10.0.51.27
+ntp server vrf mgmtVrf 10.0.51.27
+end

@@ -1,0 +1,772 @@
+
+!
+! Last configuration change at 08:56:46 Tehran Wed Feb 11 2026 by m-hossain
+! NVRAM config last updated at 12:00:37 Tehran Thu Feb 19 2026 by pyth0nuser
+!
+version 17.3
+service timestamps debug datetime msec
+service timestamps log datetime localtime
+service password-encryption
+service compress-config
+service call-home
+platform punt-keepalive disable-kernel-core
+!
+hostname EXT-AGG
+!
+!
+vrf definition Mgmt-vrf
+ !
+ address-family ipv4
+ exit-address-family
+ !
+ address-family ipv6
+ exit-address-family
+!
+!
+aaa new-model
+!
+!
+aaa group server tacacs+ ACSServers
+ server name ACS1
+ server name ACS2
+ ip vrf forwarding Mgmt-vrf
+ ip tacacs source-interface GigabitEthernet0/0
+!
+aaa authentication login CACS group ACSServers local
+aaa authentication enable default group ACSServers enable
+aaa authorization console
+aaa authorization config-commands
+aaa authorization exec CACS group ACSServers local 
+aaa accounting exec CACS start-stop group ACSServers
+!
+!
+!
+!
+!
+!
+aaa session-id common
+clock timezone Tehran 3 30
+switch 1 provision c9500-24y4c
+switch 2 provision c9500-24y4c
+boot system bootflash:packages.conf
+stackwise-virtual
+ domain 100
+!
+no ip domain lookup
+ip domain name agri-bank.com
+!
+!
+!
+login on-success log
+!
+!
+!
+!
+!
+!
+!
+vtp mode transparent
+no device-tracking logging theft
+!
+crypto pki trustpoint SLA-TrustPoint
+ enrollment pkcs12
+ revocation-check crl
+!
+crypto pki trustpoint TP-self-signed-4021631313
+ enrollment selfsigned
+ subject-name cn=IOS-Self-Signed-Certificate-4021631313
+ revocation-check none
+ rsakeypair TP-self-signed-4021631313
+!
+!
+crypto pki certificate chain SLA-TrustPoint
+ certificate ca 01 nvram:CiscoLicensi#1CA.cer
+crypto pki certificate chain TP-self-signed-4021631313
+ certificate self-signed 01 nvram:IOS-Self-Sig#2.cer
+!
+!
+port-channel load-balance src-dst-ip
+license boot level network-advantage addon dna-advantage
+license smart transport off
+!
+!
+diagnostic bootup level minimal
+!
+spanning-tree mode pvst
+spanning-tree extend system-id
+spanning-tree vlan 157 priority 4096
+archive
+ path tftp://10.0.51.40/Core/$h
+ write-memory
+memory free low-watermark processor 290401
+!
+username bkroot privilege 15 secret 9 $9$wJ3NlMfjoYqxsk$G12Bu7g9qAvMDumcXoLX6dNGew4hCThm3CzRUDIj49E
+!
+redundancy
+ mode sso
+!
+!
+!
+!
+!
+!
+transceiver type all
+ monitoring
+!
+vlan 110 
+!
+vlan 150
+ name IrmaATM
+!
+vlan 154
+ name EDGE-2-NAT
+!
+vlan 157
+ name EXT-Block
+!
+vlan 400
+ name BashgahMehr78
+!
+vlan 950
+ name DolatClients
+!
+!
+class-map match-any system-cpp-police-ewlc-control
+  description EWLC Control 
+class-map match-any system-cpp-police-topology-control
+  description Topology control
+class-map match-any system-cpp-police-sw-forward
+  description Sw forwarding, L2 LVX data packets, LOGGING, Transit Traffic
+class-map match-any system-cpp-default
+  description EWLC Data, Inter FED Traffic 
+class-map match-any system-cpp-police-sys-data
+  description Openflow, Exception, EGR Exception, NFL Sampled Data, RPF Failed
+class-map match-any system-cpp-police-punt-webauth
+  description Punt Webauth
+class-map match-any system-cpp-police-l2lvx-control
+  description L2 LVX control packets
+class-map match-any system-cpp-police-forus
+  description Forus Address resolution and Forus traffic
+class-map match-any system-cpp-police-multicast-end-station
+  description MCAST END STATION
+class-map match-any system-cpp-police-high-rate-app
+  description High Rate Applications 
+class-map match-any system-cpp-police-multicast
+  description MCAST Data
+class-map match-any system-cpp-police-l2-control
+  description L2 control
+class-map match-any system-cpp-police-dot1x-auth
+  description DOT1X Auth
+class-map match-any system-cpp-police-data
+  description ICMP redirect, ICMP_GEN and BROADCAST
+class-map match-any system-cpp-police-stackwise-virt-control
+  description Stackwise Virtual OOB
+class-map match-any non-client-nrt-class
+class-map match-any system-cpp-police-routing-control
+  description Routing control and Low Latency
+class-map match-any system-cpp-police-protocol-snooping
+  description Protocol snooping
+class-map match-any system-cpp-police-dhcp-snooping
+  description DHCP snooping
+class-map match-any system-cpp-police-ios-routing
+  description L2 control, Topology control, Routing control, Low Latency
+class-map match-any system-cpp-police-system-critical
+  description System Critical and Gold Pkt
+class-map match-any system-cpp-police-ios-feature
+  description ICMPGEN,BROADCAST,ICMP,L2LVXCntrl,ProtoSnoop,PuntWebauth,MCASTData,Transit,DOT1XAuth,Swfwd,LOGGING,L2LVXData,ForusTraffic,ForusARP,McastEndStn,Openflow,Exception,EGRExcption,NflSampled,RpfFailed
+!
+policy-map system-cpp-policy
+!
+! 
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+interface Port-channel1
+ description ** WANEdge-PO **
+ switchport
+ switchport trunk allowed vlan 150,157,400
+ switchport mode trunk
+!
+interface Port-channel2
+ description ** ISC-EDGE-SW-9300-PO **
+ switchport
+ switchport mode trunk
+!
+interface Port-channel6
+ description ** NIBN-PO **
+ switchport
+ switchport trunk allowed vlan 157
+ switchport mode trunk
+!
+interface Port-channel9
+ description ** PBN **
+ switchport
+ switchport trunk allowed vlan 157
+ switchport mode trunk
+!
+interface Port-channel10
+ description ** EXT-Edge-PO **
+ switchport
+ switchport trunk allowed vlan 157,950
+ switchport mode trunk
+!
+interface Port-channel11
+ description ** INT-PO **
+ switchport
+ switchport trunk allowed vlan 157
+ switchport mode trunk
+!
+interface Port-channel12
+ description ** BKC-PO **
+ switchport
+ switchport trunk allowed vlan 157
+ switchport mode trunk
+!
+interface Port-channel13
+ description ** PSP-PO **
+ switchport
+ switchport trunk allowed vlan 157
+ switchport mode trunk
+!
+interface Port-channel14
+ description ** NIBN-PO **
+ switchport
+ switchport trunk allowed vlan 157
+ switchport mode trunk
+!
+interface Port-channel15
+ description ** CBI-PO **
+ switchport
+ switchport trunk allowed vlan 157
+ switchport mode trunk
+!
+interface Port-channel16
+ description ** VezaratJahad-PO **
+ switchport
+ switchport access vlan 157
+ switchport mode access
+!
+interface Port-channel17
+ description ** MCI/VezaratBazargani-PO **
+ switchport
+ switchport access vlan 157
+ switchport mode access
+!
+interface Port-channel18
+ description ** Edge-2-NAT **
+ switchport
+ switchport trunk allowed vlan 154,157
+ switchport mode trunk
+!
+interface Port-channel19
+ description ** ISC-EDGE-2 **
+ switchport
+ switchport trunk allowed vlan 150,154
+ switchport mode trunk
+!
+interface GigabitEthernet0/0
+ description OOB-MGMT-intf
+ vrf forwarding Mgmt-vrf
+ ip address 10.0.51.5 255.255.255.0
+ negotiation auto
+!
+interface TwentyFiveGigE1/0/1
+ description ** EXT-Edge-PO **
+ switchport
+ switchport trunk allowed vlan 157,950
+ switchport mode trunk
+ channel-protocol lacp
+ channel-group 10 mode active
+!
+interface TwentyFiveGigE1/0/2
+ description ** INT-PO **
+ switchport
+ switchport trunk allowed vlan 157
+ switchport mode trunk
+ channel-protocol lacp
+ channel-group 11 mode active
+!
+interface TwentyFiveGigE1/0/3
+ description ** BKC-PO **
+ switchport
+ switchport trunk allowed vlan 157
+ switchport mode trunk
+ channel-protocol lacp
+ channel-group 12 mode active
+!
+interface TwentyFiveGigE1/0/4
+ description ** PSP-PO **
+ switchport
+ switchport trunk allowed vlan 157
+ switchport mode trunk
+ channel-protocol lacp
+ channel-group 13 mode active
+!
+interface TwentyFiveGigE1/0/5
+ description ** PBN **
+ switchport
+ switchport trunk allowed vlan 157
+ switchport mode trunk
+ channel-protocol lacp
+ channel-group 9 mode active
+!
+interface TwentyFiveGigE1/0/6
+ description ** Tarasht-DarkFiber **
+ switchport
+ switchport access vlan 157
+ switchport mode access
+!
+interface TwentyFiveGigE1/0/7
+ switchport
+!
+interface TwentyFiveGigE1/0/8
+ switchport
+!
+interface TwentyFiveGigE1/0/9
+ switchport
+!
+interface TwentyFiveGigE1/0/10
+ switchport
+!
+interface TwentyFiveGigE1/0/11
+ description ** ISC-EDGE-SW-9300-PO **
+ switchport
+ switchport mode trunk
+ channel-protocol lacp
+ channel-group 2 mode active
+!
+interface TwentyFiveGigE1/0/12
+ description ** NIBN-PO **
+ switchport
+ switchport trunk allowed vlan 157
+ switchport mode trunk
+ channel-group 14 mode on
+!
+interface TwentyFiveGigE1/0/13
+ description ** CBI-PO **
+ switchport
+ switchport trunk allowed vlan 157
+ switchport mode trunk
+ channel-group 15 mode on
+!
+interface TwentyFiveGigE1/0/14
+ description ** VezaratJahad-PO **
+ switchport
+ switchport access vlan 157
+ switchport mode access
+ channel-group 16 mode on
+!
+interface TwentyFiveGigE1/0/15
+ description ** MCI/VezaratBazargani-PO **
+ switchport
+ switchport access vlan 157
+ switchport mode access
+ channel-group 17 mode on
+!
+interface TwentyFiveGigE1/0/16
+ description ** ISCTest **
+ switchport
+ switchport access vlan 157
+ switchport mode access
+!
+interface TwentyFiveGigE1/0/17
+ description ** RotbehBandi **
+ switchport
+ switchport access vlan 157
+ switchport mode access
+!
+interface TwentyFiveGigE1/0/18
+ description ** BashgahMehr78 **
+ switchport
+ switchport access vlan 400
+ switchport mode access
+!
+interface TwentyFiveGigE1/0/19
+ description ** Dowlat-Router **
+ switchport
+ switchport access vlan 950
+ switchport mode access
+!
+interface TwentyFiveGigE1/0/20
+ description ** toDolatClients **
+ switchport
+ switchport access vlan 950
+ switchport mode access
+!
+interface TwentyFiveGigE1/0/21
+ description ** Edge-2-NAT **
+ switchport
+ switchport trunk allowed vlan 154,157
+ switchport mode trunk
+ channel-protocol lacp
+ channel-group 18 mode active
+!
+interface TwentyFiveGigE1/0/22
+ description ** ISC-EDGE-2 **
+ switchport
+ switchport trunk allowed vlan 150,154
+ switchport mode trunk
+ channel-protocol lacp
+ channel-group 19 mode active
+!
+interface TwentyFiveGigE1/0/23
+ switchport
+!
+interface TwentyFiveGigE1/0/24
+ description ** WANEdge-PO **
+ switchport
+ switchport trunk allowed vlan 150,157,400
+ switchport mode trunk
+ channel-protocol lacp
+ channel-group 1 mode active
+!
+interface HundredGigE1/0/25
+ description SVL-2x40G
+!
+interface HundredGigE1/0/26
+ description DAD-1x40G
+!
+interface HundredGigE1/0/27
+ description SVL-2x40G
+!
+interface HundredGigE1/0/28
+ switchport
+!
+interface TwentyFiveGigE2/0/1
+ description ** EXT-Edge-PO **
+ switchport
+ switchport trunk allowed vlan 157,950
+ switchport mode trunk
+ channel-protocol lacp
+ channel-group 10 mode active
+!
+interface TwentyFiveGigE2/0/2
+ description ** INT-PO **
+ switchport
+ switchport trunk allowed vlan 157
+ switchport mode trunk
+ channel-protocol lacp
+ channel-group 11 mode active
+!
+interface TwentyFiveGigE2/0/3
+ description ** BKC-PO **
+ switchport
+ switchport trunk allowed vlan 157
+ switchport mode trunk
+ channel-protocol lacp
+ channel-group 12 mode active
+!
+interface TwentyFiveGigE2/0/4
+ description ** PSP-PO **
+ switchport
+ switchport trunk allowed vlan 157
+ switchport mode trunk
+ channel-protocol lacp
+ channel-group 13 mode active
+!
+interface TwentyFiveGigE2/0/5
+ description ** PBN **
+ switchport
+ switchport trunk allowed vlan 157
+ switchport mode trunk
+ channel-protocol lacp
+ channel-group 9 mode active
+!
+interface TwentyFiveGigE2/0/6
+ switchport
+!
+interface TwentyFiveGigE2/0/7
+ switchport
+!
+interface TwentyFiveGigE2/0/8
+ switchport
+!
+interface TwentyFiveGigE2/0/9
+ switchport
+!
+interface TwentyFiveGigE2/0/10
+ switchport
+!
+interface TwentyFiveGigE2/0/11
+ description ** ISC-EDGE-SW-9300-PO **
+ switchport
+ switchport mode trunk
+ channel-protocol lacp
+ channel-group 2 mode active
+!
+interface TwentyFiveGigE2/0/12
+ description ** NIBN-PO **
+ switchport
+ switchport trunk allowed vlan 157
+ switchport mode trunk
+ channel-group 14 mode on
+!
+interface TwentyFiveGigE2/0/13
+ description ** CBI-PO **
+ switchport
+ switchport trunk allowed vlan 157
+ switchport mode trunk
+ channel-group 15 mode on
+!
+interface TwentyFiveGigE2/0/14
+ description ** VezaratJahad-PO **
+ switchport
+ switchport access vlan 157
+ switchport mode access
+ channel-group 16 mode on
+!
+interface TwentyFiveGigE2/0/15
+ description ** MCI/VezaratBazargani-PO **
+ switchport
+ switchport access vlan 157
+ switchport mode access
+ channel-group 17 mode on
+!
+interface TwentyFiveGigE2/0/16
+ description ** ISCTest **
+ switchport
+ switchport access vlan 157
+ switchport mode access
+!
+interface TwentyFiveGigE2/0/17
+ description ** RotbehBandi **
+ switchport
+ switchport access vlan 157
+ switchport mode access
+!
+interface TwentyFiveGigE2/0/18
+ description ** BashgahMehr78 **
+ switchport
+ switchport access vlan 400
+ switchport mode access
+!
+interface TwentyFiveGigE2/0/19
+ description ** Dowlat-Router **
+ switchport
+ switchport access vlan 950
+ switchport mode access
+!
+interface TwentyFiveGigE2/0/20
+ description ** toDolatClients **
+ switchport
+ switchport access vlan 950
+ switchport mode access
+!
+interface TwentyFiveGigE2/0/21
+ description ** Edge-2-NAT **
+ switchport
+ switchport trunk allowed vlan 154,157
+ switchport mode trunk
+ channel-protocol lacp
+ channel-group 18 mode active
+!
+interface TwentyFiveGigE2/0/22
+ description ** ISC-EDGE-2 **
+ switchport
+ switchport trunk allowed vlan 150,154
+ switchport mode trunk
+ channel-protocol lacp
+ channel-group 19 mode active
+!
+interface TwentyFiveGigE2/0/23
+ switchport
+!
+interface TwentyFiveGigE2/0/24
+ description ** WANEdge-PO **
+ switchport
+ switchport trunk allowed vlan 150,157,400
+ switchport mode trunk
+ channel-protocol lacp
+ channel-group 1 mode active
+ lacp port-priority 0
+!
+interface HundredGigE2/0/25
+ description SVL-2x40G
+!
+interface HundredGigE2/0/26
+ description DAD-1x40G
+!
+interface HundredGigE2/0/27
+ description SVL-2x40G
+!
+interface HundredGigE2/0/28
+ switchport
+!
+interface Vlan1
+ no ip address
+ shutdown
+!
+interface Vlan154
+ ip address 10.0.154.25 255.255.255.0
+!
+interface Vlan157
+ ip address 10.0.157.25 255.255.255.0
+!
+ip default-gateway 10.0.157.1
+ip forward-protocol nd
+no ip http server
+no ip http secure-server
+ip route 0.0.0.0 0.0.0.0 10.0.157.1
+ip route vrf Mgmt-vrf 10.0.50.0 255.255.254.0 10.0.51.1
+ip ssh version 2
+!
+!
+ip access-list standard SNMP-READ
+ 10 permit 10.0.50.0 0.0.1.255
+ip access-list standard SNMP-WRITE
+ 10 permit 10.0.51.49
+ 20 permit 10.0.51.48
+ 30 permit 10.0.51.50
+ip access-list standard TELNET-ACCESS
+ 10 permit 10.0.50.0 0.0.1.255
+ 20 deny   any log
+!
+ip access-list extended MyCAP
+ 10 permit ip any 192.168.10.0 0.0.0.255
+ 20 permit ip any 192.168.15.0 0.0.0.255
+ 30 permit ip any 192.168.59.0 0.0.0.255
+ 40 permit ip any 192.168.65.0 0.0.0.255
+ 50 permit ip any 192.168.66.0 0.0.0.255
+ 60 permit ip any 192.168.72.0 0.0.0.255
+ 70 permit ip any 192.168.106.0 0.0.0.255
+ 80 permit ip any 192.168.199.0 0.0.0.255
+ 90 permit ip 192.168.15.0 0.0.0.255 any
+ 100 permit ip 192.168.10.0 0.0.0.255 any
+ 110 permit ip 192.168.59.0 0.0.0.255 any
+ 120 permit ip 192.168.65.0 0.0.0.255 any
+ 130 permit ip 192.168.66.0 0.0.0.255 any
+ 140 permit ip 192.168.72.0 0.0.0.255 any
+ 150 permit ip 192.168.106.0 0.0.0.255 any
+ 160 permit ip 192.168.199.0 0.0.0.255 any
+ 170 permit ip any 10.0.88.0 0.0.0.255
+ 180 permit ip 10.0.88.0 0.0.0.255 any
+!
+logging trap notifications
+logging source-interface GigabitEthernet0/0 vrf Mgmt-vrf
+logging host 10.0.51.58 vrf Mgmt-vrf
+logging host 10.0.51.25 vrf Mgmt-vrf
+logging host 10.0.51.63 vrf Mgmt-vrf
+!
+!
+snmp-server group LMS v3 priv read myview write myview access SNMP-WRITE
+snmp-server group NMS v3 auth 
+snmp-server group NMS v3 priv access SNMP-READ
+snmp-server group nms-net v3 auth 
+snmp-server view myview mib-2 included
+snmp-server view myview system included
+snmp-server view myview cisco included
+snmp-server community 9500A RO
+snmp-server packetsize 17892
+snmp-server queue-length 5000
+snmp-server host 10.0.51.32 vrf Mgmt-vrf version 3 auth nms-net 
+snmp-server host 10.0.51.58 vrf Mgmt-vrf version 3 auth nms-net 
+snmp-server host 10.0.51.60 vrf Mgmt-vrf version 3 auth nms-net 
+snmp-server host 10.0.51.72 vrf Mgmt-vrf version 3 auth nms-net 
+snmp ifmib ifindex persist
+tacacs server ACS1
+ address ipv4 10.0.51.56
+ key 7 072E320201584A55
+tacacs server ACS2
+ address ipv4 10.0.51.57
+ key 7 047A184840701F1E
+!
+!
+!
+control-plane
+ service-policy input system-cpp-policy
+!
+privilege interface level 3 shutdown
+privilege interface level 3 no shutdown
+privilege interface level 3 no
+privilege configure level 3 interface
+privilege exec level 3 traceroute
+privilege exec level 3 ping
+privilege exec level 2 configure terminal
+privilege exec level 2 configure
+privilege exec level 3 terminal monitor
+privilege exec level 3 terminal
+privilege exec all level 2 show
+privilege exec all level 3 no debug all
+privilege exec level 3 no debug
+privilege exec all level 3 debug all
+privilege exec all level 3 debug
+privilege exec level 3 no
+banner motd 
+        ===
+       -+ +-
+       | | |
+    <--\ | /-->
+   ##| ||||| |##
+  ###| |+++| |###
+/____\\ | //____\ ********************************************************
+   <###\|||/###>                  Keshavarzi Bank Network
+    +====+====+     WARNING: Access is restricted to authorized users only.
+    | WAN-BKI |     Unauthorized access is a violation of state , civil and
+    +===+=+===+                       criminal laws.
+        +=+        ********************************************************
+
+!
+line con 0
+ authorization exec CACS
+ login authentication CACS
+ stopbits 1
+line aux 0
+ stopbits 1
+line vty 0
+ access-class TELNET-ACCESS in vrf-also
+ privilege level 15
+ authorization exec CACS
+ accounting exec CACS
+ login authentication CACS
+ transport preferred none
+ transport input ssh
+ transport output telnet ssh
+ stopbits 1
+line vty 1 4
+ access-class TELNET-ACCESS in vrf-also
+ privilege level 15
+ authorization exec CACS
+ accounting exec CACS
+ login authentication CACS
+ transport preferred none
+ transport input ssh
+ transport output telnet ssh
+line vty 5 15
+ access-class TELNET-ACCESS in vrf-also
+ privilege level 15
+ authorization exec CACS
+ accounting exec CACS
+ login authentication CACS
+ transport preferred none
+ transport input ssh
+ transport output telnet ssh
+!
+call-home
+ ! If contact email address in call-home is configured as sch-smart-licensing@cisco.com
+ ! the email address configured in Cisco Smart License Portal will be used as contact email address to send SCH notifications.
+ contact-email-addr sch-smart-licensing@cisco.com
+ profile "CiscoTAC-1"
+  active
+  destination transport-method http
+ntp authentication-key 1 md5 091A4E1E2D3E5C371E2B193B7A023B06 7
+ntp authentication-key 2 md5 115A5C2C3C194D1B04072A1F14273F60 7
+ntp authentication-key 3 md5 145E541A2E2B612E093A200C0C3C312B 7
+ntp authenticate
+ntp trusted-key 1
+ntp broadcastdelay 1
+ntp source GigabitEthernet0/0
+ntp server vrf Mgmt-vrf 10.0.51.27 version 3
+!
+!
+!
+!
+!
+!
+end

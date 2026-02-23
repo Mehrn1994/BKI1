@@ -1,0 +1,1086 @@
+
+!
+! Last configuration change at 15:03:47 Tehran Sun Feb 22 2026 by b-barari
+! NVRAM config last updated at 15:04:37 Tehran Sun Feb 22 2026 by b-barari
+!
+version 12.4
+service timestamps debug datetime msec
+service timestamps log datetime localtime
+service password-encryption
+!
+hostname APN-INT-HUB
+!
+boot-start-marker
+boot-end-marker
+!
+!
+aaa new-model
+!
+!
+aaa group server tacacs+ ACSServers
+ server-private 10.0.51.56 key 7 106F1A574A46415B
+ server-private 10.0.51.57 key 7 047A184840701F1E
+ ip vrf forwarding MGMT-VRF
+ ip tacacs source-interface Vlan51
+!
+aaa authentication login CACS group ACSServers local
+aaa authentication enable default group ACSServers enable
+aaa authentication ppp default local-case
+aaa authorization console
+aaa authorization config-commands
+aaa authorization exec CACS group ACSServers local 
+aaa authorization commands 0 CACS group ACSServers local 
+aaa authorization commands 1 CACS group ACSServers local 
+aaa authorization commands 2 CACS group ACSServers local 
+aaa authorization commands 3 CACS group ACSServers local 
+aaa authorization commands 15 CACS group ACSServers local 
+aaa accounting exec CACS start-stop group ACSServers
+aaa accounting commands 0 CACS start-stop group ACSServers
+aaa accounting commands 1 CACS start-stop group ACSServers
+aaa accounting commands 2 CACS start-stop group ACSServers
+aaa accounting commands 3 CACS start-stop group ACSServers
+aaa accounting commands 15 CACS start-stop group ACSServers
+aaa accounting system default start-stop group ACSServers
+!
+!
+aaa session-id common
+clock timezone Tehran 3 30
+!
+ip cef
+!
+!
+!
+!
+ip vrf MGMT-VRF
+!
+no ip domain lookup
+ip domain name agri-bank.com
+!
+multilink bundle-name authenticated
+!
+!
+voice-card 0
+ no dspfarm
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+! 
+!
+crypto isakmp policy 10
+ encr aes
+ authentication pre-share
+ group 2
+crypto isakmp key G!l@n3tIntr@n3t address 10.250.66.0 255.255.255.0
+crypto isakmp invalid-spi-recovery
+!
+!
+crypto ipsec transform-set GILANETTS esp-aes esp-sha-hmac 
+!
+crypto dynamic-map GILANETDYN 10
+ set security-association idle-time 120
+ set transform-set GILANETTS 
+ match address GILANET-AccessList
+!
+!
+crypto map GILANET 10 ipsec-isakmp dynamic GILANETDYN 
+!
+!
+!
+username saman privilege 15 secret 5 $1$.J8B$QUvmlbdpKuCFtzh2.dyTq/
+username bkroot privilege 15 secret 5 $1$ccRd$7NII7uHA9BM7GIkIC.j8g/
+username test privilege 15 secret 5 $1$sTgn$/R1XAjmYtmbl54PA1H.Xq1
+archive
+ log config
+  hidekeys
+ path tftp://10.0.51.40/Core/$h
+ write-memory
+!
+!
+ip tftp source-interface GigabitEthernet0/0
+ip ssh source-interface Loopback100
+ip ssh version 2
+!
+class-map match-all undesireable-udp
+ match access-group 198
+!
+!
+policy-map drop-udp
+ class undesireable-udp
+   drop
+!
+!
+!
+!
+!
+interface Tunnel1134
+ description ** APN-INT-SNB-Pishin **
+ ip address 10.200.1.96 255.255.255.254
+ ip mtu 1460
+ ip virtual-reassembly
+ ip tcp adjust-mss 1420
+ ip ospf hello-interval 100
+ ip ospf dead-interval 300
+ ip ospf mtu-ignore
+ tunnel source 10.250.66.1
+ tunnel destination 10.250.66.80
+!
+interface Tunnel1150
+ description ** APN-INT-TEHB-Baje-Golrang **
+ ip address 10.200.1.66 255.255.255.254
+ ip mtu 1460
+ ip tcp adjust-mss 1420
+ ip ospf hello-interval 100
+ ip ospf dead-interval 300
+ ip ospf mtu-ignore
+ tunnel source 10.250.66.1
+ tunnel destination 10.250.66.95
+!
+interface Tunnel1721
+ description ** HMZ-Beykah **
+ ip address 10.200.1.94 255.255.255.254
+ ip mtu 1460
+ ip virtual-reassembly
+ ip tcp adjust-mss 1420
+ ip ospf hello-interval 100
+ ip ospf dead-interval 300
+ ip ospf mtu-ignore
+ tunnel source 10.250.66.1
+ tunnel destination 10.250.66.104
+!
+interface Tunnel2434
+ description ** APN-INT-MRZ-Ostuh **
+ ip address 10.200.1.50 255.255.255.254
+ tunnel source 10.250.66.1
+ tunnel destination 10.250.66.81
+!
+interface Tunnel2510
+ description ** APN-INT-ILM-Sivan **
+ ip address 10.200.1.72 255.255.255.254
+ ip mtu 1460
+ ip tcp adjust-mss 1420
+ ip ospf hello-interval 100
+ ip ospf dead-interval 300
+ ip ospf mtu-ignore
+ tunnel source 10.250.66.1
+ tunnel destination 10.250.66.98
+!
+interface Tunnel2539
+ description ** APN-INT-ILM-Shabab **
+ ip address 10.200.1.42 255.255.255.254
+ keepalive 40 3
+ tunnel source 10.250.66.1
+ tunnel destination 10.250.66.67
+!
+interface Tunnel2627
+ description ** APN-INT-KHB-Pataveh **
+ ip address 10.200.1.90 255.255.255.254
+ ip mtu 1460
+ ip virtual-reassembly
+ ip tcp adjust-mss 1420
+ ip ospf hello-interval 100
+ ip ospf dead-interval 300
+ ip ospf mtu-ignore
+ tunnel source 10.250.66.1
+ tunnel destination 10.250.66.85
+!
+interface Tunnel3293
+ description ** APN-INT-MAZ-SorkhRud **
+ ip address 10.200.1.40 255.255.255.254
+ keepalive 40 3
+ tunnel source 10.250.66.1
+ tunnel destination 10.250.66.50
+!
+interface Tunnel4019
+ description ** APN-INT-TEH-Baje-Beheshti **
+ ip address 10.200.1.64 255.255.255.254
+ ip mtu 1460
+ ip tcp adjust-mss 1420
+ ip ospf hello-interval 100
+ ip ospf dead-interval 300
+ ip ospf mtu-ignore
+ tunnel source 10.250.66.1
+ tunnel destination 10.250.66.70
+!
+interface Tunnel6011
+ description ** APN-INT-KHZ-Chamran **
+ ip address 10.200.1.14 255.255.255.254
+ keepalive 40 3
+ tunnel source 10.250.66.1
+ tunnel destination 10.250.66.41
+!
+interface Tunnel6015
+ description ** APN-INT-KHZ-KuyeEnqelab **
+ ip address 10.200.1.22 255.255.255.254
+ keepalive 40 3
+ tunnel source 10.250.66.1
+ tunnel destination 10.250.66.45
+!
+interface Tunnel6018
+ description ** APN-INT-KHZ-Chamran **
+ ip address 10.200.1.16 255.255.255.254
+ keepalive 40 3
+ tunnel source 10.250.66.1
+ tunnel destination 10.250.66.42
+!
+interface Tunnel6019
+ description ** APN-INT-KHZ-KiyanAhvaz **
+ ip address 10.200.1.20 255.255.255.254
+ keepalive 40 3
+ tunnel source 10.250.66.1
+ tunnel destination 10.250.66.44
+!
+interface Tunnel6038
+ description ** APN-INT-KHZ-FatHoLMobin **
+ ip address 10.200.1.52 255.255.255.254
+ ip mtu 1460
+ ip tcp adjust-mss 1420
+ ip ospf hello-interval 100
+ ip ospf dead-interval 300
+ ip ospf mtu-ignore
+ tunnel source 10.250.66.1
+ tunnel destination 10.250.66.87
+!
+interface Tunnel6049
+ description ** APN-INT-KHZ-EmameAhvaz **
+ ip address 10.200.1.18 255.255.255.254
+ keepalive 40 3
+ tunnel source 10.250.66.1
+ tunnel destination 10.250.66.43
+!
+interface Tunnel6050
+ description ** APN-INT-KHZ-Molasani **
+ ip address 10.200.1.10 255.255.255.254
+ keepalive 40 3
+ tunnel source 10.250.66.1
+ tunnel destination 10.250.66.39
+!
+interface Tunnel6051
+ ip address 10.200.1.12 255.255.255.254
+ keepalive 40 3
+ tunnel source 10.250.66.1
+ tunnel destination 10.250.66.40
+!
+interface Tunnel6074
+ description ** APN-INT-KHZ-Darkhovin **
+ ip address 10.200.1.38 255.255.255.254
+ keepalive 40 3
+ tunnel source 10.250.66.1
+ tunnel destination 10.250.66.63
+!
+interface Tunnel6083
+ description ** APN-INT-KHZ-Kh.Emam-Mahshahr **
+ ip address 10.200.1.8 255.255.255.254
+ keepalive 40 3
+ tunnel source 10.250.66.1
+ tunnel destination 10.250.66.38
+!
+interface Tunnel6084
+ description ** APN-INT-KHZ-BandarEmam **
+ ip address 10.200.1.4 255.255.255.254
+ keepalive 40 3
+ tunnel source 10.250.66.1
+ tunnel destination 10.250.66.33
+!
+interface Tunnel6092
+ description ** APN-INT-KHZ-M.Tayeb **
+ ip address 10.200.1.30 255.255.255.254
+ keepalive 40 3
+ tunnel source 10.250.66.1
+ tunnel destination 10.250.66.53
+!
+interface Tunnel6096
+ description ** APN-INT-KHZ-3RahKhoramShr **
+ ip address 10.200.1.2 255.255.255.254
+ ip mtu 1460
+ ip virtual-reassembly
+ ip tcp adjust-mss 1420
+ ip ospf hello-interval 100
+ ip ospf dead-interval 300
+ ip ospf mtu-ignore
+ keepalive 40 3
+ tunnel source 10.250.66.1
+ tunnel destination 10.250.66.34
+!
+interface Tunnel6101
+ description ** APN-INT-KHZ-AhmadAbad **
+ ip address 10.200.1.28 255.255.255.254
+ tunnel source 10.250.66.1
+ tunnel destination 10.250.66.52
+!
+interface Tunnel7040
+ description ** APN-INT-FRS-BabaMonir **
+ ip address 10.200.1.36 255.255.255.254
+ ip mtu 1460
+ ip tcp adjust-mss 1420
+ ip ospf hello-interval 100
+ ip ospf dead-interval 300
+ ip ospf mtu-ignore
+ tunnel source 10.250.66.1
+ tunnel destination 10.250.66.56
+!
+interface Tunnel7089
+ description ** APN-INT-KHZ-22BahmanDrb **
+ ip address 10.200.1.48 255.255.255.254
+ ip mtu 1460
+ ip virtual-reassembly
+ ip tcp adjust-mss 1420
+ ip ospf hello-interval 100
+ ip ospf dead-interval 300
+ ip ospf mtu-ignore
+ tunnel source 10.250.66.1
+ tunnel destination 10.250.66.103
+!
+interface Tunnel7099
+ description ** APN-INT-FRS-FarhanShahr **
+ ip address 10.200.1.46 255.255.255.254
+ tunnel source 10.250.66.1
+ tunnel destination 10.250.66.77
+!
+interface Tunnel7100
+ description ** APN-INT-KHZ-TBaarKazerun **
+ ip address 10.200.1.44 255.255.255.254
+ keepalive 40 3
+ tunnel source 10.250.66.1
+ tunnel destination 10.250.66.74
+!
+interface Tunnel7147
+ description ** APN-INT-FRS-Simakan **
+ ip address 10.200.1.34 255.255.255.254
+ tunnel source 10.250.66.1
+ tunnel destination 10.250.66.54
+!
+interface Tunnel7167
+ description ** APN-INT-FRS-BAJ-Khaniman **
+ ip address 10.200.1.56 255.255.255.254
+ ip mtu 1460
+ ip virtual-reassembly
+ ip tcp adjust-mss 1420
+ ip ospf hello-interval 100
+ ip ospf dead-interval 300
+ ip ospf mtu-ignore
+ tunnel source 10.250.66.1
+ tunnel destination 10.250.66.91
+!
+interface Tunnel9123
+ description ** APN-INT-KHR-Fadak **
+ ip address 10.200.1.62 255.255.255.254
+ ip mtu 1460
+ ip tcp adjust-mss 1420
+ ip ospf hello-interval 100
+ ip ospf dead-interval 300
+ ip ospf mtu-ignore
+ tunnel source 10.250.66.1
+ tunnel destination 10.250.66.94
+!
+interface Tunnel9153
+ description ** APN-INT-KHR-MFerdowsi **
+ ip address 10.200.1.32 255.255.255.254
+ keepalive 40 3
+ tunnel source 10.250.66.1
+ tunnel destination 10.250.66.13
+!
+interface Tunnel9157
+ description ** APN-INT-KHR-Bj-Bezangan **
+ ip address 10.200.1.60 255.255.255.254
+ ip mtu 1460
+ ip virtual-reassembly
+ ip tcp adjust-mss 1420
+ ip ospf hello-interval 100
+ ip ospf dead-interval 300
+ ip ospf mtu-ignore
+ tunnel source 10.250.66.1
+ tunnel destination 10.250.66.10
+!
+interface Tunnel10045
+ description ** APN-INT-ESF-Mobarake **
+ ip address 10.200.1.78 255.255.255.254
+ ip mtu 1460
+ ip tcp adjust-mss 1420
+ ip ospf hello-interval 100
+ ip ospf dead-interval 300
+ ip ospf mtu-ignore
+ tunnel source 10.250.66.1
+ tunnel destination 10.250.66.100
+!
+interface Tunnel11035
+ description ** APN-INT-SNB-Jakigor **
+ ip address 10.200.1.54 255.255.255.254
+ ip mtu 1460
+ ip tcp adjust-mss 1420
+ ip ospf hello-interval 100
+ ip ospf dead-interval 300
+ ip ospf mtu-ignore
+ tunnel source 10.250.66.1
+ tunnel destination 10.250.66.93
+!
+interface Tunnel11049
+ description ** APN-INT-SNB-Shilat **
+ ip address 10.200.1.70 255.255.255.254
+ ip mtu 1460
+ ip tcp adjust-mss 1420
+ ip ospf hello-interval 100
+ ip ospf dead-interval 300
+ ip ospf mtu-ignore
+ tunnel source 10.250.66.1
+ tunnel destination 10.250.66.82
+!
+interface Tunnel14047
+ description ** APN-INT-LOR-Afrineh **
+ ip address 10.200.1.58 255.255.255.254
+ ip mtu 1460
+ ip tcp adjust-mss 1420
+ ip ospf hello-interval 100
+ ip ospf dead-interval 300
+ ip ospf mtu-ignore
+ tunnel source 10.250.66.1
+ tunnel destination 10.250.66.11
+!
+interface Tunnel17032
+ description ** APN-INT-HMZ-Jahad **
+ ip address 10.200.1.68 255.255.255.254
+ ip mtu 1460
+ ip tcp adjust-mss 1420
+ ip ospf hello-interval 100
+ ip ospf dead-interval 300
+ ip ospf mtu-ignore
+ tunnel source 10.250.66.1
+ tunnel destination 10.250.66.97
+!
+interface Tunnel21027
+ description ** APN-INT-GIL-Motahhari **
+ ip address 10.200.1.92 255.255.255.254
+ ip mtu 1460
+ ip tcp adjust-mss 1420
+ ip ospf hello-interval 100
+ ip ospf dead-interval 300
+ ip ospf mtu-ignore
+ tunnel source 10.250.66.1
+ tunnel destination 10.250.66.86
+!
+interface Tunnel22010
+ description ** APN-INT-GLS-Gorgan **
+ ip address 10.200.1.76 255.255.255.254
+ ip mtu 1460
+ ip tcp adjust-mss 1420
+ ip ospf hello-interval 100
+ ip ospf dead-interval 300
+ ip ospf mtu-ignore
+ tunnel source 10.250.66.1
+ tunnel destination 10.250.66.60
+!
+interface Tunnel30010
+ description ** APN-INT-KHSH-Esfarayen **
+ ip address 10.200.1.88 255.255.255.254
+ ip mtu 1460
+ ip tcp adjust-mss 1420
+ ip ospf hello-interval 100
+ ip ospf dead-interval 300
+ tunnel source 10.250.66.1
+ tunnel destination 10.250.66.101
+!
+interface Tunnel31011
+ description ** APN-INT-ALZ-TareBar **
+ ip address 10.200.1.80 255.255.255.254
+ ip mtu 1460
+ ip tcp adjust-mss 1420
+ ip ospf hello-interval 100
+ ip ospf dead-interval 300
+ ip ospf mtu-ignore
+ tunnel source 10.250.66.1
+ tunnel destination 10.250.66.36
+!
+interface Tunnel31022
+ description ** APN-INT-ALZ-MohandesiZeraei **
+ ip address 10.200.1.82 255.255.255.254
+ ip mtu 1460
+ ip tcp adjust-mss 1420
+ ip ospf hello-interval 100
+ ip ospf dead-interval 300
+ ip ospf mtu-ignore
+ tunnel source 10.250.66.1
+ tunnel destination 10.250.66.73
+!
+interface Tunnel31035
+ description ** APN-INT-ALZ-GolShahr **
+ ip address 10.200.1.86 255.255.255.254
+ ip mtu 1460
+ ip tcp adjust-mss 1420
+ ip ospf hello-interval 100
+ ip ospf dead-interval 300
+ ip ospf mtu-ignore
+ tunnel source 10.250.66.1
+ tunnel destination 10.250.66.71
+!
+interface Tunnel31039
+ description ** APN-INT-ALZ-SaeidAbad8Gerd **
+ ip address 10.200.1.84 255.255.255.254
+ ip mtu 1460
+ ip tcp adjust-mss 1420
+ ip ospf hello-interval 100
+ ip ospf dead-interval 300
+ ip ospf mtu-ignore
+ tunnel source 10.250.66.1
+ tunnel destination 10.250.66.37
+!
+interface Tunnel90125
+ description ** APN-INT-KHR-AramgahFerdosi **
+ ip address 10.200.1.24 255.255.255.254
+ keepalive 40 3
+ tunnel source 10.250.66.1
+ tunnel destination 10.250.66.47
+!
+interface GigabitEthernet0/0
+ description ** AGG-WAN-SW-1-P18 **
+ ip address 10.0.151.4 255.255.255.0
+ ip flow ingress
+ ip flow egress
+ ip nat outside
+ ip virtual-reassembly
+ duplex auto
+ speed auto
+ media-type rj45
+!
+interface GigabitEthernet0/1
+ no ip address
+ ip virtual-reassembly
+ duplex auto
+ speed auto
+ media-type rj45
+!
+interface FastEthernet0/2/0
+ switchport access vlan 51
+!
+interface FastEthernet0/2/1
+ description ** APN-Gilanet-SW-Site2Roof-Gi8 **
+!
+interface FastEthernet0/2/2
+ description ** APN-HiWeb-SW-Site2Roof-Gi9 **
+ switchport access vlan 250
+!
+interface FastEthernet0/2/3
+ description Monitoring
+ switchport access vlan 250
+!
+interface Vlan1
+ description ** Site2Roof-SW-P9 **
+ ip address 10.250.66.1 255.255.255.0
+ ip nat inside
+ ip virtual-reassembly timeout 5
+ crypto map GILANET
+!
+interface Vlan5
+ no ip address
+!
+interface Vlan51
+ ip vrf forwarding MGMT-VRF
+ ip address 10.0.51.54 255.255.255.0
+!
+interface Vlan250
+ description ** Site2Roof-SW-P9 **
+ ip address 10.250.64.1 255.255.255.0
+ ip nat inside
+ ip virtual-reassembly
+!
+router ospf 153
+ router-id 10.0.151.4
+ log-adjacency-changes
+ redistribute static subnets route-map APN-INT-RM
+ network 10.0.151.4 0.0.0.0 area 0
+ distribute-list OSPF-PERMIT in
+!
+router ospf 200
+ log-adjacency-changes
+ redistribute static subnets route-map NewINTRedRoutesRM
+ network 10.200.1.2 0.0.0.0 area 6
+ network 10.200.1.36 0.0.0.0 area 7
+ network 10.200.1.46 0.0.0.0 area 7
+ network 10.200.1.48 0.0.0.0 area 7
+ network 10.200.1.52 0.0.0.0 area 6
+ network 10.200.1.54 0.0.0.0 area 11
+ network 10.200.1.56 0.0.0.0 area 7
+ network 10.200.1.58 0.0.0.0 area 14
+ network 10.200.1.60 0.0.0.0 area 9
+ network 10.200.1.62 0.0.0.0 area 9
+ network 10.200.1.64 0.0.0.0 area 4
+ network 10.200.1.66 0.0.0.0 area 1
+ network 10.200.1.68 0.0.0.0 area 17
+ network 10.200.1.70 0.0.0.0 area 11
+ network 10.200.1.72 0.0.0.0 area 25
+ network 10.200.1.74 0.0.0.0 area 17
+ network 10.200.1.76 0.0.0.0 area 22
+ network 10.200.1.78 0.0.0.0 area 10
+ network 10.200.1.80 0.0.0.0 area 31
+ network 10.200.1.82 0.0.0.0 area 31
+ network 10.200.1.84 0.0.0.0 area 31
+ network 10.200.1.86 0.0.0.0 area 31
+ network 10.200.1.88 0.0.0.0 area 30
+ network 10.200.1.90 0.0.0.0 area 26
+ network 10.200.1.92 0.0.0.0 area 21
+ network 10.200.1.94 0.0.0.0 area 17
+ network 10.200.1.96 0.0.0.0 area 11
+!
+ip route 0.0.0.0 0.0.0.0 10.0.151.1
+ip route 10.0.34.39 255.255.255.255 10.0.151.1
+ip route 10.0.51.61 255.255.255.255 10.0.151.1
+ip route 10.0.54.98 255.255.255.255 10.0.151.1
+ip route 10.0.54.108 255.255.255.255 10.0.151.1
+ip route 10.0.54.114 255.255.255.255 10.0.151.1
+ip route 10.0.54.118 255.255.255.255 10.0.151.1
+ip route 10.0.54.122 255.255.255.255 10.0.151.1
+ip route 10.0.54.123 255.255.255.255 10.0.151.1
+ip route 10.0.54.127 255.255.255.255 10.0.151.1
+ip route 10.0.54.163 255.255.255.255 10.0.151.1
+ip route 10.0.54.168 255.255.255.255 10.0.151.1
+ip route 10.0.54.170 255.255.255.255 10.0.151.1
+ip route 10.0.54.200 255.255.255.255 10.0.151.1
+ip route 10.0.54.216 255.255.255.255 10.0.151.1
+ip route 10.0.54.220 255.255.255.255 10.0.151.1
+ip route 10.0.54.225 255.255.255.255 10.0.151.1
+ip route 10.0.54.242 255.255.255.255 10.0.151.1
+ip route 10.0.54.251 255.255.255.255 10.0.151.1
+ip route 10.0.55.151 255.255.255.255 10.0.151.1
+ip route 10.0.55.181 255.255.255.255 10.0.151.1
+ip route 10.0.68.150 255.255.255.255 10.0.151.1
+ip route 10.0.68.187 255.255.255.255 10.0.151.1
+ip route 10.0.68.223 255.255.255.255 10.0.151.1
+ip route 10.0.76.25 255.255.255.255 10.0.151.1
+ip route 10.0.76.28 255.255.255.255 10.0.151.1
+ip route 10.0.76.31 255.255.255.255 10.0.151.1
+ip route 10.0.76.33 255.255.255.255 10.0.151.1
+ip route 10.0.76.39 255.255.255.255 10.0.151.1
+ip route 10.0.76.45 255.255.255.255 10.0.151.1
+ip route 10.0.76.49 255.255.255.255 10.0.151.1
+ip route 10.0.76.51 255.255.255.255 10.0.151.1
+ip route 10.0.76.55 255.255.255.255 10.0.151.1
+ip route 10.0.76.64 255.255.255.255 10.0.151.1
+ip route 10.0.76.65 255.255.255.255 10.0.151.1
+ip route 10.0.76.66 255.255.255.255 10.0.151.1
+ip route 10.0.76.69 255.255.255.255 10.0.151.1
+ip route 10.0.76.70 255.255.255.255 10.0.151.1
+ip route 10.0.76.73 255.255.255.255 10.0.151.1
+ip route 10.0.76.75 255.255.255.255 10.0.151.1
+ip route 10.0.76.80 255.255.255.255 10.0.151.1
+ip route 10.0.76.82 255.255.255.255 10.0.151.1
+ip route 10.0.76.87 255.255.255.255 10.0.151.1
+ip route 10.0.76.88 255.255.255.255 10.0.151.1
+ip route 10.0.76.91 255.255.255.255 10.0.151.1
+ip route 10.0.76.93 255.255.255.255 10.0.151.1
+ip route 10.0.76.96 255.255.255.255 10.0.151.1
+ip route 10.0.76.99 255.255.255.255 10.0.151.1
+ip route 10.0.76.101 255.255.255.255 10.0.151.1
+ip route 10.0.76.106 255.255.255.255 10.0.151.1
+ip route 10.0.76.110 255.255.255.255 10.0.151.1
+ip route 10.0.76.116 255.255.255.255 10.0.151.1
+ip route 10.0.76.124 255.255.255.255 10.0.151.1
+ip route 10.0.76.127 255.255.255.255 10.0.151.1
+ip route 10.0.76.130 255.255.255.255 10.0.151.1
+ip route 10.0.76.138 255.255.255.255 10.0.151.1
+ip route 10.0.76.146 255.255.255.255 10.0.151.1
+ip route 10.0.76.148 255.255.255.255 10.0.151.1
+ip route 10.0.76.158 255.255.255.255 10.0.151.1
+ip route 10.0.76.171 255.255.255.255 10.0.151.1
+ip route 10.0.76.196 255.255.255.255 10.0.151.1
+ip route 10.0.76.207 255.255.255.255 10.0.151.1
+ip route 10.0.76.221 255.255.255.255 10.0.151.1
+ip route 10.0.76.227 255.255.255.255 10.0.151.1
+ip route 10.0.89.70 255.255.255.255 10.0.151.1
+ip route 10.0.89.71 255.255.255.255 10.0.151.1
+ip route 10.0.89.72 255.255.255.255 10.0.151.1
+ip route 10.0.89.73 255.255.255.255 10.0.151.1
+ip route 10.0.89.74 255.255.255.255 10.0.151.1
+ip route 10.0.89.75 255.255.255.255 10.0.151.1
+ip route 10.0.89.76 255.255.255.255 10.0.151.1
+ip route 10.0.89.77 255.255.255.255 10.0.151.1
+ip route 10.0.89.78 255.255.255.255 10.0.151.1
+ip route 10.0.89.79 255.255.255.255 10.0.151.1
+ip route 10.0.89.170 255.255.255.255 10.0.151.1
+ip route 10.0.89.171 255.255.255.255 10.0.151.1
+ip route 10.0.89.180 255.255.255.255 10.0.151.1
+ip route 10.0.89.187 255.255.255.255 10.0.151.1
+ip route 10.0.89.188 255.255.255.255 10.0.151.1
+ip route 10.0.97.26 255.255.255.255 10.0.151.1
+ip route 10.0.192.206 255.255.255.255 10.0.151.1
+ip route 10.6.11.0 255.255.255.0 Tunnel6011 150 name APN-INT-KHZ-Chamran
+ip route 10.6.15.0 255.255.255.0 Tunnel6015 150 name APN-INT-KHZ-KuyeEnqelab
+ip route 10.6.18.0 255.255.255.0 Tunnel6018 150 name APN-INT-KHZ-Azadegan
+ip route 10.6.19.0 255.255.255.0 Tunnel6019 150 name APN-INT-KHZ-KiyanAhvaz
+ip route 10.6.38.0 255.255.255.0 Tunnel6038 150
+ip route 10.6.49.0 255.255.255.0 Tunnel6049 150 name APN-INT-KHZ-EmameAhvaz
+ip route 10.6.50.0 255.255.255.0 Tunnel6050 150 name APN-INT-KHZ-Molasani
+ip route 10.6.51.0 255.255.255.0 Tunnel6051 150 name APN-INT-KHZ-Sheyban
+ip route 10.6.74.0 255.255.255.0 Tunnel6074 150 name APN-INT-KHZ-Darkhorvin
+ip route 10.6.83.0 255.255.255.0 Tunnel6083 150 name APN-INT-KHZ-Emam-Mahshahr
+ip route 10.6.84.0 255.255.255.0 Tunnel6084 150 name APN-INT-KHZ-BandarEmam
+ip route 10.6.92.0 255.255.255.0 Tunnel6092 150 name APN-INT-KHZ-Meydan-Tayeb
+ip route 10.6.101.0 255.255.255.0 Tunnel6101 150 name APN-INT-KHZ-AhmadAbad
+ip route 10.7.2.8 255.255.255.255 10.0.151.1 name RDP-HQ
+ip route 10.7.40.0 255.255.255.0 Tunnel7040 150 name APN-INT-FRS-BabaMonir
+ip route 10.7.99.0 255.255.255.0 Tunnel7099 150 name APN-INT-FRS-farhangshahr
+ip route 10.7.147.0 255.255.255.0 Tunnel7147 150 name APN-INT-FRS-Simakan
+ip route 10.7.167.0 255.255.255.0 Tunnel7167 150 name APN-INT-FRS-BAJ-Khaniman
+ip route 10.9.125.0 255.255.255.0 Tunnel90125 150 name APN-INT-KHR-AramgahFrdsi
+ip route 10.9.153.0 255.255.255.0 Tunnel9153 150 name APN-INT-KHR-MFerdowsi
+ip route 10.14.47.0 255.255.255.0 Tunnel14047 150
+ip route 10.22.10.0 255.255.255.0 Tunnel22010 150
+ip route 10.24.34.0 255.255.255.0 Tunnel2434 150 name APN-INT-MRZ-Ostuh
+ip route 10.25.10.0 255.255.255.0 Tunnel2510 150 name APN-INT-ILM-Sivan
+ip route 10.25.39.0 255.255.255.0 Tunnel2539 name APN-INT-ILM-Shabab
+ip route 10.31.39.0 255.255.255.0 Tunnel31039 150 name APN-INT-ALZ-SaeidAbad
+ip route 10.32.93.0 255.255.255.0 Tunnel3293 150 name APN-INT-MAZ-SorkhRud
+ip route 10.42.8.129 255.255.255.255 10.0.151.1
+ip route 10.42.19.129 255.255.255.255 10.0.151.1
+ip route 10.250.66.2 255.255.255.255 10.250.64.2 name Gilanet-MON
+ip route 10.250.66.4 255.255.255.255 10.250.64.4 name Gilanet-MON
+ip route 185.4.105.31 255.255.255.255 10.0.151.1
+ip route vrf MGMT-VRF 0.0.0.0 0.0.0.0 10.0.51.1
+!
+ip flow-cache timeout active 1
+ip flow-export source Vlan51
+ip flow-export version 5
+ip flow-export destination 10.0.51.61 9996 vrf MGMT-VRF
+!
+no ip http server
+no ip http secure-server
+ip nat pool APN-INT-natpool 10.0.151.5 10.0.151.6 netmask 255.255.255.248
+ip nat inside source list APN-INT-natlist interface GigabitEthernet0/0 overload
+ip nat inside source list NATInternet interface GigabitEthernet0/0 overload
+ip nat outside source static 10.0.34.39 10.30.42.20
+ip nat outside source static 10.0.55.151 10.30.42.24
+ip nat outside source static 10.0.68.187 10.30.42.22
+ip nat outside source static 10.0.68.223 10.30.42.9
+ip nat outside source static 10.0.76.82 10.30.42.12
+ip nat outside source static 10.0.76.101 10.30.42.19
+ip nat outside source static 10.0.76.158 10.30.42.10
+ip nat outside source static 10.0.76.171 10.30.42.28
+ip nat outside source static 10.0.76.194 10.30.42.14
+ip nat outside source static 10.0.76.207 10.30.42.27
+ip nat outside source static 10.0.76.221 10.30.42.15
+ip nat outside source static 10.0.151.5 10.30.42.5
+ip nat outside source static 10.0.151.6 10.30.42.6
+ip nat outside source static 10.30.176.187 10.0.89.187
+ip nat outside source static 10.30.176.188 10.0.89.188
+ip nat outside source static 10.42.8.129 10.30.42.16
+ip nat outside source static 185.4.105.31 10.0.89.70
+!
+ip access-list standard OSPF-PERMIT
+ permit 10.0.0.0 0.0.255.255
+ip access-list standard SNMP-READ
+ permit 10.0.50.0 0.0.1.255
+ip access-list standard SNMP-WRITE
+ permit 10.0.51.49
+ permit 10.0.51.48
+ permit 10.0.51.50
+ip access-list standard TELNET
+ permit 10.0.50.0 0.0.1.255
+!
+ip access-list extended APN-INT-natlist
+ permit ip 10.250.64.0 0.0.0.255 host 10.30.42.5
+ permit ip 10.250.64.0 0.0.0.255 host 10.30.42.6
+ permit ip 10.250.64.0 0.0.0.255 host 10.30.42.9
+ permit ip 10.250.64.0 0.0.0.255 host 10.30.42.10
+ permit ip 10.250.64.0 0.0.0.255 host 10.30.42.12
+ permit ip 10.250.64.0 0.0.0.255 host 10.30.42.14
+ permit ip 10.250.64.0 0.0.0.255 host 10.0.89.187
+ permit ip 10.250.64.0 0.0.0.255 host 10.0.89.188
+ permit ip 10.250.64.0 0.0.0.255 host 10.0.89.180
+ permit ip 10.250.64.0 0.0.0.255 host 10.0.89.181
+ permit ip 10.250.64.0 0.0.0.255 host 10.30.42.15
+ permit ip 10.250.66.0 0.0.0.255 host 10.30.42.5
+ permit ip 10.250.66.0 0.0.0.255 host 10.30.42.6
+ permit ip 10.250.66.0 0.0.0.255 host 10.30.42.9
+ permit ip 10.250.66.0 0.0.0.255 host 10.30.42.10
+ permit ip 10.250.66.0 0.0.0.255 host 10.30.42.12
+ permit ip 10.250.66.0 0.0.0.255 host 10.30.42.14
+ permit ip 10.250.66.0 0.0.0.255 host 10.0.89.187
+ permit ip 10.250.66.0 0.0.0.255 host 10.0.89.188
+ permit ip 10.250.66.0 0.0.0.255 host 10.0.89.180
+ permit ip 10.250.66.0 0.0.0.255 host 10.0.89.181
+ permit ip 10.250.66.0 0.0.0.255 host 10.30.42.15
+ permit ip 10.250.64.0 0.0.0.255 host 10.30.42.16
+ permit ip 10.250.66.0 0.0.0.255 host 10.30.42.16
+ permit ip 10.250.64.0 0.0.0.255 host 10.30.42.19
+ permit ip 10.250.66.0 0.0.0.255 host 10.30.42.19
+ permit ip 10.250.64.0 0.0.0.255 host 10.30.42.22
+ permit ip 10.250.66.0 0.0.0.255 host 10.30.42.22
+ permit ip 10.250.64.0 0.0.0.255 host 10.30.42.27
+ permit ip 10.250.66.0 0.0.0.255 host 10.30.42.27
+ permit ip 10.250.66.0 0.0.0.255 host 10.30.42.24
+ permit ip 10.250.64.0 0.0.0.255 host 10.30.42.24
+ permit ip 10.250.66.0 0.0.0.255 host 10.30.42.20
+ permit ip 10.250.64.0 0.0.0.255 host 10.30.42.20
+ permit ip 10.250.66.0 0.0.0.255 host 10.30.42.28
+ permit ip 10.250.64.0 0.0.0.255 host 10.30.42.28
+ip access-list extended GILANET-AccessList
+ permit gre host 10.250.66.1 host 10.250.66.33
+ permit gre host 10.250.66.1 host 10.250.66.37
+ permit gre host 10.250.66.1 host 10.250.66.38
+ permit gre host 10.250.66.1 host 10.250.66.39
+ permit gre host 10.250.66.1 host 10.250.66.40
+ permit gre host 10.250.66.1 host 10.250.66.41
+ permit gre host 10.250.66.1 host 10.250.66.42
+ permit gre host 10.250.66.1 host 10.250.66.43
+ permit gre host 10.250.66.1 host 10.250.66.44
+ permit gre host 10.250.66.1 host 10.250.66.45
+ permit gre host 10.250.66.1 host 10.250.66.47
+ permit gre host 10.250.66.1 host 10.250.66.53
+ permit gre host 10.250.66.1 host 10.250.66.13
+ permit gre host 10.250.66.1 host 10.250.66.63
+ permit gre host 10.250.66.1 host 10.250.66.50
+ permit gre host 10.250.66.1 host 10.250.66.67
+ permit gre host 10.250.66.1 host 10.250.66.74
+ permit gre host 10.250.66.1 host 10.250.66.77
+ permit gre host 10.250.66.1 host 10.250.66.87
+ permit gre host 10.250.66.1 host 10.250.66.88
+ permit gre host 10.250.66.1 host 10.250.66.89
+ permit gre host 10.250.66.1 host 10.250.66.91
+ permit gre host 10.250.66.1 host 10.250.66.56
+ permit gre host 10.250.66.1 host 10.250.66.95
+ permit gre host 10.250.66.1 host 10.250.66.96
+ permit gre host 10.250.66.1 host 10.250.66.60
+ permit gre host 10.250.66.1 host 10.250.66.36
+ permit gre host 10.250.66.1 host 10.250.66.71
+ permit gre host 10.250.66.1 host 10.250.66.103
+ip access-list extended NATInternet
+ permit ip any host 10.0.89.70
+ip access-list extended WANMon1
+ permit ip 10.0.50.0 0.0.0.255 10.250.64.0 0.0.0.255
+ip access-list extended WANMon2
+ permit ip 10.0.50.0 0.0.0.255 10.250.66.0 0.0.0.255
+!
+!
+ip prefix-list APN-INT-Branch seq 5 permit 10.6.96.0/24
+ip prefix-list APN-INT-Branch seq 10 permit 10.6.84.0/24
+ip prefix-list APN-INT-Branch seq 15 permit 10.31.39.0/24
+ip prefix-list APN-INT-Branch seq 20 permit 10.6.83.0/24
+ip prefix-list APN-INT-Branch seq 25 permit 10.6.50.0/24
+ip prefix-list APN-INT-Branch seq 30 permit 10.6.51.0/24
+ip prefix-list APN-INT-Branch seq 35 permit 10.6.11.0/24
+ip prefix-list APN-INT-Branch seq 40 permit 10.6.18.0/24
+ip prefix-list APN-INT-Branch seq 45 permit 10.6.49.0/24
+ip prefix-list APN-INT-Branch seq 50 permit 10.6.19.0/24
+ip prefix-list APN-INT-Branch seq 55 permit 10.6.15.0/24
+ip prefix-list APN-INT-Branch seq 60 permit 10.9.125.0/24
+ip prefix-list APN-INT-Branch seq 65 permit 10.9.98.0/24
+ip prefix-list APN-INT-Branch seq 70 permit 10.6.101.0/24
+ip prefix-list APN-INT-Branch seq 75 permit 10.6.92.0/24
+ip prefix-list APN-INT-Branch seq 80 permit 10.9.153.0/24
+ip prefix-list APN-INT-Branch seq 85 permit 10.7.147.0/24
+ip prefix-list APN-INT-Branch seq 90 permit 10.7.40.0/24
+ip prefix-list APN-INT-Branch seq 95 permit 10.6.74.0/24
+ip prefix-list APN-INT-Branch seq 100 permit 10.32.93.0/24
+ip prefix-list APN-INT-Branch seq 105 permit 10.25.39.0/24
+ip prefix-list APN-INT-Branch seq 110 permit 10.7.99.0/24
+ip prefix-list APN-INT-Branch seq 120 permit 10.24.34.0/24
+ip prefix-list APN-INT-Branch seq 130 permit 10.7.87.0/24
+ip prefix-list APN-INT-Branch seq 140 permit 10.6.38.0/24
+ip prefix-list APN-INT-Branch seq 145 permit 10.7.167.0/24
+ip prefix-list APN-INT-Branch seq 150 permit 10.9.157.0/24
+ip prefix-list APN-INT-Branch seq 165 permit 10.25.10.0/24
+ip prefix-list APN-INT-Branch seq 170 permit 10.22.10.0/24
+ip prefix-list APN-INT-Branch seq 175 permit 10.14.47.0/24
+!
+ip prefix-list NewINTRedRoutes seq 5 permit 10.0.34.39/32
+ip prefix-list NewINTRedRoutes seq 10 permit 10.0.51.61/32
+ip prefix-list NewINTRedRoutes seq 15 permit 10.0.54.98/32
+ip prefix-list NewINTRedRoutes seq 20 permit 10.0.54.108/32
+ip prefix-list NewINTRedRoutes seq 25 permit 10.0.54.114/32
+ip prefix-list NewINTRedRoutes seq 30 permit 10.0.54.118/32
+ip prefix-list NewINTRedRoutes seq 35 permit 10.0.54.122/32
+ip prefix-list NewINTRedRoutes seq 40 permit 10.0.54.123/32
+ip prefix-list NewINTRedRoutes seq 45 permit 10.0.54.127/32
+ip prefix-list NewINTRedRoutes seq 50 permit 10.0.54.163/32
+ip prefix-list NewINTRedRoutes seq 55 permit 10.0.54.168/32
+ip prefix-list NewINTRedRoutes seq 60 permit 10.0.54.170/32
+ip prefix-list NewINTRedRoutes seq 65 permit 10.0.54.200/32
+ip prefix-list NewINTRedRoutes seq 70 permit 10.0.54.216/32
+ip prefix-list NewINTRedRoutes seq 75 permit 10.0.54.220/32
+ip prefix-list NewINTRedRoutes seq 80 permit 10.0.54.225/32
+ip prefix-list NewINTRedRoutes seq 85 permit 10.0.54.242/32
+ip prefix-list NewINTRedRoutes seq 90 permit 10.0.54.251/32
+ip prefix-list NewINTRedRoutes seq 95 permit 10.0.55.151/32
+ip prefix-list NewINTRedRoutes seq 100 permit 10.0.55.181/32
+ip prefix-list NewINTRedRoutes seq 105 permit 10.0.68.150/32
+ip prefix-list NewINTRedRoutes seq 110 permit 10.0.68.187/32
+ip prefix-list NewINTRedRoutes seq 115 permit 10.0.68.223/32
+ip prefix-list NewINTRedRoutes seq 120 permit 10.0.76.25/32
+ip prefix-list NewINTRedRoutes seq 125 permit 10.0.76.28/32
+ip prefix-list NewINTRedRoutes seq 130 permit 10.0.76.31/32
+ip prefix-list NewINTRedRoutes seq 135 permit 10.0.76.33/32
+ip prefix-list NewINTRedRoutes seq 140 permit 10.0.76.39/32
+ip prefix-list NewINTRedRoutes seq 145 permit 10.0.76.45/32
+ip prefix-list NewINTRedRoutes seq 150 permit 10.0.76.49/32
+ip prefix-list NewINTRedRoutes seq 155 permit 10.0.76.51/32
+ip prefix-list NewINTRedRoutes seq 160 permit 10.0.76.55/32
+ip prefix-list NewINTRedRoutes seq 165 permit 10.0.76.64/32
+ip prefix-list NewINTRedRoutes seq 170 permit 10.0.76.65/32
+ip prefix-list NewINTRedRoutes seq 175 permit 10.0.76.66/32
+ip prefix-list NewINTRedRoutes seq 180 permit 10.0.76.69/32
+ip prefix-list NewINTRedRoutes seq 185 permit 10.0.76.70/32
+ip prefix-list NewINTRedRoutes seq 190 permit 10.0.76.73/32
+ip prefix-list NewINTRedRoutes seq 195 permit 10.0.76.75/32
+ip prefix-list NewINTRedRoutes seq 200 permit 10.0.76.80/32
+ip prefix-list NewINTRedRoutes seq 205 permit 10.0.76.82/32
+ip prefix-list NewINTRedRoutes seq 210 permit 10.0.76.87/32
+ip prefix-list NewINTRedRoutes seq 215 permit 10.0.76.88/32
+ip prefix-list NewINTRedRoutes seq 220 permit 10.0.76.91/32
+ip prefix-list NewINTRedRoutes seq 225 permit 10.0.76.93/32
+ip prefix-list NewINTRedRoutes seq 230 permit 10.0.76.96/32
+ip prefix-list NewINTRedRoutes seq 235 permit 10.0.76.99/32
+ip prefix-list NewINTRedRoutes seq 240 permit 10.0.76.101/32
+ip prefix-list NewINTRedRoutes seq 245 permit 10.0.76.106/32
+ip prefix-list NewINTRedRoutes seq 250 permit 10.0.76.110/32
+ip prefix-list NewINTRedRoutes seq 255 permit 10.0.76.116/32
+ip prefix-list NewINTRedRoutes seq 260 permit 10.0.76.124/32
+ip prefix-list NewINTRedRoutes seq 265 permit 10.0.76.127/32
+ip prefix-list NewINTRedRoutes seq 270 permit 10.0.76.130/32
+ip prefix-list NewINTRedRoutes seq 275 permit 10.0.76.138/32
+ip prefix-list NewINTRedRoutes seq 280 permit 10.0.76.146/32
+ip prefix-list NewINTRedRoutes seq 285 permit 10.0.76.148/32
+ip prefix-list NewINTRedRoutes seq 290 permit 10.0.76.158/32
+ip prefix-list NewINTRedRoutes seq 295 permit 10.0.76.171/32
+ip prefix-list NewINTRedRoutes seq 300 permit 10.0.76.196/32
+ip prefix-list NewINTRedRoutes seq 305 permit 10.0.76.207/32
+ip prefix-list NewINTRedRoutes seq 310 permit 10.0.76.221/32
+ip prefix-list NewINTRedRoutes seq 315 permit 10.0.76.227/32
+ip prefix-list NewINTRedRoutes seq 320 permit 10.0.89.70/32
+ip prefix-list NewINTRedRoutes seq 325 permit 10.0.89.71/32
+ip prefix-list NewINTRedRoutes seq 330 permit 10.0.89.72/32
+ip prefix-list NewINTRedRoutes seq 335 permit 10.0.89.73/32
+ip prefix-list NewINTRedRoutes seq 340 permit 10.0.89.74/32
+ip prefix-list NewINTRedRoutes seq 345 permit 10.0.89.75/32
+ip prefix-list NewINTRedRoutes seq 350 permit 10.0.89.76/32
+ip prefix-list NewINTRedRoutes seq 355 permit 10.0.89.77/32
+ip prefix-list NewINTRedRoutes seq 360 permit 10.0.89.78/32
+ip prefix-list NewINTRedRoutes seq 365 permit 10.0.89.79/32
+ip prefix-list NewINTRedRoutes seq 370 permit 10.0.89.170/32
+ip prefix-list NewINTRedRoutes seq 375 permit 10.0.89.171/32
+ip prefix-list NewINTRedRoutes seq 380 permit 10.0.89.180/32
+ip prefix-list NewINTRedRoutes seq 385 permit 10.0.89.187/32
+ip prefix-list NewINTRedRoutes seq 390 permit 10.0.89.188/32
+ip prefix-list NewINTRedRoutes seq 395 permit 10.0.97.26/32
+ip prefix-list NewINTRedRoutes seq 400 permit 10.0.192.206/32
+ip prefix-list NewINTRedRoutes seq 405 permit 10.42.8.129/32
+ip prefix-list NewINTRedRoutes seq 410 permit 10.42.19.129/32
+logging trap notifications
+logging host 10.0.51.63 vrf MGMT-VRF
+logging host 10.0.51.25 vrf MGMT-VRF
+logging host 10.0.51.58 vrf MGMT-VRF
+access-list 198 deny   ip any any fragments
+access-list 198 permit udp any any eq 18999
+snmp-server group LMS v3 priv read myview write myview access SNMP-WRITE
+snmp-server group NMS v3 auth notify *tv.FFFFFFFF.FFFFFFFF.FFFFFFFF.FFFFFFFF7F 
+snmp-server group NMS v3 priv access SNMP-READ
+snmp-server view myview mib-2 included
+snmp-server view myview system included
+snmp-server view myview cisco included
+snmp-server ifindex persist
+snmp-server enable traps frame-relay multilink bundle-mismatch
+snmp-server enable traps frame-relay
+snmp-server enable traps frame-relay subif
+snmp-server host 10.0.51.31 vrf MGMT-VRF version 3 auth nms-net 
+snmp-server host 10.0.51.32 vrf MGMT-VRF version 3 auth nms-net 
+snmp-server host 10.0.51.58 vrf MGMT-VRF version 3 auth nms-net 
+snmp-server host 10.0.51.60 vrf MGMT-VRF version 3 auth nms-net 
+snmp-server host 10.0.51.72 vrf MGMT-VRF version 3 auth nms-net 
+!
+!
+!
+route-map APN-INT-RM permit 10
+ match ip address prefix-list APN-INT-Branch
+!
+route-map NewINTRedRoutesRM permit 10
+ match ip address prefix-list NewINTRedRoutes
+!
+route-map NewINTRedRoutesRM deny 20
+!
+!
+!
+tftp-server flash:c3825-adventerprisek9-mz.124-11.XW7.bin
+!
+control-plane
+ service-policy input drop-udp
+!
+!
+!
+!
+!
+!
+!
+!
+!
+banner motd 
+        ===
+       -+ +-
+       | | |
+    <--\ | /-->
+ /____\\ | //____\ ********************************************************
+   <###\|||/###>                  Keshavarzi Bank Network
+    +====+====+     WARNING: Access is restricted to authorized users only.
+    | WAN-BKI |     Unauthorized access is a violation of state , civil and
+    +===+=+===+                       criminal laws.
+        +=+        ********************************************************
+
+privilege interface level 3 shutdown
+privilege interface level 3 no shutdown
+privilege interface level 3 no
+privilege configure level 3 interface
+privilege exec level 3 traceroute
+privilege exec level 3 ping
+privilege exec level 2 configure terminal
+privilege exec level 2 configure
+privilege exec level 3 terminal monitor
+privilege exec level 3 terminal
+privilege exec all level 2 show
+!
+line con 0
+ authorization exec CACS
+ login authentication CACS
+line aux 0
+ no exec
+line vty 0 4
+ access-class TELNET in vrf-also
+ privilege level 15
+ authorization commands 2 CACS
+ authorization exec CACS
+ accounting commands 15 CACS
+ accounting exec CACS
+ login authentication CACS
+ transport input ssh
+ transport output telnet ssh
+line vty 5 15
+ access-class TELNET in vrf-also
+ privilege level 15
+ authorization commands 2 CACS
+ authorization exec CACS
+ accounting exec CACS
+ login authentication CACS
+ transport input ssh
+ transport output telnet ssh
+!
+scheduler allocate 20000 1000
+ntp authentication-key 1 md5 075F701C1D593F5536475B5D267A7C74796060764A5235 7
+ntp authenticate
+ntp trusted-key 1
+ntp clock-period 17180038
+ntp source Vlan51
+ntp server vrf MGMT-VRF 10.0.51.27
+
+!
+webvpn cef
+!
+end
