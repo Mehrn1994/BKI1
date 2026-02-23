@@ -1,0 +1,661 @@
+
+!
+! Last configuration change at 10:46:05 Tehran Tue Dec 30 2025 by s-sattari
+! NVRAM config last updated at 10:46:07 Tehran Tue Dec 30 2025 by s-sattari
+!
+version 12.2
+no service pad
+service timestamps debug datetime msec
+service timestamps log datetime localtime
+service password-encryption
+!
+hostname SW3560X-Maz
+!
+boot-start-marker
+boot-end-marker
+!
+enable secret 5 $1$RnVc$EPpXIyzLs5yOICvTajYUh.
+!
+username bkroot privilege 15 secret 5 $1$KmoK$9JNpGcu98jCmJTB8PDZ75/
+!
+!
+aaa new-model
+!
+!
+aaa authentication login CACS group tacacs+ local
+aaa authentication enable default group tacacs+ enable
+aaa authorization console
+aaa authorization config-commands
+aaa authorization exec CACS group tacacs+ local 
+aaa authorization commands 0 CACS group tacacs+ local 
+aaa authorization commands 1 CACS group tacacs+ local 
+aaa authorization commands 2 CACS group tacacs+ local 
+aaa authorization commands 3 CACS group tacacs+ local 
+aaa authorization commands 15 CACS group tacacs+ local 
+aaa accounting exec CACS start-stop group tacacs+
+aaa accounting commands 0 CACS start-stop group tacacs+
+aaa accounting commands 1 CACS start-stop group tacacs+
+aaa accounting commands 2 CACS start-stop group tacacs+
+aaa accounting commands 3 CACS start-stop group tacacs+
+aaa accounting commands 15 CACS start-stop group tacacs+
+!
+!
+!
+aaa session-id common
+clock timezone Tehran 3 30
+clock summer-time THR recurring 3 Sat Mar 0:00 last Tue Sep 0:00
+system mtu routing 1500
+ip routing
+!
+!
+no ip domain-lookup
+ip domain-name agri-bank.com
+!
+track 5 ip route 10.32.254.1 255.255.255.255 reachability
+!
+!
+!
+archive
+ log config
+  hidekeys
+ path tftp://10.0.51.40/ProSW/$h
+ write-memory
+!
+spanning-tree mode pvst
+spanning-tree extend system-id
+spanning-tree vlan 1,10,12-14,47 priority 0
+!
+!
+!
+!
+vlan internal allocation policy ascending
+!
+ip tftp source-interface Vlan10
+ip ssh time-out 30
+ip ssh authentication-retries 2
+ip ssh version 2
+!
+!
+interface Loopback0
+ ip address 10.32.254.2 255.255.255.0
+!
+interface FastEthernet0
+ no ip address
+ no ip route-cache cef
+ no ip route-cache
+ no ip mroute-cache
+!
+interface GigabitEthernet0/1
+ description ** Router **
+ no switchport
+ ip address 10.32.0.0 255.255.255.254
+!
+interface GigabitEthernet0/2
+ description ** ASA-FireWall **
+ no switchport
+ ip address 10.32.0.5 255.255.255.252
+!
+interface GigabitEthernet0/3
+ description ** 2960-10.32.1.249  **
+ switchport trunk encapsulation dot1q
+ switchport mode trunk
+!
+interface GigabitEthernet0/4
+ switchport trunk encapsulation dot1q
+ switchport mode trunk
+!
+interface GigabitEthernet0/5
+ description ** 10.32.1.243-48 **
+ switchport trunk encapsulation dot1q
+ switchport mode trunk
+!
+interface GigabitEthernet0/6
+ switchport trunk encapsulation dot1q
+ switchport mode trunk
+!
+interface GigabitEthernet0/7
+ switchport trunk encapsulation dot1q
+ switchport mode trunk
+!
+interface GigabitEthernet0/8
+ switchport trunk encapsulation dot1q
+ switchport mode trunk
+!
+interface GigabitEthernet0/9
+ switchport trunk encapsulation dot1q
+ switchport mode trunk
+!
+interface GigabitEthernet0/10
+ switchport trunk encapsulation dot1q
+ switchport mode trunk
+!
+interface GigabitEthernet0/11
+ description ** 10.32.1.240 **
+ switchport trunk encapsulation dot1q
+ switchport mode trunk
+!
+interface GigabitEthernet0/12
+ switchport trunk encapsulation dot1q
+ switchport mode trunk
+!
+interface GigabitEthernet0/13
+ description ** 10.32.1.241 **
+ switchport trunk encapsulation dot1q
+ switchport mode trunk
+!
+interface GigabitEthernet0/14
+ description ** 10.32.1.246-48 **
+ switchport trunk encapsulation dot1q
+ switchport mode trunk
+!
+interface GigabitEthernet0/15
+ switchport trunk encapsulation dot1q
+ switchport mode trunk
+!
+interface GigabitEthernet0/16
+ switchport trunk encapsulation dot1q
+ switchport mode trunk
+!
+interface GigabitEthernet0/17
+ switchport trunk encapsulation dot1q
+ switchport mode trunk
+!
+interface GigabitEthernet0/18
+ switchport access vlan 14
+ switchport mode access
+!
+interface GigabitEthernet0/19
+ switchport trunk encapsulation dot1q
+ switchport mode trunk
+!
+interface GigabitEthernet0/20
+ switchport trunk encapsulation dot1q
+ switchport mode trunk
+!
+interface GigabitEthernet0/21
+ description ** 10.32.1.244 **
+ switchport trunk encapsulation dot1q
+ switchport mode trunk
+!
+interface GigabitEthernet0/22
+ switchport trunk encapsulation dot1q
+ switchport mode trunk
+!
+interface GigabitEthernet0/23
+ switchport trunk encapsulation dot1q
+ switchport mode access
+ spanning-tree portfast
+!
+interface GigabitEthernet0/24
+ description ** To SW-Core2 **
+ switchport trunk encapsulation dot1q
+ switchport mode trunk
+ shutdown
+!
+interface GigabitEthernet1/1
+!
+interface GigabitEthernet1/2
+!
+interface GigabitEthernet1/3
+!
+interface GigabitEthernet1/4
+!
+interface TenGigabitEthernet1/1
+!
+interface TenGigabitEthernet1/2
+!
+interface Vlan1
+ no ip address
+ shutdown
+!
+interface Vlan10
+ description ** ServerFarm **
+ ip address 10.32.1.1 255.255.255.0
+ ip access-group ETHERNET-IN in
+ ip helper-address 10.32.1.10
+ ip helper-address 10.32.1.11
+ ip helper-address 10.32.1.13
+!
+interface Vlan12
+ description ** Security-Vlan **
+ ip address 10.32.2.1 255.255.255.0
+ ip access-group Security-Access in
+ ip helper-address 10.32.1.10
+ ip helper-address 10.32.1.11
+ ip helper-address 10.32.1.13
+!
+interface Vlan14
+ description ** SOPHOS **
+ ip address 10.32.4.1 255.255.255.0
+!
+interface Vlan47
+ description ** VOICE-VLAN **
+ ip address 10.32.7.1 255.255.255.0
+ ip helper-address 10.32.1.10
+ ip helper-address 10.32.1.11
+ ip helper-address 10.32.1.13
+!
+router ospf 1
+ router-id 10.32.254.2
+ log-adjacency-changes
+ network 10.32.0.0 0.0.0.0 area 32
+ network 10.32.1.0 0.0.0.255 area 32
+ network 10.32.2.0 0.0.0.255 area 32
+ network 10.32.4.1 0.0.0.0 area 32
+ network 10.32.7.0 0.0.0.255 area 32
+ network 10.32.254.2 0.0.0.0 area 32
+ distribute-list OSPF-PERMIT in
+!
+ip classless
+ip route 10.30.42.0 255.255.255.0 GigabitEthernet0/1
+ip route 10.30.176.187 255.255.255.255 GigabitEthernet0/1 name SandoqTose'eMelli
+ip route 10.30.176.188 255.255.255.255 GigabitEthernet0/1 name SandoqTose'eMelli
+ip route 10.60.66.29 255.255.255.255 10.32.0.1
+ip route 10.241.0.2 255.255.255.255 GigabitEthernet0/1 name MPLS-Monitoring
+ip route 10.255.240.29 255.255.255.255 10.32.0.1
+ip route 10.255.241.29 255.255.255.255 10.32.0.1
+ip route 91.240.180.40 255.255.255.255 GigabitEthernet0/1 name SP.SEP.IR
+ip route 91.240.180.133 255.255.255.255 GigabitEthernet0/1 name SSPM.SEP.IR
+no ip http server
+no ip http secure-server
+ip tacacs source-interface GigabitEthernet0/1
+!
+ip access-list standard OSPF-PERMIT
+ deny   10.32.1.4
+ permit 192.168.65.0 0.0.0.255
+ remark -----------------------------
+ deny   10.32.1.230 0.0.0.1
+ permit 10.0.153.0 0.0.0.255
+ permit 10.0.152.0 0.0.0.255
+ permit 10.0.152.0 0.0.1.255
+ remark -----------------------------
+ permit 10.32.0.0 0.0.255.255
+ permit 10.0.250.0 0.0.0.255
+ permit 10.60.3.0 0.0.0.255
+ permit 10.0.0.0 0.0.255.255
+ permit 192.168.15.0 0.0.0.255
+ permit 192.168.72.0 0.0.0.255
+ permit 10.60.0.0 0.0.255.255
+ permit 10.60.66.0 0.0.0.255
+ permit 192.168.112.0 0.0.0.255
+ip access-list standard SNMP-READ
+ permit 10.0.50.0 0.0.1.255
+ip access-list standard SNMP-WRITE
+ permit 10.0.51.49
+ permit 10.0.51.48
+ permit 10.0.51.50
+ip access-list standard TELNET-ACCESS
+ permit 10.0.51.49
+ permit 10.0.51.48
+ permit 10.32.0.3
+ permit 10.32.0.1
+ permit 10.32.1.200 0.0.0.3
+ permit 10.0.50.64 0.0.0.63
+!
+ip access-list extended ETHERNET-IN
+ remark ---------------      DC      -----------------------
+ permit ip 10.32.1.10 0.0.0.1 host 10.0.53.3
+ permit ip 10.32.1.10 0.0.0.1 host 10.0.53.8
+ permit ip 10.32.1.10 0.0.0.1 host 10.0.53.9
+ permit ip 10.32.1.10 0.0.0.1 host 10.0.53.14
+ permit ip 10.32.1.10 0.0.0.1 host 10.0.53.15
+ permit ip 10.32.1.10 0.0.0.1 host 10.0.53.31
+ permit ip 10.32.1.10 0.0.0.1 host 10.0.53.32
+ permit ip 10.32.1.10 0.0.0.1 host 10.0.53.34
+ permit ip 10.32.1.10 0.0.0.1 host 10.0.53.36
+ permit ip 10.32.1.10 0.0.0.1 host 10.0.53.66
+ permit ip 10.32.1.10 0.0.0.1 host 10.0.53.150
+ permit ip 10.32.1.10 0.0.0.1 host 10.0.54.16
+ permit ip 10.32.1.10 0.0.0.1 host 10.0.54.17
+ permit ip 10.32.1.10 0.0.0.1 host 10.0.54.129
+ permit ip 10.32.1.10 0.0.0.1 host 10.0.54.200
+ permit ip 10.32.1.10 0.0.0.1 host 10.0.56.16
+ permit ip 10.32.1.10 0.0.0.1 host 10.0.56.17
+ permit ip 10.32.1.10 0.0.0.1 host 10.0.68.50
+ permit ip 10.32.1.10 0.0.0.1 host 10.0.68.64
+ permit ip 10.32.1.10 0.0.0.1 host 10.0.68.111
+ permit ip 10.32.1.10 0.0.0.1 host 10.0.68.215
+ permit ip 10.32.1.10 0.0.0.1 host 10.0.68.216
+ permit ip 10.32.1.10 0.0.0.1 host 10.0.136.16
+ permit ip 10.32.1.10 0.0.0.1 host 10.0.137.16
+ permit ip 10.32.1.10 0.0.0.1 host 10.0.138.16
+ permit ip 10.32.1.10 0.0.0.1 host 10.0.151.2
+ permit ip 10.32.1.10 0.0.0.1 10.0.204.232 0.0.0.7
+ permit ip 10.32.1.10 0.0.0.1 10.0.204.240 0.0.0.7
+ permit ip 10.32.1.10 0.0.0.1 10.32.0.0 0.0.7.255
+ permit ip host 10.32.1.10 host 10.32.4.2
+ permit ip host 10.32.1.13 host 10.0.53.3
+ permit ip host 10.32.1.13 host 10.0.53.8
+ permit ip host 10.32.1.13 host 10.0.53.9
+ permit ip host 10.32.1.13 host 10.0.53.14
+ permit ip host 10.32.1.13 host 10.0.53.15
+ permit ip host 10.32.1.13 host 10.0.53.31
+ permit ip host 10.32.1.13 host 10.0.53.32
+ permit ip host 10.32.1.13 host 10.0.53.34
+ permit ip host 10.32.1.13 host 10.0.53.36
+ permit ip host 10.32.1.13 host 10.0.53.66
+ permit ip host 10.32.1.13 host 10.0.53.150
+ permit ip host 10.32.1.13 host 10.0.54.16
+ permit ip host 10.32.1.13 host 10.0.54.17
+ permit ip host 10.32.1.13 host 10.0.54.129
+ permit ip host 10.32.1.13 host 10.0.54.200
+ permit ip host 10.32.1.13 host 10.0.56.16
+ permit ip host 10.32.1.13 host 10.0.56.17
+ permit ip host 10.32.1.13 host 10.0.68.50
+ permit ip host 10.32.1.13 host 10.0.68.64
+ permit ip host 10.32.1.13 host 10.0.68.111
+ permit ip host 10.32.1.13 host 10.0.68.215
+ permit ip host 10.32.1.13 host 10.0.68.216
+ permit ip host 10.32.1.13 host 10.0.136.16
+ permit ip host 10.32.1.13 host 10.0.137.16
+ permit ip host 10.32.1.13 host 10.0.138.16
+ permit ip host 10.32.1.13 host 10.0.151.2
+ permit ip host 10.32.1.13 10.0.204.232 0.0.0.7
+ permit ip host 10.32.1.13 10.0.204.240 0.0.0.7
+ permit ip host 10.32.1.13 10.32.0.0 0.0.7.255
+ permit ip host 10.32.1.13 host 10.32.4.2
+ permit ip 10.32.1.0 0.0.0.255 host 10.32.4.2
+ permit ip 10.0.110.0 0.0.0.255 host 10.32.4.2
+ permit ip 10.0.97.0 0.0.0.255 host 10.32.4.2
+ remark ---------------      DENY      ---------------------
+ deny   udp any any range 135 netbios-ss
+ deny   tcp any any range 135 139
+ deny   tcp any any eq 445
+ deny   udp any any eq 445
+ deny   tcp any any eq 1026
+ deny   udp any any eq 1428
+ deny   udp any any eq 1434
+ deny   tcp any any eq 1434
+ deny   tcp any any eq 4444
+ permit tcp any 10.32.0.0 0.0.7.255 eq www 443 8081 8082 8090 9090
+ deny   tcp any 10.32.0.0 0.0.255.255 eq www 443 8081 8082 8090 9090
+ deny   udp any any eq 18999
+ deny   tcp host 10.32.1.8 any eq 22 telnet
+ permit ip host 10.32.1.8 host 10.255.241.29
+ permit ospf any any
+ remark ---------------   Monitoring  ----------------------
+ permit tcp host 10.32.1.8 10.32.0.0 0.0.7.255
+ permit udp 10.32.1.0 0.0.0.255 224.0.0.0 0.0.0.255
+ permit tcp host 10.32.1.8 10.32.254.0 0.0.0.255 eq 22 telnet
+ permit tcp host 10.32.1.8 10.32.0.0 0.0.255.3 eq 22 telnet 4343
+ permit tcp host 10.32.1.8 eq ftp-data ftp 10324 10.32.0.0 0.0.255.255
+ permit tcp host 10.32.1.8 host 10.0.103.10
+ permit tcp 10.32.0.0 0.0.7.255 10.32.0.0 0.0.7.255
+ permit tcp 10.32.0.0 0.0.1.1 10.32.254.0 0.0.0.7
+ permit tcp 10.32.254.0 0.0.0.7 10.32.1.0 0.0.0.1
+ permit tcp 10.32.254.0 0.0.0.7 10.32.0.0 0.0.0.255
+ permit tcp 10.32.254.0 0.0.0.7 10.32.254.0 0.0.0.7
+ permit icmp 10.32.0.0 0.0.1.255 10.32.0.0 0.0.1.255
+ permit icmp 10.32.254.0 0.0.0.7 10.32.254.0 0.0.0.7
+ permit icmp 10.32.254.0 0.0.0.7 10.32.0.0 0.0.0.255
+ permit icmp 10.32.254.0 0.0.0.7 10.32.1.0 0.0.0.1
+ permit icmp 10.32.1.0 0.0.0.1 10.32.254.0 0.0.0.7
+ permit icmp 10.32.0.0 0.0.0.255 10.32.254.0 0.0.0.7
+ permit icmp host 10.32.1.8 host 10.0.103.10
+ permit icmp host 10.32.1.8 10.32.0.0 0.0.255.255
+ permit icmp host 10.32.1.8 10.0.250.0 0.0.0.255
+ permit icmp host 10.32.1.8 10.240.0.0 0.1.255.255
+ permit icmp host 10.32.1.8 10.134.0.0 0.0.255.255
+ permit icmp host 10.32.1.8 10.139.0.0 0.0.255.255
+ permit icmp host 10.32.1.8 10.251.0.0 0.0.255.255
+ permit ip 10.32.0.0 0.0.1.255 10.0.50.0 0.0.1.255
+ permit ip 10.32.0.0 0.0.1.255 10.0.111.0 0.0.0.255
+ permit tcp host 10.32.1.13 10.0.112.0 0.0.0.255
+ permit tcp host 10.32.1.15 10.0.112.0 0.0.0.255
+ permit tcp host 10.32.1.16 10.0.112.0 0.0.0.255
+ permit ip 10.32.254.0 0.0.0.7 10.0.50.0 0.0.1.255
+ permit ip 10.32.0.0 0.0.1.15 10.0.152.0 0.0.1.255
+ permit ip 10.32.1.240 0.0.0.15 10.0.152.0 0.0.1.255
+ remark --------------    KartZani    ---------------------
+ permit tcp 10.32.1.232 0.0.0.1 10.32.0.136 0.0.255.1 eq www
+ permit icmp 10.32.1.232 0.0.0.1 10.32.0.136 0.0.255.1
+ permit ip 10.32.1.232 0.0.0.1 10.32.0.136 0.0.255.1 time-range TIME-KartZani
+ deny   tcp host 10.32.1.6 any eq 22 telnet
+ remark ---------------    Internet    ---------------------
+ deny   ip host 10.32.1.6 10.0.0.0 0.255.255.255
+ deny   ip host 10.32.1.6 172.16.0.0 0.7.255.255
+ permit icmp host 10.32.1.6 any
+ remark ---------------      ServerFarm      ---------------
+ permit ip 10.32.1.0 0.0.0.255 10.0.49.0 0.0.0.255
+ permit ip 10.32.1.0 0.0.0.255 10.0.52.0 0.0.1.255
+ permit ip 10.32.1.0 0.0.0.255 10.0.54.0 0.0.0.255
+ permit ip 10.32.1.0 0.0.0.255 10.0.32.0 0.0.3.255
+ permit ip host 10.32.1.117 host 10.0.34.99
+ permit ip 10.32.1.0 0.0.0.255 10.0.57.0 0.0.0.255
+ permit ip 10.32.1.0 0.0.0.255 10.0.58.0 0.0.0.255
+ permit ip 10.32.1.0 0.0.0.255 10.0.68.0 0.0.1.255
+ permit ip 10.32.1.0 0.0.0.255 10.0.34.0 0.0.0.255
+ permit ip 10.32.1.0 0.0.0.255 10.0.70.0 0.0.0.255
+ permit ip 10.32.1.0 0.0.0.255 10.0.56.0 0.0.0.255
+ remark ---------------  FNS Training   --------------------
+ permit ip host 10.32.1.3 host 10.0.66.152
+ permit ip host 10.32.1.3 host 10.0.66.10
+ permit ip host 10.32.1.3 host 10.50.66.10
+ permit ip host 10.32.1.3 host 10.50.64.20
+ permit ip host 10.32.1.3 host 10.0.66.140
+ permit ip host 10.32.1.3 host 10.0.65.118
+ permit ip host 10.32.1.3 host 10.0.65.57
+ remark ---------------      MerAt      --------------------
+ permit ip host 10.32.1.3 host 10.0.85.12
+ remark --------------   ATM&Kiosk  -------------------
+ permit ip host 10.32.1.23 10.0.88.0 0.0.0.255
+ permit ip 10.32.1.24 0.0.0.3 10.0.88.0 0.0.0.255
+ permit ip 10.32.1.0 0.0.0.255 10.0.89.0 0.0.0.255
+ remark ---------------      Herasat      ------------------
+ permit ip 10.32.1.224 0.0.0.7 10.0.93.10 0.0.0.1
+ permit ip 10.32.1.192 0.0.0.15 10.0.93.10 0.0.0.1
+ remark ---------------  IT Security Management  -----------
+ permit ip 10.32.1.0 0.0.0.255 host 10.0.53.88
+ remark -----------    amniat.agri-bank.com     ---------------
+ permit ip 10.32.1.0 0.0.0.255 host 10.0.97.26
+ remark ---------------  TC-HR-Access -----------------
+ permit ip host 10.32.1.4 host 10.32.9.150
+ permit ip host 10.32.1.4 host 10.32.9.151
+ permit ip host 10.32.1.4 host 10.32.9.247
+ deny   tcp host 10.32.1.16 any eq 22 telnet
+ permit tcp host 10.32.1.16 eq 8443 1433 81 18081 18082 8444 443 10.32.0.0 0.0.255.255
+ permit ip 10.32.1.0 0.0.0.255 192.168.72.0 0.0.0.255
+ remark ---------------      NIBN      ---------------
+ permit ip 10.32.1.0 0.0.0.255 192.168.65.0 0.0.0.255
+ remark ---------------      Monitoring      -----------------------
+ permit ip host 10.32.1.8 host 10.87.0.138
+ remark ---------------   SoratHesab  ----------------------
+ permit tcp host 10.32.1.7 host 10.0.56.115 eq 8376
+ remark ---------------     M-Ensani     -------------------
+ permit ip host 10.32.1.4 10.0.204.232 0.0.0.7
+ permit ip host 10.32.1.4 10.0.204.240 0.0.0.7
+ permit ip host 10.32.1.4 10.0.74.224 0.0.0.31
+ permit tcp host 10.32.1.4 eq 1521 host 10.0.16.154
+ permit tcp host 10.32.1.4 10.0.138.16 0.0.0.1
+ permit tcp host 10.32.1.4 10.0.176.16 0.0.0.15
+ permit tcp host 10.32.1.4 host 10.0.6.20
+ permit ip host 10.32.1.31 10.0.204.232 0.0.0.7
+ permit ip host 10.32.1.31 10.0.204.240 0.0.0.7
+ permit ip host 10.32.1.31 host 10.0.85.23
+ permit ip host 10.32.1.3 host 10.0.85.66
+ remark ---------------    FNS Report   --------------------
+ permit ip host 10.32.1.7 host 10.0.64.142
+ permit ip host 10.32.1.7 host 10.0.65.57
+ permit ip host 10.32.1.7 host 10.0.65.118
+ permit ip 10.32.1.0 0.0.0.255 host 10.0.65.226
+ remark --------------- Herasat-GPS --------------------
+ permit tcp 10.32.1.180 0.0.0.3 host 10.0.101.40 eq www
+ permit icmp 10.32.1.180 0.0.0.3 host 10.0.101.40
+ permit ip host 10.32.1.8 host 10.255.240.29
+ permit icmp host 10.32.1.8 host 10.255.0.32
+ remark --------------- Remote-MGUpdate --------------------
+ permit ip host 10.32.1.3 10.0.86.232 0.0.0.1
+ permit ip host 10.32.1.3 host 10.0.86.234
+ permit ip host 10.32.1.7 10.0.86.232 0.0.0.1
+ permit ip host 10.32.1.9 10.0.86.232 0.0.0.1
+ permit ip host 10.32.1.7 host 10.0.86.234
+ permit ip host 10.32.1.3 host 10.0.86.53
+ permit ip host 10.32.1.7 host 10.0.86.53
+ permit ip 10.32.1.0 0.0.0.255 10.30.42.0 0.0.0.255
+ permit ip 10.32.1.0 0.0.0.255 host 185.4.106.91
+ remark --------------Image server new -------------
+ permit ip host 10.32.1.7 10.0.55.0 0.0.0.255
+ remark -------------- Video-CONF -------------
+ permit ip 10.32.1.230 0.0.0.1 host 10.0.55.150
+ remark ------------------ Nezarat-Tasviri ------------------
+ permit icmp 10.32.1.224 0.0.0.7 10.32.0.192 0.0.255.63
+ permit icmp 10.32.1.192 0.0.0.15 10.32.0.192 0.0.255.63
+ permit ip 10.32.1.204 0.0.0.1 10.32.0.192 0.0.255.1 time-range NEZARAT-TASVIRI
+ permit ip 10.32.1.206 0.0.0.1 10.32.0.206 0.0.255.1
+ permit ip 10.32.1.206 0.0.0.1 10.0.1.0 0.0.0.255
+ permit ip 10.32.1.206 0.0.0.1 10.0.6.0 0.0.0.255
+ permit ip host 10.32.1.199 10.32.8.206 0.0.247.1
+ permit ip 10.32.1.0 0.0.0.255 10.0.55.0 0.0.0.255
+ permit tcp host 10.32.1.15 eq 443 8443 1433 81 18081 18082 8444 10.32.0.0 0.0.255.255
+ permit tcp host 10.32.1.15 10.32.0.0 0.0.255.255 eq 18081
+ permit tcp host 10.32.1.16 10.32.0.0 0.0.255.255 eq 18081
+ remark ------------------- Irma ------------------
+ permit ip 10.32.1.140 0.0.0.3 host 192.168.15.40
+ remark ------------------------ Herast -----------------------------------------
+ permit ip 10.32.1.140 0.0.0.3 host 192.168.15.20
+ permit ip 10.32.1.0 0.0.0.255 host 10.0.118.131
+ permit ip any 10.0.76.0 0.0.1.255
+ permit ip 10.32.1.0 0.0.0.255 host 10.0.136.200
+ permit ip 10.32.1.0 0.0.0.255 host 10.0.136.201
+ permit tcp 10.32.1.180 0.0.0.3 host 10.0.101.40 eq 8080
+ permit tcp 10.32.1.180 0.0.0.3 host 10.0.101.39 eq www
+ remark -------------   VConference-Access  ------------------
+ permit ip 10.32.1.0 0.0.0.255 host 10.0.118.102
+ remark --------------- HTSC-Portal -------------
+ permit ip 10.32.1.0 0.0.0.255 host 10.60.66.29
+ permit ip 10.32.1.0 0.0.0.255 host 91.240.180.40
+ permit ip 10.32.1.0 0.0.0.255 host 91.240.181.1
+ permit ip 10.32.1.0 0.0.0.255 host 10.30.176.187
+ permit ip 10.32.1.0 0.0.0.255 host 10.30.176.188
+ permit ip 10.32.3.0 0.0.0.255 host 10.30.176.187
+ permit ip 10.32.3.0 0.0.0.255 host 10.30.176.188
+ permit udp 10.32.1.0 0.0.0.255 host 10.0.225.150 eq 999
+ permit ip 10.32.1.0 0.0.0.255 host 91.240.180.133
+ permit ip host 10.32.1.92 host 10.0.54.173
+ permit ip host 10.32.1.76 10.0.54.54 0.0.0.1
+ permit ip host 10.32.1.98 10.0.54.54 0.0.0.1
+ permit tcp host 10.32.1.8 host 10.0.51.31
+ permit icmp host 10.32.1.8 host 10.0.51.31
+ permit icmp any any
+ip access-list extended Security-Access
+ remark ------------------   DC-Access  -----------------------
+ permit ip 10.32.2.0 0.0.0.255 10.32.1.10 0.0.0.1
+ permit ip 10.32.2.0 0.0.0.255 host 10.32.1.13
+ remark -------------------   DENY  --------------------------
+ deny   udp any any range 135 netbios-ss
+ deny   tcp any any range 135 139
+ deny   tcp any any eq 445
+ deny   udp any any eq 445
+ deny   tcp any any eq 1026
+ deny   udp any any eq 1428
+ deny   udp any any eq 1434
+ deny   tcp any any eq 1434
+ deny   tcp any any eq 4444
+ permit ospf any any
+ permit udp 10.32.2.0 0.0.0.255 224.0.0.0 0.0.0.255
+ permit icmp host 10.32.2.8 10.32.0.0 0.0.255.255
+ permit icmp host 10.32.2.9 10.32.0.0 0.0.255.255
+ permit ip 10.32.2.0 0.0.0.255 10.0.50.0 0.0.1.255
+ permit tcp host 10.32.2.8 host 10.32.1.16 eq 8443 1433 81 18081 18082 8444 443
+ permit tcp host 10.32.2.9 host 10.32.1.16 eq 8443 1433 81 18081 18082 8444 443
+ remark ---------------   Remote-Access  ----------------------
+ deny   tcp host 10.32.2.8 10.32.0.0 0.0.1.255
+ deny   tcp host 10.32.2.9 10.32.0.0 0.0.1.255
+ deny   tcp host 10.32.2.8 10.32.3.0 0.0.0.255
+ deny   tcp host 10.32.2.9 10.32.3.0 0.0.0.255
+ deny   tcp host 10.32.2.8 10.32.4.0 0.0.3.255
+ deny   tcp host 10.32.2.9 10.32.4.0 0.0.3.255
+ permit tcp host 10.32.2.8 10.32.2.0 0.0.0.255
+ permit tcp host 10.32.2.9 10.32.2.0 0.0.0.255
+ permit tcp host 10.32.2.8 10.32.0.0 0.0.255.255 eq 3389
+ permit tcp host 10.32.2.9 10.32.0.0 0.0.255.255 eq 3389
+!
+!
+ip prefix-list OSPF-FILTER seq 10 permit 10.0.0.0/16
+ip prefix-list OSPF-FILTER seq 20 permit 10.32.0.0/24
+ip prefix-list OSPF-FILTER seq 30 permit 10.32.1.0/24
+logging trap notifications
+logging source-interface Loopback0
+logging 10.0.51.63
+logging 10.0.51.25
+tftp-server flash:JAE191904NC_201602102056360320.lic
+snmp-server group LMS v3 priv read myview write myview access SNMP-WRITE
+snmp-server group NMS v3 priv access SNMP-READ
+snmp-server view myview mib-2 included
+snmp-server view myview system included
+snmp-server view myview cisco included
+snmp ifmib ifindex persist
+tacacs-server host 10.0.51.56
+tacacs-server host 10.0.51.57
+tacacs-server timeout 10
+tacacs-server directed-request
+tacacs-server key 7 06271C6F031F5A49
+!
+no vstack
+banner motd 
+       ===
+      -+ +-
+      | | |                Keshavarzi Bank Network
+   <--\ | /-->
+  ##| ||||| |##
+ ###| |+++| |###
+/____\\ | //____\                 WARNING:
+  <###\|||/###>
+   +====+====+   Access is restricted to authorized users only.
+   | WAN-BKI |    Unauthorized access is a violation of state,
+   +===+=+===+             civil and criminal laws.
+       +=+
+
+privilege interface level 3 shutdown
+privilege interface level 3 no shutdown
+privilege interface level 3 no
+privilege configure level 3 interface
+privilege exec level 3 show
+privilege exec level 3 traceroute
+privilege exec level 3 ping
+privilege exec level 3 terminal monitor
+privilege exec level 2 configure terminal
+privilege exec level 2 configure
+!
+line con 0
+ authorization exec CACS
+ login authentication CACS
+line vty 0 4
+ access-class TELNET-ACCESS in
+ privilege level 15
+ authorization commands 2 CACS
+ authorization exec CACS
+ accounting commands 15 CACS
+ accounting exec CACS
+ login authentication CACS
+ transport input ssh
+ transport output telnet ssh
+line vty 5 15
+ access-class TELNET-ACCESS in
+ authorization commands 2 CACS
+ authorization exec CACS
+ accounting exec CACS
+ login authentication CACS
+ transport input ssh
+ transport output telnet ssh
+!
+ntp authentication-key 1 md5 02070349024B0D204245 7
+ntp authenticate
+ntp trusted-key 1
+ntp clock-period 36027125
+ntp source Vlan10
+ntp server 10.0.51.27
+time-range AV-UPDATE
+ periodic Monday Tuesday Wednesday Thursday Saturday Sunday 14:00 to 23:59
+ periodic Monday Tuesday Wednesday Thursday Saturday Sunday 0:00 to 7:00
+ periodic Friday 0:00 to 23:59
+!
+time-range NEZARAT-TASVIRI
+ periodic Friday 0:00 to 23:59
+ periodic Monday Tuesday Wednesday Thursday Saturday Sunday 0:00 to 7:00
+ periodic Monday Tuesday Wednesday Thursday Saturday Sunday 15:00 to 23:59
+!
+time-range TIME-KartZani
+ periodic Monday Tuesday Wednesday Thursday Saturday Sunday 8:00 to 18:00
+!
+end
