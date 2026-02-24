@@ -3966,7 +3966,7 @@ def ping_host():
         return jsonify({'reachable': False, 'host': host, 'avg_ms': None, 'output': str(e)})
 
 # ==================== SHARED FILES API ====================
-SHARED_FILES_DIR = os.path.join(BASE_DIR, 'data', 'shared_files')
+SHARED_FILES_DIR = os.path.join(os.path.dirname(__file__), 'data', 'shared_files')
 os.makedirs(SHARED_FILES_DIR, exist_ok=True)
 SHARED_MAX_SIZE = 100 * 1024 * 1024  # 100MB
 SHARED_ALLOWED_EXT = {
@@ -4266,7 +4266,7 @@ def _parse_router_config(filepath):
 
 @app.route('/api/network-map/topology', methods=['GET'])
 def network_map_topology():
-    router_dir = os.path.join(BASE_DIR, 'Router')
+    router_dir = os.path.join(os.path.dirname(__file__), 'Router')
     nodes, links = [], []
     if not os.path.exists(router_dir):
         return jsonify({'nodes':[],'links':[],'error':'Router directory not found'})
