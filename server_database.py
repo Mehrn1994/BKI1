@@ -729,6 +729,19 @@ def debug_tables():
 def service_management():
     return render_template('service_management.html')
 
+# ==================== NEW PAGES ====================
+@app.route('/shared-files')
+def shared_files_page():
+    return render_template('shared_files.html')
+
+@app.route('/reports')
+def reports_page():
+    return render_template('reports.html')
+
+@app.route('/network-map')
+def network_map_page():
+    return render_template('network_map.html')
+
 @app.route('/api/search-services', methods=['GET'])
 def search_services():
     """Search all services for a branch/IP across ALL tables including lan_ips"""
@@ -3951,6 +3964,355 @@ def ping_host():
         return jsonify({'reachable': False, 'host': host, 'avg_ms': None, 'output': 'Ping timed out'})
     except Exception as e:
         return jsonify({'reachable': False, 'host': host, 'avg_ms': None, 'output': str(e)})
+
+# ==================== SHARED FILES API ====================
+SHARED_FILES_DIR = os.path.join(BASE_DIR, 'data', 'shared_files')
+os.makedirs(SHARED_FILES_DIR, exist_ok=True)
+SHARED_MAX_SIZE = 100 * 1024 * 1024  # 100MB
+SHARED_ALLOWED_EXT = {
+    'pdf','doc','docx','xls','xlsx','ppt','pptx','txt','csv',
+    'zip','rar','7z','tar','gz','png','jpg','jpeg','gif','bmp','svg',
+    'bin','ios','img','conf','cfg','log','py','sh','bat','json','xml','yaml','yml'
+}
+
+@app.route('/api/shared-files', methods=['GET'])
+def list_shared_files():
+    try:
+        files = []
+        for f in os.listdir(SHARED_FILES_DIR):
+            fpath = os.path.join(SHARED_FILES_DIR, f)
+            if os.path.isfile(fpath):
+                stat = os.stat(fpath)
+                ext = f.rsplit('.', 1)[-1].lower() if '.' in f else ''
+                files.append({'name': f, 'size': stat.st_size, 'ext': ext,
+                    'modified': datetime.fromtimestamp(stat.st_mtime).strftime('%Y-%m-%d %H:%M:%S'),
+                    'uploaded': datetime.fromtimestamp(stat.st_ctime).strftime('%Y-%m-%d %H:%M:%S')})
+        files.sort(key=lambda x: x['modified'], reverse=True)
+        return jsonify({'status': 'ok', 'files': files})
+    except Exception as e:
+        return jsonify({'status': 'error', 'error': str(e)}), 500
+
+@app.route('/api/shared-files/upload', methods=['POST'])
+def upload_shared_file():
+    try:
+        from werkzeug.utils import secure_filename
+        username = request.form.get('username', 'unknown')
+        if 'file' not in request.files:
+            return jsonify({'status': 'error', 'error': 'No file selected'}), 400
+        file = request.files['file']
+        if not file.filename:
+            return jsonify({'status': 'error', 'error': 'No file selected'}), 400
+        ext = file.filename.rsplit('.', 1)[-1].lower() if '.' in file.filename else ''
+        if ext not in SHARED_ALLOWED_EXT:
+            return jsonify({'status': 'error', 'error': f'File type .{ext} not allowed'}), 400
+        file.seek(0, 2)
+        size = file.tell()
+        file.seek(0)
+        if size > SHARED_MAX_SIZE:
+            return jsonify({'status': 'error', 'error': 'File too large (max 100MB)'}), 400
+        filename = secure_filename(file.filename) or f'file_{int(time.time())}.{ext}'
+        filepath = os.path.join(SHARED_FILES_DIR, filename)
+        if os.path.exists(filepath):
+            name_part = filename.rsplit('.', 1)[0] if '.' in filename else filename
+            ext_part = filename.rsplit('.', 1)[1] if '.' in filename else ''
+            filename = f"{name_part}_{int(time.time())}.{ext_part}" if ext_part else f"{name_part}_{int(time.time())}"
+            filepath = os.path.join(SHARED_FILES_DIR, filename)
+        file.save(filepath)
+        stat = os.stat(filepath)
+        return jsonify({'status': 'ok', 'message': f'File {filename} uploaded',
+            'file': {'name': filename, 'size': stat.st_size, 'ext': ext,
+                     'modified': datetime.fromtimestamp(stat.st_mtime).strftime('%Y-%m-%d %H:%M:%S')}})
+    except Exception as e:
+        return jsonify({'status': 'error', 'error': str(e)}), 500
+
+@app.route('/api/shared-files/download/<filename>', methods=['GET'])
+def download_shared_file(filename):
+    try:
+        from werkzeug.utils import secure_filename
+        safe_name = secure_filename(filename)
+        return send_from_directory(SHARED_FILES_DIR, safe_name, as_attachment=True)
+    except FileNotFoundError:
+        return jsonify({'status': 'error', 'error': 'File not found'}), 404
+
+@app.route('/api/shared-files/delete', methods=['POST'])
+def delete_shared_file():
+    try:
+        from werkzeug.utils import secure_filename
+        data = request.json or {}
+        filename = data.get('filename', '')
+        if not filename:
+            return jsonify({'status': 'error', 'error': 'No filename'}), 400
+        safe_name = secure_filename(filename)
+        filepath = os.path.join(SHARED_FILES_DIR, safe_name)
+        if not os.path.exists(filepath):
+            return jsonify({'status': 'error', 'error': 'File not found'}), 404
+        os.remove(filepath)
+        return jsonify({'status': 'ok', 'message': f'File {safe_name} deleted'})
+    except Exception as e:
+        return jsonify({'status': 'error', 'error': str(e)}), 500
+
+
+# ==================== REPORTS API ====================
+PROVINCE_EN_TO_FA = {
+    'East Azerbaijan': 'آذربایجان شرقی', 'West Azerbaijan': 'آذربایجان غربی',
+    'Ardabil': 'اردبیل', 'Isfahan': 'اصفهان', 'Alborz': 'البرز', 'Ilam': 'ایلام',
+    'Bushehr': 'بوشهر', 'Tehran': 'تهران', 'South Khorasan': 'خراسان جنوبی',
+    'Razavi Khorasan': 'خراسان رضوی', 'North Khorasan': 'خراسان شمالی',
+    'Khuzestan': 'خوزستان', 'Zanjan': 'زنجان', 'Semnan': 'سمنان',
+    'Sistan and Baluchestan': 'سیستان و بلوچستان', 'Fars': 'فارس',
+    'Qazvin': 'قزوین', 'Qom': 'قم', 'Lorestan': 'لرستان',
+    'Mazandaran': 'مازندران', 'Markazi': 'مرکزی', 'Hormozgan': 'هرمزگان',
+    'Hamadan': 'همدان', 'Chaharmahal and Bakhtiari': 'چهارمحال و بختیاری',
+    'Kurdistan': 'کردستان', 'Kerman': 'کرمان', 'Kermanshah': 'کرمانشاه',
+    'Kohgiluyeh and Boyer-Ahmad': 'کهگیلویه و بویراحمد', 'Golestan': 'گلستان',
+    'Gilan': 'گیلان', 'Yazd': 'یزد',
+}
+PROVINCE_FA_TO_EN = {v: k for k, v in PROVINCE_EN_TO_FA.items()}
+
+def _detect_point_type(name):
+    if not name: return 'نامشخص'
+    nl = name.lower()
+    if 'atm' in nl or 'خودپرداز' in nl: return 'ATM'
+    if 'kiosk' in nl or 'کیوسک' in nl or 'cashless' in nl: return 'کیوسک'
+    if 'bj' in nl or 'bajeh' in nl or 'باجه' in nl: return 'باجه'
+    if '24' in nl and ('ساعته' in nl or 'saate' in nl): return '24 ساعته'
+    if 'vsat' in nl: return 'VSAT'
+    return 'شعبه'
+
+@app.route('/api/reports/provinces', methods=['GET'])
+def report_provinces():
+    provinces = set()
+    try:
+        conn = get_db()
+        cursor = conn.cursor()
+        for tbl, col in [('lan_ips','province'),('vpls_tunnels','province'),('apn_mali','province'),
+                         ('apn_ips','province'),('intranet_tunnels','province'),('ptmp_connections','province')]:
+            try:
+                cursor.execute(f"SELECT DISTINCT {col} FROM {tbl} WHERE {col} IS NOT NULL AND {col} != ''")
+                for r in cursor.fetchall():
+                    provinces.add(PROVINCE_EN_TO_FA.get(r[0], r[0]))
+            except: pass
+        conn.close()
+        return jsonify(sorted(provinces))
+    except: return jsonify([])
+
+@app.route('/api/reports/query', methods=['GET'])
+def report_query():
+    province = request.args.get('province', '').strip()
+    service_type = request.args.get('service_type', '').strip()
+    point_type = request.args.get('point_type', '').strip()
+    province_en = PROVINCE_FA_TO_EN.get(province, province)
+    results = []
+    try:
+        conn = get_db()
+        cursor = conn.cursor()
+        if service_type in ('', 'all', 'MPLS', 'VPLS', 'MPLS/VPLS'):
+            sql = "SELECT branch_name, description, province, ip_address, wan_ip, tunnel_dest, tunnel_name, username, reservation_date, status FROM vpls_tunnels WHERE LOWER(status) IN ('reserved','used')"
+            params = []
+            if province_en:
+                sql += " AND province = ?"
+                params.append(province_en)
+            cursor.execute(sql, params)
+            for r in cursor.fetchall():
+                name = r[0] or (r[1] or '').replace('** ','').replace(' **','').strip()
+                pt = _detect_point_type(name)
+                if point_type and pt != point_type: continue
+                results.append({'service':'MPLS/VPLS','branch_name':name,'province':PROVINCE_EN_TO_FA.get(r[2],r[2] or ''),'point_type':pt,'ip':r[3] or '','wan_ip':r[4] or '','tunnel_dest':r[5] or '','tunnel_name':r[6] or '','username':r[7] or '','date':r[8] or '','status':r[9] or ''})
+
+        if service_type in ('', 'all', 'Intranet'):
+            sql = "SELECT tunnel_name, description, province, ip_address, ip_lan, reserved_by, reserved_at, status FROM intranet_tunnels WHERE LOWER(status) = 'reserved'"
+            params = []
+            if province:
+                sql += " AND (province = ? OR province = ?)"
+                params.extend([province, province_en])
+            cursor.execute(sql, params)
+            for r in cursor.fetchall():
+                name = (r[1] or r[0] or '').replace('** ','').replace(' **','').strip()
+                pt = _detect_point_type(name)
+                if point_type and pt != point_type: continue
+                results.append({'service':'Intranet','branch_name':name,'province':r[2] or '','point_type':pt,'ip':r[3] or '','wan_ip':r[4] or '','tunnel_dest':'','tunnel_name':r[0] or '','username':r[5] or '','date':r[6] or '','status':r[7] or ''})
+
+        if service_type in ('', 'all', 'APN'):
+            sql = "SELECT branch_name, province, ip_wan, lan_ip, username, reservation_date FROM apn_mali WHERE branch_name IS NOT NULL AND branch_name != ''"
+            params = []
+            if province:
+                sql += " AND province = ?"
+                params.append(province)
+            cursor.execute(sql, params)
+            for r in cursor.fetchall():
+                pt = _detect_point_type(r[0])
+                if point_type and pt != point_type: continue
+                results.append({'service':'APN Mali','branch_name':r[0],'province':r[1] or '','point_type':pt,'ip':r[2] or '','wan_ip':r[3] or '','tunnel_dest':'','tunnel_name':'','username':r[4] or '','date':r[5] or '','status':'Active'})
+            sql2 = "SELECT branch_name, province, ip_wan_apn, lan_ip, username, reservation_date FROM apn_ips WHERE branch_name IS NOT NULL AND branch_name != ''"
+            params2 = []
+            if province:
+                sql2 += " AND province = ?"
+                params2.append(province)
+            cursor.execute(sql2, params2)
+            for r in cursor.fetchall():
+                pt = _detect_point_type(r[0])
+                if point_type and pt != point_type: continue
+                results.append({'service':'APN INT','branch_name':r[0],'province':r[1] or '','point_type':pt,'ip':r[2] or '','wan_ip':r[3] or '','tunnel_dest':'','tunnel_name':'','username':r[4] or '','date':r[5] or '','status':'Active'})
+
+        if service_type in ('', 'all', 'PTMP'):
+            sql = "SELECT branch_name, branch_name_en, province, interface_name, lan_ip, description, username, reservation_date, status FROM ptmp_connections WHERE (branch_name IS NOT NULL OR branch_name_en IS NOT NULL)"
+            params = []
+            if province:
+                sql += " AND (province = ? OR province = ?)"
+                params.extend([province, province_en])
+            cursor.execute(sql, params)
+            for r in cursor.fetchall():
+                name = r[0] or r[1] or ''
+                pt = _detect_point_type(name)
+                if point_type and pt != point_type: continue
+                results.append({'service':'PTMP','branch_name':name,'province':r[2] or '','point_type':pt,'ip':r[3] or '','wan_ip':r[4] or '','tunnel_dest':'','tunnel_name':r[5] or '','username':r[6] or '','date':r[7] or '','status':r[8] or ''})
+
+        conn.close()
+        return jsonify({'status':'ok','count':len(results),'results':results})
+    except Exception as e:
+        return jsonify({'status':'error','error':str(e),'results':[]}), 500
+
+@app.route('/api/reports/export/excel', methods=['GET'])
+def report_export_excel():
+    try:
+        import openpyxl
+        from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+        import io
+        resp = report_query()
+        data = resp.get_json()
+        rows = data.get('results', [])
+        wb = openpyxl.Workbook()
+        ws = wb.active
+        ws.title = 'Report'
+        ws.sheet_view.rightToLeft = True
+        headers = ['ردیف','نوع سرویس','استان','نام نقطه','نوع نقطه','IP','WAN IP','Tunnel','کاربر','تاریخ']
+        hfill = PatternFill(start_color='2563EB', end_color='2563EB', fill_type='solid')
+        hfont = Font(bold=True, color='FFFFFF', size=11)
+        border = Border(left=Side(style='thin'), right=Side(style='thin'), top=Side(style='thin'), bottom=Side(style='thin'))
+        for col, h in enumerate(headers, 1):
+            c = ws.cell(row=1, column=col, value=h)
+            c.fill = hfill; c.font = hfont; c.alignment = Alignment(horizontal='center'); c.border = border
+        for idx, r in enumerate(rows, 1):
+            for col, val in enumerate([idx, r['service'], r['province'], r['branch_name'], r['point_type'], r['ip'], r['wan_ip'], r['tunnel_name'], r['username'], r['date']], 1):
+                c = ws.cell(row=idx+1, column=col, value=val)
+                c.border = border; c.alignment = Alignment(horizontal='center' if col<=2 else 'right')
+        for col in ws.columns:
+            mx = max(len(str(c.value or '')) for c in col)
+            ws.column_dimensions[col[0].column_letter].width = min(mx + 4, 40)
+        output = io.BytesIO()
+        wb.save(output)
+        output.seek(0)
+        province = request.args.get('province', 'all')
+        svc = request.args.get('service_type', 'all')
+        fname = f'report_{province}_{svc}_{datetime.now().strftime("%Y%m%d")}.xlsx'
+        return send_file(output, as_attachment=True, download_name=fname, mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    except Exception as e:
+        return jsonify({'status':'error','error':str(e)}), 500
+
+
+# ==================== NETWORK MAP API ====================
+import re as _re
+
+PROVINCE_MAP_INFO = {
+    'AZSH':{'fa':'آذربایجان شرقی','x':28,'y':12},'AZGH':{'fa':'آذربایجان غربی','x':20,'y':12},
+    'ARD':{'fa':'اردبیل','x':32,'y':8},'ESF':{'fa':'اصفهان','x':48,'y':50},
+    'ALZ':{'fa':'البرز','x':42,'y':28},'ILM':{'fa':'ایلام','x':25,'y':45},
+    'BSH':{'fa':'بوشهر','x':44,'y':70},'M1-Tehran':{'fa':'تهران ۱','x':44,'y':30},
+    'M2-Tehran':{'fa':'تهران ۲','x':46,'y':30},'OSTehran':{'fa':'استان تهران','x':44,'y':32},
+    'KHRJ':{'fa':'خراسان جنوبی','x':72,'y':50},'KHR':{'fa':'خراسان رضوی','x':72,'y':35},
+    'KhShomali':{'fa':'خراسان شمالی','x':70,'y':25},'KHZ':{'fa':'خوزستان','x':34,'y':55},
+    'ZNJ':{'fa':'زنجان','x':32,'y':22},'SMN':{'fa':'سمنان','x':55,'y':28},
+    'SNB':{'fa':'سیستان و بلوچستان','x':82,'y':65},'FRS':{'fa':'فارس','x':48,'y':65},
+    'QZV':{'fa':'قزوین','x':38,'y':25},'QOM':{'fa':'قم','x':44,'y':35},
+    'LOR':{'fa':'لرستان','x':32,'y':42},'MAZ':{'fa':'مازندران','x':48,'y':20},
+    'MRZ':{'fa':'مرکزی','x':40,'y':38},'HMZ':{'fa':'هرمزگان','x':55,'y':78},
+    'HMD':{'fa':'همدان','x':34,'y':35},'CHB':{'fa':'چهارمحال و بختیاری','x':42,'y':50},
+    'KRD':{'fa':'کردستان','x':26,'y':30},'KRM':{'fa':'کرمان','x':62,'y':60},
+    'KRMJ':{'fa':'کرمانشاه','x':26,'y':38},'KNB':{'fa':'کهگیلویه و بویراحمد','x':42,'y':58},
+    'GLS':{'fa':'گلستان','x':58,'y':18},'GIL':{'fa':'گیلان','x':38,'y':16},'YZD':{'fa':'یزد','x':56,'y':52},
+}
+
+def _parse_router_config(filepath):
+    try:
+        with open(filepath, 'r', encoding='utf-8', errors='ignore') as f:
+            content = f.read()
+    except: return None
+    info = {'hostname':'','model':'','interfaces':[],'tunnels':[],'nat_rules':[],'ospf_processes':[],'static_routes':[]}
+    m = _re.search(r'^hostname\s+(.+)', content, _re.MULTILINE)
+    if m: info['hostname'] = m.group(1).strip()
+    for m in _re.finditer(r'^interface\s+(\S+)\s*\n((?:.*\n)*?)(?=^interface\s|\Z)', content, _re.MULTILINE):
+        iname, iblock = m.group(1), m.group(2)
+        ips = _re.findall(r'ip address\s+(\S+)\s+(\S+)', iblock)
+        desc = _re.search(r'description\s+(.+)', iblock)
+        if ips:
+            for ip, mask in ips:
+                entry = {'name':iname,'ip':ip,'mask':mask}
+                if desc: entry['description'] = desc.group(1).strip()
+                if 'Tunnel' in iname:
+                    src = _re.search(r'tunnel source\s+(\S+)', iblock)
+                    dst = _re.search(r'tunnel destination\s+(\S+)', iblock)
+                    if src: entry['tunnel_src'] = src.group(1)
+                    if dst: entry['tunnel_dst'] = dst.group(1)
+                    info['tunnels'].append(entry)
+                else:
+                    info['interfaces'].append(entry)
+    for m in _re.finditer(r'^ip nat\s+(.+)', content, _re.MULTILINE):
+        info['nat_rules'].append(m.group(1).strip())
+    for m in _re.finditer(r'^router ospf\s+(\d+)\s*\n((?:.*\n)*?)(?=^router\s|^\!)', content, _re.MULTILINE):
+        nets = _re.findall(r'network\s+(\S+)\s+(\S+)\s+area\s+(\S+)', m.group(2))
+        info['ospf_processes'].append({'process':m.group(1),'networks':[{'net':n,'wildcard':w,'area':a} for n,w,a in nets]})
+    info['static_routes'] = _re.findall(r'^ip route\s+(.+)', content, _re.MULTILINE)[:20]
+    return info
+
+@app.route('/api/network-map/topology', methods=['GET'])
+def network_map_topology():
+    router_dir = os.path.join(BASE_DIR, 'Router')
+    nodes, links = [], []
+    if not os.path.exists(router_dir):
+        return jsonify({'nodes':[],'links':[],'error':'Router directory not found'})
+    parsed = {}
+    for fname in sorted(os.listdir(router_dir)):
+        fpath = os.path.join(router_dir, fname)
+        if not os.path.isfile(fpath) or os.path.getsize(fpath) < 100: continue
+        info = _parse_router_config(fpath)
+        if not info or not info['hostname']: continue
+        parts = info['hostname'].split('-')
+        abbr = parts[1] if len(parts) >= 2 else info['hostname']
+        if len(parts) >= 3 and abbr in ('M1','M2','OS','Mo'):
+            abbr = '-'.join(parts[1:3])
+        pinfo = PROVINCE_MAP_INFO.get(abbr, {})
+        nodes.append({'id':info['hostname'],'abbr':abbr,'label':pinfo.get('fa',abbr),
+            'x':pinfo.get('x',50),'y':pinfo.get('y',50),'model':fname.split('-')[0],
+            'interfaces_count':len(info['interfaces']),'tunnels_count':len(info['tunnels']),
+            'nat_count':len(info['nat_rules']),'ospf_count':len(info['ospf_processes']),
+            'static_routes_count':len(info['static_routes']),
+            'interfaces':info['interfaces'][:10],'tunnels':info['tunnels'][:10],
+            'nat_rules':info['nat_rules'][:15],'ospf':info['ospf_processes']})
+        parsed[info['hostname']] = info
+    node_ips = {}
+    for h, inf in parsed.items():
+        for iface in inf['interfaces']:
+            node_ips[iface['ip']] = h
+    seen = set()
+    for h, inf in parsed.items():
+        for t in inf['tunnels']:
+            dst = t.get('tunnel_dst','')
+            if dst in node_ips:
+                lk = tuple(sorted([h, node_ips[dst]]))
+                if lk not in seen:
+                    seen.add(lk)
+                    links.append({'source':h,'target':node_ips[dst],'tunnel':t['name'],'src_ip':t.get('tunnel_src',''),'dst_ip':dst})
+    tehran = [n['id'] for n in nodes if 'Tehran' in n['id']]
+    if tehran:
+        hub = tehran[0]
+        for n in nodes:
+            if n['id'] != hub:
+                lk = tuple(sorted([n['id'], hub]))
+                if lk not in seen:
+                    seen.add(lk)
+                    links.append({'source':hub,'target':n['id'],'tunnel':'WAN','src_ip':'','dst_ip':''})
+    return jsonify({'nodes':nodes,'links':links,'total_routers':len(nodes),'total_links':len(links)})
+
 
 # ==================== MAIN ====================
 if __name__ == '__main__':
