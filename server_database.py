@@ -4214,55 +4214,182 @@ def report_export_excel():
 import re as _re
 
 PROVINCE_MAP_INFO = {
-    'AZSH':{'fa':'آذربایجان شرقی','x':28,'y':12},'AZGH':{'fa':'آذربایجان غربی','x':20,'y':12},
-    'ARD':{'fa':'اردبیل','x':32,'y':8},'ESF':{'fa':'اصفهان','x':48,'y':50},
-    'ALZ':{'fa':'البرز','x':42,'y':28},'ILM':{'fa':'ایلام','x':25,'y':45},
-    'BSH':{'fa':'بوشهر','x':44,'y':70},'M1-Tehran':{'fa':'تهران ۱','x':44,'y':30},
-    'M2-Tehran':{'fa':'تهران ۲','x':46,'y':30},'OSTehran':{'fa':'استان تهران','x':44,'y':32},
-    'KHRJ':{'fa':'خراسان جنوبی','x':72,'y':50},'KHR':{'fa':'خراسان رضوی','x':72,'y':35},
-    'KhShomali':{'fa':'خراسان شمالی','x':70,'y':25},'KHZ':{'fa':'خوزستان','x':34,'y':55},
-    'ZNJ':{'fa':'زنجان','x':32,'y':22},'SMN':{'fa':'سمنان','x':55,'y':28},
-    'SNB':{'fa':'سیستان و بلوچستان','x':82,'y':65},'FRS':{'fa':'فارس','x':48,'y':65},
-    'QZV':{'fa':'قزوین','x':38,'y':25},'QOM':{'fa':'قم','x':44,'y':35},
-    'LOR':{'fa':'لرستان','x':32,'y':42},'MAZ':{'fa':'مازندران','x':48,'y':20},
-    'MRZ':{'fa':'مرکزی','x':40,'y':38},'HMZ':{'fa':'هرمزگان','x':55,'y':78},
-    'HMD':{'fa':'همدان','x':34,'y':35},'CHB':{'fa':'چهارمحال و بختیاری','x':42,'y':50},
-    'KRD':{'fa':'کردستان','x':26,'y':30},'KRM':{'fa':'کرمان','x':62,'y':60},
-    'KRMJ':{'fa':'کرمانشاه','x':26,'y':38},'KNB':{'fa':'کهگیلویه و بویراحمد','x':42,'y':58},
-    'GLS':{'fa':'گلستان','x':58,'y':18},'GIL':{'fa':'گیلان','x':38,'y':16},'YZD':{'fa':'یزد','x':56,'y':52},
+    'AZSH':{'fa':'آذربایجان شرقی','x':22,'y':10},'AZGH':{'fa':'آذربایجان غربی','x':14,'y':14},
+    'ARD':{'fa':'اردبیل','x':28,'y':5},'ESF':{'fa':'اصفهان','x':48,'y':52},
+    'ALZ':{'fa':'البرز','x':40,'y':26},'ILM':{'fa':'ایلام','x':20,'y':48},
+    'BSH':{'fa':'بوشهر','x':44,'y':74},'M1-Tehran':{'fa':'تهران ۱','x':42,'y':30},
+    'M2-Tehran':{'fa':'تهران ۲','x':46,'y':29},'OSTehran':{'fa':'استان تهران','x':44,'y':33},
+    'KHRJ':{'fa':'خراسان جنوبی','x':76,'y':52},'KHR':{'fa':'خراسان رضوی','x':74,'y':34},
+    'KhShomali':{'fa':'خراسان شمالی','x':72,'y':22},'KHZ':{'fa':'خوزستان','x':30,'y':58},
+    'ZNJ':{'fa':'زنجان','x':30,'y':20},'SMN':{'fa':'سمنان','x':56,'y':26},
+    'SNB':{'fa':'سیستان و بلوچستان','x':84,'y':68},'FRS':{'fa':'فارس','x':48,'y':68},
+    'QZV':{'fa':'قزوین','x':36,'y':24},'QOM':{'fa':'قم','x':44,'y':38},
+    'LOR':{'fa':'لرستان','x':28,'y':44},'MAZ':{'fa':'مازندران','x':48,'y':18},
+    'MRZ':{'fa':'مرکزی','x':38,'y':40},'HMZ':{'fa':'هرمزگان','x':58,'y':80},
+    'HMD':{'fa':'همدان','x':30,'y':34},'CHB':{'fa':'چهارمحال و بختیاری','x':40,'y':54},
+    'KRD':{'fa':'کردستان','x':22,'y':30},'KRM':{'fa':'کرمان','x':64,'y':62},
+    'KRMJ':{'fa':'کرمانشاه','x':22,'y':38},'KNB':{'fa':'کهگیلویه و بویراحمد','x':38,'y':62},
+    'GLS':{'fa':'گلستان','x':60,'y':16},'GIL':{'fa':'گیلان','x':36,'y':14},
+    'YZD':{'fa':'یزد','x':58,'y':54},'KRSH':{'fa':'خراسان رضوی','x':74,'y':34},
+    'NIBN':{'fa':'مرکز داده','x':44,'y':28},
 }
 
-def _parse_router_config(filepath):
+# Core device positioning - separate ring around center
+CORE_DEVICE_MAP = {
+    'ASR1006-WAN-MB':{'fa':'WAN MB','x':44,'y':28,'role':'core'},
+    'INT-4451':{'fa':'اینترانت ۱','x':50,'y':26,'role':'core'},
+    'WAN-INTR1':{'fa':'WAN INTR1','x':38,'y':26,'role':'core'},
+    'WAN-INTR2':{'fa':'WAN INTR2','x':38,'y':30,'role':'core'},
+    'EXT-Edge-4451':{'fa':'Edge خارجی','x':50,'y':32,'role':'core'},
+    'BKC-4451':{'fa':'BKC','x':42,'y':24,'role':'core'},
+    'PSP-4451':{'fa':'PSP','x':46,'y':24,'role':'core'},
+    'ISR-APN-RO':{'fa':'APN Router','x':48,'y':34,'role':'core'},
+    'APN-INT-HUB':{'fa':'APN INT HUB','x':52,'y':34,'role':'core'},
+    'AGG-WAN-SW':{'fa':'AGG WAN SW','x':40,'y':32,'role':'core'},
+    'EXT-AGG':{'fa':'EXT AGG','x':52,'y':30,'role':'core'},
+}
+
+def _parse_router_config_v2(filepath):
+    """Enhanced parser - extracts full detail for schematic visualization"""
     try:
         with open(filepath, 'r', encoding='utf-8', errors='ignore') as f:
             content = f.read()
     except: return None
-    info = {'hostname':'','model':'','interfaces':[],'tunnels':[],'nat_rules':[],'ospf_processes':[],'static_routes':[]}
+
+    info = {
+        'hostname':'','interfaces':[],'tunnels':[],'nat_rules':[],'nat_interfaces':[],
+        'ospf_processes':[],'static_routes':[],'access_lists':{},'crypto_maps':[]
+    }
+
+    # Hostname
     m = _re.search(r'^hostname\s+(.+)', content, _re.MULTILINE)
     if m: info['hostname'] = m.group(1).strip()
-    for m in _re.finditer(r'^interface\s+(\S+)\s*\n((?:.*\n)*?)(?=^interface\s|\Z)', content, _re.MULTILINE):
+
+    # Parse interfaces with full detail
+    for m in _re.finditer(r'^interface\s+(\S+)\s*\n((?:.*\n)*?)(?=^interface\s|^!\s*$|\Z)', content, _re.MULTILINE):
         iname, iblock = m.group(1), m.group(2)
         ips = _re.findall(r'ip address\s+(\S+)\s+(\S+)', iblock)
         desc = _re.search(r'description\s+(.+)', iblock)
+        shut = bool(_re.search(r'^\s*shutdown', iblock, _re.MULTILINE))
+        nat_side = ''
+        if _re.search(r'ip nat inside', iblock): nat_side = 'inside'
+        elif _re.search(r'ip nat outside', iblock): nat_side = 'outside'
+        crypto = _re.search(r'crypto map\s+(\S+)', iblock)
+        policy_route = _re.search(r'ip policy route-map\s+(\S+)', iblock)
+
+        if nat_side:
+            info['nat_interfaces'].append({'name': iname, 'side': nat_side})
+
         if ips:
             for ip, mask in ips:
-                entry = {'name':iname,'ip':ip,'mask':mask}
+                entry = {'name':iname,'ip':ip,'mask':mask,'shutdown':shut,'nat':nat_side}
                 if desc: entry['description'] = desc.group(1).strip()
+                if crypto: entry['crypto_map'] = crypto.group(1)
+                if policy_route: entry['policy_route'] = policy_route.group(1)
                 if 'Tunnel' in iname:
                     src = _re.search(r'tunnel source\s+(\S+)', iblock)
                     dst = _re.search(r'tunnel destination\s+(\S+)', iblock)
+                    mode = _re.search(r'tunnel mode\s+(.+)', iblock)
+                    cost = _re.search(r'ip ospf cost\s+(\d+)', iblock)
                     if src: entry['tunnel_src'] = src.group(1)
                     if dst: entry['tunnel_dst'] = dst.group(1)
+                    if mode: entry['tunnel_mode'] = mode.group(1).strip()
+                    if cost: entry['ospf_cost'] = int(cost.group(1))
                     info['tunnels'].append(entry)
                 else:
                     info['interfaces'].append(entry)
-    for m in _re.finditer(r'^ip nat\s+(.+)', content, _re.MULTILINE):
-        info['nat_rules'].append(m.group(1).strip())
-    for m in _re.finditer(r'^router ospf\s+(\d+)\s*\n((?:.*\n)*?)(?=^router\s|^\!)', content, _re.MULTILINE):
-        nets = _re.findall(r'network\s+(\S+)\s+(\S+)\s+area\s+(\S+)', m.group(2))
-        info['ospf_processes'].append({'process':m.group(1),'networks':[{'net':n,'wildcard':w,'area':a} for n,w,a in nets]})
-    info['static_routes'] = _re.findall(r'^ip route\s+(.+)', content, _re.MULTILINE)[:20]
+
+    # NAT rules - detailed parsing
+    for m in _re.finditer(r'^ip nat inside source\s+(.+)', content, _re.MULTILINE):
+        rule_text = m.group(1).strip()
+        rule = {'raw': 'ip nat inside source ' + rule_text, 'type': 'dynamic'}
+        if rule_text.startswith('static'):
+            rule['type'] = 'static'
+            parts = rule_text.split()
+            if len(parts) >= 3:
+                rule['inside_ip'] = parts[1]
+                rule['outside_ip'] = parts[2]
+        else:
+            lm = _re.search(r'list\s+(\S+)', rule_text)
+            pm = _re.search(r'pool\s+(\S+)', rule_text)
+            im = _re.search(r'interface\s+(\S+)', rule_text)
+            if lm: rule['acl'] = lm.group(1)
+            if pm: rule['pool'] = pm.group(1)
+            if im: rule['interface'] = im.group(1)
+            rule['overload'] = 'overload' in rule_text
+        info['nat_rules'].append(rule)
+
+    # NAT pools
+    for m in _re.finditer(r'^ip nat pool\s+(\S+)\s+(\S+)\s+(\S+)\s+', content, _re.MULTILINE):
+        info['nat_rules'].append({'type':'pool','name':m.group(1),'start':m.group(2),'end':m.group(3),'raw':'pool '+m.group(1)+' '+m.group(2)+'-'+m.group(3)})
+
+    # OSPF
+    for m in _re.finditer(r'^router ospf\s+(\d+)\s*\n((?:.*\n)*?)(?=^router\s|^!\s*$)', content, _re.MULTILINE):
+        ospf_block = m.group(2)
+        nets = _re.findall(r'network\s+(\S+)\s+(\S+)\s+area\s+(\S+)', ospf_block)
+        rid = _re.search(r'router-id\s+(\S+)', ospf_block)
+        redist = _re.findall(r'redistribute\s+(.+)', ospf_block)
+        info['ospf_processes'].append({
+            'process':m.group(1),
+            'router_id': rid.group(1) if rid else '',
+            'networks':[{'net':n,'wildcard':w,'area':a} for n,w,a in nets],
+            'redistribute': [r.strip() for r in redist]
+        })
+
+    # Static routes - ALL of them with parsed detail
+    for m in _re.finditer(r'^ip route\s+(\S+)\s+(\S+)\s+(.+)', content, _re.MULTILINE):
+        dest, mask, rest = m.group(1), m.group(2), m.group(3).strip()
+        name_m = _re.search(r'name\s+(\S+)', rest)
+        nh_parts = rest.split()
+        next_hop = nh_parts[0] if nh_parts else ''
+        info['static_routes'].append({
+            'dest': dest, 'mask': mask, 'next_hop': next_hop,
+            'name': name_m.group(1) if name_m else '',
+            'raw': f'ip route {dest} {mask} {rest}'
+        })
+
+    # Access lists
+    for m in _re.finditer(r'^ip access-list (?:extended|standard)\s+(\S+)\s*\n((?:.*\n)*?)(?=^ip access-list|^!\s*$|\Z)', content, _re.MULTILINE):
+        acl_name = m.group(1)
+        entries = _re.findall(r'^\s+(permit|deny)\s+(.+)', m.group(2), _re.MULTILINE)
+        info['access_lists'][acl_name] = [{'action':a,'rule':r.strip()} for a,r in entries[:20]]
+
+    # Numbered access lists
+    for m in _re.finditer(r'^access-list\s+(\d+)\s+(permit|deny)\s+(.+)', content, _re.MULTILINE):
+        num = m.group(1)
+        if num not in info['access_lists']: info['access_lists'][num] = []
+        info['access_lists'][num].append({'action':m.group(2),'rule':m.group(3).strip()})
+
+    # Crypto maps
+    for m in _re.finditer(r'^crypto map\s+(\S+)\s+(\d+)\s+', content, _re.MULTILINE):
+        info['crypto_maps'].append(m.group(1))
+    info['crypto_maps'] = list(set(info['crypto_maps']))
+
     return info
+
+def _get_device_category(hostname, fname):
+    """Determine device type and category"""
+    hn = hostname.upper()
+    fn = fname.upper()
+    if 'ASR1006' in fn or 'ASR1006' in hn: return 'core-router', 'ASR1006'
+    if any(k in hn for k in ['WAN-INTR','INT-4451','EXT-EDGE','EXT-AGG','AGG-WAN','BKC-','PSP-','APN-INT','ISR-APN']): return 'core-router', 'ISR4451'
+    if 'SW' in fn[:3] or 'SW' in hn[:3] or 'Core-SW' in fn: return 'core-switch', 'Switch'
+    if 'ASR1002' in fn or 'ASR1002' in hn: return 'provincial-router', 'ASR1002X'
+    if '3845' in fn or '3845' in hn: return 'provincial-router', '3845'
+    if '3825' in fn or '3825' in hn: return 'provincial-router', '3825'
+    if '4451' in fn: return 'core-router', 'ISR4451'
+    if '2821' in fn: return 'core-router', '2821'
+    if '7206' in fn: return 'core-router', '7206'
+    return 'other', fname.split('-')[0]
+
+def _extract_province_abbr(hostname):
+    """Extract province abbreviation from hostname"""
+    parts = hostname.split('-')
+    if len(parts) < 2: return hostname
+    abbr = parts[1]
+    if len(parts) >= 3 and abbr in ('M1','M2','OS','Mo'):
+        abbr = parts[1] + '-' + parts[2]
+    return abbr
 
 @app.route('/api/network-map/topology', methods=['GET'])
 def network_map_topology():
@@ -4270,48 +4397,123 @@ def network_map_topology():
     nodes, links = [], []
     if not os.path.exists(router_dir):
         return jsonify({'nodes':[],'links':[],'error':'Router directory not found'})
+
     parsed = {}
-    for fname in sorted(os.listdir(router_dir)):
-        fpath = os.path.join(router_dir, fname)
-        if not os.path.isfile(fpath) or os.path.getsize(fpath) < 100: continue
-        info = _parse_router_config(fpath)
+    all_files = []
+
+    # Scan all subdirectories: Router/, Router/Core Routers/, Router/Core Switches/
+    for subdir in ['', 'Core Routers', 'Core Switches']:
+        scan_dir = os.path.join(router_dir, subdir) if subdir else router_dir
+        if not os.path.exists(scan_dir): continue
+        for fname in sorted(os.listdir(scan_dir)):
+            fpath = os.path.join(scan_dir, fname)
+            if not os.path.isfile(fpath) or os.path.getsize(fpath) < 100: continue
+            if fname in ('new file',): continue
+            all_files.append((fname, fpath, subdir))
+
+    for fname, fpath, subdir in all_files:
+        info = _parse_router_config_v2(fpath)
         if not info or not info['hostname']: continue
-        parts = info['hostname'].split('-')
-        abbr = parts[1] if len(parts) >= 2 else info['hostname']
-        if len(parts) >= 3 and abbr in ('M1','M2','OS','Mo'):
-            abbr = '-'.join(parts[1:3])
-        pinfo = PROVINCE_MAP_INFO.get(abbr, {})
-        nodes.append({'id':info['hostname'],'abbr':abbr,'label':pinfo.get('fa',abbr),
-            'x':pinfo.get('x',50),'y':pinfo.get('y',50),'model':fname.split('-')[0],
-            'interfaces_count':len(info['interfaces']),'tunnels_count':len(info['tunnels']),
-            'nat_count':len(info['nat_rules']),'ospf_count':len(info['ospf_processes']),
-            'static_routes_count':len(info['static_routes']),
-            'interfaces':info['interfaces'][:10],'tunnels':info['tunnels'][:10],
-            'nat_rules':info['nat_rules'][:15],'ospf':info['ospf_processes']})
+
+        category, model = _get_device_category(info['hostname'], fname)
+        abbr = _extract_province_abbr(info['hostname'])
+
+        # Position: check core device map first, then province map
+        core_info = CORE_DEVICE_MAP.get(info['hostname'], {})
+        prov_info = PROVINCE_MAP_INFO.get(abbr, {})
+
+        if core_info:
+            x, y, label = core_info['x'], core_info['y'], core_info['fa']
+        elif prov_info:
+            x, y, label = prov_info['x'], prov_info['y'], prov_info['fa']
+        else:
+            x, y, label = 50, 50, abbr
+
+        node = {
+            'id': info['hostname'], 'abbr': abbr, 'label': label,
+            'x': x, 'y': y, 'model': model, 'category': category,
+            'subdir': subdir,
+            'interfaces': info['interfaces'],
+            'tunnels': info['tunnels'],
+            'nat_rules': info['nat_rules'],
+            'nat_interfaces': info['nat_interfaces'],
+            'ospf': info['ospf_processes'],
+            'static_routes': info['static_routes'][:50],
+            'access_lists': info['access_lists'],
+            'crypto_maps': info['crypto_maps'],
+            'interfaces_count': len(info['interfaces']),
+            'tunnels_count': len(info['tunnels']),
+            'nat_count': len(info['nat_rules']),
+            'ospf_count': len(info['ospf_processes']),
+            'static_routes_count': len(info['static_routes']),
+            'acl_count': len(info['access_lists']),
+        }
+        nodes.append(node)
         parsed[info['hostname']] = info
+
+    # Build IP-to-hostname lookup (physical + tunnel source IPs)
     node_ips = {}
     for h, inf in parsed.items():
         for iface in inf['interfaces']:
             node_ips[iface['ip']] = h
+        for t in inf['tunnels']:
+            src = t.get('tunnel_src','')
+            if src and src not in node_ips:
+                node_ips[src] = h
+
+    # Build links from tunnel destination matching
     seen = set()
     for h, inf in parsed.items():
         for t in inf['tunnels']:
             dst = t.get('tunnel_dst','')
-            if dst in node_ips:
-                lk = tuple(sorted([h, node_ips[dst]]))
+            if dst and dst in node_ips:
+                peer = node_ips[dst]
+                if peer == h: continue
+                lk = tuple(sorted([h, peer]))
                 if lk not in seen:
                     seen.add(lk)
-                    links.append({'source':h,'target':node_ips[dst],'tunnel':t['name'],'src_ip':t.get('tunnel_src',''),'dst_ip':dst})
-    tehran = [n['id'] for n in nodes if 'Tehran' in n['id']]
-    if tehran:
-        hub = tehran[0]
+                    desc = t.get('description','')
+                    links.append({
+                        'source': h, 'target': peer,
+                        'tunnel': t['name'], 'description': desc,
+                        'src_ip': t.get('tunnel_src',''), 'dst_ip': dst,
+                        'type': 'tunnel'
+                    })
+
+    # For provincial routers not linked to any core, create a WAN link to nearest core
+    core_nodes = set(n['id'] for n in nodes if n['category'] in ('core-router','core-switch'))
+    linked_nodes = set()
+    for l in links:
+        linked_nodes.add(l['source'])
+        linked_nodes.add(l['target'])
+
+    # Find the main WAN hub (ASR1006-WAN-MB or first core router)
+    wan_hub = None
+    for cn in ['ASR1006-WAN-MB','INT-4451','WAN-INTR1']:
+        if cn in core_nodes:
+            wan_hub = cn
+            break
+    if not wan_hub and core_nodes:
+        wan_hub = list(core_nodes)[0]
+
+    if wan_hub:
         for n in nodes:
-            if n['id'] != hub:
-                lk = tuple(sorted([n['id'], hub]))
+            if n['category'] == 'provincial-router' and n['id'] not in linked_nodes:
+                lk = tuple(sorted([n['id'], wan_hub]))
                 if lk not in seen:
                     seen.add(lk)
-                    links.append({'source':hub,'target':n['id'],'tunnel':'WAN','src_ip':'','dst_ip':''})
-    return jsonify({'nodes':nodes,'links':links,'total_routers':len(nodes),'total_links':len(links)})
+                    links.append({
+                        'source': wan_hub, 'target': n['id'],
+                        'tunnel': 'WAN', 'description': 'WAN Link',
+                        'src_ip': '', 'dst_ip': '', 'type': 'wan'
+                    })
+
+    return jsonify({
+        'nodes': nodes, 'links': links,
+        'total_routers': len(nodes), 'total_links': len(links),
+        'core_count': len([n for n in nodes if n['category'] in ('core-router','core-switch')]),
+        'provincial_count': len([n for n in nodes if n['category'] == 'provincial-router']),
+    })
 
 
 # ==================== MAIN ====================
