@@ -1,0 +1,883 @@
+
+!
+! Last configuration change at 13:24:00 Tehran Sun Dec 28 2025 by m-hossain
+! NVRAM config last updated at 09:25:53 Tehran Wed Jan 14 2026 by m-hossain
+!
+version 16.12
+no service pad
+service timestamps debug datetime msec
+service timestamps log datetime msec
+service compress-config
+service call-home
+platform punt-keepalive disable-kernel-core
+platform management port rate-limt-enabled
+!
+hostname SW3850-FRS
+!
+!
+vrf definition Mgmt-vrf
+ !
+ address-family ipv4
+ exit-address-family
+ !
+ address-family ipv6
+ exit-address-family
+!
+enable secret 9 $9$QzCgjkjMPz5HnE$4hhL9E07aQ/8mJ68NUQG1vp6QNN55RV4B3FVq.AbRPY
+!
+aaa new-model
+!
+!
+aaa authentication login CACS group tacacs+ local
+aaa authentication enable default group tacacs+ enable
+aaa authorization console
+aaa authorization config-commands
+aaa authorization exec CACS group tacacs+ local 
+aaa authorization commands 0 CACS group tacacs+ local 
+aaa authorization commands 1 CACS group tacacs+ local 
+aaa authorization commands 2 CACS group tacacs+ local 
+aaa authorization commands 3 CACS group tacacs+ local 
+aaa authorization commands 15 CACS group tacacs+ local 
+aaa accounting exec CACS start-stop group tacacs+
+aaa accounting commands 0 CACS start-stop group tacacs+
+aaa accounting commands 1 CACS start-stop group tacacs+
+aaa accounting commands 2 CACS start-stop group tacacs+
+aaa accounting commands 3 CACS start-stop group tacacs+
+aaa accounting commands 15 CACS start-stop group tacacs+
+!
+!
+!
+!
+!
+!
+aaa session-id common
+boot system switch all flash:cat3k_caa-universalk9.16.12.13.SPA.bin
+clock timezone Tehran 3 30
+switch 1 provision ws-c3850-24s
+!
+!
+!
+!
+call-home
+ ! If contact email address in call-home is configured as sch-smart-licensing@cisco.com
+ ! the email address configured in Cisco Smart License Portal will be used as contact email address to send SCH notifications.
+ contact-email-addr sch-smart-licensing@cisco.com
+ profile "CiscoTAC-1"
+  active
+  destination transport-method http
+  no destination transport-method email
+ip routing
+!
+!
+!
+!
+!
+no ip domain lookup
+ip domain name agri-bank.com
+!
+!
+!
+login on-success log
+!
+!
+!
+!
+!
+!
+!
+no device-tracking logging theft
+!
+crypto pki trustpoint TP-self-signed-2525803762
+ enrollment selfsigned
+ subject-name cn=IOS-Self-Signed-Certificate-2525803762
+ revocation-check none
+ rsakeypair TP-self-signed-2525803762
+!
+crypto pki trustpoint SLA-TrustPoint
+ enrollment pkcs12
+ revocation-check crl
+!
+!
+crypto pki certificate chain TP-self-signed-2525803762
+ certificate self-signed 01 nvram:IOS-Self-Sig#1.cer
+crypto pki certificate chain SLA-TrustPoint
+ certificate ca 01 nvram:CiscoLicensi#1CA.cer
+!
+!
+license boot level ipservicesk9
+!
+!
+diagnostic bootup level minimal
+!
+spanning-tree mode pvst
+spanning-tree extend system-id
+spanning-tree vlan 1,10,12-14,47 priority 0
+archive
+ log config
+  hidekeys
+ path tftp://10.0.51.40/ProSW/$h
+ write-memory
+memory free low-watermark processor 79467
+!
+username bkroot privilege 15 secret 9 $14$B6qG$yPOyinj6crLCAk$u99JxzR2ljwBaN76a/awr2P7x0JLPOy4SZRNBzsZ4DY
+!
+redundancy
+ mode sso
+!
+!
+!
+!
+!
+transceiver type all
+ monitoring
+hw-switch switch 1 logging onboard message
+!
+track 5 interface GigabitEthernet1/0/1 line-protocol
+!
+!
+class-map match-any system-cpp-police-topology-control
+  description Topology control
+class-map match-any system-cpp-police-sw-forward
+  description Sw forwarding, L2 LVX data, LOGGING
+class-map match-any system-cpp-default
+  description EWLC control, EWLC data, Inter FED 
+class-map match-any system-cpp-police-sys-data
+  description Learning cache ovfl, High Rate App, Exception, EGR Exception, NFL SAMPLED DATA, RPF Failed
+class-map match-any system-cpp-police-punt-webauth
+  description Punt Webauth
+class-map match-any system-cpp-police-l2lvx-control
+  description L2 LVX control packets
+class-map match-any system-cpp-police-forus
+  description Forus Address resolution and Forus traffic
+class-map match-any system-cpp-police-multicast-end-station
+  description MCAST END STATION
+class-map match-any system-cpp-police-multicast
+  description Transit Traffic and MCAST Data
+class-map match-any system-cpp-police-l2-control
+  description L2 control
+class-map match-any system-cpp-police-dot1x-auth
+  description DOT1X Auth
+class-map match-any system-cpp-police-data
+  description ICMP redirect, ICMP_GEN and BROADCAST
+class-map match-any system-cpp-police-stackwise-virt-control
+  description Stackwise Virtual
+class-map match-any non-client-nrt-class
+class-map match-any system-cpp-police-routing-control
+  description Routing control and Low Latency
+class-map match-any system-cpp-police-protocol-snooping
+  description Protocol snooping
+class-map match-any system-cpp-police-dhcp-snooping
+  description DHCP snooping
+class-map match-any system-cpp-police-system-critical
+  description System Critical and Gold Pkt
+!
+policy-map system-cpp-policy
+policy-map port_child_policy
+ class non-client-nrt-class
+  bandwidth remaining ratio 10
+!
+! 
+!
+!
+!
+!
+!
+!
+!
+!
+!
+interface Loopback0
+ ip address 10.7.254.2 255.255.255.0
+!
+interface GigabitEthernet0/0
+ vrf forwarding Mgmt-vrf
+ no ip address
+ negotiation auto
+!
+interface GigabitEthernet1/0/1
+ description ** Mo-Fars **
+ no switchport
+ ip address 10.7.0.0 255.255.255.254
+!
+interface GigabitEthernet1/0/2
+ no switchport
+ ip address 192.168.20.2 255.255.255.252
+!
+interface GigabitEthernet1/0/3
+ description ** Newbuilding-Ground-247 **
+ switchport mode trunk
+!
+interface GigabitEthernet1/0/4
+ description ** Newbuilding-Ground-244 **
+ switchport mode trunk
+!
+interface GigabitEthernet1/0/5
+ description ** Newbuilding-Floor2-254 **
+ switchport mode trunk
+!
+interface GigabitEthernet1/0/6
+ description ** Oldbuilding-Hoquqi3-Ground-253 **
+ switchport mode trunk
+!
+interface GigabitEthernet1/0/7
+ description ** Oldbuilding-Hoquqi2-Ground-243 **
+ switchport mode trunk
+!
+interface GigabitEthernet1/0/8
+ description ** Oldbuilding-Hoquqi1-Ground-242 **
+ switchport mode trunk
+!
+interface GigabitEthernet1/0/9
+ description ** Oldbuilding-Etebarat-Ground-241 **
+ switchport mode trunk
+!
+interface GigabitEthernet1/0/10
+ description ** Anbar-246 **
+ switchport mode trunk
+!
+interface GigabitEthernet1/0/11
+ description ** Security-248 **
+ switchport mode trunk
+!
+interface GigabitEthernet1/0/12
+ description ** Fars-ServerSw **
+ switchport mode trunk
+!
+interface GigabitEthernet1/0/13
+ description ** Internet ** 
+ switchport mode trunk
+!
+interface GigabitEthernet1/0/14
+ description ** Sophos **
+ switchport access vlan 14
+ switchport mode access
+!
+interface GigabitEthernet1/0/15
+ description ** MarkazAmuzesh-249 **
+ switchport mode trunk
+!
+interface GigabitEthernet1/0/16
+ switchport mode trunk
+!
+interface GigabitEthernet1/0/17
+ switchport mode trunk
+!
+interface GigabitEthernet1/0/18
+ switchport mode trunk
+!
+interface GigabitEthernet1/0/19
+ switchport mode trunk
+!
+interface GigabitEthernet1/0/20
+ switchport mode trunk
+!
+interface GigabitEthernet1/0/21
+ switchport mode trunk
+!
+interface GigabitEthernet1/0/22
+ switchport mode trunk
+!
+interface GigabitEthernet1/0/23
+ switchport mode trunk
+!
+interface GigabitEthernet1/0/24
+ switchport mode trunk
+!
+interface GigabitEthernet1/1/1
+!
+interface GigabitEthernet1/1/2
+!
+interface GigabitEthernet1/1/3
+!
+interface GigabitEthernet1/1/4
+!
+interface TenGigabitEthernet1/1/1
+!
+interface TenGigabitEthernet1/1/2
+!
+interface TenGigabitEthernet1/1/3
+!
+interface TenGigabitEthernet1/1/4
+!
+interface Vlan1
+ no ip address
+ shutdown
+!
+interface Vlan10
+ description ** ServerFarm **
+ ip address 10.7.1.1 255.255.255.0
+ ip helper-address 10.7.1.10
+ ip helper-address 10.7.1.11
+ ip helper-address 10.7.1.13
+ ip access-group ETHERNET-IN in
+!
+interface Vlan12
+ description ** Security-Vlan **
+ ip address 10.7.2.1 255.255.255.0
+ ip helper-address 10.7.1.10
+ ip helper-address 10.7.1.7
+ ip access-group Security-Access in
+!
+interface Vlan14
+ description ** SOPHOS **
+ ip address 10.7.4.1 255.255.255.0
+!
+interface Vlan19
+ description ** Amuzesh-Vlan19 **
+ ip address 10.7.9.1 255.255.255.0
+ ip helper-address 10.7.1.10
+ ip helper-address 10.7.1.11
+ ip helper-address 10.7.1.13
+ ip access-group AMUZESH-VLAN19 in
+!
+interface Vlan47
+ description ** VOICE-VLAN **
+ ip address 10.7.7.1 255.255.255.0
+ ip helper-address 10.7.1.10
+ ip helper-address 10.7.1.11
+ ip helper-address 10.7.1.13
+!
+router ospf 1
+ router-id 10.7.254.2
+ network 10.7.0.0 0.0.0.0 area 7
+ network 10.7.1.0 0.0.0.255 area 7
+ network 10.7.2.0 0.0.0.255 area 7
+ network 10.7.4.1 0.0.0.0 area 7
+ network 10.7.7.0 0.0.0.255 area 7
+ network 10.7.9.1 0.0.0.0 area 7
+ network 10.7.254.2 0.0.0.0 area 7
+ distribute-list OSPF-PERMIT in
+!
+ip forward-protocol nd
+ip telnet source-interface Vlan47
+no ip http server
+ip http authentication local
+no ip http secure-server
+ip route 10.7.123.0 255.255.255.0 10.7.0.1 name Hessami
+ip route 10.7.234.18 255.255.255.255 10.7.0.1 name novinabyari.maj.ir
+ip route 10.60.66.29 255.255.255.255 10.7.0.1
+ip route 10.134.45.2 255.255.255.255 GigabitEthernet1/0/1
+ip route 10.201.6.42 255.255.255.255 10.7.0.1 name Cs.Sabka.ir
+ip route 10.241.0.2 255.255.255.255 GigabitEthernet1/0/1
+ip route 192.168.1.137 255.255.255.255 10.7.0.1
+ip tacacs source-interface GigabitEthernet1/0/1 
+ip ssh time-out 30
+ip ssh authentication-retries 2
+ip ssh version 2
+!
+!
+ip access-list standard OSPF-PERMIT
+ 10 deny   10.7.1.4
+ 20 remark -----------------------------
+ 20 permit 192.168.65.0 0.0.0.255
+ 30 remark -----------------------------
+ 30 permit 10.7.0.0 0.0.255.255
+ 40 permit 10.60.3.0 0.0.0.255
+ 50 permit 10.0.0.0 0.0.255.255
+ 60 permit 192.168.15.0 0.0.0.255
+ 70 permit 192.168.72.0 0.0.0.255
+ 80 permit 10.60.0.0 0.0.255.255
+ 90 permit 10.60.66.0 0.0.0.255
+ 100 permit 192.168.112.0 0.0.0.255
+ip access-list standard SNMP-READ
+ 10 permit 10.0.50.0 0.0.1.255
+ip access-list standard SNMP-WRITE
+ 10 permit 10.0.51.49
+ 20 permit 10.0.51.48
+ 30 permit 10.0.51.50
+ip access-list standard TELNET-ACCESS
+ 10 permit 10.0.51.49
+ 20 permit 10.0.51.48
+ 30 permit 10.7.0.1
+ 40 permit 10.7.0.3
+ 50 permit 10.7.1.200 0.0.0.3
+ 60 permit 10.0.50.64 0.0.0.63
+!
+ip access-list extended AMUZESH-VLAN19
+ 10 permit ip 10.7.9.0 0.0.0.255 host 10.0.77.22
+ 20 permit ip 10.7.9.0 0.0.0.255 host 10.0.77.249
+ 30 permit ip 10.7.9.0 0.0.0.255 host 10.0.77.248
+ 40 permit ip 10.7.9.0 0.0.0.255 host 10.0.77.115
+ 50 permit ip 10.7.9.10 0.0.0.1 host 10.9.1.4
+ 60 deny   tcp any any range msrpc 139
+ 70 deny   tcp any any eq 445
+ 80 deny   udp any any range 135 netbios-ss
+ 90 deny   udp any any eq 1434
+ 100 deny   udp any any eq 1433
+ 110 deny   tcp any any eq 1434
+ 120 deny   tcp any any eq 1026
+ 130 deny   tcp any any eq 4444
+ 140 deny   udp any any eq 445
+ 150 permit ip 10.7.9.0 0.0.0.255 host 10.0.53.31
+ 160 permit ip 10.7.9.0 0.0.0.255 10.7.9.0 0.0.0.255
+ 170 permit ip 10.7.9.0 0.0.0.255 10.0.50.0 0.0.1.255
+ 180 permit ip 10.7.9.0 0.0.0.255 10.7.0.0 0.0.7.255
+ 190 permit tcp 10.7.9.0 0.0.0.255 10.0.152.0 0.0.1.255
+ 200 remark ---------------      DNS      ---------------
+ 200 permit ip 10.7.9.0 0.0.0.255 host 10.0.53.3
+ 210 permit ip 10.7.9.0 0.0.0.255 host 10.0.53.14
+ 220 remark ---------------     Mail      ---------------
+ 220 permit tcp 10.7.9.0 0.0.0.255 host 10.0.53.8 eq www pop3 smtp 443
+ 230 remark ---------------      FNS       --------------
+ 230 permit tcp 10.7.9.2 0.0.0.1 host 10.50.66.10 eq 3460
+ 240 permit tcp 10.7.9.2 0.0.0.1 host 10.0.66.10 eq 3460
+ 250 permit tcp 10.7.9.2 0.0.0.1 host 10.0.66.152 eq 3460
+ 260 permit ip 10.7.9.2 0.0.0.1 10.0.202.232 0.0.0.7
+ 270 permit tcp 10.7.9.0 0.0.0.255 host 10.0.52.34 eq 12000
+ 280 permit ip 10.7.9.2 0.0.0.1 host 10.0.53.118
+ 290 permit ip 10.7.9.2 0.0.0.1 host 10.0.53.117
+ 300 remark ---------------       FTP     ---------------
+ 300 permit ip 10.7.9.0 0.0.0.255 host 10.0.53.10
+ 310 permit tcp 10.7.9.0 0.0.0.255 host 10.0.53.34 eq 1234
+ 320 remark ---------------    Agri-Bank   --------------
+ 320 permit ip 10.7.9.0 0.0.0.255 host 10.0.68.40
+ 330 permit ip 10.7.9.10 0.0.0.1 host 10.0.68.223
+ 340 permit ip 10.7.9.0 0.0.0.255 host 10.0.76.101
+ 350 remark --------------- MCU -------------- 
+ 350 permit ip 10.7.9.230 0.0.0.1 10.0.56.240 0.0.0.1
+ 360 remark ---------------    Arad   --------------
+ 360 permit tcp 10.7.9.0 0.0.0.255 host 10.0.53.59 eq www
+ 370 permit tcp host 10.7.9.2 host 10.0.66.10
+ 380 permit tcp host 10.7.9.2 host 10.0.85.12
+ 390 remark -------------    SAM-Project   --------------
+ 390 permit tcp 10.7.9.0 0.0.0.255 10.0.52.140 0.0.0.1
+ 400 permit tcp 10.7.9.0 0.0.0.255 host 10.0.52.142
+ 410 permit icmp 10.7.9.0 0.0.0.255 10.0.52.140 0.0.0.1
+ 420 permit icmp 10.7.9.0 0.0.0.255 host 10.0.52.142
+ 430 remark -------------- TEMPAccess ---------------
+ 430 permit ip any host 10.0.85.70
+ 440 remark ------------------------- Baher -----------------------
+ 440 permit ip 10.7.9.0 0.0.0.255 host 10.0.53.141
+ 450 remark ---------------   ATM   ---------------
+ 450 permit ip 10.7.9.24 0.0.0.7 10.0.88.0 0.0.0.255
+ 460 permit ip host 10.7.9.9 10.0.88.0 0.0.0.255
+ 470 remark ---------------   Pulshuei   ---------------
+ 470 permit tcp host 10.7.9.16 host 10.0.68.111 eq www
+ 480 permit icmp host 10.7.9.16 host 10.0.68.111
+ 490 permit tcp 10.7.9.2 0.0.0.1 host 10.0.85.66
+ 500 permit icmp 10.7.9.2 0.0.0.1 host 10.0.85.66
+ 510 permit ip 10.7.9.0 0.0.0.255 host 10.0.54.200
+ 520 remark ---------------  Video-Conference  ---------------
+ 520 permit ip 10.7.9.230 0.0.0.1 host 10.0.55.150
+ 530 permit ip 10.7.9.136 0.0.0.1 10.7.1.232 0.0.0.1
+ 540 permit ip 10.7.9.10 0.0.0.1 host 10.7.1.7
+ 550 permit ip 10.7.9.10 0.0.0.1 host 10.7.1.8
+ 560 permit ip 10.7.9.0 0.0.0.255 10.30.42.0 0.0.0.255
+ 570 permit tcp host 10.7.9.2 host 10.0.66.180
+ip access-list extended ClientsAccess
+ 10 permit ip 10.7.3.0 0.0.0.255 10.0.55.0 0.0.0.255
+ 20 permit ip 10.7.3.0 0.0.0.255 host 91.240.180.40
+ 30 permit ip 10.7.3.0 0.0.0.255 host 91.240.181.1
+ 40 permit ip 10.7.3.0 0.0.0.255 host 10.7.95.26
+ 50 permit ip 10.7.3.0 0.0.0.255 host 10.31.33.107
+ 60 permit ip 10.7.3.0 0.0.0.255 host 10.51.114.5
+ip access-list extended ETHERNET-IN
+ 10 permit ip 10.7.1.230 0.0.0.1 host 10.0.68.102
+ 20 permit ip 10.7.1.230 0.0.0.1 host 10.0.118.102
+ 30 permit ip 10.7.1.0 0.0.0.255 10.7.7.0 0.0.0.255
+ 40 permit ip 10.7.7.0 0.0.0.255 10.7.1.0 0.0.0.255
+ 50 remark ---------------      DC      -----------------------
+ 50 permit ip 10.7.1.10 0.0.0.1 host 10.0.53.3
+ 60 permit ip 10.7.1.10 0.0.0.1 host 10.0.53.8
+ 70 permit ip 10.7.1.10 0.0.0.1 host 10.0.53.9
+ 80 permit ip 10.7.1.10 0.0.0.1 host 10.0.53.14
+ 90 permit ip 10.7.1.10 0.0.0.1 host 10.0.53.15
+ 100 permit ip 10.7.1.0 0.0.0.255 host 10.0.151.5
+ 110 permit ip 10.7.1.0 0.0.0.255 host 10.0.151.6
+ 120 permit ip 10.7.1.10 0.0.0.1 host 10.0.53.31
+ 130 permit ip 10.7.1.10 0.0.0.1 host 10.0.53.32
+ 140 permit ip 10.7.1.10 0.0.0.1 host 10.0.53.34
+ 150 permit ip 10.7.1.10 0.0.0.1 host 10.0.53.36
+ 160 permit ip 10.7.1.10 0.0.0.1 host 10.0.53.66
+ 170 permit ip 10.7.1.10 0.0.0.1 host 10.0.53.150
+ 180 permit ip 10.7.1.10 0.0.0.1 host 10.0.54.16
+ 190 permit ip 10.7.1.10 0.0.0.1 host 10.0.54.17
+ 200 permit ip 10.7.1.10 0.0.0.1 host 10.0.54.129
+ 210 permit ip 10.7.1.10 0.0.0.1 host 10.0.54.200
+ 220 permit ip 10.7.1.10 0.0.0.1 host 10.0.56.16
+ 230 permit ip 10.7.1.10 0.0.0.1 host 10.0.56.17
+ 240 permit ip 10.7.1.10 0.0.0.1 host 10.0.68.50
+ 250 permit ip 10.7.1.10 0.0.0.1 host 10.0.68.64
+ 260 permit ip 10.7.1.10 0.0.0.1 host 10.0.68.111
+ 270 permit ip 10.7.1.10 0.0.0.1 host 10.0.68.215
+ 280 permit ip 10.7.1.10 0.0.0.1 host 10.0.68.216
+ 290 permit ip 10.7.1.10 0.0.0.1 host 10.0.136.16
+ 300 permit ip 10.7.1.10 0.0.0.1 host 10.0.137.16
+ 310 permit ip 10.7.1.10 0.0.0.1 host 10.0.138.16
+ 320 permit ip 10.7.1.10 0.0.0.1 host 10.0.151.2
+ 330 permit ip 10.7.1.10 0.0.0.1 10.0.204.232 0.0.0.7
+ 340 permit ip 10.7.1.10 0.0.0.1 10.0.204.240 0.0.0.7
+ 350 permit ip 10.7.1.10 0.0.0.1 10.7.0.0 0.0.7.255
+ 360 permit ip 10.7.1.0 0.0.0.255 10.7.9.0 0.0.0.255
+ 370 permit ip host 10.7.1.10 host 10.7.4.2
+ 380 permit ip host 10.7.1.13 host 10.0.53.3
+ 390 permit ip host 10.7.1.13 host 10.0.53.8
+ 400 permit ip host 10.7.1.13 host 10.0.53.9
+ 410 permit ip host 10.7.1.13 host 10.0.53.14
+ 420 permit ip host 10.7.1.13 host 10.0.53.15
+ 430 permit ip host 10.7.1.13 host 10.0.53.31
+ 440 permit ip host 10.7.1.13 host 10.0.53.32
+ 450 permit ip host 10.7.1.13 host 10.0.53.34
+ 460 permit ip host 10.7.1.13 host 10.0.53.36
+ 470 permit ip host 10.7.1.13 host 10.0.53.66
+ 480 permit ip host 10.7.1.13 host 10.0.53.150
+ 490 permit ip host 10.7.1.13 host 10.0.54.16
+ 500 permit ip host 10.7.1.13 host 10.0.54.17
+ 510 permit ip host 10.7.1.13 host 10.0.54.129
+ 520 permit ip host 10.7.1.13 host 10.0.54.200
+ 530 permit ip host 10.7.1.13 host 10.0.56.16
+ 540 permit ip host 10.7.1.13 host 10.0.56.17
+ 550 permit ip host 10.7.1.13 host 10.0.68.50
+ 560 permit ip host 10.7.1.13 host 10.0.68.64
+ 570 permit ip host 10.7.1.13 host 10.0.68.111
+ 580 permit ip host 10.7.1.13 host 10.0.68.215
+ 590 permit ip host 10.7.1.13 host 10.0.68.216
+ 600 permit ip host 10.7.1.13 host 10.0.136.16
+ 610 permit ip host 10.7.1.13 host 10.0.137.16
+ 620 permit ip host 10.7.1.13 host 10.0.138.16
+ 630 permit ip host 10.7.1.13 host 10.0.151.2
+ 640 permit ip host 10.7.1.13 10.0.204.232 0.0.0.7
+ 650 permit ip host 10.7.1.13 10.0.204.240 0.0.0.7
+ 660 permit ip host 10.7.1.13 10.7.0.0 0.0.7.255
+ 670 permit ip host 10.7.1.13 host 10.7.4.2
+ 680 permit ip 10.7.1.0 0.0.0.255 host 10.7.4.2
+ 690 permit ip 10.0.110.0 0.0.0.255 host 10.7.4.2
+ 700 permit ip 10.0.97.0 0.0.0.255 host 10.7.4.2
+ 710 permit ip 10.7.1.0 0.0.0.255 host 10.7.95.26
+ 720 remark --------------- DENY --------------------- 
+ 720 deny   udp any any range 135 netbios-ss
+ 730 deny   tcp any any range msrpc 139
+ 740 deny   tcp any any eq 445
+ 750 deny   udp any any eq 445
+ 760 deny   udp any any eq 1428
+ 770 deny   udp any any eq 1434
+ 780 deny   tcp any any eq 1434
+ 790 deny   tcp any any eq 4444
+ 800 permit tcp any 10.7.0.0 0.0.7.255 eq www 443 8081 8082 8090 9090
+ 810 deny   tcp any 10.7.0.0 0.0.255.255 eq www 443 8081 8082 8090 9090
+ 820 deny   udp any any eq 18999
+ 830 permit ospf any any
+ 840 deny   tcp host 10.7.1.8 any eq 22 telnet
+ 850 remark --------------- Monitoring ---------------------- 
+ 850 permit tcp host 10.7.1.8 10.7.0.0 0.0.7.255
+ 860 permit udp 10.7.1.0 0.0.0.255 224.0.0.0 0.0.0.255
+ 870 permit tcp host 10.7.1.8 10.7.254.0 0.0.0.255 eq 22 telnet
+ 880 permit tcp host 10.7.1.8 10.7.0.0 0.0.255.3 eq 22 telnet 4343
+ 890 permit tcp host 10.7.1.8 host 10.0.103.10
+ 900 permit tcp host 10.7.1.8 eq ftp-data ftp 10324 10.7.0.0 0.0.255.255
+ 910 permit tcp 10.7.0.0 0.0.7.255 10.7.0.0 0.0.7.255
+ 920 permit tcp 10.7.0.0 0.0.1.1 10.7.254.0 0.0.0.7
+ 930 permit tcp 10.7.254.0 0.0.0.7 10.7.1.0 0.0.0.1
+ 940 permit tcp 10.7.254.0 0.0.0.7 10.7.0.0 0.0.0.255
+ 950 permit tcp 10.7.254.0 0.0.0.7 10.7.254.0 0.0.0.7
+ 960 permit icmp 10.7.0.0 0.0.1.255 10.7.0.0 0.0.1.255
+ 970 permit icmp 10.7.254.0 0.0.0.7 10.7.254.0 0.0.0.7
+ 980 permit icmp 10.7.254.0 0.0.0.7 10.7.0.0 0.0.0.255
+ 990 permit icmp 10.7.254.0 0.0.0.7 10.7.1.0 0.0.0.1
+ 1000 permit icmp 10.7.1.0 0.0.0.1 10.7.254.0 0.0.0.7
+ 1010 permit icmp 10.7.0.0 0.0.0.255 10.7.254.0 0.0.0.7
+ 1020 permit icmp host 10.7.1.8 10.7.0.0 0.0.255.255
+ 1030 permit icmp host 10.7.1.8 10.0.250.0 0.0.0.255
+ 1040 permit icmp host 10.7.1.8 10.240.0.0 0.1.255.255
+ 1050 permit icmp host 10.7.1.8 host 10.0.103.10
+ 1060 permit icmp host 10.7.1.8 10.134.0.0 0.0.255.255
+ 1070 permit icmp host 10.7.1.8 10.139.0.0 0.0.255.255
+ 1080 permit icmp host 10.7.1.8 10.251.0.0 0.0.255.255
+ 1090 permit ip 10.7.0.0 0.0.1.255 10.0.50.0 0.0.1.255
+ 1100 permit ip 10.7.1.0 0.0.0.255 host 10.60.66.29
+ 1110 permit ip 10.7.0.0 0.0.1.255 10.0.111.0 0.0.0.255
+ 1120 permit tcp host 10.7.1.13 10.0.112.0 0.0.0.255
+ 1130 permit tcp host 10.7.1.15 10.0.112.0 0.0.0.255
+ 1140 permit tcp host 10.7.1.16 10.0.112.0 0.0.0.255
+ 1150 permit ip 10.7.254.0 0.0.0.7 10.0.50.0 0.0.1.255
+ 1160 permit ip 10.7.0.0 0.0.1.15 10.0.152.0 0.0.1.255
+ 1170 permit ip 10.7.1.240 0.0.0.15 10.0.152.0 0.0.1.255
+ 1180 remark -------------- KartZani --------------------- 
+ 1180 permit tcp 10.7.1.232 0.0.0.1 10.7.0.136 0.0.255.1 eq www
+ 1190 permit icmp 10.7.1.232 0.0.0.1 10.7.0.136 0.0.255.1
+ 1200 permit ip 10.7.1.232 0.0.0.1 10.7.0.136 0.0.255.1 time-range TIME-KartZani
+ 1210 deny   tcp host 10.7.1.6 any eq 22 telnet
+ 1220 permit icmp host 10.7.1.6 any
+ 1230 remark --------------- Internet --------------------- 
+ 1230 deny   ip host 10.7.1.6 10.0.0.0 0.255.255.255
+ 1240 deny   ip host 10.7.1.6 172.16.0.0 0.7.255.255
+ 1250 remark --------------- ServerFarm --------------- 
+ 1250 permit ip 10.7.1.0 0.0.0.255 10.0.49.0 0.0.0.255
+ 1260 permit ip 10.7.1.0 0.0.0.255 10.0.52.0 0.0.1.255
+ 1270 permit ip 10.7.1.0 0.0.0.255 10.0.54.0 0.0.0.255
+ 1280 permit ip 10.7.1.0 0.0.0.255 10.0.32.0 0.0.3.255
+ 1290 permit ip 10.7.1.0 0.0.0.255 10.0.57.0 0.0.0.255
+ 1300 permit ip 10.7.1.0 0.0.0.255 10.0.58.0 0.0.0.255
+ 1310 permit ip 10.7.1.0 0.0.0.255 10.0.68.0 0.0.1.255
+ 1320 permit ip 10.7.1.0 0.0.0.255 10.0.34.0 0.0.0.255
+ 1330 permit ip 10.7.1.0 0.0.0.255 10.0.0.0 0.0.255.255
+ 1340 permit ip 10.7.1.0 0.0.0.255 10.0.70.0 0.0.0.255
+ 1350 remark --------------- FNS Training -------------------- 
+ 1350 permit ip host 10.7.1.3 host 10.0.66.152
+ 1360 permit ip host 10.7.1.3 host 10.0.66.10
+ 1370 permit ip host 10.7.1.3 host 10.50.66.10
+ 1380 permit ip host 10.7.1.3 host 10.50.64.20
+ 1390 permit ip host 10.7.1.3 host 10.0.66.140
+ 1400 permit ip 10.7.1.0 0.0.0.255 10.0.56.0 0.0.0.255
+ 1410 permit ip host 10.7.1.3 host 10.0.65.118
+ 1420 permit ip host 10.7.1.3 host 10.0.65.57
+ 1430 remark --------------- MerAt -------------------- 
+ 1430 permit ip host 10.7.1.3 host 10.0.85.12
+ 1440 remark -------------- ATM&Kiosk ------------------- 
+ 1440 permit ip host 10.7.1.23 10.0.88.0 0.0.0.255
+ 1450 permit ip 10.7.1.24 0.0.0.3 10.0.88.0 0.0.0.255
+ 1460 permit ip 10.7.1.0 0.0.0.255 10.0.89.0 0.0.0.255
+ 1470 remark --------------- Herasat ------------------ 
+ 1470 permit ip 10.7.1.224 0.0.0.7 10.0.93.10 0.0.0.1
+ 1480 permit ip 10.7.1.192 0.0.0.15 10.0.93.10 0.0.0.1
+ 1490 remark --------------- IT Security Management ----------- 
+ 1490 permit ip 10.7.1.0 0.0.0.255 host 10.0.53.88
+ 1500 remark -----------    amniat.agri-bank.com     ---------------
+ 1500 permit ip 10.7.1.0 0.0.0.255 host 10.0.97.26
+ 1510 permit ip 10.7.1.0 0.0.0.255 10.30.42.0 0.0.0.255
+ 1520 permit tcp host 10.7.1.16 eq 443 8443 1433 81 18081 18082 8444 10.7.0.0 0.0.255.255
+ 1530 remark ---------------      NIBN      ---------------
+ 1530 permit ip 10.7.1.0 0.0.0.255 192.168.65.0 0.0.0.255
+ 1540 permit ip 10.7.1.0 0.0.0.255 192.168.72.0 0.0.0.255
+ 1550 remark ---------------   SoratHesab  ----------------------
+ 1550 permit tcp host 10.7.1.7 host 10.0.56.115 eq 8376
+ 1560 remark ---------------     M-Ensani     -------------------
+ 1560 permit ip host 10.7.1.4 10.0.204.232 0.0.0.7
+ 1570 permit ip host 10.7.1.4 10.0.204.240 0.0.0.7
+ 1580 permit ip host 10.7.1.4 10.0.74.224 0.0.0.31
+ 1590 permit tcp host 10.7.1.4 eq 1521 host 10.0.16.154
+ 1600 permit tcp host 10.7.1.4 host 10.0.223.17
+ 1610 permit tcp host 10.7.1.4 host 10.0.213.34
+ 1620 permit tcp host 10.7.1.4 10.0.138.16 0.0.0.1
+ 1630 permit tcp host 10.7.1.4 10.0.176.16 0.0.0.15
+ 1640 permit tcp host 10.7.1.4 host 10.0.6.20
+ 1650 permit ip host 10.7.1.31 10.0.204.232 0.0.0.7
+ 1660 permit ip host 10.7.1.31 10.0.204.240 0.0.0.7
+ 1670 permit ip host 10.7.1.31 host 10.0.85.23
+ 1680 remark ------- novinabyari.maj.ir --------
+ 1680 permit ip 10.7.1.0 0.0.0.255 host 10.7.234.18
+ 1690 permit ip host 10.7.1.3 host 10.0.85.66
+ 1700 remark ---------------    FNS Report   --------------------
+ 1700 permit ip host 10.7.1.7 host 10.0.64.142
+ 1710 permit ip host 10.7.1.7 host 10.0.65.57
+ 1720 permit ip host 10.7.1.7 host 10.0.65.118
+ 1730 permit ip 10.7.1.0 0.0.0.255 host 10.0.65.226
+ 1740 remark --------------- Herasat-GPS --------------------
+ 1740 permit tcp 10.7.1.180 0.0.0.3 host 10.0.101.40 eq www
+ 1750 permit tcp 10.7.1.180 0.0.0.3 host 10.0.101.39 eq www
+ 1760 permit icmp 10.7.1.180 0.0.0.3 host 10.0.101.40
+ 1770 permit icmp host 10.7.1.8 host 10.255.0.7
+ 1780 remark --------------- Remote-MGUpdate --------------------
+ 1780 permit ip host 10.7.1.3 10.0.86.232 0.0.0.1
+ 1790 permit ip host 10.7.1.7 10.0.86.232 0.0.0.1
+ 1800 permit ip host 10.7.1.9 10.0.86.232 0.0.0.1
+ 1810 permit ip host 10.7.1.3 host 10.0.86.53
+ 1820 permit ip host 10.7.1.7 host 10.0.86.53
+ 1830 permit ip host 10.7.1.3 host 10.0.86.234
+ 1840 permit ip host 10.7.1.7 host 10.0.86.234
+ 1850 remark --------------Image server new -------------
+ 1850 permit ip host 10.7.1.7 10.0.55.0 0.0.0.255
+ 1860 remark -------------- Video-CONF -------------
+ 1860 permit ip 10.7.1.230 0.0.0.1 host 10.0.55.150
+ 1870 permit ip 10.7.1.230 0.0.0.1 host 10.0.34.190
+ 1880 permit ip 10.7.1.230 0.0.0.1 host 10.0.34.191
+ 1890 permit ip host 10.7.1.126 host 10.0.34.99
+ 1900 remark ------------------ Nezarat-Tasviri ------------------
+ 1900 permit icmp 10.7.1.224 0.0.0.7 10.7.0.192 0.0.255.63
+ 1910 permit icmp 10.7.1.192 0.0.0.15 10.7.0.192 0.0.255.63
+ 1920 permit ip 10.7.1.204 0.0.0.1 10.7.0.192 0.0.255.1 time-range NEZARAT-TASVIRI
+ 1930 permit ip host 10.7.1.199 10.7.8.206 0.0.247.1
+ 1940 permit ip 10.7.1.206 0.0.0.1 10.7.0.206 0.0.255.1
+ 1950 permit ip 10.7.1.206 0.0.0.1 10.0.1.0 0.0.0.255
+ 1960 permit ip 10.7.1.206 0.0.0.1 10.0.6.0 0.0.0.255
+ 1970 permit ip 10.7.1.0 0.0.0.255 10.0.55.0 0.0.0.255
+ 1980 permit tcp host 10.7.1.15 eq 443 8443 1433 81 18081 18082 8444 10.7.0.0 0.0.255.255
+ 1990 permit tcp host 10.7.1.15 10.7.0.0 0.0.255.255 eq 18081
+ 2000 deny   tcp host 10.7.1.16 any eq 22 telnet
+ 2010 permit tcp host 10.7.1.16 10.7.0.0 0.0.255.255 eq 18081
+ 2020 permit ip 10.7.1.140 0.0.0.3 host 192.168.15.40
+ 2030 remark ------------------------ Herast -----------------------------------------
+ 2030 permit ip 10.7.1.140 0.0.0.3 host 192.168.15.20
+ 2040 permit ip 10.7.1.232 0.0.0.1 10.7.123.136 0.0.0.1
+ 2050 permit ip 10.7.1.232 0.0.0.1 10.7.130.136 0.0.0.1
+ 2060 permit ip 10.7.1.232 0.0.0.1 10.7.146.136 0.0.0.1
+ 2070 remark -------- FAX Test --------
+ 2070 permit tcp host 10.7.1.34 host 10.0.56.125 eq 443
+ 2080 remark --------cs.sabka.ir ----------------
+ 2080 permit tcp 10.7.1.0 0.0.0.255 host 10.201.6.42 eq 443 www
+ 2090 permit ip 10.7.0.0 0.0.1.255 host 10.0.118.31
+ 2100 permit ip 10.7.0.0 0.0.1.255 host 10.0.118.131
+ 2110 permit ip any 10.0.76.0 0.0.1.255
+ 2120 permit ip 10.7.1.0 0.0.0.255 host 10.0.136.200
+ 2130 permit ip 10.7.1.0 0.0.0.255 host 10.0.136.201
+ 2140 remark -------------   VConference-Access  ------------------
+ 2140 permit ip 10.7.1.0 0.0.0.255 host 10.0.118.102
+ 2150 permit ip 10.7.1.0 0.0.0.255 host 91.240.180.40
+ 2160 permit ip 10.7.1.0 0.0.0.255 host 91.240.180.133
+ 2170 permit ip 10.7.1.0 0.0.0.255 host 91.240.181.1
+ 2180 permit ip 10.7.1.0 0.0.0.255 host 10.30.176.187
+ 2190 permit ip 10.7.1.0 0.0.0.255 host 10.30.176.188
+ 2200 permit ip host 10.7.1.12 10.0.86.232 0.0.0.1
+ 2210 permit ip host 10.7.1.12 host 10.0.86.234
+ 2220 permit ip host 10.7.1.12 host 10.0.86.53
+ 2230 permit udp 10.7.1.0 0.0.0.255 host 10.0.225.150 eq 999
+ 2240 permit udp 10.7.1.0 0.0.0.255 host 10.0.225.158
+ 2250 permit tcp 10.7.1.0 0.0.0.255 host 10.0.225.156
+ 2260 permit tcp host 10.7.1.71 host 10.0.247.87 eq 8002
+ 2270 permit ip host 10.7.1.119 host 10.0.54.173
+ 2280 permit ip host 10.7.1.70 host 10.0.54.173
+ 2290 permit ip host 10.7.1.103 10.0.54.54 0.0.0.1
+ 2300 permit ip host 10.7.1.155 10.0.54.54 0.0.0.1
+ 2310 permit ip 10.7.1.0 0.0.0.255 host 10.31.33.107
+ 2320 permit ip 10.7.1.0 0.0.0.255 host 10.51.114.5
+ 2330 remark --------------Access to Whatsup Monitoring -------------
+ 2330 permit tcp host 10.7.1.8 host 10.0.51.31
+ 2340 permit icmp host 10.7.1.8 host 10.0.51.31
+ 2350 permit icmp any any
+ip access-list extended Security-Access
+ 10 remark ------------------   DC-Access  -----------------------
+ 10 permit ip 10.7.2.0 0.0.0.255 10.7.1.10 0.0.0.1
+ 20 permit ip 10.7.2.0 0.0.0.255 host 10.7.1.13
+ 30 remark -------------------   DENY  --------------------------
+ 30 deny   udp any any range 135 netbios-ss
+ 40 deny   tcp any any range msrpc 139
+ 50 deny   tcp any any eq 445
+ 60 deny   udp any any eq 445
+ 70 deny   tcp any any eq 1026
+ 80 deny   udp any any eq 1428
+ 90 deny   udp any any eq 1434
+ 100 deny   tcp any any eq 1434
+ 110 deny   tcp any any eq 4444
+ 120 permit ospf any any
+ 130 permit udp 10.7.2.0 0.0.0.255 224.0.0.0 0.0.0.255
+ 140 permit icmp host 10.7.2.8 10.7.0.0 0.0.255.255
+ 150 permit ip 10.7.2.0 0.0.0.255 10.0.50.0 0.0.1.255
+ 160 permit tcp host 10.7.2.8 host 10.7.1.16 eq 443 8443 1433 81 18081 18082 8444
+ 170 remark ---------------   Remote-Access  ----------------------
+ 170 deny   tcp host 10.7.2.8 10.7.0.0 0.0.1.255
+ 180 deny   tcp host 10.7.2.8 10.7.3.0 0.0.0.255
+ 190 deny   tcp host 10.7.2.8 10.7.4.0 0.0.3.255
+ 200 permit tcp host 10.7.2.8 10.7.2.0 0.0.0.255
+ 210 permit tcp host 10.7.2.8 host 10.7.9.2 eq 3389
+ 220 permit tcp host 10.7.2.8 10.7.0.152 0.0.255.3 eq 443 8443 9443
+ 230 permit tcp host 10.7.2.8 10.7.0.0 0.0.255.255 eq 3389
+!
+logging trap notifications
+logging source-interface Loopback0
+logging host 10.0.51.63
+logging host 10.0.51.25
+!
+!
+snmp-server group LMS v3 priv read myview write myview access SNMP-WRITE
+snmp-server group NMS v3 priv access SNMP-READ
+snmp-server view myview mib-2 included
+snmp-server view myview system included
+snmp-server view myview cisco included
+snmp ifmib ifindex persist
+tacacs server ISE-1
+ address ipv4 10.0.51.56
+ key 7 0132154A145A555F
+ timeout 10
+tacacs server ISE-2
+ address ipv4 10.0.51.57
+ key 7 0132154A145A555F
+ timeout 10
+!
+!
+!
+control-plane
+ service-policy input system-cpp-policy
+!
+privilege interface level 3 shutdown
+privilege interface level 3 no shutdown
+privilege interface level 3 no
+privilege configure level 3 interface
+privilege exec level 3 traceroute
+privilege exec level 3 ping
+privilege exec level 2 configure terminal
+privilege exec level 2 configure
+privilege exec level 3 terminal monitor
+privilege exec level 3 terminal
+banner motd C
+       ===
+      -+ +-
+      | | |                Keshavarzi Bank Network
+   <--\ | /-->
+  ##| ||||| |##
+ ###| |+++| |###
+/____\\ | //____\                 WARNING:
+  <###\|||/###>
+   +====+====+   Access is restricted to authorized users only.
+   | WAN-BKI |    Unauthorized access is a violation of state,
+   +===+=+===+             civil and criminal laws.
+       +=+
+
+alias exec shr show run
+!
+line con 0
+ stopbits 1
+line aux 0
+ stopbits 1
+line vty 0 4
+ access-class TELNET-ACCESS in
+ privilege level 15
+ authorization commands 2 CACS
+ authorization exec CACS
+ accounting commands 15 CACS
+ accounting exec CACS
+ login authentication CACS
+ transport input ssh
+ transport output telnet ssh
+line vty 5 15
+ access-class TELNET-ACCESS in
+ privilege level 15
+ authorization commands 2 CACS
+ authorization exec CACS
+ accounting exec CACS
+ login authentication CACS
+ transport input ssh
+ transport output telnet ssh
+!
+ntp authentication-key 1 md5 135447462D5C217A09740B6614734357375353067F 7
+ntp authenticate
+ntp trusted-key 1
+ntp source Vlan10
+ntp server 10.0.51.27
+!
+time-range AV-UPDATE
+ periodic Monday Tuesday Wednesday Thursday Saturday Sunday 17:00 to 23:59
+ periodic Monday Tuesday Wednesday Thursday Saturday Sunday 0:00 to 7:00
+ periodic Friday 0:00 to 23:59
+!
+time-range NEZARAT-TASVIRI
+ periodic Friday 0:00 to 23:59
+ periodic Monday Tuesday Wednesday Thursday Saturday Sunday 0:00 to 7:00
+ periodic Monday Tuesday Wednesday Thursday Saturday Sunday 15:00 to 23:59
+!
+time-range TIME-KartZani
+ periodic Monday Tuesday Wednesday Thursday Saturday Sunday 8:00 to 18:00
+!
+wsma agent exec
+ profile httplistener
+ profile httpslistener
+!
+wsma agent config
+ profile httplistener
+ profile httpslistener
+!
+wsma agent filesys
+ profile httplistener
+ profile httpslistener
+!
+wsma agent notify
+ profile httplistener
+ profile httpslistener
+!
+!
+wsma profile listener httplistener
+ transport http
+!
+wsma profile listener httpslistener
+ transport https
+!
+end

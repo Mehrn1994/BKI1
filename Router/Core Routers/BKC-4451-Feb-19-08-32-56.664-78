@@ -1,0 +1,759 @@
+
+!
+! Last configuration change at 11:16:54 Tehran Mon Dec 15 2025 by v-yarian
+! NVRAM config last updated at 12:02:44 Tehran Thu Feb 19 2026 by pyth0nuser
+!
+version 17.6
+service timestamps debug datetime msec
+service timestamps log datetime msec
+service call-home
+platform qfp utilization monitor load 80
+no platform punt-keepalive disable-kernel-core
+!
+hostname BKC-4451
+!
+boot-start-marker
+boot system flash isr4400-universalk9.17.06.05.SPA.bin
+boot-end-marker
+!
+!
+vrf definition Mgmt-intf
+ !
+ address-family ipv4
+ exit-address-family
+ !
+ address-family ipv6
+ exit-address-family
+!
+card type e1 0 1
+enable secret 9 $14$hJRg$P3fUsYj44tjapU$xE.5hiU9Eo2pD21vlfZxvTXwECPjia2FytDpCOLEWs6
+!
+aaa new-model
+!
+!
+aaa group server tacacs+ ACSServers
+ server-private 10.0.51.56 key 7 106F1A574A46415B
+ server-private 10.0.51.57 key 7 047A184840701F1E
+ ip vrf forwarding Mgmt-intf
+ ip tacacs source-interface GigabitEthernet0
+!
+aaa authentication login CACS group ACSServers local
+aaa authentication enable default group ACSServers enable
+aaa authorization console
+aaa authorization config-commands
+aaa authorization exec CACS group ACSServers local 
+aaa authorization commands 0 CACS group ACSServers local 
+aaa authorization commands 1 CACS group ACSServers local 
+aaa authorization commands 2 CACS group ACSServers local 
+aaa authorization commands 3 CACS group ACSServers local 
+aaa authorization commands 15 CACS group ACSServers local 
+aaa accounting exec CACS start-stop group ACSServers
+aaa accounting commands 0 CACS start-stop group ACSServers
+aaa accounting commands 1 CACS start-stop group ACSServers
+aaa accounting commands 2 CACS start-stop group ACSServers
+aaa accounting commands 3 CACS start-stop group ACSServers
+aaa accounting commands 15 CACS start-stop group ACSServers
+aaa accounting system default start-stop group ACSServers
+!
+!
+!
+!
+!
+!
+aaa session-id common
+clock timezone Tehran 3 30
+clock calendar-valid
+!
+!
+!
+!
+!
+!
+!
+ip domain name agri-bank.com
+!
+!
+!
+no login on-success log
+!
+!
+!
+!
+!
+!
+!
+subscriber templating
+! 
+! 
+! 
+! 
+!
+multilink bundle-name authenticated
+!
+flow exporter FLOW-EXP
+ destination 10.0.51.61
+ source Port-channel1
+ transport udp 9996
+ export-protocol netflow-v5
+!
+!
+flow monitor FLOW-MON
+ exporter FLOW-EXP
+ cache timeout active 60
+ record netflow-original
+!
+!
+!
+!
+crypto pki trustpoint TP-self-signed-1492570467
+ enrollment selfsigned
+ subject-name cn=IOS-Self-Signed-Certificate-1492570467
+ revocation-check none
+ rsakeypair TP-self-signed-1492570467
+!
+crypto pki trustpoint SLA-TrustPoint
+ enrollment pkcs12
+ revocation-check crl
+!
+!
+crypto pki certificate chain TP-self-signed-1492570467
+ certificate self-signed 01 nvram:IOS-Self-Sig#3.cer
+crypto pki certificate chain SLA-TrustPoint
+ certificate ca 01 nvram:CiscoLicensi#1CA.cer
+!
+!
+license feature hseck9
+license udi pid ISR4451-X/K9 sn FOC230130LB
+archive
+ path tftp://10.0.51.40/Core/$h
+ write-memory
+memory free low-watermark processor 67460
+!
+diagnostic bootup level minimal
+!
+spanning-tree extend system-id
+!
+username bkroot privilege 15 secret 9 $14$Y9LH$eaN8D5NukTpKfk$lvDecVGIIUFN55pxZg4Ja63uZWXq8uxC9y7Qg4BHJTE
+!
+redundancy
+ mode none
+!
+!
+!
+!
+controller E1 0/1/0
+ channel-group 0 timeslots 1-31
+!
+controller E1 0/1/1
+ framing no-crc4 
+ channel-group 0 timeslots 1-31
+!
+controller E1 0/1/2
+!
+controller E1 0/1/3
+!
+controller E1 0/1/4
+!
+controller E1 0/1/5
+!
+controller E1 0/1/6
+!
+controller E1 0/1/7
+!
+!
+!
+!
+class-map match-all undesireable-udp
+ match access-group 198
+!
+policy-map drop-udp
+ class undesireable-udp
+  police cir percent 1
+   conform-action drop 
+   exceed-action drop 
+   violate-action drop 
+!
+! 
+!
+!
+!
+!
+!
+!
+!
+crypto isakmp policy 10
+ encryption aes
+ hash sha
+ authentication pre-share
+ group 2
+!
+crypto isakmp policy 20
+ encryption aes
+ hash sha
+ authentication pre-share
+ group 2
+crypto isakmp key AEH.s3cur!ty address 10.243.0.54    
+crypto isakmp key G!l@n3tAcc3ssBKC address 10.250.76.2    
+crypto isakmp key G!l@n3tAcc3ssBKC address 10.250.76.3    
+crypto isakmp key G!l@n3tAcc3ssBKC address 10.250.76.4    
+crypto isakmp key G!l@n3tAcc3ssBKC address 10.250.76.5    
+!
+!
+crypto ipsec transform-set AnbarEHosseinTS esp-aes esp-sha-hmac 
+ mode tunnel
+crypto ipsec transform-set GILANETTS esp-aes esp-sha-hmac 
+ mode tunnel
+!
+!
+!
+crypto map AnbarEHossein 1 ipsec-isakmp 
+ set peer 10.243.0.54
+ set transform-set AnbarEHosseinTS 
+ match address AnbarEHosseinACL
+!
+crypto map GILANET 10 ipsec-isakmp 
+ set peer 10.250.76.2
+ set transform-set GILANETTS 
+ match address FFoodM78
+crypto map GILANET 20 ipsec-isakmp 
+ set peer 10.250.76.3
+ set transform-set GILANETTS 
+ match address GreenPAYACL
+crypto map GILANET 30 ipsec-isakmp 
+ set peer 10.250.76.4
+ set transform-set GILANETTS 
+ match address APNAmuzeshBuilding
+crypto map GILANET 40 ipsec-isakmp 
+ set peer 10.250.76.5
+ set transform-set GILANETTS 
+ match address Bankzamin
+!
+!
+!
+!
+! 
+! 
+!
+!
+interface Loopback100
+ ip address 10.0.68.113 255.255.255.248
+!
+interface Port-channel1
+ no ip address
+ negotiation auto
+!
+interface Port-channel1.157
+ encapsulation dot1Q 157
+ ip flow monitor FLOW-MON input
+ ip flow monitor FLOW-MON output
+ ip address 10.0.157.16 255.255.255.0
+ ip nat inside
+!
+interface Tunnel1
+ description ** APN-AmuzeshBuilding **
+ ip address 10.176.100.6 255.255.255.254
+ keepalive 100 3
+ tunnel source 10.250.76.1
+ tunnel destination 10.250.76.4
+!
+interface Tunnel4001
+ description ** Mehr78-Vesal **
+ bandwidth 2048
+ ip flow monitor FLOW-MON input
+ ip flow monitor FLOW-MON output
+ ip address 10.255.243.8 255.255.255.254
+ ip mtu 1460
+ ip tcp adjust-mss 1420
+ load-interval 30
+ cdp enable
+ keepalive 3 3
+ tunnel source 10.243.0.2
+ tunnel destination 10.243.0.46
+!
+interface Tunnel4002
+ description ** Vasepari-Mehr **
+ bandwidth 2048
+ ip flow monitor FLOW-MON input
+ ip flow monitor FLOW-MON output
+ ip address 10.255.243.21 255.255.255.252
+ cdp enable
+ tunnel source 10.243.0.2
+ tunnel destination 10.243.0.42
+!
+interface Tunnel4004
+ description ** Mehr78-Elahieh **
+ bandwidth 2048
+ ip flow monitor FLOW-MON input
+ ip flow monitor FLOW-MON output
+ ip address 10.255.243.10 255.255.255.254
+ ip mtu 1460
+ ip tcp adjust-mss 1420
+ load-interval 30
+ cdp enable
+ keepalive 3 3
+ tunnel source 10.243.0.2
+ tunnel destination 10.243.0.26
+!
+interface Tunnel4007
+ description ** HamiMehrPishgam **
+ bandwidth 1024
+ ip flow monitor FLOW-MON input
+ ip flow monitor FLOW-MON output
+ ip address 10.255.243.2 255.255.255.254
+ ip mtu 1460
+ ip tcp adjust-mss 1420
+ cdp enable
+ keepalive 3 3
+ tunnel source 10.243.0.2
+ tunnel destination 10.243.0.10
+!
+interface Tunnel4011
+ description ** SandoqYekom-RayanHamAfza **
+ bandwidth 1024
+ ip flow monitor FLOW-MON input
+ ip flow monitor FLOW-MON output
+ ip address 10.255.243.0 255.255.255.254
+ ip mtu 1460
+ ip tcp adjust-mss 1420
+ cdp enable
+ keepalive 3 3
+ tunnel source 10.243.0.2
+ tunnel destination 10.243.0.6
+!
+interface Tunnel4012
+ description ** Sakhteman Niayesh-SndghTazmin **
+ ip flow monitor FLOW-MON input
+ ip flow monitor FLOW-MON output
+ ip address 10.255.243.6 255.255.255.254
+ ip mtu 1460
+ ip tcp adjust-mss 1420
+ cdp enable
+ keepalive 3 3
+ tunnel source 10.243.0.2
+ tunnel destination 10.243.0.18
+!
+interface Tunnel4013
+ description ** Kargozari-Bank **
+ ip flow monitor FLOW-MON input
+ ip flow monitor FLOW-MON output
+ ip address 10.255.243.16 255.255.255.254
+ ip mtu 1460
+ ip tcp adjust-mss 1420
+ load-interval 30
+ cdp enable
+ keepalive 3 3
+ tunnel source 10.243.0.2
+ tunnel destination 10.243.0.34
+!
+interface Tunnel4014
+ description ** SarafiMehr **
+ ip flow monitor FLOW-MON input
+ ip flow monitor FLOW-MON output
+ ip address 10.255.243.18 255.255.255.254
+ ip mtu 1460
+ ip tcp adjust-mss 1420
+ load-interval 30
+ cdp enable
+ keepalive 3 3
+ tunnel source 10.243.0.2
+ tunnel destination 10.243.0.38
+!
+interface Tunnel4015
+ description ** FastFood-Mehr78 **
+ ip address 10.176.100.2 255.255.255.254
+ keepalive 100 3
+ tunnel source 10.250.76.1
+ tunnel destination 10.250.76.2
+!
+interface Tunnel4019
+ description ** Bankzamin **
+ ip address 10.176.100.8 255.255.255.254
+ keepalive 100 3
+ tunnel source 10.250.76.1
+ tunnel destination 10.250.76.5
+!
+interface Tunnel4020
+ description ** AmuzeshBuilding **
+ ip flow monitor FLOW-MON input
+ ip flow monitor FLOW-MON output
+ ip address 10.255.243.24 255.255.255.254
+ ip mtu 1460
+ ip tcp adjust-mss 1420
+ load-interval 30
+ cdp enable
+ keepalive 3 3
+ tunnel source 10.243.0.2
+ tunnel destination 10.243.0.50
+!
+interface Tunnel4021
+ description ** AnbarEHossein **
+ ip flow monitor FLOW-MON input
+ ip flow monitor FLOW-MON output
+ ip address 10.255.243.26 255.255.255.254
+ ip mtu 1460
+ ip tcp adjust-mss 1420
+ load-interval 30
+ cdp enable
+ keepalive 40 3
+ tunnel source 10.243.0.2
+ tunnel destination 10.243.0.54
+!
+interface Tunnel4022
+ description ** Vesal-Restaurant **
+ ip address 10.255.243.4 255.255.255.254
+ ip mtu 1460
+ ip tcp adjust-mss 1420
+ load-interval 30
+ cdp enable
+ keepalive 3 3
+ tunnel source 10.243.0.2
+ tunnel destination 10.243.0.22
+!
+interface Tunnel4023
+ description ** GREENPAY **
+ ip address 10.176.100.4 255.255.255.254
+ keepalive 100 3
+ tunnel source 10.250.76.1
+ tunnel destination 10.250.76.3
+!
+interface Tunnel4301
+ description ** SndqBimeh **
+ ip flow monitor FLOW-MON input
+ ip flow monitor FLOW-MON output
+ ip address 10.255.243.14 255.255.255.254
+ ip mtu 1460
+ ip tcp adjust-mss 1420
+ cdp enable
+ keepalive 3 3
+ tunnel source 10.243.0.2
+ tunnel destination 10.243.0.30
+!
+interface GigabitEthernet0/0/0
+ description AGG-EXT-SW-Twe1/0/3
+ no ip address
+ media-type sfp
+ negotiation auto
+ channel-group 1 mode active
+!
+interface GigabitEthernet0/0/1
+ description AGG-EXT-SW-Twe2/0/3
+ no ip address
+ media-type sfp
+ negotiation auto
+ channel-group 1 mode active
+!
+interface GigabitEthernet0/0/2
+ no ip address
+ negotiation auto
+!
+interface GigabitEthernet0/0/2.3900
+ description ** MPLS-100M-14020612 **
+ encapsulation dot1Q 3900
+ ip address 10.243.0.2 255.255.255.252
+ ip nat outside
+ crypto map AnbarEHossein
+!
+interface GigabitEthernet0/0/3
+ description ** APN-Gilanet-BKC **
+ ip address 10.250.76.1 255.255.255.0
+ ip nat outside
+ media-type rj45
+ negotiation auto
+ crypto map GILANET
+!
+interface Serial0/1/0:0
+ description ** P2P-E1-Sndgh Bimeh **
+ bandwidth 2000
+ ip address 10.0.250.14 255.255.255.254
+ ip access-group SANDOQ-BIMEH in
+ encapsulation ppp
+ no cdp enable
+!
+interface Serial0/1/1:0
+ description ** PTP 2M AnbarTarasht **
+ bandwidth 2000
+ ip address 10.0.250.50 255.255.255.254
+ encapsulation ppp
+!
+interface GigabitEthernet0
+ description ** OOB **
+ vrf forwarding Mgmt-intf
+ ip address 10.0.51.53 255.255.255.0
+ negotiation auto
+!
+no ip http server
+no ip http secure-server
+ip forward-protocol nd
+ip tftp source-interface GigabitEthernet0
+ip nat inside source static tcp 10.0.76.222 80 10.0.68.113 80 extendable
+ip nat inside source list MonitorWAN interface GigabitEthernet0/0/2.3900 overload
+ip nat inside source list NATWAN interface GigabitEthernet0/0/3 overload
+ip route 0.0.0.0 0.0.0.0 10.0.157.1
+ip route 10.0.69.12 255.255.255.255 10.0.157.1 name FTP
+ip route 10.0.89.0 255.255.255.0 10.0.157.1
+ip route 10.0.151.0 255.255.255.0 10.0.157.1 name Intranet
+ip route 10.0.192.205 255.255.255.255 10.0.157.14
+ip route 10.0.192.206 255.255.255.255 10.0.157.14
+ip route 10.0.255.130 255.255.255.254 10.0.157.14
+ip route 10.1.110.100 255.255.255.255 10.0.157.1 name samab.mefa.ir
+ip route 10.4.1.0 255.255.255.0 10.0.157.1
+ip route 10.35.1.0 255.255.255.0 10.0.157.1
+ip route 10.35.2.0 255.255.255.0 10.0.157.1
+ip route 10.40.1.0 255.255.255.0 Tunnel4001 name Mehr78-Vesal
+ip route 10.40.2.0 255.255.255.0 Tunnel4002 name Vasepari-Mehr
+ip route 10.40.4.0 255.255.255.0 Tunnel4004 name BKI-Mehr78-Elahieh
+ip route 10.40.5.0 255.255.255.0 10.0.250.51 10 name AnbarTarasht
+ip route 10.40.6.0 255.255.255.0 10.0.250.51 10 name AnbarTarasht
+ip route 10.40.6.0 255.255.255.0 10.250.0.38 20 name AnbarTarasht
+ip route 10.40.7.0 255.255.255.0 Tunnel4007 name HamiMehrPishgam
+ip route 10.40.8.0 255.255.255.0 10.0.250.51 10 name AnbarTarasht
+ip route 10.40.8.0 255.255.255.0 10.250.0.38 20 name AnbarTarasht
+ip route 10.40.9.0 255.255.255.0 10.0.250.51 10 name AnbarTarasht
+ip route 10.40.9.0 255.255.255.0 10.250.0.38 20 name AnbarTarasht
+ip route 10.40.11.0 255.255.255.0 Tunnel4011 10 name SandoqYekam
+ip route 10.40.12.0 255.255.255.0 Tunnel4012 name Sakhteman-Niyayesh
+ip route 10.40.13.0 255.255.255.0 Tunnel4013 name Kargozari-BankKeshavarzi
+ip route 10.40.14.0 255.255.255.0 Tunnel4014 name SarafiMehr
+ip route 10.40.15.0 255.255.255.0 Tunnel4015 name FastFoodMehr78
+ip route 10.40.19.0 255.255.255.0 Tunnel4019 name Bankzamin
+ip route 10.40.20.0 255.255.255.0 Tunnel4020 name AmuzeshBuilding
+ip route 10.40.20.0 255.255.255.0 Tunnel1 10 name APNAmuzeshBuilding
+ip route 10.40.21.0 255.255.255.0 Tunnel4021 name AnbarEHossein
+ip route 10.40.22.0 255.255.255.0 Tunnel4022 name Vesal-Restaurant
+ip route 10.40.23.0 255.255.255.0 Tunnel4023 name GreenPay
+ip route 10.40.254.5 255.255.255.255 10.0.250.51 10 name AnbarTarasht
+ip route 10.40.254.5 255.255.255.255 10.250.0.38 20 name AnbarTarasht
+ip route 10.40.254.9 255.255.255.255 10.0.250.51 10 name AnbarTarasht
+ip route 10.40.254.9 255.255.255.255 10.250.0.38 20 name AnbarTarasht
+ip route 10.40.254.15 255.255.255.255 Tunnel4015 name FastFoodMehr78
+ip route 10.40.254.19 255.255.255.255 Tunnel4019 name Bankzamin
+ip route 10.40.254.20 255.255.255.255 Tunnel4020
+ip route 10.40.254.22 255.255.255.255 Tunnel4022 name Vesal-Restaurant
+ip route 10.40.254.23 255.255.255.255 Tunnel4023 name GreenPay
+ip route 10.43.1.0 255.255.255.0 Tunnel4301 name Sandoq-Bimeh
+ip route 10.43.1.0 255.255.255.0 10.0.250.15 10 name Sandoq-Bimeh-E1
+ip route 10.243.0.0 255.255.255.0 10.243.0.1 name MPLS
+ip route 10.243.0.4 255.255.255.252 10.243.0.1 name SandoghYekam
+ip route 10.243.0.8 255.255.255.252 10.243.0.1 name HamiMehrPishgam
+ip route 10.243.0.16 255.255.255.252 10.243.0.1 name Sakhteman-Niyayesh
+ip route 10.243.0.20 255.255.255.252 10.243.0.1 name Vesal-Restaurant
+ip route 10.243.0.24 255.255.255.252 10.243.0.1 name Mehr78-Elahieh
+ip route 10.243.0.28 255.255.255.252 10.243.0.1 name SandoghBimeh
+ip route 10.243.0.32 255.255.255.252 10.243.0.1 name Kargozari-BankKeshavarzi
+ip route 10.243.0.36 255.255.255.252 10.243.0.1 name SarafiMehr
+ip route 10.250.0.37 255.255.255.255 10.0.250.51
+ip route vrf Mgmt-intf 0.0.0.0 0.0.0.0 10.0.51.1
+ip ssh authentication-retries 2
+ip ssh port 2001 rotary 1
+ip ssh source-interface GigabitEthernet0/0/2.3900
+ip ssh version 2
+!
+!
+ip access-list standard SNMP-READ
+ 10 permit 10.0.50.0 0.0.1.255
+ip access-list standard SNMP-WRITE
+ 10 permit 10.0.51.49
+ 20 permit 10.0.51.48
+ip access-list standard TELNET
+ 10 deny   10.255.243.15
+ 20 deny   10.0.250.14 0.0.0.1
+ 30 deny   10.43.1.0 0.0.0.255
+ 40 permit 10.0.250.0 0.0.0.255
+ 50 permit 10.0.50.0 0.0.1.255
+ 60 permit 10.255.243.0 0.0.0.255
+ 70 permit 10.0.152.0 0.0.1.255
+ 80 permit 10.0.157.0 0.0.0.255
+ 90 permit 10.0.201.0 0.0.0.255
+ip access-list standard TELNET-ACCESS
+ 10 permit 10.0.50.0 0.0.1.255
+!
+ip access-list extended APNAmuzeshBuilding
+ 10 permit gre host 10.250.76.1 host 10.250.76.4
+ip access-list extended AnbarEHosseinACL
+ 10 permit gre host 10.243.0.2 host 10.243.0.54
+ip access-list extended Bankzamin
+ 10 permit gre host 10.250.76.1 host 10.250.76.5
+ip access-list extended FFoodM78
+ 10 permit gre host 10.250.76.1 host 10.250.76.2
+ip access-list extended GreenPAYACL
+ 10 permit gre host 10.250.76.1 host 10.250.76.3
+ip access-list extended MYCAP
+ 10 permit ip 10.43.1.0 0.0.0.255 any
+ 20 permit ip any 10.43.1.0 0.0.0.255
+ip access-list extended MonitorWAN
+ 10 permit ip 10.0.50.0 0.0.0.255 10.243.0.0 0.0.255.255
+ip access-list extended NATWAN
+ 10 permit ip 10.0.50.0 0.0.0.255 10.250.76.0 0.0.0.255
+ip access-list extended SANDOQ-BIMEH
+ 10 deny   tcp any any eq telnet
+ 20 permit tcp host 10.43.1.4 host 10.0.53.23 eq 1521
+ 30 permit tcp host 10.43.1.4 eq 1521 10.0.138.16 0.0.0.1
+ 40 permit tcp host 10.43.1.4 eq 3389 host 10.0.53.23
+ 50 permit tcp host 10.43.1.4 host 10.0.53.23
+ 60 permit tcp host 10.43.1.4 10.0.204.240 0.0.0.7
+ 70 permit tcp host 10.43.1.4 10.0.74.224 0.0.0.31
+ 80 permit tcp host 10.43.1.4 host 10.0.176.21
+ 90 permit tcp host 10.43.1.4 host 10.0.74.244
+ 100 permit icmp 10.43.1.0 0.0.0.255 host 10.0.53.23
+ 110 permit icmp host 10.0.250.15 host 10.0.250.14
+ 120 permit ip 10.43.1.0 0.0.0.255 host 10.0.53.68 log
+ 130 permit tcp 10.43.1.0 0.0.0.255 host 10.0.53.10 eq ftp ftp-data
+ 140 permit icmp host 10.43.1.4 host 10.0.250.14
+ 150 permit icmp host 10.43.1.4 host 10.0.51.45
+ 160 permit icmp host 10.0.250.15 host 10.0.51.45
+ 170 permit ip host 10.43.1.230 host 10.0.55.150
+ 180 permit tcp 10.43.1.0 0.0.0.255 host 10.0.53.7 log
+ 190 permit tcp host 10.43.1.2 host 10.0.50.8
+ 200 remark ---------- Sandoq -> VIPC ---------
+ 200 permit tcp host 10.43.1.233 host 10.0.84.51 eq www 8020
+ 210 permit tcp host 10.43.1.233 host 10.0.138.125 eq 443
+ 220 permit tcp host 10.43.1.233 host 10.0.84.134 eq 443
+ 230 permit tcp host 10.43.1.233 eq www 443 host 10.0.212.38
+ 240 permit tcp host 10.43.1.233 eq www 443 host 10.0.86.16
+ 250 permit ip host 10.43.1.233 host 10.0.85.53
+ 260 remark ---------- Sandoq -> Didgah ---------
+ 260 permit tcp 10.43.1.0 0.0.0.255 host 10.0.68.223 eq www 443
+ 270 remark ------- Mehrgostar ----------
+ 270 permit tcp host 10.43.1.233 host 10.0.54.134 eq 443
+ 280 permit icmp host 10.43.1.233 host 10.0.54.134
+ 290 permit tcp host 10.43.1.233 host 10.0.54.134 eq www
+ 300 remark --------DNS ----------
+ 300 permit udp 10.43.1.0 0.0.0.255 host 10.0.53.3 eq domain
+ 310 permit udp 10.43.1.0 0.0.0.255 host 10.0.53.14 eq domain
+ 320 permit ip host 10.43.1.6 10.0.93.0 0.0.0.255
+ 330 permit ip host 10.43.1.7 10.0.93.0 0.0.0.255
+ 340 permit ip host 10.43.1.6 host 10.0.76.159
+ 350 permit ip host 10.43.1.7 host 10.0.76.159
+ 360 remark ------ Didgah Herasat --------
+ 360 permit ip host 10.43.1.158 host 10.0.76.158
+ 370 permit ip host 10.43.1.158 host 10.0.76.159
+ 380 permit tcp host 10.43.1.233 10.0.57.16 0.0.0.1 eq www 443
+ 390 remark ---------- Sandoq-Sabka -> Divan ---------
+ 390 permit tcp host 10.43.1.233 eq 443 www host 10.0.2.28
+ 400 permit tcp host 10.43.1.233 eq 443 www host 10.0.2.29
+ 410 permit tcp host 10.43.1.233 eq 443 www host 10.0.2.66
+ 420 permit tcp host 10.43.1.233 eq 443 www host 10.0.2.13
+ 430 permit tcp host 10.43.1.233 eq 443 www host 10.0.14.72
+ 440 permit tcp host 10.43.1.233 eq 443 www host 10.0.14.66
+ 450 permit tcp host 10.43.1.4 host 10.0.176.18 eq 1521
+ 460 permit tcp host 10.43.1.233 eq 443 www host 10.0.190.39
+ 470 permit tcp host 10.43.1.233 eq 443 www host 10.0.190.40
+ 480 permit tcp host 10.43.1.233 eq 443 www host 10.0.190.16
+ 490 permit tcp host 10.43.1.233 eq 443 www host 10.0.190.17
+ 500 permit ip host 10.43.1.5 host 10.0.54.146
+ 510 permit tcp host 10.43.1.233 eq 443 www host 10.0.190.38
+ 520 permit tcp host 10.43.1.233 eq 443 www host 10.0.190.60
+ 530 permit tcp host 10.43.1.233 eq 443 www host 10.0.190.61
+ 540 permit tcp host 10.43.1.233 eq www 443 host 10.0.191.13
+ 550 permit tcp host 10.43.1.233 eq www 443 host 10.0.191.15
+ 560 permit tcp host 10.43.1.233 eq www 443 host 10.0.191.48
+ 570 permit tcp host 10.43.1.233 eq www 443 host 10.0.72.54
+ 580 permit tcp host 10.43.1.233 eq www 443 host 10.0.72.73
+ 590 permit ip host 10.43.1.233 host 10.0.50.67 log
+ 600 permit tcp host 10.43.1.4 host 10.0.176.17
+ 610 permit tcp host 10.43.1.4 host 10.0.52.77
+ip access-list extended mehdimnv
+ 10 permit ip host 10.0.50.112 host 10.250.0.37
+ip access-list extended myUDP
+ 10 permit ip any host 10.0.51.61
+!
+logging trap notifications
+logging host 10.0.51.58 vrf Mgmt-intf
+logging host 10.0.51.25 vrf Mgmt-intf
+ip access-list extended 198
+ 10 deny   ip any any fragments
+ 20 permit udp any any eq 18999
+ip access-list extended 199
+ 10 permit icmp any any echo
+ 20 permit icmp any any echo-reply
+!
+snmp-server group LMS v3 auth 
+snmp-server group LMS v3 priv read myview write myview access SNMP-WRITE
+snmp-server group NMS v3 auth 
+snmp-server group NMS v3 priv access SNMP-READ
+snmp-server view myview mib-2 included
+snmp-server view myview system included
+snmp-server view myview cisco included
+snmp-server host 10.0.51.48 vrf Mgmt-intf version 3 auth lms-net 
+snmp-server host 10.0.51.49 vrf Mgmt-intf version 3 auth lms-net 
+snmp-server host 10.0.51.50 vrf Mgmt-intf version 3 auth lms-net 
+snmp-server host 10.0.51.32 vrf Mgmt-intf version 3 auth nms-net 
+snmp-server host 10.0.51.58 vrf Mgmt-intf version 3 auth nms-net 
+snmp-server host 10.0.51.60 vrf Mgmt-intf version 3 auth nms-net 
+snmp-server host 10.0.51.72 vrf Mgmt-intf version 3 auth nms-net 
+snmp ifmib ifindex persist
+!
+tacacs-server directed-request
+!
+!
+!
+control-plane
+!
+privilege interface level 3 shutdown
+privilege interface level 3 no shutdown
+privilege interface level 3 no
+privilege configure level 3 interface
+privilege exec level 3 traceroute
+privilege exec level 3 ping
+privilege exec level 2 configure terminal
+privilege exec level 2 configure
+privilege exec level 3 terminal monitor
+privilege exec level 3 terminal
+privilege exec all level 2 show
+banner motd 
+        ===
+       -+ +-
+       | | |
+    <--\ | /-->
+ /____\\ | //____\ ********************************************************
+   <###\|||/###>                  Keshavarzi Bank Network
+    +====+====+     WARNING: Access is restricted to authorized users only.
+    | WAN-BKI |     Unauthorized access is a violation of state , civil and
+    +===+=+===+                       criminal laws.
+        +=+        ********************************************************
+
+!
+line con 0
+ stopbits 1
+line aux 0
+line vty 0 4
+ access-class TELNET-ACCESS in vrf-also
+ privilege level 15
+ authorization commands 2 CACS
+ authorization exec CACS
+ accounting commands 15 CACS
+ accounting exec CACS
+ login authentication CACS
+ transport input ssh
+ transport output telnet ssh
+line vty 5 15
+ access-class TELNET-ACCESS in vrf-also
+ privilege level 15
+ authorization commands 2 CACS
+ authorization exec CACS
+ accounting commands 15 CACS
+ accounting exec CACS
+ login authentication CACS
+ transport input ssh
+ transport output telnet ssh
+!
+network-clock synchronization automatic
+call-home
+ ! If contact email address in call-home is configured as sch-smart-licensing@cisco.com
+ ! the email address configured in Cisco Smart License Portal will be used as contact email address to send SCH notifications.
+ contact-email-addr sch-smart-licensing@cisco.com
+ profile "CiscoTAC-1"
+  active
+  destination transport-method http
+ntp authentication-key 1 md5 141615190549282A2A23 7
+ntp authenticate
+ntp trusted-key 1
+ntp source GigabitEthernet0
+ntp server vrf Mgmt-intf 10.0.51.27
+!
+!
+!
+!
+!
+!
+end

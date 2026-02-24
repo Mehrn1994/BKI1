@@ -1,0 +1,476 @@
+
+!
+! Last configuration change at 10:43:37 Tehran Sat May 31 2025 by m-hossain
+! NVRAM config last updated at 10:43:37 Tehran Sat May 31 2025 by m-hossain
+!
+version 12.4
+service timestamps debug datetime msec localtime
+service timestamps log datetime msec localtime
+service password-encryption
+!
+hostname BKI-MAGFA
+!
+boot-start-marker
+boot-end-marker
+!
+enable secret 5 $1$r6tD$s1ksl8nsO8QTivQ5yJhYe1
+!
+aaa new-model
+!
+!
+aaa authentication login CACS group tacacs+ local
+aaa authentication enable default group tacacs+ enable
+aaa authorization console
+aaa authorization config-commands
+aaa authorization exec CACS group tacacs+ local 
+aaa authorization commands 0 CACS group tacacs+ local 
+aaa authorization commands 1 CACS group tacacs+ local 
+aaa authorization commands 2 CACS group tacacs+ local 
+aaa authorization commands 3 CACS group tacacs+ local 
+aaa authorization commands 15 CACS group tacacs+ local 
+aaa accounting exec CACS start-stop group tacacs+
+aaa accounting commands 0 CACS start-stop group tacacs+
+aaa accounting commands 1 CACS start-stop group tacacs+
+aaa accounting commands 2 CACS start-stop group tacacs+
+aaa accounting commands 3 CACS start-stop group tacacs+
+aaa accounting commands 15 CACS start-stop group tacacs+
+!
+aaa session-id common
+clock timezone Tehran 3 30
+clock calendar-valid
+ip cef
+!
+!
+!
+!
+no ip domain lookup
+ip domain name agri-bank.com
+ip auth-proxy max-nodata-conns 3
+ip admission max-nodata-conns 3
+!
+!
+!
+username bkroot privilege 15 secret 5 $1$5kYv$WD/7R4Ek2Ovcc3EQJdTBW1
+username bkiadmin privilege 15 secret 5 $1$rh6C$xiAVauQj7TqxQyNzQgnYd1
+archive
+ log config
+  hidekeys
+ path tftp://10.0.51.40/Core/$h
+ write-memory
+!
+!
+ip tftp source-interface FastEthernet0/0
+ip ssh authentication-retries 2
+ip ssh port 2001 rotary 1
+ip ssh version 2
+!
+class-map match-all undesireable-udp
+ match access-group 198
+!
+!
+policy-map drop-udp
+ class undesireable-udp
+   drop
+!
+! 
+!
+crypto isakmp policy 10
+ encr aes
+ authentication pre-share
+ group 2
+!
+crypto isakmp policy 15
+ encr 3des
+ authentication pre-share
+ group 2
+crypto isakmp key M@gf@W#97 address 10.250.0.41
+crypto isakmp key M@gf@M#97 address 10.242.0.2
+crypto isakmp key H!W3bAccess address 10.250.50.1
+!
+!
+crypto ipsec transform-set MagWTS esp-3des esp-sha-hmac 
+crypto ipsec transform-set MagMTS esp-3des esp-sha-hmac 
+crypto ipsec transform-set HIWEBTS esp-aes esp-sha-hmac 
+!
+crypto map HIWEB 10 ipsec-isakmp 
+ set peer 10.250.50.1
+ set transform-set HIWEBTS 
+ match address HIWEB-ACL
+!
+crypto map MagM-MAP 1 ipsec-isakmp 
+ set peer 10.242.0.2
+ set transform-set MagMTS 
+ match address MagM-IPSEC-ACL
+!
+crypto map MagW-MAP 1 ipsec-isakmp 
+ set peer 10.250.0.41
+ set transform-set MagWTS 
+ match address MagW-IPSEC-ACL
+!
+bridge irb
+!
+!
+interface Loopback400
+ no ip address
+!
+interface Tunnel1
+ description ** Magfa_Markazi **
+ bandwidth 128
+ ip address 10.255.242.13 255.255.255.254
+ ip mtu 1460
+ ip nat outside
+ ip virtual-reassembly
+ ip tcp adjust-mss 1420
+ load-interval 30
+ keepalive 3 3
+ cdp enable
+ tunnel source 10.242.0.26
+ tunnel destination 10.242.0.2
+!
+interface Tunnel5
+ no ip address
+!
+interface Tunnel157
+ description ** HiWeb-BKI **
+ ip address 10.157.100.135 255.255.255.254
+ ip nat outside
+ ip virtual-reassembly
+ ip ospf hello-interval 40
+ ip ospf dead-interval 120
+ tunnel source 10.250.50.87
+ tunnel destination 10.250.50.1
+!
+interface Tunnel200
+ description ** Agri-bank-Wireless **
+ bandwidth 1024
+ ip address 10.255.255.6 255.255.255.252
+ ip mtu 1460
+ ip nat outside
+ ip virtual-reassembly
+ ip tcp adjust-mss 1420
+ keepalive 3 3
+ cdp enable
+ tunnel source 10.250.0.44
+ tunnel destination 10.250.0.41
+!
+interface FastEthernet0/0
+ description ** LAN **
+ ip address 10.42.6.1 255.255.255.0
+ ip nat inside
+ ip virtual-reassembly
+ load-interval 30
+ duplex auto
+ speed auto
+!
+interface FastEthernet0/1
+ description ** MPLS-PSP **
+ ip address 10.242.0.26 255.255.255.252
+ load-interval 30
+ duplex auto
+ speed auto
+ crypto map MagM-MAP
+!
+interface FastEthernet0/0/0
+ switchport access vlan 10
+!
+interface FastEthernet0/0/1
+!
+interface FastEthernet0/0/2
+!
+interface FastEthernet0/0/3
+ description ** WireLess **
+ switchport access vlan 2
+!
+interface Vlan1
+ no ip address
+!
+interface Vlan2
+ description ** WireLess **
+ ip address 10.250.0.44 255.255.255.248
+ crypto map MagW-MAP
+!
+interface Vlan10
+ ip address 10.250.50.87 255.255.255.0
+ crypto map HIWEB
+!
+interface BVI1
+ description ** MPLS-PSP **
+ no ip address
+!
+ip forward-protocol nd
+ip route 10.0.0.0 255.255.0.0 Tunnel1 15 name MPLS
+ip route 10.0.0.0 255.255.0.0 Tunnel157 20 name APN-HiWEB
+ip route 10.42.6.128 255.255.255.128 Tunnel1 15 name MPLS
+ip route 10.42.6.128 255.255.255.128 Tunnel157 20 name APN-HiWEB
+ip route 10.60.66.0 255.255.255.0 Tunnel1 15 name MPLS
+ip route 10.60.66.0 255.255.255.0 Tunnel157 20 name APN-HiWEB
+ip route 10.242.0.0 255.255.255.0 10.242.0.25
+!
+!
+no ip http server
+no ip http secure-server
+ip nat pool SMS-Magfa 10.42.6.130 10.42.6.130 netmask 255.255.255.0
+ip nat pool Magfa-ECRM 10.42.6.148 10.42.6.148 netmask 255.255.255.128 type rotary
+ip nat pool Magfa-Proxy 10.42.6.132 10.42.6.132 netmask 255.255.255.128 type rotary
+ip nat outside source list Magfa-ECRM pool Magfa-ECRM
+ip nat outside source list Magfa-Proxy pool Magfa-Proxy
+ip nat outside source static 10.0.51.58 10.42.6.139
+ip nat outside source static 10.0.54.24 10.42.6.154
+ip nat outside source static 10.0.54.25 10.42.6.155
+ip nat outside source static 10.0.54.103 10.42.6.144
+ip nat outside source static 10.0.54.129 10.42.6.129
+ip nat outside source static 10.0.54.150 10.42.6.165
+ip nat outside source static 10.0.54.224 10.42.6.224
+ip nat outside source static 10.0.54.240 10.42.6.240
+ip nat outside source static 10.0.56.16 10.42.6.142
+ip nat outside source static 10.0.56.17 10.42.6.143
+ip nat outside source static 10.0.56.84 10.42.6.158
+ip nat outside source static 10.0.58.197 10.42.6.197
+ip nat outside source static 10.0.58.198 10.42.6.198
+ip nat outside source static 10.0.68.76 10.42.6.145
+ip nat outside source static 10.0.68.77 10.42.6.146
+ip nat outside source static 10.0.70.210 10.42.6.135
+ip nat outside source static 10.0.70.211 10.42.6.136
+ip nat outside source static 10.0.70.222 10.42.6.222
+ip nat outside source static 10.0.70.223 10.42.6.223
+ip nat outside source static 10.0.76.24 10.42.6.137
+ip nat outside source static 10.0.76.185 10.42.6.147
+ip nat outside source static 10.0.77.24 10.42.6.138
+ip nat outside source static 10.0.77.94 10.42.6.204
+ip nat outside source static 10.0.85.185 10.42.6.185
+ip nat outside source static 10.0.85.210 10.42.6.130
+ip nat outside source static 10.0.137.210 10.42.6.134
+ip nat outside source static 10.0.137.211 10.42.6.131
+ip nat outside source static 10.0.137.214 10.42.6.140
+ip nat outside source static 10.0.137.215 10.42.6.141
+ip nat outside source static 10.0.138.184 10.42.6.194
+ip nat outside source static 10.0.138.185 10.42.6.195
+ip nat outside source static 10.0.191.133 10.42.6.184
+ip nat outside source static 10.0.191.134 10.42.6.133
+ip nat outside source static 10.0.204.246 10.42.6.156
+ip tacacs source-interface FastEthernet0/0
+!
+ip access-list standard SNMP-READ
+ permit 10.0.50.0 0.0.1.255
+ip access-list standard SNMP-WRITE
+ permit 10.0.51.49
+ permit 10.0.51.48
+ permit 10.0.51.50
+ip access-list standard TELNET_ACCESS
+ remark ----------ALPHA Team----------
+ permit 10.0.201.36
+ permit 10.0.201.62
+!
+ip access-list extended BINAACL
+ permit ip host 10.0.51.58 host 10.42.6.139
+ permit ip host 10.42.6.139 host 10.0.51.58
+ip access-list extended ETHERNET-IN
+ permit ip host 10.42.6.4 host 10.42.6.139
+ permit ip host 10.42.6.4 10.0.58.0 0.0.0.255
+ permit ip host 10.42.6.6 10.0.58.0 0.0.0.255
+ permit ip host 10.42.6.2 10.0.58.0 0.0.0.255
+ permit ip host 10.42.6.2 10.42.6.0 0.0.0.255
+ permit ip host 10.42.6.4 10.0.84.0 0.0.0.255
+ permit ip host 10.42.6.6 10.0.84.0 0.0.0.255
+ permit ip host 10.42.6.4 10.0.49.0 0.0.0.255
+ permit ip host 10.42.6.6 10.0.49.0 0.0.0.255
+ permit ip 10.42.6.0 0.0.0.255 host 10.0.50.8
+ permit icmp host 10.42.6.2 host 10.0.58.21
+ permit icmp host 10.42.6.2 host 10.0.84.26
+ permit icmp host 10.42.6.2 host 10.0.84.70
+ permit icmp host 10.42.6.12 host 10.42.6.1
+ permit icmp host 10.42.6.12 host 10.0.58.21
+ permit icmp host 10.42.6.12 host 10.0.84.26
+ permit icmp host 10.42.6.12 host 10.0.84.70
+ permit icmp host 10.42.6.12 host 10.0.84.190
+ permit icmp host 10.42.6.11 host 10.0.84.190
+ permit icmp host 10.42.6.6 host 10.0.84.190
+ permit icmp host 10.42.6.4 host 10.0.84.190
+ permit tcp host 10.42.6.11 host 10.0.84.190
+ permit tcp host 10.42.6.12 host 10.0.84.190
+ permit icmp host 10.42.6.9 host 10.0.58.21
+ permit icmp host 10.42.6.10 host 10.0.58.21
+ permit ip host 10.42.6.11 host 10.0.58.140
+ permit ip host 10.42.6.11 host 10.0.58.198
+ permit ip host 10.42.6.12 host 10.0.58.140
+ permit ip host 10.42.6.12 host 10.0.58.198
+ permit ip host 10.42.6.4 host 10.0.58.140
+ permit ip host 10.42.6.4 host 10.0.58.198
+ permit ip host 10.42.6.4 host 10.0.53.140
+ permit ip host 10.42.6.4 host 10.0.53.150
+ permit ip host 10.42.6.4 host 10.0.53.38
+ permit ip host 10.42.6.4 host 10.0.53.168
+ permit ip host 10.42.6.4 host 10.0.53.169
+ remark ---------- MPC -------------
+ permit ip host 10.42.6.4 host 10.0.57.18
+ permit ip host 10.42.6.6 host 10.0.57.18
+ permit ip host 10.42.6.4 host 10.0.54.129
+ permit ip host 10.42.6.4 host 10.42.6.129
+ permit ip host 10.42.6.4 host 10.42.6.130
+ permit ip host 10.42.6.4 host 10.42.6.131
+ permit ip 10.42.6.0 0.0.0.255 host 10.42.6.129
+ permit ip 10.42.6.0 0.0.0.255 host 10.42.6.130
+ permit ip 10.42.6.0 0.0.0.255 host 10.42.6.131
+ permit ip host 10.42.6.4 host 10.0.85.210
+ permit ip host 10.42.6.4 host 10.0.84.187
+ permit ip host 10.42.6.4 10.0.54.16 0.0.0.1
+ permit ip 10.42.6.0 0.0.0.255 host 10.42.6.132
+ permit ip 10.42.6.0 0.0.0.255 host 10.42.6.133
+ permit ip 10.42.6.0 0.0.0.255 host 10.42.6.134
+ permit ip 10.42.6.0 0.0.0.255 host 10.42.6.135
+ permit ip 10.42.6.0 0.0.0.255 host 10.42.6.136
+ permit ip 10.42.6.0 0.0.0.255 host 10.42.6.137
+ permit ip 10.42.6.0 0.0.0.255 host 10.42.6.138
+ permit ip host 10.42.6.4 host 10.0.137.210
+ permit ip host 10.42.6.4 host 10.0.137.211
+ permit ip host 10.42.6.4 host 10.0.77.24
+ remark ---------- SMS-NC -------------
+ permit ip host 10.42.6.6 host 10.0.54.24
+ permit ip host 10.42.6.6 host 10.0.54.25
+ permit ip host 10.42.6.4 host 10.0.138.184
+ permit ip host 10.42.6.4 host 10.0.138.185
+ permit ip host 10.42.6.2 host 10.0.138.184
+ permit ip 10.42.6.0 0.0.0.255 host 10.42.6.194
+ permit ip 10.42.6.0 0.0.0.255 host 10.42.6.195
+ permit ip 10.42.6.0 0.0.0.255 host 10.42.6.154
+ permit ip 10.42.6.0 0.0.0.255 host 10.42.6.155
+ permit ip host 10.42.6.4 host 10.0.204.246
+ permit ip 10.42.6.0 0.0.0.255 host 10.42.6.147
+ permit ip host 10.42.6.4 host 10.0.56.84
+ remark ---------- SMS-NC -------------
+ permit ip host 10.42.6.4 host 10.0.138.144
+ permit ip host 10.42.6.4 host 10.0.68.128
+ permit ip host 10.42.6.4 host 10.0.68.129
+ip access-list extended HIWEB-ACL
+ permit gre host 10.250.50.87 host 10.250.50.1
+ip access-list extended Jira-Bina-ACL
+ permit ip host 10.60.66.40 host 10.42.6.2
+ permit ip host 10.60.66.40 host 10.42.6.4
+ip access-list extended MagM-IPSEC-ACL
+ permit ip host 10.242.0.26 host 10.242.0.2
+ip access-list extended MagW-IPSEC-ACL
+ permit ip host 10.250.0.44 host 10.250.0.41
+ip access-list extended Magfa
+ permit ip host 10.42.6.4 10.0.58.0 0.0.0.255
+ permit ip host 10.42.6.6 10.0.58.0 0.0.0.255
+ permit ip host 10.42.6.4 10.0.84.0 0.0.0.255
+ permit ip host 10.42.6.6 10.0.84.0 0.0.0.255
+ permit ip host 10.42.6.4 10.0.49.0 0.0.0.255
+ permit ip host 10.42.6.6 10.0.49.0 0.0.0.255
+ permit ip 10.42.6.0 0.0.0.255 host 10.0.50.8
+ permit ip host 10.42.6.11 10.0.84.0 0.0.0.255
+ permit ip host 10.42.6.12 10.0.84.0 0.0.0.255
+ permit ip host 10.42.6.9 10.0.58.0 0.0.0.255
+ permit ip host 10.42.6.10 10.0.58.0 0.0.0.255
+ permit ip host 10.42.6.11 10.0.58.0 0.0.0.255
+ permit ip host 10.42.6.12 10.0.58.0 0.0.0.255
+ permit ip host 10.42.6.4 host 10.0.53.140
+ permit ip host 10.42.6.4 host 10.0.53.150
+ permit ip host 10.42.6.4 host 10.0.53.38
+ permit ip host 10.42.6.4 host 10.0.53.169
+ permit ip host 10.42.6.4 host 10.0.85.210
+ permit ip host 10.42.6.4 host 10.0.84.187
+ permit ip host 10.42.6.4 10.0.54.16 0.0.0.1
+ip access-list extended Magfa-ECRM
+ permit tcp host 10.0.68.51 host 10.42.6.4
+ permit tcp host 10.0.68.52 host 10.42.6.4
+ permit tcp host 10.0.84.82 host 10.42.6.4
+ permit tcp host 10.0.136.159 host 10.42.6.4
+ permit tcp host 10.0.136.158 host 10.42.6.4
+ permit tcp host 10.0.138.144 host 10.42.6.4
+ip access-list extended Magfa-Proxy
+ permit ip host 10.0.191.135 host 10.42.6.4
+ permit ip host 10.0.191.111 host 10.42.6.4
+ permit ip host 10.0.191.112 host 10.42.6.4
+ permit ip host 10.0.191.113 host 10.42.6.4
+ permit ip host 10.0.191.114 host 10.42.6.4
+ permit ip host 10.0.50.67 host 10.42.6.4
+!
+logging 10.0.51.63
+access-list 198 deny   ip any any fragments
+access-list 198 permit udp any any eq 18999
+access-list 199 permit icmp any any echo
+access-list 199 permit icmp any any echo-reply
+snmp-server group LMS v3 priv read myview write myview access SNMP-WRITE
+snmp-server group NMS v3 priv access SNMP-READ
+snmp-server view myview mib-2 included
+snmp-server view myview system included
+snmp-server view myview cisco included
+snmp-server ifindex persist
+snmp-server enable traps frame-relay
+snmp-server enable traps frame-relay subif
+!
+!
+!
+tacacs-server host 10.0.51.56
+tacacs-server host 10.0.51.57
+tacacs-server directed-request
+tacacs-server key 7 072E320201584A55
+!
+control-plane
+ service-policy input drop-udp
+!
+bridge 1 protocol ieee
+bridge 1 route ip
+!
+banner motd 
+        ===
+       -+ +-
+       | | |
+    <--\ | /-->
+   ##| ||||| |##
+  ###| |+++| |###
+ /____\\ | //____\ ********************************************************
+   <###\|||/###>                  Keshavarzi Bank Network
+    +====+====+     WARNING: Access is restricted to authorized users only.
+    | WAN-BKI |     Unauthorized access is a violation of state , civil and
+    +===+=+===+                       criminal laws.
+        +=+        ********************************************************
+
+privilege interface level 3 shutdown
+privilege interface level 3 no shutdown
+privilege interface level 3 no
+privilege configure level 3 interface
+privilege exec level 3 traceroute
+privilege exec level 3 ping
+privilege exec level 3 configure terminal
+privilege exec level 3 configure
+privilege exec level 3 reload
+privilege exec level 3 terminal monitor
+privilege exec level 3 terminal
+privilege exec all level 3 show running-config
+privilege exec level 3 show
+!
+line con 0
+ privilege level 15
+ authorization exec CACS
+ login authentication CACS
+line aux 0
+ script dialer Dialout
+ modem InOut
+ modem autoconfigure type usr_sportster
+ speed 1200
+line vty 0 4
+ privilege level 15
+ authorization exec CACS
+ accounting commands 15 CACS
+ login authentication CACS
+ transport input ssh
+ transport output telnet
+line vty 5 15
+ privilege level 15
+ authorization exec CACS
+ login authentication CACS
+ transport input ssh
+ transport output telnet
+!
+scheduler max-task-time 5000
+scheduler allocate 20000 1000
+ntp authentication-key 1 md5 094D491B104815130507 7
+ntp authenticate
+ntp trusted-key 1
+ntp clock-period 17178286
+ntp source FastEthernet0/0
+ntp update-calendar
+ntp server 10.0.51.27
+end

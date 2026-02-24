@@ -1,0 +1,378 @@
+
+!
+! No configuration change since last restart
+! NVRAM config last updated at 09:56:24 Tehran Thu Feb 12 2026 by m-hossain
+!
+version 12.4
+service timestamps debug datetime msec
+service timestamps log datetime localtime
+service password-encryption
+!
+hostname 2821-Mizan.MCI
+!
+boot-start-marker
+boot system flash c2800nm-advipservicesk9-mz.124-24.T.bin
+boot-end-marker
+!
+logging message-counter syslog
+enable secret 5 $1$EFkE$7bhPXsSq6AOGewGKncfVL1
+!
+aaa new-model
+!
+!
+aaa group server tacacs+ ACSServers
+ server-private 10.0.51.56 key 7 106F1A574A46415B
+ server-private 10.0.51.57 key 7 047A184840701F1E
+ ip vrf forwarding VRF-Mgmt
+ ip tacacs source-interface Vlan51
+!
+aaa authentication login CACS group ACSServers local
+aaa authentication enable default group ACSServers enable
+aaa authorization console
+aaa authorization config-commands
+aaa authorization exec CACS group ACSServers local 
+aaa authorization commands 0 CACS group ACSServers local 
+aaa authorization commands 1 CACS group ACSServers local 
+aaa authorization commands 2 CACS group ACSServers local 
+aaa authorization commands 3 CACS group ACSServers local 
+aaa authorization commands 15 CACS group ACSServers local 
+aaa accounting exec CACS
+ action-type start-stop
+ group ACSServers
+!
+aaa accounting commands 0 CACS
+ action-type start-stop
+ group ACSServers
+!
+aaa accounting commands 1 CACS
+ action-type start-stop
+ group ACSServers
+!
+aaa accounting commands 2 CACS
+ action-type start-stop
+ group ACSServers
+!
+aaa accounting commands 3 CACS
+ action-type start-stop
+ group ACSServers
+!
+aaa accounting commands 15 CACS
+ action-type start-stop
+ group ACSServers
+!
+aaa accounting system default
+ action-type start-stop
+ group ACSServers
+!
+!
+!
+aaa session-id common
+clock timezone Tehran 3 30
+!
+dot11 syslog
+ip source-route
+!
+ip traffic-export profile MJH mode capture
+  bidirectional
+!
+ip traffic-export profile m mode capture
+!
+!
+ip cef
+!
+!
+no ip domain lookup
+ip domain name agri-bank.com
+ip vrf VRF-Mgmt
+!
+login on-failure log
+login on-success log
+no ipv6 cef
+ntp authentication-key 1 md5 050A011D28014C08170E 7
+ntp authenticate
+ntp trusted-key 1
+ntp source Vlan51
+ntp server vrf VRF-Mgmt 10.0.51.27
+!
+multilink bundle-name authenticated
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+voice-card 0
+ dspfarm
+ dsp services dspfarm
+!
+!
+!
+!
+!
+username bkadmin privilege 15 password 7 097C0F0712351F1C1F5F16
+username bkroot privilege 15 secret 5 $1$ccRd$7NII7uHA9BM7GIkIC.j8g/
+archive
+ log config
+  hidekeys
+ path tftp://10.0.51.40/Core/$h
+ write-memory
+! 
+!
+!
+!
+!
+controller DSL 0/1/0
+ mode atm
+ dsl-mode shdsl symmetric annex B
+!
+ip telnet source-interface Loopback3000
+ip tftp source-interface Vlan51
+ip ssh time-out 30
+ip ssh authentication-retries 2
+ip ssh port 2001 rotary 1
+ip ssh version 2
+!
+class-map match-all undesireable-udp
+ match access-group 198
+!
+!
+policy-map drop-udp
+ class undesireable-udp
+   drop
+!
+!
+!
+!
+!
+interface Loopback10
+ description ** LAN Bazargani-Rahbar **
+ ip address 192.168.30.97 255.255.255.248
+!
+interface Loopback3000
+ no ip address
+!
+interface Tunnel1
+ description ** MPLS-Vezarat Bazargani **
+ ip address 192.168.33.1 255.255.255.0
+ tunnel source 172.19.22.18
+ tunnel destination 172.17.20.190
+!
+interface Port-channel1
+ description ** Link to SW-A **
+ ip address 10.0.157.31 255.255.255.0
+ ip flow ingress
+ ip flow egress
+ ip nat inside
+ ip virtual-reassembly
+!
+interface GigabitEthernet0/0
+ description AGG-EXT-SW-Twe1/0/15
+ no ip address
+ duplex auto
+ speed auto
+ channel-group 1
+!
+interface GigabitEthernet0/1
+ no ip address
+ duplex auto
+ speed auto
+ channel-group 1
+!
+interface FastEthernet0/0/0
+ description ** HamrahAval -> FwTariq **
+ switchport access vlan 42
+!
+interface FastEthernet0/0/1
+ switchport access vlan 7
+!
+interface FastEthernet0/0/2
+ switchport access vlan 10
+!
+interface FastEthernet0/0/3
+ description ** MGMT **
+ switchport access vlan 51
+ ip vrf forwarding VRF-Mgmt
+!
+interface ATM0/1/0
+ description ** MPLS-Vezarat Bazargani **
+ ip address 172.19.22.18 255.255.255.252
+ no atm ilmi-keepalive
+ pvc 0/35 
+ !
+!
+interface Vlan1
+ no ip address
+ ip virtual-reassembly
+ shutdown
+!
+interface Vlan42
+ description ** HamrahAval -> FwTariq **
+ ip address 10.20.220.82 255.255.255.240 secondary
+ ip address 10.20.200.147 255.255.255.240
+ ip nat outside
+ ip virtual-reassembly
+!
+interface Vlan51
+ description ** MGMT **$ES_LAN$
+ ip vrf forwarding VRF-Mgmt
+ ip address 10.0.51.41 255.255.255.0
+ ip traffic-export apply MJH size 5242880
+!
+ip forward-protocol nd
+ip route 0.0.0.0 0.0.0.0 172.19.21.17
+ip route 10.0.0.0 255.255.0.0 10.0.157.1
+ip route 10.0.51.25 255.255.255.255 Null0 name Syslog-Inline-Disabling
+ip route 10.6.0.0 255.255.0.0 10.0.157.1
+ip route 10.7.128.0 255.255.255.0 10.0.157.1
+ip route 10.19.2.65 255.255.255.255 10.20.200.145 name MCI-Access-SANI
+ip route 10.20.8.200 255.255.255.255 10.20.200.145 name MCI->SANI
+ip route 10.24.34.0 255.255.255.0 10.0.157.1
+ip route 10.25.0.0 255.255.0.0 10.0.157.1
+ip route 10.31.35.0 255.255.255.0 10.0.157.1
+ip route 172.17.20.188 255.255.255.252 172.19.22.17 name MPLS-VBazargani
+ip route 172.17.47.161 255.255.255.255 10.20.200.145 name MCI->SANI
+ip route 172.17.47.163 255.255.255.255 10.20.200.145 name MCI->WebServicEstelam
+ip route 172.17.48.193 255.255.255.255 10.20.200.145 name MCI-SFTP
+ip route 192.168.31.0 255.255.255.0 172.19.22.17 name MPLS-Vezarat-Bazargani
+ip route vrf VRF-Mgmt 0.0.0.0 0.0.0.0 10.0.51.1 name OOB-MGMT
+no ip http server
+ip http secure-server
+!
+ip flow-cache timeout active 1
+ip flow-export source Vlan51
+ip flow-export version 5
+ip flow-export destination 10.0.51.61 9996 vrf VRF-Mgmt
+!
+ip nat pool SANI-mci 10.20.200.146 10.20.200.146 netmask 255.255.255.0
+ip nat pool MCI-Estelam 10.20.200.148 10.20.200.148 netmask 255.255.255.0
+ip nat pool MCI-SFTP 10.20.200.149 10.20.200.149 netmask 255.255.255.0
+ip nat inside source list MCI-SANI pool SANI-mci overload
+ip nat inside source list MCI-Vosul-SFTP pool MCI-SFTP overload
+ip nat inside source list MCI-WebServicEstelam pool MCI-Estelam overload
+!
+ip access-list standard SNMP-READ
+ permit 10.0.50.0 0.0.1.255
+ip access-list standard SNMP-WRITE
+ permit 10.0.51.49
+ permit 10.0.51.48
+ permit 10.0.51.50
+ip access-list standard TELNET-ACCESS
+ permit 10.0.50.0 0.0.1.255
+ip access-list standard TELNET_ACCESS
+ remark ----------ALPHA Team----------
+ permit 10.0.201.36
+ permit 10.0.201.62
+!
+ip access-list extended MCI-SANI
+ permit ip host 10.0.56.111 host 172.17.47.161
+ permit ip host 10.0.56.18 host 172.17.47.161
+ permit ip host 10.0.56.19 host 172.17.47.161
+ip access-list extended MCI-Vosul-SFTP
+ permit ip 10.0.204.52 0.0.0.1 host 10.19.2.65
+ permit ip host 10.0.204.30 host 10.19.2.65
+ permit ip host 10.0.50.67 host 10.19.2.65
+ip access-list extended MCI-WebServicEstelam
+ permit ip host 10.0.85.70 host 172.17.47.163
+ permit ip host 10.0.56.111 host 172.17.47.163
+ permit ip host 10.0.56.18 host 172.17.47.163
+ permit ip host 10.0.56.19 host 172.17.47.163
+ permit ip host 10.0.50.67 host 172.17.47.163
+ permit ip host 10.0.157.31 host 172.17.47.163
+!
+logging trap notifications
+logging host 10.0.51.25 vrf VRF-Mgmt
+logging host 10.0.51.63 vrf VRF-Mgmt
+access-list 198 deny   ip any any fragments
+access-list 198 permit udp any any eq 18999
+access-list 199 permit icmp any any echo
+access-list 199 permit icmp any any echo-reply
+!
+!
+!
+!
+!
+snmp-server group LMS v3 priv match exact read myview write myview access SNMP-WRITE
+snmp-server group NMS v3 priv match exact access SNMP-READ
+snmp-server view myview mib-2 included
+snmp-server view myview system included
+snmp-server view myview cisco included
+snmp-server ifindex persist
+!
+control-plane
+ service-policy input drop-udp
+!
+!
+!
+!
+mgcp fax t38 ecm
+!
+!
+!
+!
+!
+banner motd 
+*******************************************************************************
+*        ===                                                                  *
+*       -+ +-                                                                 *
+*       | | |                                                                 *
+*    <--\ | /-->                                                              *
+*   ##| ||||| |##                                                             *
+*  ###| |+++| |###                                                            *
+* /____\\ | //____\ ********************************************************  *
+*   <###\|||/###>                  Keshavarzi Bank Network                    *
+*    +====+====+     WARNING: Access is restricted to authorized users only.  *
+*    | WAN-BKI |     Unauthorized access is a violation of state , civil and  *
+*    +===+=+===+                       criminal laws.                         *
+*        +=+        ********************************************************  *
+*******************************************************************************
+
+privilege exec level 2 configure terminal
+privilege exec level 2 configure
+privilege exec level 3 terminal monitor
+privilege exec level 3 terminal
+privilege exec level 15 show running-config
+privilege exec all level 2 show
+!
+line con 0
+line aux 0
+line vty 0 4
+ access-class TELNET-ACCESS in vrf-also
+ privilege level 15
+ authorization commands 2 CACS
+ authorization exec CACS
+ accounting commands 15 CACS
+ accounting exec CACS
+ login authentication CACS
+ transport input ssh
+ transport output all
+line vty 5 15
+ access-class TELNET-ACCESS in vrf-also
+ privilege level 15
+ authorization commands 2 CACS
+ authorization exec CACS
+ accounting commands 15 CACS
+ accounting exec CACS
+ login authentication CACS
+ transport input ssh
+ transport output all
+!
+scheduler max-task-time 5000
+scheduler allocate 20000 1000
+end

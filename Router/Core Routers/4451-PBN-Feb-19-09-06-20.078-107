@@ -1,0 +1,742 @@
+
+!
+! Last configuration change at 08:44:47 UTC Tue Jan 27 2026 by m-hossain
+!
+version 17.6
+service timestamps debug datetime msec
+service timestamps log datetime msec
+service call-home
+platform qfp utilization monitor load 80
+no platform punt-keepalive disable-kernel-core
+!
+hostname 4451-PBN
+!
+boot-start-marker
+boot system flash isr4400-universalk9.17.06.05.SPA.bin
+boot system flash bootflash:
+boot-end-marker
+!
+!
+vrf definition Mgmt-intf
+ !
+ address-family ipv4
+ exit-address-family
+ !
+ address-family ipv6
+ exit-address-family
+!
+enable secret 9 $9$4SzvJnxZmGC4tU$usfWFU3KnKsQvEmM49qRVOE//g2eh5nw/QZCh3mBzFY
+!
+aaa new-model
+!
+!
+aaa group server tacacs+ ACSServers
+ server-private 10.0.51.56 key 7 106F1A574A46415B
+ server-private 10.0.51.57 key 7 047A184840701F1E
+ ip vrf forwarding Mgmt-intf
+ ip tacacs source-interface GigabitEthernet0
+!
+aaa authentication login CACS group ACSServers local
+aaa authentication enable default group ACSServers enable
+aaa authorization console
+aaa authorization config-commands
+aaa authorization exec CACS group ACSServers local 
+aaa authorization commands 0 CACS group ACSServers local 
+aaa authorization commands 1 CACS group ACSServers local 
+aaa authorization commands 2 CACS group ACSServers local 
+aaa authorization commands 3 CACS group ACSServers local 
+aaa authorization commands 15 CACS group ACSServers local 
+aaa accounting exec CACS start-stop group ACSServers
+aaa accounting commands 0 CACS start-stop group ACSServers
+aaa accounting commands 1 CACS start-stop group ACSServers
+aaa accounting commands 2 CACS start-stop group ACSServers
+aaa accounting commands 3 CACS start-stop group ACSServers
+aaa accounting commands 15 CACS start-stop group ACSServers
+aaa accounting system default start-stop group ACSServers
+!
+!
+!
+!
+!
+!
+aaa session-id common
+!
+!
+!
+!
+!
+!
+!
+ip name-server 172.31.248.2 172.31.248.3
+no ip domain lookup
+ip domain name agri-bank.com
+ip dhcp excluded-address 172.31.250.160 172.31.250.161
+!
+ip dhcp pool DHCP
+ network 172.31.250.160 255.255.255.224
+ default-router 172.31.250.161 
+ dns-server 172.31.248.2 172.31.248.3 
+!
+!
+!
+no login on-success log
+!
+!
+!
+!
+!
+!
+!
+subscriber templating
+! 
+! 
+! 
+! 
+!
+multilink bundle-name authenticated
+vpdn enable
+!
+vpdn-group VPN
+ ! Default L2TP VPDN group
+ ! Default PPTP VPDN group
+ accept-dialin
+  protocol any
+  virtual-template 1
+!
+!
+flow exporter FLOW-EXP
+ destination 10.0.51.61
+ source Port-channel1.157
+ transport udp 9996
+ export-protocol netflow-v5
+!
+!
+flow monitor FLOW-MON
+ exporter FLOW-EXP
+ cache timeout active 60
+ record netflow-original
+!
+!
+!
+!
+crypto pki trustpoint TP-self-signed-223380497
+ enrollment selfsigned
+ subject-name cn=IOS-Self-Signed-Certificate-223380497
+ revocation-check none
+ rsakeypair TP-self-signed-223380497
+!
+crypto pki trustpoint SLA-TrustPoint
+ enrollment pkcs12
+ revocation-check crl
+!
+!
+crypto pki certificate chain TP-self-signed-223380497
+ certificate self-signed 01 nvram:IOS-Self-Sig#1.cer
+crypto pki certificate chain SLA-TrustPoint
+ certificate ca 01 nvram:CiscoLicensi#1CA.cer
+!
+!
+license feature hseck9
+license udi pid ISR4451-X/K9 sn FOC23214R5G
+archive
+ path tftp://10.0.51.40/Core/$h
+ write-memory
+memory free low-watermark processor 67460
+!
+diagnostic bootup level minimal
+!
+spanning-tree extend system-id
+!
+username test privilege 15 secret 9 $9$dR1E9c604fefyk$9We3EKCic6kF.4M5cEqJzwHEcY0xUAyzyJDE8oHvhss
+username bkadmin privilege 15 secret 9 $14$NSle$Aue/OMAJbsSAh.$t5IRRjiefcZgJw.0zZRrDh/ov9TWrbwlNEw4EHQxTCI
+username amar-vpn password 7 1513060D16673D3426
+username ve-bank password 7 06100A6C4E4F0712
+username ttn-bank password 7 0010070849590A0804
+username portal password 7 095C411B0D041B
+username iranchk password 7 020F165A0505072A
+username masjedi password 7 12140404180E080D
+username ibms password 7 030D59061530234145134B56
+username reza privilege 15 secret 9 $14$gLcL$qTZf1AJDXxtp2E$uQ.VtA16NOs0.W9hGwihzKpoENhEVAND4n.JI5UlTJk
+username gozinesh password 7 07082E5647071C161F
+username bkroot privilege 15 secret 9 $14$fFgR$YefO5X4h9rZwvU$0u/h9xMI/uS3myZ81fuAj.nO1A5Sc0EtNnRTpho5RHw
+!
+redundancy
+ mode none
+!
+!
+!
+!
+!
+!
+!
+class-map match-all undesireable-udp
+ match access-group 198
+!
+policy-map drop-udp
+ class undesireable-udp
+!
+! 
+!
+!
+!
+!
+!
+!
+!
+crypto isakmp policy 15
+ encryption 3des
+ hash sha
+ authentication pre-share
+ group 2
+ lifetime 3600
+crypto isakmp key 71*&Up*&Cbi#$Agr()fa address 172.16.104.3   
+crypto isakmp key 71*&Up*&Cbi#$Agr()fa address 172.21.23.86   
+!
+!
+crypto ipsec transform-set Bank16-set esp-aes esp-sha-hmac 
+ mode transport
+!
+crypto ipsec profile Bank16-Profile
+ set transform-set Bank16-set 
+!
+!
+!
+!
+!
+!
+! 
+! 
+!
+!
+interface Loopback0
+ description ** range ip 172.31.250.170 255.255.255.224 **
+ ip address 172.31.250.170 255.255.255.255
+!
+interface Loopback1
+ ip address 172.31.250.172 255.255.255.255
+!
+interface Port-channel1
+ no ip address
+ no negotiation auto
+!
+interface Port-channel1.157
+ encapsulation dot1Q 157
+ ip flow monitor FLOW-MON input
+ ip flow monitor FLOW-MON output
+ ip address 10.0.157.9 255.255.255.0
+ ip nat inside
+ ip virtual-reassembly
+!
+interface Tunnel11
+ description S1-CBI-S1
+ bandwidth 20480
+ ip flow monitor FLOW-MON input
+ ip flow monitor FLOW-MON output
+ ip address 192.168.252.22 255.255.255.252
+ ip mtu 1400
+ ip nat outside
+ ip tcp adjust-mss 1360
+ tunnel source 172.16.104.26
+ tunnel mode ipsec ipv4
+ tunnel destination 172.16.104.3
+ tunnel protection ipsec profile Bank16-Profile
+ ip virtual-reassembly
+!
+interface Tunnel12
+ description S1-CBI-S2
+ bandwidth 20480
+ ip flow monitor FLOW-MON input
+ ip flow monitor FLOW-MON output
+ ip address 192.168.253.22 255.255.255.252
+ ip mtu 1400
+ ip nat outside
+ ip tcp adjust-mss 1360
+ tunnel source 172.16.104.26
+ tunnel mode ipsec ipv4
+ tunnel destination 172.21.23.86
+ tunnel protection ipsec profile Bank16-Profile
+ ip virtual-reassembly
+!
+interface GigabitEthernet0/0/0
+ description AGG-EXT-SW-Twe1/0/5
+ no ip address
+ media-type sfp
+ negotiation auto
+ channel-group 1 mode active
+!
+interface GigabitEthernet0/0/1
+ description AGG-EXT-SW-Twe2/0/5
+ no ip address
+ media-type sfp
+ negotiation auto
+ channel-group 1 mode active
+!
+interface GigabitEthernet0/0/2
+ description ** MPLS-Fiber **
+ ip flow monitor FLOW-MON input
+ ip flow monitor FLOW-MON output
+ ip address 172.16.104.26 255.255.255.252
+ ip nat outside
+ negotiation auto
+!
+interface GigabitEthernet0/0/3
+ ip address 192.168.200.1 255.255.255.252
+ media-type sfp
+ negotiation auto
+!
+interface GigabitEthernet0
+ description ** OOB **
+ vrf forwarding Mgmt-intf
+ ip address 10.0.51.85 255.255.255.0
+ negotiation auto
+!
+interface Virtual-Template1
+ ip unnumbered Loopback1
+ peer default ip address pool AMAR
+ ppp authentication pap chap ms-chap ms-chap-v2
+!
+ip local pool AMAR 172.31.250.162 172.31.250.165
+no ip http server
+ip http authentication local
+no ip http secure-server
+ip forward-protocol nd
+ip tftp source-interface GigabitEthernet0
+ip nat inside source static 10.0.53.130 172.31.250.171
+ip nat inside source static tcp 10.0.85.53 82 172.31.250.173 82 extendable
+ip nat inside source static tcp 10.0.55.120 443 172.31.250.173 443 extendable
+ip nat inside source static tcp 10.0.85.53 1900 172.31.250.173 1900 extendable
+ip nat inside source static 10.0.33.55 172.31.250.178
+ip nat inside source static 10.0.86.55 172.31.250.180
+ip nat inside source static 10.0.76.88 172.31.250.181
+ip nat inside source static 10.0.34.111 172.31.250.182
+ip nat inside source list PBN-Gozinesh interface Loopback1 overload
+ip nat inside source list PBN-Mail interface Loopback0 overload
+ip nat inside source list PBN-PERMIT interface Loopback1 overload
+ip nat outside source static 172.31.248.2 10.0.89.2
+ip nat outside source static 172.31.248.3 10.0.89.3
+ip nat outside source static 172.31.248.5 10.0.89.8
+ip nat outside source static 172.31.248.9 10.0.89.12
+ip nat outside source static 172.31.248.10 10.0.89.11
+ip nat outside source static 172.31.248.11 10.0.89.4
+ip nat outside source static 172.31.248.14 10.0.89.141
+ip nat outside source static 172.31.248.15 10.0.89.143
+ip nat outside source static 172.31.248.16 10.0.89.146
+ip nat outside source static 172.31.248.17 10.0.89.153
+ip nat outside source static 172.31.248.18 10.0.89.144
+ip nat outside source static 172.31.248.19 10.0.89.157
+ip nat outside source static 172.31.248.20 10.0.89.20
+ip nat outside source static 172.31.248.21 10.0.89.23
+ip nat outside source static 172.31.248.22 10.0.89.66
+ip nat outside source static 172.31.248.23 10.0.89.148
+ip nat outside source static 172.31.248.24 10.0.89.64
+ip nat outside source static 172.31.248.25 10.0.89.152
+ip nat outside source static 172.31.248.27 10.0.89.62
+ip nat outside source static 172.31.248.28 10.0.89.28
+ip nat outside source static 172.31.248.31 10.0.89.159
+ip nat outside source static 172.31.248.60 10.0.89.168
+ip nat outside source static 172.31.248.139 10.0.89.139
+ip nat outside source static 172.31.249.5 10.0.89.9
+ip nat outside source static 172.31.249.6 10.0.89.6
+ip nat outside source static 172.31.249.10 10.0.89.10
+ip nat outside source static 172.31.249.11 10.0.89.13
+ip nat outside source static 172.31.249.14 10.0.89.140
+ip nat outside source static 172.31.249.15 10.0.89.142
+ip nat outside source static 172.31.249.16 10.0.89.147
+ip nat outside source static 172.31.249.17 10.0.89.154
+ip nat outside source static 172.31.249.18 10.0.89.145
+ip nat outside source static 172.31.249.19 10.0.89.156
+ip nat outside source static 172.31.249.20 10.0.89.21
+ip nat outside source static 172.31.249.21 10.0.89.22
+ip nat outside source static 172.31.249.22 10.0.89.65
+ip nat outside source static 172.31.249.23 10.0.89.149
+ip nat outside source static 172.31.249.24 10.0.89.63
+ip nat outside source static 172.31.249.25 10.0.89.151
+ip nat outside source static 172.31.249.27 10.0.89.61
+ip nat outside source static 172.31.249.31 10.0.89.158
+ip nat outside source static 172.31.249.36 10.0.89.36
+ip nat outside source static 172.31.249.40 10.0.89.40
+ip nat outside source static 172.31.249.41 10.0.89.41
+ip nat outside source static 172.31.249.50 10.0.89.50
+ip nat outside source static 172.31.249.55 10.0.89.155
+ip nat outside source static 172.31.249.56 10.0.89.56
+ip nat outside source static 172.31.249.60 10.0.89.60
+ip nat outside source static 172.31.249.160 10.0.89.14
+ip nat outside source static 172.31.249.240 10.0.89.15
+ip route 0.0.0.0 0.0.0.0 10.0.157.1
+ip route 10.0.0.0 255.0.0.0 10.0.157.1
+ip route 10.0.89.4 255.255.255.255 Tunnel11
+ip route 10.0.89.6 255.255.255.255 Tunnel12
+ip route 10.0.89.8 255.255.255.255 Tunnel11
+ip route 10.0.89.9 255.255.255.255 Tunnel12
+ip route 10.0.89.10 255.255.255.255 Tunnel12
+ip route 10.0.89.11 255.255.255.255 Tunnel11
+ip route 10.0.89.12 255.255.255.255 Tunnel11
+ip route 10.0.89.13 255.255.255.255 Tunnel12
+ip route 10.0.89.14 255.255.255.255 Tunnel12
+ip route 10.0.89.15 255.255.255.255 Tunnel12
+ip route 10.0.89.20 255.255.255.255 Tunnel11 name Gozinesh
+ip route 10.0.89.21 255.255.255.255 Tunnel11
+ip route 10.0.89.22 255.255.255.255 Tunnel12
+ip route 10.0.89.23 255.255.255.255 Tunnel11
+ip route 10.0.89.28 255.255.255.255 Tunnel11
+ip route 10.0.89.36 255.255.255.255 Tunnel12
+ip route 10.0.89.40 255.255.255.255 Tunnel12 name Bankvaerh-Arash
+ip route 10.0.89.41 255.255.255.255 Tunnel12 name cbinasim.ir
+ip route 10.0.89.50 255.255.255.255 Tunnel12
+ip route 10.0.89.56 255.255.255.255 Tunnel12
+ip route 10.0.89.60 255.255.255.255 Tunnel12
+ip route 10.0.89.61 255.255.255.255 Tunnel12
+ip route 10.0.89.62 255.255.255.255 Tunnel11
+ip route 10.0.89.63 255.255.255.255 Tunnel12
+ip route 10.0.89.64 255.255.255.255 Tunnel11
+ip route 10.0.89.65 255.255.255.255 Tunnel12
+ip route 10.0.89.66 255.255.255.255 Tunnel11
+ip route 10.0.89.140 255.255.255.255 Tunnel12
+ip route 10.0.89.141 255.255.255.255 Tunnel11
+ip route 10.0.89.142 255.255.255.255 Tunnel12
+ip route 10.0.89.143 255.255.255.255 Tunnel11
+ip route 10.0.89.144 255.255.255.255 Tunnel11
+ip route 10.0.89.145 255.255.255.255 Tunnel12
+ip route 10.0.89.146 255.255.255.255 Tunnel11
+ip route 10.0.89.147 255.255.255.255 Tunnel12
+ip route 10.0.89.148 255.255.255.255 Tunnel11
+ip route 10.0.89.149 255.255.255.255 Tunnel12
+ip route 10.0.89.151 255.255.255.255 Tunnel12
+ip route 10.0.89.152 255.255.255.255 Tunnel11
+ip route 10.0.89.153 255.255.255.255 Tunnel11
+ip route 10.0.89.154 255.255.255.255 Tunnel12
+ip route 10.0.89.155 255.255.255.255 Tunnel12 name NewArz
+ip route 10.0.89.156 255.255.255.255 Tunnel12
+ip route 10.0.89.157 255.255.255.255 Tunnel11
+ip route 10.0.89.158 255.255.255.255 Tunnel12
+ip route 10.0.89.159 255.255.255.255 Tunnel11
+ip route 10.0.89.168 255.255.255.255 Tunnel11
+ip route 172.16.104.0 255.255.255.0 172.16.104.25
+ip route 172.21.23.86 255.255.255.255 172.16.104.25
+ip route 172.31.248.0 255.255.255.0 Tunnel11 name CBI-Site1
+ip route 172.31.249.0 255.255.255.0 Tunnel12 name CBI-Site2
+ip route 172.31.249.11 255.255.255.255 Tunnel12 name Sana2.pbn.net
+ip route 172.31.249.40 255.255.255.255 Tunnel12 name BnakVareh-Arash
+ip route 172.31.249.240 255.255.255.255 Tunnel12 name Radar.Kashef.ir
+ip route vrf Mgmt-intf 0.0.0.0 0.0.0.0 10.0.51.1
+ip route vrf Mgmt-intf 10.0.50.0 255.255.254.0 10.0.51.1
+!
+!
+ip access-list standard SNMP-READ
+ 10 permit 10.0.50.0 0.0.1.255
+ 20 permit 192.168.0.0 0.0.255.255
+ip access-list standard SNMP-WRITE
+ 10 permit 10.0.51.49
+ 20 permit 10.0.51.48
+ 30 permit 10.0.51.50
+ip access-list standard TELNET
+ 10 deny   10.0.157.22
+ 20 deny   10.0.157.21
+ 30 deny   10.0.157.20
+ 40 permit 10.0.50.0 0.0.1.255
+ 50 permit 10.0.152.0 0.0.1.255
+ip access-list standard TELNET-ACCESS
+ 10 permit 10.0.50.0 0.0.1.255
+!
+ip access-list extended MyCAP
+ 10 permit ip any host 172.31.248.20
+ 20 permit ip host 172.31.248.20 any
+ip access-list extended PBN-Gozinesh
+ 10 permit ip 10.0.50.0 0.0.0.255 host 10.0.89.20
+ 20 permit ip 10.0.18.0 0.0.0.255 host 10.0.89.20
+ 30 permit ip 10.0.50.0 0.0.0.255 host 10.0.89.21
+ip access-list extended PBN-Mail
+ 10 permit ip any host 10.0.89.11
+ 20 permit ip any host 10.0.89.6
+ 30 permit ip any host 10.0.89.12
+ 40 permit ip any host 10.0.89.60
+ip access-list extended PBN-PERMIT
+ 10 deny   ip host 10.0.53.28 any
+ 20 permit ip 10.0.0.0 0.0.255.255 host 10.0.89.13
+ 30 permit ip 10.0.0.0 0.31.255.255 host 10.0.89.9
+ 40 permit ip 10.0.0.0 0.31.255.255 host 10.0.89.10
+ 50 permit ip 10.32.0.0 0.3.255.255 host 10.0.89.10
+ 60 permit ip 10.32.0.0 0.3.255.255 host 10.0.89.9
+ 70 permit ip 10.40.7.0 0.0.0.255 host 10.0.89.10
+ 80 permit ip 10.40.7.0 0.0.0.255 host 10.0.89.9
+ 90 permit ip host 10.0.53.3 host 10.0.89.9
+ 100 permit ip host 10.0.53.14 host 10.0.89.9
+ 110 permit ip host 10.0.53.3 host 10.0.89.10
+ 120 permit ip host 10.0.53.14 host 10.0.89.10
+ 130 permit ip host 10.0.53.36 host 10.0.89.10
+ 140 permit ip host 10.0.53.36 host 10.0.89.9
+ 150 permit ip host 10.60.1.134 host 10.0.89.10
+ 160 permit ip host 10.60.1.140 host 10.0.89.10
+ 170 permit ip host 10.60.1.169 host 10.0.89.10
+ 180 permit ip host 10.60.1.166 host 10.0.89.10
+ 190 permit ip host 10.60.1.172 host 10.0.89.10
+ 210 permit tcp host 10.0.92.60 host 10.0.89.40 eq 40443
+ 220 permit tcp host 10.0.92.106 host 10.0.89.40 eq 40443
+ 230 remark --------- Bankdari sherkati 10.0.89.40:8190/IBank/login--------
+ 230 permit tcp host 10.0.92.103 host 10.0.89.40 eq 8190
+ 240 permit tcp host 10.0.92.95 host 10.0.89.40 eq 8190
+ 250 permit tcp host 10.0.92.40 host 10.0.89.40 eq 8190
+ 260 permit tcp host 10.0.92.96 host 10.0.89.40 eq 8190
+ 270 permit tcp host 10.0.92.20 host 10.0.89.40 eq 8190
+ 280 permit tcp host 10.0.2.113 host 10.0.89.40 eq 40443
+ 290 permit tcp host 10.0.5.167 host 10.0.89.40 eq 40443
+ 300 permit tcp host 10.0.2.69 host 10.0.89.40 eq 40443
+ 310 permit tcp host 10.0.3.155 host 10.0.89.40 eq 40443
+ 320 permit tcp host 10.0.3.41 host 10.0.89.40 eq 40443
+ 330 permit tcp host 10.0.92.102 host 10.0.89.40 eq 40443
+ 340 permit tcp host 10.0.92.103 host 10.0.89.40 eq 40443
+ 350 permit tcp host 10.0.5.37 host 10.0.89.40 eq 40443
+ 360 permit tcp host 10.0.90.99 host 10.0.89.40 eq 43443
+ 370 permit tcp host 10.0.18.56 host 10.0.89.40 eq 43443
+ 380 permit tcp host 10.0.90.38 host 10.0.89.40 eq 43443
+ 390 permit tcp host 10.0.109.165 host 10.0.89.40 eq 43443
+ 400 permit tcp host 10.0.109.169 host 10.0.89.40 eq 43443
+ 410 permit tcp host 10.0.109.172 host 10.0.89.40 eq 43443
+ 420 permit tcp host 10.0.18.160 host 10.0.89.40 eq 43443
+ 430 permit tcp host 10.0.5.77 host 10.0.89.40 eq 43443
+ 440 permit tcp host 10.0.18.200 host 10.0.89.40 eq 43443
+ 450 permit tcp host 10.0.18.184 host 10.0.89.40 eq 43443
+ 460 permit tcp host 10.0.18.189 host 10.0.89.40 eq 43443
+ 470 permit tcp host 10.0.18.76 host 10.0.89.40 eq 43443
+ 480 permit tcp host 10.0.18.42 host 10.0.89.40 eq 43443
+ 490 permit tcp host 10.0.5.37 host 10.0.89.40 eq 43443
+ 500 remark --------- IBank-Login ---------------
+ 500 permit tcp 10.0.57.32 0.0.0.1 host 10.0.89.10 eq www 443
+ 510 permit tcp host 10.0.50.67 host 10.0.89.40 eq 43443
+ 520 permit tcp host 10.0.92.39 host 10.0.89.40 eq 8190
+ 530 permit tcp host 10.0.92.93 host 10.0.89.40 eq 8190
+ 540 permit ip any host 10.0.89.4
+ 550 permit ip any host 10.0.89.140
+ 560 permit ip any host 10.0.89.141
+ 570 permit ip any host 10.0.89.142
+ 580 permit ip any host 10.0.89.143
+ 590 permit ip any host 10.0.89.8
+ 600 permit tcp host 10.0.14.76 host 10.0.89.40 eq 43443
+ 610 permit tcp host 10.0.14.52 host 10.0.89.40 eq 43443
+ 620 permit tcp host 10.0.109.185 host 10.0.89.40 eq 43443
+ 630 permit tcp host 10.0.92.106 host 10.0.89.40 eq 8190
+ 640 permit tcp host 10.0.109.17 host 10.0.89.40 eq 43443
+ 650 permit tcp host 10.0.109.44 host 10.0.89.40 eq 43443
+ 660 permit tcp host 10.0.109.75 host 10.0.89.40 eq 43443
+ 670 permit tcp host 10.0.109.154 host 10.0.89.40 eq 43443
+ 680 permit tcp host 10.0.11.40 host 10.0.89.40 eq 43443
+ 690 permit tcp host 10.0.11.47 host 10.0.89.40 eq 43443
+ 700 permit tcp host 10.0.92.36 host 10.0.89.40 eq 40443
+ 710 permit tcp host 10.0.3.192 host 10.0.89.40 eq 40443
+ 720 permit tcp host 10.0.3.155 host 10.0.89.40 eq 43443
+ 730 permit tcp host 10.0.92.36 host 10.0.89.40 eq 43443
+ 740 permit tcp host 10.0.92.169 host 10.0.89.40 eq 40443
+ 750 permit tcp host 10.0.3.48 host 10.0.89.40 eq 40443
+ 760 permit tcp host 10.0.3.192 host 10.0.89.40 eq 43443
+ 770 permit tcp host 10.0.92.95 host 10.0.89.40 eq 40443
+ 780 permit tcp host 10.0.92.40 host 10.0.89.40 eq 40443
+ 790 permit tcp host 10.0.92.39 host 10.0.89.40 eq 40443
+ 800 permit tcp host 10.0.18.89 host 10.0.89.40 eq 43443
+ 810 permit tcp host 10.0.18.137 host 10.0.89.40 eq 43443
+ 820 permit tcp host 10.0.18.88 host 10.0.89.40 eq 43443
+ 830 permit tcp host 10.0.90.113 host 10.0.89.40 eq 43443
+ 840 permit ip 10.0.50.0 0.0.0.255 host 10.0.89.15
+ 850 permit ip 10.0.110.0 0.0.0.255 host 10.0.89.15
+ 860 permit ip 10.0.97.0 0.0.0.255 host 10.0.89.15
+ 870 permit tcp host 10.0.98.32 host 10.0.89.40 eq 43443
+ 880 permit tcp host 10.0.110.10 host 10.0.89.40 eq 43443
+ 890 permit tcp host 10.0.50.64 host 10.0.89.40 eq 43443
+ 900 permit tcp host 10.0.98.34 host 10.0.89.40 eq 43443
+ 910 permit tcp host 10.0.92.54 host 10.0.89.40 eq 8190
+ 920 permit tcp host 10.0.92.99 host 10.0.89.40 eq 40443
+ 930 permit ip host 10.0.18.81 host 10.0.89.20
+ 950 permit ip host 10.0.18.95 host 10.0.89.20
+ 960 permit ip host 10.0.18.134 host 10.0.89.20
+ 970 permit ip host 10.0.50.67 host 10.0.89.50
+ 980 permit ip host 10.0.18.86 host 10.0.89.50
+ 990 permit ip host 10.0.90.112 host 10.0.89.50
+ 1000 permit ip host 10.0.90.52 host 10.0.89.50
+ 1010 permit ip host 10.0.109.53 host 10.0.89.50
+ 1020 permit ip host 10.0.90.121 host 10.0.89.50
+ 1030 permit ip host 10.0.50.67 host 10.0.89.41
+ 1040 permit ip host 10.0.50.64 host 10.0.89.41
+ 1050 permit ip host 10.0.92.95 host 10.0.89.41
+ 1060 permit ip host 10.0.92.40 host 10.0.89.41
+ 1070 permit ip host 10.0.92.103 host 10.0.89.41
+ 1080 permit ip host 10.0.92.54 host 10.0.89.41
+ 1090 permit ip host 10.0.92.106 host 10.0.89.41
+ 1100 permit ip host 10.0.92.39 host 10.0.89.41
+ 1110 permit ip host 10.0.109.70 host 10.0.89.50
+ 1120 permit ip host 10.0.90.109 host 10.0.89.50
+ 1130 permit ip host 10.0.18.20 host 10.0.89.50
+ 1140 permit ip 10.4.19.0 0.0.0.255 host 10.0.89.50
+ 1150 permit ip 10.4.62.0 0.0.0.255 host 10.0.89.50
+ 1160 permit ip 10.4.55.0 0.0.0.255 host 10.0.89.50
+ 1170 permit ip 10.1.67.0 0.0.0.255 host 10.0.89.50
+ 1180 permit ip 10.1.35.0 0.0.0.255 host 10.0.89.50
+ 1190 permit ip 10.1.22.0 0.0.0.255 host 10.0.89.50
+ 1200 permit ip 10.1.62.0 0.0.0.255 host 10.0.89.50
+ 1210 permit ip 10.1.71.0 0.0.0.255 host 10.0.89.50
+ 1220 permit ip 10.1.34.0 0.0.0.255 host 10.0.89.50
+ 1230 permit ip 10.2.10.0 0.0.0.255 host 10.0.89.50
+ 1240 permit ip 10.1.77.0 0.0.0.255 host 10.0.89.50
+ 1250 permit ip 10.1.99.0 0.0.0.255 host 10.0.89.50
+ 1260 permit ip 10.1.101.0 0.0.0.255 host 10.0.89.50
+ 1270 permit ip 10.1.95.0 0.0.0.255 host 10.0.89.50
+ 1280 permit ip 10.1.112.0 0.0.0.255 host 10.0.89.50
+ 1290 permit ip 10.1.121.0 0.0.0.255 host 10.0.89.50
+ 1300 permit ip 10.1.45.0 0.0.0.255 host 10.0.89.50
+ 1310 permit ip 10.1.74.0 0.0.0.255 host 10.0.89.50
+ 1320 permit ip 10.32.15.0 0.0.0.255 host 10.0.89.50
+ 1330 permit ip 10.32.8.0 0.0.0.255 host 10.0.89.50
+ 1340 permit ip 10.10.16.0 0.0.0.255 host 10.0.89.50
+ 1350 permit ip 10.23.10.0 0.0.0.255 host 10.0.89.50
+ 1360 permit ip 10.24.71.0 0.0.0.255 host 10.0.89.50
+ 1370 permit ip 10.33.12.0 0.0.0.255 host 10.0.89.50
+ 1380 permit ip 10.33.18.0 0.0.0.255 host 10.0.89.50
+ 1390 permit ip 10.6.8.0 0.0.0.255 host 10.0.89.50
+ 1400 permit ip 10.6.44.0 0.0.0.255 host 10.0.89.50
+ 1410 permit ip 10.6.22.0 0.0.0.255 host 10.0.89.50
+ 1420 permit ip 10.18.8.0 0.0.0.255 host 10.0.89.50
+ 1430 permit ip 10.29.10.0 0.0.0.255 host 10.0.89.50
+ 1440 permit ip 10.17.10.0 0.0.0.255 host 10.0.89.50
+ 1450 permit ip 10.17.65.0 0.0.0.255 host 10.0.89.50
+ 1460 permit ip 10.17.70.0 0.0.0.255 host 10.0.89.50
+ 1470 permit ip 10.3.8.0 0.0.0.255 host 10.0.89.50
+ 1480 permit ip 10.11.13.0 0.0.0.255 host 10.0.89.50
+ 1490 permit ip 10.21.8.0 0.0.0.255 host 10.0.89.50
+ 1500 permit ip 10.19.12.0 0.0.0.255 host 10.0.89.50
+ 1510 permit ip 10.12.13.0 0.0.0.255 host 10.0.89.50
+ 1520 permit ip 10.13.12.0 0.0.0.255 host 10.0.89.50
+ 1530 permit ip 10.7.12.0 0.0.0.255 host 10.0.89.50
+ 1540 permit ip 10.14.20.0 0.0.0.255 host 10.0.89.50
+ 1550 permit ip 10.28.33.0 0.0.0.255 host 10.0.89.50
+ 1560 permit ip 10.27.8.0 0.0.0.255 host 10.0.89.50
+ 1570 permit ip 10.16.44.0 0.0.0.255 host 10.0.89.50
+ 1580 permit ip 10.5.17.0 0.0.0.255 host 10.0.89.50
+ 1590 permit ip 10.31.15.0 0.0.0.255 host 10.0.89.50
+ 1600 permit ip 10.31.19.0 0.0.0.255 host 10.0.89.50
+ 1610 permit ip 10.8.8.0 0.0.0.255 host 10.0.89.50
+ 1620 permit ip 10.8.98.0 0.0.0.255 host 10.0.89.50
+ 1630 permit ip 10.22.10.0 0.0.0.255 host 10.0.89.50
+ 1640 permit ip 10.9.62.0 0.0.0.255 host 10.0.89.50
+ 1650 permit ip 10.15.8.0 0.0.0.255 host 10.0.89.50
+ 1660 permit ip 10.20.8.0 0.0.0.255 host 10.0.89.50
+ 1670 permit ip host 10.0.50.64 host 10.0.89.50
+ 1680 permit ip host 10.0.109.71 host 10.0.89.50
+ 1690 permit tcp host 10.0.92.96 host 10.0.89.41
+ 1700 permit tcp host 10.0.92.93 host 10.0.89.41
+ 1710 permit ip host 10.0.90.55 host 10.0.89.50
+ 1720 permit ip host 10.0.90.47 host 10.0.89.50
+ 1725 permit ip host 10.0.8.71 host 10.0.89.50
+ 1730 permit ip any host 10.0.89.144
+ 1740 permit ip any host 10.0.89.145
+ 1750 permit ip any host 10.0.89.146
+ 1760 permit ip any host 10.0.89.147
+ 1770 permit ip any host 10.0.89.148
+ 1780 permit ip any host 10.0.89.149
+ 1790 permit ip any host 10.0.89.151
+ 1800 permit ip any host 10.0.89.152
+ 1810 permit ip any host 10.0.89.153
+ 1820 permit ip any host 10.0.89.154
+ 1830 permit ip any host 10.0.89.155
+ 1840 permit ip any host 10.0.89.156
+ 1850 permit ip any host 10.0.89.157
+ 1860 permit ip any host 10.0.89.158
+ 1870 permit ip any host 10.0.89.159
+ 1880 permit ip any host 10.0.89.61
+ 1890 permit ip any host 10.0.89.62
+ 1900 permit ip any host 10.0.89.63
+ 1910 permit ip any host 10.0.89.64
+ 1920 permit ip any host 10.0.89.65
+ 1930 permit ip any host 10.0.89.66
+ 1940 permit ip any host 10.0.89.22
+ 1950 permit ip any host 10.0.89.23
+ 1960 permit ip host 10.0.109.9 host 10.0.89.50
+ 1970 permit ip host 10.0.109.84 host 10.0.89.50
+ 1980 permit ip host 10.0.92.67 host 10.0.89.41
+ 1990 permit ip any host 10.0.89.36
+ 2000 permit ip any host 10.0.89.56
+ 2010 permit ip host 10.0.92.100 host 10.0.89.41
+ 2020 permit ip host 10.0.18.58 host 10.0.89.20
+!
+logging trap warnings
+logging source-interface GigabitEthernet0 vrf Mgmt-intf
+logging host 10.0.51.25 vrf Mgmt-intf
+ip access-list extended 198
+ 10 deny   ip any any fragments
+ 20 permit udp any any eq 18999
+ip access-list extended 199
+ 10 permit icmp any any echo
+ 20 permit icmp any any echo-reply
+!
+snmp-server group LMS v3 priv read myview write myview access SNMP-WRITE
+snmp-server group NMS v3 priv access SNMP-READ
+snmp-server view myview mib-2 included
+snmp-server view myview system included
+snmp-server view myview cisco included
+snmp ifmib ifindex persist
+!
+tacacs server 10.0.51.56
+tacacs server 10.0.51.57
+!
+!
+!
+control-plane
+!
+banner motd 
+        ===
+       -+ +-
+       | | |
+    <--\ | /-->
+ /____\\ | //____\ ********************************************************
+   <###\|||/###>                  Keshavarzi Bank Network
+    +====+====+     WARNING: Access is restricted to authorized users only.
+    | WAN-BKI |     Unauthorized access is a violation of state , civil and
+    +===+=+===+                       criminal laws.
+        +=+        ********************************************************
+
+!
+line con 0
+ privilege level 15
+ authorization commands 2 CACS
+ authorization exec CACS
+ accounting commands 15 CACS
+ accounting exec CACS
+ login authentication CACS
+ transport output telnet ssh
+ stopbits 1
+line aux 0
+line vty 0 4
+ access-class TELNET-ACCESS in vrf-also
+ privilege level 15
+ authorization commands 2 CACS
+ authorization exec CACS
+ accounting commands 15 CACS
+ accounting exec CACS
+ login authentication CACS
+ transport input ssh
+ transport output telnet ssh
+line vty 5 15
+ access-class TELNET-ACCESS in vrf-also
+ privilege level 15
+ authorization commands 2 CACS
+ authorization exec CACS
+ accounting commands 15 CACS
+ accounting exec CACS
+ login authentication CACS
+ transport input ssh
+ transport output telnet ssh
+!
+call-home
+ ! If contact email address in call-home is configured as sch-smart-licensing@cisco.com
+ ! the email address configured in Cisco Smart License Portal will be used as contact email address to send SCH notifications.
+ contact-email-addr sch-smart-licensing@cisco.com
+ profile "CiscoTAC-1"
+  active
+  destination transport-method http
+ntp authentication-key 1 md5 11081E171E5F090D0A21 7
+ntp authenticate
+ntp trusted-key 1
+!
+!
+!
+!
+!
+!
+end

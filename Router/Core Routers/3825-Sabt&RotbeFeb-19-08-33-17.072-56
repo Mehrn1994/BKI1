@@ -1,0 +1,725 @@
+
+!
+! Last configuration change at 16:43:01 Tehran Sat Feb 7 2026 by m-hossain
+! NVRAM config last updated at 12:03:06 Tehran Thu Feb 19 2026 by pyth0nuser
+!
+version 15.1
+service timestamps debug datetime msec
+service timestamps log datetime msec
+service password-encryption
+!
+hostname 3825-Sabt&Rotbe
+!
+boot-start-marker
+boot system flash c3825-adventerprisek9-mz.151-3.T2.bin
+boot-end-marker
+!
+!
+enable secret 5 $1$Phd6$s8U1hvnhxQGwYU/7EPFXb/
+!
+aaa new-model
+!
+!
+aaa group server tacacs+ ACSServers
+ server-private 10.0.51.56 key 7 106F1A574A46415B
+ server-private 10.0.51.57 key 7 047A184840701F1E
+ ip vrf forwarding VRF-Mgmt
+ ip tacacs source-interface Vlan51
+!
+aaa authentication login CACS group ACSServers local
+aaa authentication enable default group ACSServers enable
+aaa authorization console
+aaa authorization config-commands
+aaa authorization exec CACS group ACSServers local 
+aaa authorization commands 0 CACS group ACSServers local 
+aaa authorization commands 1 CACS group ACSServers local 
+aaa authorization commands 2 CACS group ACSServers local 
+aaa authorization commands 3 CACS group ACSServers local 
+aaa authorization commands 15 CACS group ACSServers local 
+aaa accounting exec CACS start-stop group ACSServers
+aaa accounting commands 0 CACS start-stop group ACSServers
+aaa accounting commands 1 CACS start-stop group ACSServers
+aaa accounting commands 2 CACS start-stop group ACSServers
+aaa accounting commands 3 CACS start-stop group ACSServers
+aaa accounting commands 15 CACS start-stop group ACSServers
+aaa accounting system default start-stop group ACSServers
+!
+!
+!
+!
+!
+aaa session-id common
+!
+clock timezone Tehran 3 30
+clock calendar-valid
+!
+dot11 syslog
+ip source-route
+!
+ip vrf VRF-Mgmt
+!
+ip cef
+!
+!
+no ip dhcp use vrf connected
+ip dhcp excluded-address 10.122.1.1 10.122.1.5
+ip dhcp excluded-address 10.122.1.10 10.122.1.15
+!
+ip dhcp pool DHCP
+   network 10.122.1.0 255.255.255.0
+   default-router 10.122.1.1 
+   dns-server 10.2.10.11 10.2.10.12 
+!
+!
+ip domain name agri-bank.com
+no ipv6 cef
+!
+multilink bundle-name authenticated
+!
+!
+!
+!
+!
+no virtual-template subinterface
+voice-card 0
+!
+!
+!
+!
+!
+!
+!
+crypto pki token default removal timeout 0
+!
+!
+!
+!
+license udi pid CISCO3825 sn FTX1417AKUK
+archive
+ log config
+  hidekeys
+ path tftp://10.0.51.40/Core/$h
+ write-memory
+username bkadmin privilege 15 secret 5 $1$NSle$bYZJcYu7OdPnGAv7oFQvR.
+username sabt-vpn password 7 06150E2358031F090B
+username sanjeshetebar-vpn password 7 0215055501031C29495A0C1B04055F1D1C0A
+username bkroot privilege 15 secret 5 $1$ccRd$7NII7uHA9BM7GIkIC.j8g/
+username reza privilege 15 secret 5 $1$GrES$2TiDGTkUUje/gSilX39RO0
+username test privilege 15 secret 5 $1$/gRn$o6UhDp86sDgqAB0z7ijLt.
+!
+redundancy
+!
+!
+controller DSL 0/1/0
+ mode atm
+ dsl-mode shdsl symmetric annex B
+!
+ip tftp source-interface GigabitEthernet0/1
+!
+class-map match-all undesireable-udp
+ match access-group 198
+!
+!
+policy-map drop-udp
+ class undesireable-udp
+  drop
+!
+! 
+!
+crypto isakmp policy 1
+ encr aes
+ hash sha256
+ authentication pre-share
+ group 14
+ lifetime 3600
+crypto isakmp key !@#K2shAvarzi$%^ address 172.21.155.58
+!
+!
+crypto ipsec transform-set RotbehBandi esp-aes esp-sha256-hmac 
+!
+crypto ipsec profile RBProfile
+ set transform-set RotbehBandi 
+!
+!
+bridge irb
+!
+!
+!
+!
+!
+interface Loopback0
+ ip address 172.16.2.1 255.255.255.0
+!
+interface Loopback1
+ description ** Nat to Sabt **
+ ip address 10.122.1.20 255.255.255.255
+ ip nat outside
+ ip virtual-reassembly in
+!
+interface Loopback2
+ no ip address
+!
+interface Loopback3
+ ip address 172.16.200.210 255.255.255.248
+!
+interface Loopback100
+ ip address 10.122.1.1 255.255.255.255
+!
+interface Loopback3000
+ ip address 10.200.30.1 255.255.255.0
+!
+interface Tunnel0
+ description ** Rotbeh Bandi **
+ ip address 10.0.0.2 255.255.255.252
+ ip nat outside
+ ip virtual-reassembly in
+ keepalive 10 3
+ tunnel source 172.17.0.46
+ tunnel destination 172.16.1.2
+!
+interface Tunnel1
+ description ** RotbehBandi **
+ ip address 10.33.0.2 255.255.255.252
+ ip nat outside
+ ip virtual-reassembly in
+ shutdown
+ tunnel source 172.17.0.46
+ tunnel destination 172.31.0.2
+!
+interface Tunnel2
+ description EtebarSanji
+ ip address 20.200.1.106 255.255.255.252
+ ip nat outside
+ ip virtual-reassembly in
+ tunnel source 172.17.0.46
+ tunnel mode ipsec ipv4
+ tunnel destination 172.21.155.58
+ tunnel protection ipsec profile RBProfile
+!
+interface GigabitEthernet0/0
+ description ** MPLS-Sabt **
+ ip address 172.19.75.42 255.255.255.252
+ ip flow ingress
+ ip flow egress
+ ip nat outside
+ ip virtual-reassembly in
+ duplex auto
+ speed auto
+ media-type sfp
+ negotiation auto
+!
+interface GigabitEthernet0/1
+ description AGG-EXT-SW-Twe1/0/17
+ ip address 10.0.157.6 255.255.255.0
+ ip flow ingress
+ ip flow egress
+ ip nat inside
+ ip virtual-reassembly in
+ duplex auto
+ speed auto
+ media-type rj45
+!
+interface ATM0/1/0
+ description ** RotbehBandi **
+ ip address 172.17.0.46 255.255.255.252
+ ip nat outside
+ ip virtual-reassembly in
+ no atm ilmi-keepalive
+ pvc 0/35 
+  encapsulation aal5snap
+ !
+!
+interface FastEthernet0/0/0
+ description ** MGMT **
+ switchport access vlan 51
+ ip vrf forwarding VRF-Mgmt
+!
+interface FastEthernet0/0/1
+!
+interface FastEthernet0/0/2
+!
+interface FastEthernet0/0/3
+!
+interface Virtual-Template3
+ ip unnumbered Loopback0
+ peer default ip address pool RBPool
+ ppp authentication ms-chap ms-chap-v2
+!
+interface Virtual-Template30
+ ip unnumbered Loopback3000
+ peer default ip address pool SABT-MPLS
+ ppp authentication ms-chap ms-chap-v2
+!
+interface Vlan1
+ no ip address
+!
+interface Vlan51
+ description ** MGMT **
+ ip vrf forwarding VRF-Mgmt
+ ip address 10.0.51.45 255.255.255.0
+!
+ip local pool SABT 10.122.1.10 10.122.1.15
+ip local pool SABT-From-PN 192.168.205.24 192.168.205.32
+ip local pool SABT-MPLS 10.200.30.5 10.200.30.30
+ip local pool RBPool 172.16.2.5 172.16.2.10
+ip forward-protocol nd
+no ip http server
+no ip http secure-server
+!
+ip flow-cache timeout active 1
+ip flow-export version 5
+!
+ip nat inside source list R-SANJI interface Loopback0 overload
+ip nat inside source list RotbeBandi interface ATM0/1/0 overload
+ip nat inside source list SABT->MPLS interface Loopback3000 overload
+ip nat inside source list SABT-Dowlat interface GigabitEthernet0/0 overload
+ip nat inside source list newR-SANJI interface Loopback3 overload
+ip nat outside source static 172.16.100.2 10.100.100.2
+ip nat outside source static 172.16.100.3 10.100.100.3
+ip nat outside source static 172.16.100.15 10.100.100.15
+ip nat outside source static 172.16.100.16 10.100.100.16
+ip nat outside source static 172.16.100.22 10.100.100.22
+ip nat outside source static 172.21.100.4 10.100.100.4
+ip nat outside source static 172.21.100.22 10.100.100.122
+ip nat outside source static 172.21.100.40 10.100.100.40
+ip nat outside source static 172.21.100.41 10.100.100.41
+ip route 10.0.0.0 255.255.0.0 10.0.157.1 name LAN
+ip route 10.2.0.0 255.255.0.0 172.19.75.41 name MPLS-Sabt
+ip route 10.100.100.2 255.255.255.255 10.0.0.1
+ip route 10.100.100.3 255.255.255.255 10.0.0.1
+ip route 10.100.100.4 255.255.255.255 Tunnel2
+ip route 10.100.100.15 255.255.255.255 10.0.0.1
+ip route 10.100.100.16 255.255.255.255 10.0.0.1
+ip route 10.100.100.22 255.255.255.255 10.0.0.1
+ip route 10.100.100.40 255.255.255.255 Tunnel2
+ip route 10.100.100.41 255.255.255.255 Tunnel2
+ip route 10.100.100.122 255.255.255.255 Tunnel2
+ip route 172.16.0.0 255.255.254.0 172.17.0.45 name RotbeBandi-LAN
+ip route 172.16.100.0 255.255.255.0 Tunnel1 name RotbeBandi-Tunnel1
+ip route 172.16.100.0 255.255.255.0 Tunnel0 10 name RotbeBandi-Tunnel
+ip route 172.16.100.4 255.255.255.255 Tunnel2
+ip route 172.17.0.48 255.255.255.252 172.17.0.45 name RotbeBandi1
+ip route 172.17.0.52 255.255.255.252 172.17.0.45 name RotbeBandi2
+ip route 172.21.100.0 255.255.255.0 Tunnel0 name cbs24
+ip route 172.21.100.4 255.255.255.255 Tunnel2
+ip route 172.21.100.22 255.255.255.255 Tunnel2
+ip route 172.21.100.40 255.255.255.255 Tunnel2
+ip route 172.21.100.41 255.255.255.255 Tunnel2
+ip route 172.21.155.58 255.255.255.255 172.17.0.45 name RotbehBandi
+ip route 172.31.0.0 255.255.255.252 172.17.0.45 name RotbeBandi3
+ip route 192.168.101.0 255.255.255.0 192.168.205.1 name Dowlat-Sabt
+ip route 192.168.101.254 255.255.255.255 192.168.205.1 name Dowlat-Sabt
+ip route vrf VRF-Mgmt 0.0.0.0 0.0.0.0 10.0.51.1 name OOB-MGMT
+!
+ip access-list standard OSPF-PERMIT
+ip access-list standard RotbeBandi
+ permit 10.0.50.41
+ permit 10.0.50.101
+ permit 10.0.5.163
+ip access-list standard SNMP-READ
+ permit 10.0.50.0 0.0.1.255
+ip access-list standard SNMP-WRITE
+ permit 10.0.51.49
+ permit 10.0.51.48
+ permit 10.0.51.50
+ip access-list standard TELNET-ACCESS
+ permit 10.0.50.0 0.0.1.255
+!
+ip access-list extended R-SANJI
+ permit ip host 10.0.68.69 host 10.100.100.22
+ permit ip host 10.0.53.46 host 10.100.100.22
+ permit ip host 10.0.13.31 host 10.100.100.22
+ permit ip host 10.0.54.36 host 10.100.100.22
+ permit ip host 10.0.54.35 host 10.100.100.22
+ permit ip host 10.0.13.38 host 10.100.100.22
+ permit ip host 10.0.56.16 host 10.100.100.22
+ permit ip host 10.0.56.17 host 10.100.100.22
+ permit ip host 10.0.5.37 host 10.100.100.22
+ permit ip host 10.0.54.16 host 10.100.100.22
+ permit ip host 10.0.4.59 host 10.100.100.22
+ permit ip host 10.0.4.52 host 10.100.100.22
+ permit ip host 10.0.4.53 host 10.100.100.22
+ permit ip host 10.0.4.51 host 10.100.100.22
+ permit ip host 10.0.50.6 host 10.100.100.22
+ permit ip host 10.0.56.106 host 10.100.100.22
+ permit ip host 10.0.202.167 host 10.100.100.22
+ permit ip host 10.0.202.169 host 10.100.100.22
+ permit ip host 10.0.18.119 host 10.100.100.22
+ permit ip host 10.0.68.202 host 10.100.100.22
+ permit ip host 10.0.68.201 host 10.100.100.22
+ permit ip host 10.0.202.76 host 10.100.100.22
+ permit ip host 10.0.138.16 host 10.100.100.22
+ permit ip host 10.0.138.17 host 10.100.100.22
+ permit ip host 10.0.18.139 host 10.100.100.22
+ permit ip host 10.0.140.16 host 10.100.100.22
+ permit ip host 10.0.140.17 host 10.100.100.22
+ permit ip host 10.0.4.165 host 10.100.100.22
+ permit ip host 10.0.4.163 host 10.100.100.22
+ permit ip host 10.0.5.160 host 10.100.100.22
+ permit ip host 10.0.109.174 host 10.100.100.22
+ permit ip host 10.0.139.97 host 10.100.100.22
+ permit ip host 10.0.139.96 host 10.100.100.22
+ permit ip host 10.0.4.53 host 10.100.100.2
+ permit ip host 10.0.4.51 host 10.100.100.2
+ permit ip host 10.0.50.6 host 10.100.100.2
+ permit ip host 10.0.56.106 host 10.100.100.2
+ permit ip host 10.0.202.167 host 10.100.100.2
+ permit ip host 10.0.202.169 host 10.100.100.2
+ permit ip host 10.0.18.119 host 10.100.100.2
+ permit ip host 10.0.68.202 host 10.100.100.2
+ permit ip host 10.0.68.201 host 10.100.100.2
+ permit ip host 10.0.202.76 host 10.100.100.2
+ permit ip host 10.0.138.16 host 10.100.100.2
+ permit ip host 10.0.138.17 host 10.100.100.2
+ permit ip host 10.0.18.139 host 10.100.100.2
+ permit ip host 10.0.140.16 host 10.100.100.2
+ permit ip host 10.0.140.17 host 10.100.100.2
+ permit ip host 10.0.4.165 host 10.100.100.2
+ permit ip host 10.0.4.163 host 10.100.100.2
+ permit ip host 10.0.5.160 host 10.100.100.2
+ permit ip host 10.0.109.174 host 10.100.100.2
+ permit ip host 10.0.139.97 host 10.100.100.2
+ permit ip host 10.0.139.96 host 10.100.100.2
+ permit ip host 10.0.68.69 host 10.100.100.2
+ permit ip host 10.0.53.46 host 10.100.100.2
+ permit ip host 10.0.13.31 host 10.100.100.2
+ permit ip host 10.0.54.36 host 10.100.100.2
+ permit ip host 10.0.54.35 host 10.100.100.2
+ permit ip host 10.0.13.38 host 10.100.100.2
+ permit ip host 10.0.56.16 host 10.100.100.2
+ permit ip host 10.0.56.17 host 10.100.100.2
+ permit ip host 10.0.5.37 host 10.100.100.2
+ permit ip host 10.0.54.16 host 10.100.100.2
+ permit ip host 10.0.4.59 host 10.100.100.2
+ permit ip host 10.0.4.52 host 10.100.100.2
+ permit ip host 10.0.68.69 host 10.100.100.3
+ permit ip host 10.0.53.46 host 10.100.100.3
+ permit ip host 10.0.13.31 host 10.100.100.3
+ permit ip host 10.0.54.36 host 10.100.100.3
+ permit ip host 10.0.54.35 host 10.100.100.3
+ permit ip host 10.0.13.38 host 10.100.100.3
+ permit ip host 10.0.56.16 host 10.100.100.3
+ permit ip host 10.0.56.17 host 10.100.100.3
+ permit ip host 10.0.5.37 host 10.100.100.3
+ permit ip host 10.0.54.16 host 10.100.100.3
+ permit ip host 10.0.4.59 host 10.100.100.3
+ permit ip host 10.0.4.52 host 10.100.100.3
+ permit ip host 10.0.4.53 host 10.100.100.3
+ permit ip host 10.0.4.51 host 10.100.100.3
+ permit ip host 10.0.50.6 host 10.100.100.3
+ permit ip host 10.0.56.106 host 10.100.100.3
+ permit ip host 10.0.202.167 host 10.100.100.3
+ permit ip host 10.0.202.169 host 10.100.100.3
+ permit ip host 10.0.18.119 host 10.100.100.3
+ permit ip host 10.0.68.202 host 10.100.100.3
+ permit ip host 10.0.68.201 host 10.100.100.3
+ permit ip host 10.0.202.76 host 10.100.100.3
+ permit ip host 10.0.138.16 host 10.100.100.3
+ permit ip host 10.0.138.17 host 10.100.100.3
+ permit ip host 10.0.18.139 host 10.100.100.3
+ permit ip host 10.0.140.16 host 10.100.100.3
+ permit ip host 10.0.140.17 host 10.100.100.3
+ permit ip host 10.0.4.165 host 10.100.100.3
+ permit ip host 10.0.4.163 host 10.100.100.3
+ permit ip host 10.0.5.160 host 10.100.100.3
+ permit ip host 10.0.109.174 host 10.100.100.3
+ permit ip host 10.0.139.97 host 10.100.100.3
+ permit ip host 10.0.139.96 host 10.100.100.3
+ permit ip host 10.0.68.69 host 10.100.100.15
+ permit ip host 10.0.53.46 host 10.100.100.15
+ permit ip host 10.0.13.31 host 10.100.100.15
+ permit ip host 10.0.54.36 host 10.100.100.15
+ permit ip host 10.0.54.35 host 10.100.100.15
+ permit ip host 10.0.13.38 host 10.100.100.15
+ permit ip host 10.0.56.16 host 10.100.100.15
+ permit ip host 10.0.56.17 host 10.100.100.15
+ permit ip host 10.0.5.37 host 10.100.100.15
+ permit ip host 10.0.54.16 host 10.100.100.15
+ permit ip host 10.0.4.59 host 10.100.100.15
+ permit ip host 10.0.4.52 host 10.100.100.15
+ permit ip host 10.0.4.53 host 10.100.100.15
+ permit ip host 10.0.4.51 host 10.100.100.15
+ permit ip host 10.0.50.6 host 10.100.100.15
+ permit ip host 10.0.56.106 host 10.100.100.15
+ permit ip host 10.0.202.167 host 10.100.100.15
+ permit ip host 10.0.202.169 host 10.100.100.15
+ permit ip host 10.0.18.119 host 10.100.100.15
+ permit ip host 10.0.68.202 host 10.100.100.15
+ permit ip host 10.0.68.201 host 10.100.100.15
+ permit ip host 10.0.202.76 host 10.100.100.15
+ permit ip host 10.0.138.16 host 10.100.100.15
+ permit ip host 10.0.138.17 host 10.100.100.15
+ permit ip host 10.0.18.139 host 10.100.100.15
+ permit ip host 10.0.140.16 host 10.100.100.15
+ permit ip host 10.0.140.17 host 10.100.100.15
+ permit ip host 10.0.4.165 host 10.100.100.15
+ permit ip host 10.0.4.163 host 10.100.100.15
+ permit ip host 10.0.5.160 host 10.100.100.15
+ permit ip host 10.0.109.174 host 10.100.100.15
+ permit ip host 10.0.139.97 host 10.100.100.15
+ permit ip host 10.0.139.96 host 10.100.100.15
+ permit ip host 10.0.68.69 host 10.100.100.16
+ permit ip host 10.0.53.46 host 10.100.100.16
+ permit ip host 10.0.13.31 host 10.100.100.16
+ permit ip host 10.0.54.36 host 10.100.100.16
+ permit ip host 10.0.54.35 host 10.100.100.16
+ permit ip host 10.0.13.38 host 10.100.100.16
+ permit ip host 10.0.56.16 host 10.100.100.16
+ permit ip host 10.0.56.17 host 10.100.100.16
+ permit ip host 10.0.5.37 host 10.100.100.16
+ permit ip host 10.0.54.16 host 10.100.100.16
+ permit ip host 10.0.4.59 host 10.100.100.16
+ permit ip host 10.0.4.52 host 10.100.100.16
+ permit ip host 10.0.4.53 host 10.100.100.16
+ permit ip host 10.0.4.51 host 10.100.100.16
+ permit ip host 10.0.50.6 host 10.100.100.16
+ permit ip host 10.0.56.106 host 10.100.100.16
+ permit ip host 10.0.202.167 host 10.100.100.16
+ permit ip host 10.0.202.169 host 10.100.100.16
+ permit ip host 10.0.18.119 host 10.100.100.16
+ permit ip host 10.0.68.202 host 10.100.100.16
+ permit ip host 10.0.68.201 host 10.100.100.16
+ permit ip host 10.0.202.76 host 10.100.100.16
+ permit ip host 10.0.138.16 host 10.100.100.16
+ permit ip host 10.0.138.17 host 10.100.100.16
+ permit ip host 10.0.18.139 host 10.100.100.16
+ permit ip host 10.0.140.16 host 10.100.100.16
+ permit ip host 10.0.140.17 host 10.100.100.16
+ permit ip host 10.0.4.165 host 10.100.100.16
+ permit ip host 10.0.4.163 host 10.100.100.16
+ permit ip host 10.0.5.160 host 10.100.100.16
+ permit ip host 10.0.109.174 host 10.100.100.16
+ permit ip host 10.0.139.97 host 10.100.100.16
+ permit ip host 10.0.139.96 host 10.100.100.16
+ permit ip host 10.0.68.69 host 10.100.100.40
+ permit ip host 10.0.53.46 host 10.100.100.40
+ permit ip host 10.0.13.31 host 10.100.100.40
+ permit ip host 10.0.54.36 host 10.100.100.40
+ permit ip host 10.0.54.35 host 10.100.100.40
+ permit ip host 10.0.13.38 host 10.100.100.40
+ permit ip host 10.0.56.16 host 10.100.100.40
+ permit ip host 10.0.56.17 host 10.100.100.40
+ permit ip host 10.0.5.37 host 10.100.100.40
+ permit ip host 10.0.54.16 host 10.100.100.40
+ permit ip host 10.0.4.59 host 10.100.100.40
+ permit ip host 10.0.4.52 host 10.100.100.40
+ permit ip host 10.0.4.53 host 10.100.100.40
+ permit ip host 10.0.4.51 host 10.100.100.40
+ permit ip host 10.0.50.6 host 10.100.100.40
+ permit ip host 10.0.56.106 host 10.100.100.40
+ permit ip host 10.0.202.167 host 10.100.100.40
+ permit ip host 10.0.202.169 host 10.100.100.40
+ permit ip host 10.0.18.119 host 10.100.100.40
+ permit ip host 10.0.68.202 host 10.100.100.40
+ permit ip host 10.0.68.201 host 10.100.100.40
+ permit ip host 10.0.202.76 host 10.100.100.40
+ permit ip host 10.0.138.16 host 10.100.100.40
+ permit ip host 10.0.138.17 host 10.100.100.40
+ permit ip host 10.0.18.139 host 10.100.100.40
+ permit ip host 10.0.140.16 host 10.100.100.40
+ permit ip host 10.0.140.17 host 10.100.100.40
+ permit ip host 10.0.4.165 host 10.100.100.40
+ permit ip host 10.0.4.163 host 10.100.100.40
+ permit ip host 10.0.5.160 host 10.100.100.40
+ permit ip host 10.0.109.174 host 10.100.100.40
+ permit ip host 10.0.139.97 host 10.100.100.40
+ permit ip host 10.0.139.96 host 10.100.100.40
+ permit ip host 10.0.68.69 host 10.100.100.41
+ permit ip host 10.0.53.46 host 10.100.100.41
+ permit ip host 10.0.13.31 host 10.100.100.41
+ permit ip host 10.0.54.36 host 10.100.100.41
+ permit ip host 10.0.54.35 host 10.100.100.41
+ permit ip host 10.0.13.38 host 10.100.100.41
+ permit ip host 10.0.56.16 host 10.100.100.41
+ permit ip host 10.0.56.17 host 10.100.100.41
+ permit ip host 10.0.5.37 host 10.100.100.41
+ permit ip host 10.0.54.16 host 10.100.100.41
+ permit ip host 10.0.4.59 host 10.100.100.41
+ permit ip host 10.0.4.52 host 10.100.100.41
+ permit ip host 10.0.4.53 host 10.100.100.41
+ permit ip host 10.0.4.51 host 10.100.100.41
+ permit ip host 10.0.50.6 host 10.100.100.41
+ permit ip host 10.0.56.106 host 10.100.100.41
+ permit ip host 10.0.202.167 host 10.100.100.41
+ permit ip host 10.0.202.169 host 10.100.100.41
+ permit ip host 10.0.18.119 host 10.100.100.41
+ permit ip host 10.0.68.202 host 10.100.100.41
+ permit ip host 10.0.68.201 host 10.100.100.41
+ permit ip host 10.0.202.76 host 10.100.100.41
+ permit ip host 10.0.138.16 host 10.100.100.41
+ permit ip host 10.0.138.17 host 10.100.100.41
+ permit ip host 10.0.18.139 host 10.100.100.41
+ permit ip host 10.0.140.16 host 10.100.100.41
+ permit ip host 10.0.140.17 host 10.100.100.41
+ permit ip host 10.0.4.165 host 10.100.100.41
+ permit ip host 10.0.4.163 host 10.100.100.41
+ permit ip host 10.0.5.160 host 10.100.100.41
+ permit ip host 10.0.109.174 host 10.100.100.41
+ permit ip host 10.0.139.97 host 10.100.100.41
+ permit ip host 10.0.139.96 host 10.100.100.41
+ permit ip host 10.0.50.67 host 10.100.100.2
+ permit ip host 10.0.50.67 host 10.100.100.3
+ permit ip host 10.0.50.67 host 10.100.100.15
+ permit ip host 10.0.50.67 host 10.100.100.16
+ permit ip host 10.0.50.67 host 10.100.100.22
+ permit ip host 10.0.5.175 host 10.100.100.40
+ permit ip host 10.0.5.175 host 10.100.100.41
+ permit ip host 10.0.5.82 host 10.100.100.40
+ permit ip host 10.0.5.82 host 10.100.100.41
+ permit ip host 10.0.202.77 host 10.100.100.22
+ permit ip host 10.0.68.16 host 10.100.100.22
+ permit ip host 10.0.68.17 host 10.100.100.22
+ permit ip host 10.0.85.215 host 10.100.100.22
+ permit ip host 10.0.5.82 host 10.100.100.2
+ permit ip host 10.0.5.175 host 10.100.100.2
+ permit ip host 10.0.202.39 host 10.100.100.22
+ permit ip host 10.0.50.67 host 10.100.100.40
+ permit ip host 10.0.50.67 host 10.100.100.41
+ip access-list extended R1
+ permit ip 10.200.30.0 0.0.0.255 172.16.100.0 0.0.0.255
+ip access-list extended SABT
+ permit ip host 10.2.20.120 any
+ permit ip host 10.2.10.11 any
+ permit ip host 10.2.10.12 any
+ permit ip any any
+ip access-list extended SABT->MPLS
+ permit ip host 10.0.56.48 10.2.250.0 0.0.0.255
+ permit ip host 10.0.56.49 10.2.250.0 0.0.0.255
+ permit ip host 10.0.53.96 10.2.250.0 0.0.0.255
+ permit ip host 10.0.56.48 10.2.20.0 0.0.0.255
+ permit ip host 10.0.56.49 10.2.20.0 0.0.0.255
+ permit ip host 10.0.18.105 10.2.250.0 0.0.0.255
+ permit ip host 10.0.74.60 10.2.250.0 0.0.0.255
+ permit ip host 10.0.54.200 10.2.250.0 0.0.0.255
+ permit ip host 10.0.54.200 10.2.20.0 0.0.0.255
+ip access-list extended SABT-Dowlat
+ permit ip host 10.0.56.48 host 192.168.101.254
+ permit ip host 10.0.56.49 host 192.168.101.254
+ permit ip host 10.0.53.96 host 192.168.101.254
+ permit ip host 10.0.54.200 host 192.168.101.254
+ip access-list extended newR-SANJI
+ permit ip host 10.0.50.67 host 10.100.100.4
+ permit ip host 10.0.50.67 host 10.100.100.122
+ permit ip host 10.0.14.198 host 10.100.100.4
+ permit ip host 10.0.50.67 host 10.100.100.40
+ permit ip host 10.0.50.67 host 10.100.100.41
+ permit ip host 10.0.50.64 host 10.100.100.40
+ permit ip host 10.0.50.64 host 10.100.100.41
+ permit ip host 10.0.50.64 host 10.100.100.4
+!
+logging esm config
+logging host 10.0.51.25 vrf VRF-Mgmt
+logging host 10.0.51.63 vrf VRF-Mgmt
+access-list 198 deny   ip any any fragments
+access-list 198 permit udp any any eq 18999
+access-list 199 permit icmp any any echo
+access-list 199 permit icmp any any echo-reply
+!
+!
+!
+!
+snmp-server group LMS v3 priv read myview write myview access SNMP-WRITE
+snmp-server group NMS v3 auth 
+snmp-server group NMS v3 priv access SNMP-READ
+snmp-server group nms-net v3 auth 
+snmp-server view myview mib-2 included
+snmp-server view myview system included
+snmp-server view myview cisco included
+snmp-server community pubilc RO
+snmp-server community public RO
+snmp-server ifindex persist
+snmp-server host 10.0.51.32 vrf VRF-Mgmt version 3 auth nms-net 
+snmp-server host 10.0.51.58 vrf VRF-Mgmt version 3 auth nms-net 
+snmp-server host 10.0.51.60 vrf VRF-Mgmt version 3 auth nms-net 
+snmp-server host 10.0.51.72 vrf VRF-Mgmt version 3 auth nms-net 
+!
+!
+!
+control-plane
+ service-policy input drop-udp
+!
+!
+!
+!
+mgcp profile default
+!
+!
+!
+!
+!
+privilege interface level 3 shutdown
+privilege interface level 3 no shutdown
+privilege interface level 3 no
+privilege configure level 3 interface
+privilege exec level 3 traceroute
+privilege exec level 3 ping
+privilege exec level 3 configure terminal
+privilege exec level 3 configure
+privilege exec level 3 reload
+privilege exec level 3 terminal monitor
+privilege exec level 3 terminal
+privilege exec all level 3 show
+banner motd C
+
+
+
+                                        ===
+                                       -+ +-
+                                       | | |
+                                    <--\ | /-->
+                                   ##| ||||| |##
+                                  ###| |+++| |###
+                                 /____\\ | //____\ 
+                                   <###\|||/###>   
+                                    +====+====+    
+                                    | WAN-BKI |    
+                                    +===+=+===+    
+                                        +=+        
+                              Keshavarzi Bank Network
+
+WARNING: Access is restricted to authorized users only.
+         Unauthorized access is a violation of state , civil and criminal laws.
+
+
+
+
+
+
+
+
+!
+line con 0
+ authorization exec CACS
+ login authentication CACS
+line aux 0
+line vty 0 4
+ access-class TELNET-ACCESS in vrf-also
+ privilege level 15
+ authorization commands 2 CACS
+ authorization commands 15 CACS
+ authorization exec CACS
+ accounting commands 15 CACS
+ accounting exec CACS
+ login authentication CACS
+ transport input ssh
+ transport output telnet ssh
+line vty 5 15
+ access-class TELNET-ACCESS in vrf-also
+ privilege level 15
+ authorization commands 2 CACS
+ authorization commands 15 CACS
+ authorization exec CACS
+ accounting exec CACS
+ login authentication CACS
+ transport input ssh
+ transport output telnet ssh
+!
+scheduler max-task-time 5000
+scheduler allocate 20000 1000
+ntp authentication-key 1 md5 141615190549282A2A23 7
+ntp authenticate
+ntp trusted-key 1
+ntp source Vlan51
+ntp update-calendar
+ntp server vrf VRF-Mgmt 10.0.51.27
+end

@@ -1,0 +1,292 @@
+
+!
+! Last configuration change at 14:46:52 UTC Sun Feb 22 2026 by m-hossain
+! NVRAM config last updated at 15:50:11 UTC Sun Feb 22 2026 by m-hossain
+!
+version 15.2
+no service pad
+service timestamps debug datetime msec
+service timestamps log datetime msec
+no service password-encryption
+!
+hostname SW-Roof-To-Site
+!
+boot-start-marker
+boot-end-marker
+!
+enable secret 5 $1$3p5f$YLrRXUAUQLNKkhQzX.KM01
+!
+username bkroot privilege 15 secret 5 $1$EGX9$wmdtYsJs523pn6DGv4uHq.
+aaa new-model
+!
+!
+aaa authentication login CACS group tacacs+ local
+aaa authentication enable default group tacacs+ enable
+aaa authorization console
+aaa authorization config-commands
+aaa authorization exec CACS group tacacs+ local 
+aaa authorization commands 0 CACS group tacacs+ local 
+aaa authorization commands 1 CACS group tacacs+ local 
+aaa authorization commands 15 CACS group tacacs+ local 
+aaa accounting exec default start-stop group tacacs+
+aaa accounting commands 0 default start-stop group tacacs+
+aaa accounting commands 1 default start-stop group tacacs+
+aaa accounting commands 10 default start-stop group tacacs+
+aaa accounting commands 15 default start-stop group tacacs+
+!
+!
+!
+!
+!
+!
+aaa session-id common
+switch 1 provision ws-c2960xr-24ts-i
+system mtu routing 1500
+ip routing
+!
+!
+!
+!
+!
+!
+!
+!
+!
+crypto pki trustpoint TP-self-signed-3107785216
+ enrollment selfsigned
+ subject-name cn=IOS-Self-Signed-Certificate-3107785216
+ revocation-check none
+ rsakeypair TP-self-signed-3107785216
+!
+!
+crypto pki certificate chain TP-self-signed-3107785216
+ certificate self-signed 01 nvram:IOS-Self-Sig#1.cer
+archive
+ log config
+  hidekeys
+ path tftp://10.0.51.40/Core/$h
+ write-memory
+spanning-tree mode pvst
+spanning-tree extend system-id
+!
+!
+!
+!
+vlan internal allocation policy ascending
+!
+!
+! 
+!
+!
+!
+!
+!
+!
+!
+!
+interface Port-channel1
+!
+interface FastEthernet0
+ no ip address
+ no ip route-cache
+!
+interface GigabitEthernet1/0/1
+!
+interface GigabitEthernet1/0/2
+ description ** IPPhone **
+ switchport access vlan 51
+ switchport mode access
+ switchport voice vlan 44
+ spanning-tree portfast
+!
+interface GigabitEthernet1/0/3
+ description ** HTSC-Chamran-Wireless **
+ switchport access vlan 3
+ switchport mode access
+ speed 100
+!
+interface GigabitEthernet1/0/4
+!
+interface GigabitEthernet1/0/5
+ description ** Gilanet **
+ switchport mode trunk
+!
+interface GigabitEthernet1/0/6
+ description ** APN-Mobinnet **
+ switchport trunk allowed vlan 803
+ switchport mode trunk
+!
+interface GigabitEthernet1/0/7
+ description ** Wireless-HiWEB **
+ switchport access vlan 7
+ switchport mode access
+ duplex full
+!
+interface GigabitEthernet1/0/8
+!
+interface GigabitEthernet1/0/9
+!
+interface GigabitEthernet1/0/10
+ description ** RahyabPayamGostaran **
+ switchport access vlan 10
+ switchport mode access
+ speed 100
+ duplex full
+!
+interface GigabitEthernet1/0/11
+ description Mobinnet-Jahad
+ no switchport
+ ip address 172.29.0.66 255.255.255.252
+!
+interface GigabitEthernet1/0/12
+ description ** Iran Solar **
+ switchport access vlan 122
+ speed 100
+ duplex half
+!
+interface GigabitEthernet1/0/13
+!
+interface GigabitEthernet1/0/14
+ switchport access vlan 51
+ switchport mode access
+ spanning-tree portfast
+!
+interface GigabitEthernet1/0/15
+!
+interface GigabitEthernet1/0/16
+!
+interface GigabitEthernet1/0/17
+!
+interface GigabitEthernet1/0/18
+!
+interface GigabitEthernet1/0/19
+!
+interface GigabitEthernet1/0/20
+!
+interface GigabitEthernet1/0/21
+!
+interface GigabitEthernet1/0/22
+ switchport mode trunk
+!
+interface GigabitEthernet1/0/23
+ description ** Wirelless-Herasat **
+ switchport access vlan 93
+ switchport mode access
+ spanning-tree portfast
+!
+interface GigabitEthernet1/0/24
+ description ** Wirelless-Herasat **
+ switchport access vlan 93
+ switchport mode access
+ spanning-tree portfast
+!
+interface GigabitEthernet1/0/25
+ description ** Uplink **
+ switchport mode trunk
+!
+interface GigabitEthernet1/0/26
+!
+interface GigabitEthernet1/0/27
+!
+interface GigabitEthernet1/0/28
+!
+interface Vlan1
+ ip address 10.250.47.200 255.255.248.0
+!
+interface Vlan5
+ ip address 192.168.10.100 255.255.255.0
+!
+interface Vlan7
+ ip address 10.250.50.200 255.255.255.0
+ shutdown
+!
+interface Vlan51
+ ip address 10.0.51.21 255.255.255.0
+!
+interface Vlan93
+ ip address 10.0.104.68 255.255.255.240
+ shutdown
+!
+interface Vlan153
+ ip address 10.0.153.21 255.255.255.0
+ no ip route-cache
+ shutdown
+!
+interface Vlan238
+ ip address 172.29.0.70 255.255.255.252
+!
+interface Vlan666
+ ip address 6.6.6.2 255.255.255.252
+ shutdown
+!
+ip default-gateway 172.29.0.70
+ip forward-protocol nd
+no ip http server
+no ip http secure-server
+!
+ip route 10.0.0.0 255.0.0.0 10.0.51.1
+ip tacacs source-interface Vlan51
+!
+ip access-list standard SNMP-READ
+ permit 10.0.50.0 0.0.1.255
+ip access-list standard SNMP-WRITE
+ permit 10.0.51.49
+ permit 10.0.51.48
+!
+!
+snmp-server group LMS v3 priv read myview write myview access SNMP-WRITE
+snmp-server group NMS v3 priv access SNMP-READ
+snmp-server view myview mib-2 included
+snmp-server view myview system included
+snmp-server view myview cisco included
+snmp ifmib ifindex persist
+tacacs-server host 10.0.51.56
+tacacs-server host 10.0.51.57
+tacacs-server directed-request
+tacacs-server key 7 052A15416E1D1D59
+!
+!
+!
+banner motd 
+
+
+
+
+       ===                                                           ===
+      -+ +-                                                         -+ +-
+      | | |                Keshavarzi Bank Network                  | | |
+   <--\ | /-->                                                   <--\ | /-->
+  ##| ||||| |##                                                 ##| ||||| |##
+ ###| |+++| |###                                               ###| |+++| |###
+/____\\ | //____\                 WARNING:                    /____\\ | //____\
+  <###\|||/###>                                                 <###\|||/###>
+   +====+====+   Access is restricted to authorized users only.  +====+====+
+   | WAN-BKI |    Unauthorized access is a violation of state,   | WAN-BKI |
+   +===+=+===+             civil and criminal laws.              +===+=+===+
+       +=+                                                           +=+
+
+
+
+
+
+!
+line con 0
+ authorization exec CACS
+ login authentication CACS
+line vty 0 4
+ access-class TELNET-ACCESS in
+ privilege level 15
+ authorization exec CACS
+ accounting commands 15 CACS
+ login authentication CACS
+ transport input ssh
+ transport output telnet ssh
+line vty 5 15
+ access-class TELNET-ACCESS in
+ privilege level 15
+ authorization exec CACS
+ login authentication CACS
+ transport input ssh
+ transport output telnet ssh
+!
+end

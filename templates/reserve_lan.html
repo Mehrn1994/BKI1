@@ -1337,7 +1337,6 @@ document.addEventListener('DOMContentLoaded', function() {
             let html = '';
             const btnStyle = (active) => `padding:8px 14px; border-radius:8px; border:1px solid ${active ? '#3b82f6' : 'rgba(255,255,255,0.15)'}; background:${active ? '#3b82f6' : 'rgba(255,255,255,0.05)'}; color:${active ? '#fff' : 'var(--text-primary,#e2e8f0)'}; cursor:pointer; font-size:13px; font-weight:${active ? '700' : '500'}; transition:all 0.2s;`;
 
-            // Prev button
             html += `<button onclick="goToPage(${currentPage - 1})" style="${btnStyle(false)}" ${currentPage === 1 ? 'disabled style="opacity:0.4;cursor:default;"' : ''}>&#9664;</button>`;
 
             for (let i = 1; i <= totalPages; i++) {
@@ -1348,9 +1347,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 html += `<button onclick="goToPage(${i})" style="${btnStyle(i === currentPage)}">${i}</button>`;
             }
 
-            // Next button
             html += `<button onclick="goToPage(${currentPage + 1})" style="${btnStyle(false)}" ${currentPage === totalPages ? 'disabled style="opacity:0.4;cursor:default;"' : ''}>&#9654;</button>`;
-
             html += `<span style="margin-right:12px; font-size:12px; color:var(--text-muted,#64748b);">${allReservations.length} رکورد</span>`;
             paginationDiv.innerHTML = html;
         }

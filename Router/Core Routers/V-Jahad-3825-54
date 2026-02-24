@@ -1,0 +1,276 @@
+
+!
+version 12.4
+service timestamps debug datetime msec
+service timestamps log datetime msec
+no service password-encryption
+!
+hostname V-Jahad-3825
+!
+boot-start-marker
+boot-end-marker
+!
+!
+aaa new-model
+!
+!
+aaa group server tacacs+ ACSServers
+ server-private 10.0.51.56 key 7 106F1A574A46415B
+ server-private 10.0.51.57 key 7 047A184840701F1E
+ ip vrf forwarding Mgmt-intf
+ ip tacacs source-interface Vlan51
+!
+aaa authentication login CACS group ACSServers local
+aaa authentication enable default group ACSServers enable
+aaa authorization console
+aaa authorization config-commands
+aaa authorization exec CACS group ACSServers local 
+aaa authorization commands 0 CACS group ACSServers local 
+aaa authorization commands 1 CACS group ACSServers local 
+aaa authorization commands 2 CACS group ACSServers local 
+aaa authorization commands 3 CACS group ACSServers local 
+aaa authorization commands 15 CACS group ACSServers local 
+aaa accounting exec CACS start-stop group ACSServers
+aaa accounting commands 0 CACS start-stop group ACSServers
+aaa accounting commands 1 CACS start-stop group ACSServers
+aaa accounting commands 2 CACS start-stop group ACSServers
+aaa accounting commands 3 CACS start-stop group ACSServers
+aaa accounting commands 15 CACS start-stop group ACSServers
+aaa accounting system default start-stop group ACSServers
+!
+!
+aaa session-id common
+!
+ip cef
+!
+!
+!
+!
+ip vrf Mgmt-intf
+!
+no ip domain lookup
+ip domain name agri-bank.com
+!
+multilink bundle-name authenticated
+!
+!
+voice-card 0
+ no dspfarm
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+! 
+!
+crypto isakmp policy 10
+ encr aes
+ authentication pre-share
+ group 2
+crypto isakmp key V.J@h@ds3cur!ty address 172.29.0.65
+!
+!
+crypto ipsec transform-set VJahad esp-aes esp-sha-hmac 
+!
+crypto ipsec profile VJahad
+ set transform-set VJahad 
+!
+!
+!
+!
+username test privilege 15 secret 5 $1$mZuC$4Ka5kojQ8KdtKNKnKSgFL0
+archive
+ log config
+  hidekeys
+ path tftp://10.0.51.40/Core/$h
+ write-memory
+!
+!
+ip ssh version 2
+!
+!
+!
+!
+interface Tunnel32
+ description ** VJAHAD-APN **
+ ip address 172.29.0.74 255.255.255.252
+ ip nat outside
+ ip virtual-reassembly
+ cdp enable
+ tunnel source 172.29.0.69
+ tunnel destination 172.29.0.65
+ tunnel protection ipsec profile VJahad
+!
+interface Port-channel32
+ ip address 10.0.157.32 255.255.255.0
+ ip nat inside
+ ip virtual-reassembly
+ hold-queue 150 in
+!
+interface GigabitEthernet0/0
+ description AGG-EXT-SW-Twe1/0/14
+ no ip address
+ duplex auto
+ speed auto
+ media-type rj45
+ channel-group 32
+!
+interface GigabitEthernet0/1
+ description AGG-EXT-SW-Twe2/0/14
+ no ip address
+ duplex auto
+ speed auto
+ media-type rj45
+ channel-group 32
+!
+interface FastEthernet0/0/0
+ description ** Mobinnet-VJahad **
+ switchport access vlan 238
+!
+interface FastEthernet0/0/1
+!
+interface FastEthernet0/0/2
+!
+interface FastEthernet0/0/3
+ description ** Mgmt **
+ switchport access vlan 51
+!
+interface Vlan1
+ no ip address
+ shutdown
+!
+interface Vlan51
+ description ** Mgmt **
+ ip vrf forwarding Mgmt-intf
+ ip address 10.0.51.34 255.255.255.0
+!
+interface Vlan238
+ ip address 172.29.0.69 255.255.255.252
+!
+ip route 0.0.0.0 0.0.0.0 10.0.157.1 name inside
+ip route 10.0.89.150 255.255.255.255 Tunnel32
+ip route 172.17.15.153 255.255.255.255 Tunnel32
+ip route 172.29.0.65 255.255.255.255 172.29.0.70
+ip route 172.29.0.66 255.255.255.255 172.29.0.70
+ip route 192.168.202.2 255.255.255.255 10.0.157.1 name Bazargah-irSolar
+ip route 192.168.202.3 255.255.255.255 10.0.157.1 name Bazargah-irSolar
+ip route 192.168.202.7 255.255.255.255 10.0.157.1 name Bazargah-irSolar
+ip route vrf Mgmt-intf 0.0.0.0 0.0.0.0 10.0.51.1
+!
+!
+ip http server
+no ip http secure-server
+ip nat inside source list FTPtoVJahad interface Tunnel32 overload
+ip nat inside source static tcp 192.168.202.2 8888 172.29.0.74 1001 extendable
+ip nat inside source static tcp 192.168.202.3 80 172.29.0.74 1002 extendable
+ip nat inside source static tcp 192.168.202.7 8888 172.29.0.74 1003 extendable
+ip nat inside source static tcp 10.0.76.144 443 172.29.0.74 1004 extendable
+ip nat outside source static 172.29.0.73 10.0.89.150
+!
+ip access-list standard SNMP-READ
+ip access-list standard SNMP-WRITE
+ip access-list standard TELNET-ACCESS
+ permit 10.0.50.0 0.0.1.255
+!
+ip access-list extended FTPtoVJahad
+ permit ip host 10.0.53.11 host 10.0.89.150
+ permit ip host 10.0.50.67 host 10.0.89.150
+ permit ip host 10.0.48.32 host 10.0.89.150
+ permit ip host 192.168.202.3 host 10.0.89.150
+!
+ip sla 32
+ icmp-echo 172.29.0.65 source-interface Vlan238
+ frequency 5
+ip sla schedule 32 life forever start-time now
+snmp-server group LMS v3 priv read myview write myview access SNMP-WRITE
+snmp-server group NMS v3 priv access SNMP-READ
+!
+!
+!
+!
+!
+tacacs-server host 10.0.51.56
+tacacs-server host 10.0.51.57
+!
+control-plane
+!
+!
+!
+!
+!
+!
+!
+!
+!
+banner motd 
+                                        ===
+                                       -+ +-
+                                       | | |
+                                    <--\ | /-->
+                                   ##| ||||| |##
+                                  ###| |+++| |###
+                                 /____\\ | //____\ 
+                                   <###\|||/###>   
+                                    +====+====+    
+                                    | WAN-BKI |    
+                                    +===+=+===+    
+                                        +=+        
+                              Keshavarzi Bank Network
+
+WARNING: Access is restricted to authorized users only.
+         Unauthorized access is a violation of state , civil and criminal laws.
+
+privilege interface level 3 shutdown
+privilege interface level 3 no shutdown
+privilege interface level 3 no
+privilege configure level 3 interface
+privilege exec level 3 traceroute
+privilege exec level 3 ping
+privilege exec level 2 configure terminal
+privilege exec level 2 configure
+privilege exec level 3 terminal monitor
+privilege exec level 3 terminal
+privilege exec all level 2 show
+!
+line con 0
+ authorization exec CACS
+ login authentication CACS
+line aux 0
+line vty 0 4
+ access-class TELNET-ACCESS in vrf-also
+ privilege level 15
+ authorization commands 15 CACS
+ authorization exec CACS
+ accounting exec CACS
+ login authentication CACS
+ transport input ssh
+ transport output telnet ssh
+line vty 5 15
+ access-class TELNET-ACCESS in vrf-also
+ privilege level 15
+ authorization commands 15 CACS
+ authorization exec CACS
+ accounting exec CACS
+ login authentication CACS
+ transport input ssh
+ transport output telnet ssh
+!
+scheduler allocate 20000 1000
+
+!
+webvpn cef
+!
+end

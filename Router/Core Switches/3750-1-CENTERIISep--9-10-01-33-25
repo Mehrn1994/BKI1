@@ -1,0 +1,896 @@
+
+!
+! Last configuration change at 13:31:26 Tehran Tue Sep 9 2025 by s-sattari
+! NVRAM config last updated at 13:31:29 Tehran Tue Sep 9 2025 by s-sattari
+!
+version 12.2
+no service pad
+service timestamps debug uptime
+service timestamps log uptime
+service password-encryption
+service internal
+!
+hostname 3750-1-CENTERII
+!
+boot-start-marker
+boot-end-marker
+!
+enable secret 5 $1$9Q9n$yq4xUZgO/YJZihHenO/QP/
+!
+username bkroot privilege 15 secret 5 $1$7l7r$PtTsBzSXI96qrXQPwLKM8.
+!
+!
+aaa new-model
+!
+!
+aaa authentication login CACS group tacacs+ local
+aaa authentication enable default group tacacs+ enable
+aaa authorization console
+aaa authorization config-commands
+aaa authorization exec CACS group tacacs+ local 
+aaa authorization commands 0 CACS group tacacs+ local 
+aaa authorization commands 1 CACS group tacacs+ local 
+aaa authorization commands 2 CACS group tacacs+ local 
+aaa authorization commands 3 CACS group tacacs+ local 
+aaa authorization commands 15 CACS group tacacs+ local 
+aaa accounting exec CACS start-stop group tacacs+
+aaa accounting commands 0 CACS start-stop group tacacs+
+aaa accounting commands 1 CACS start-stop group tacacs+
+aaa accounting commands 2 CACS start-stop group tacacs+
+aaa accounting commands 3 CACS start-stop group tacacs+
+aaa accounting commands 15 CACS start-stop group tacacs+
+!
+!
+!
+aaa session-id common
+clock timezone Tehran 3 30
+switch 1 provision ws-c3750g-48ts
+system mtu routing 1500
+ip routing
+ip domain-name agri-bank.com
+!
+!
+!
+!
+!
+!
+!
+!
+archive
+ log config
+  hidekeys
+ path tftp://10.0.51.40/ProSW/$h
+ write-memory
+!
+spanning-tree mode pvst
+spanning-tree extend system-id
+spanning-tree vlan 1-251 priority 24576
+!
+vlan internal allocation policy ascending
+!
+ip ssh time-out 30
+ip ssh authentication-retries 2
+ip ssh version 2
+!
+!
+!
+interface Loopback0
+ ip address 10.50.254.254 255.255.255.255
+!
+interface GigabitEthernet1/0/1
+ switchport trunk encapsulation dot1q
+ switchport mode trunk
+!
+interface GigabitEthernet1/0/2
+ description ** ASA-Internet **
+ switchport trunk encapsulation dot1q
+ switchport mode trunk
+ spanning-tree portfast
+!
+interface GigabitEthernet1/0/3
+ switchport access vlan 65
+ switchport mode access
+ spanning-tree portfast
+!
+interface GigabitEthernet1/0/4
+ switchport access vlan 65
+ switchport mode access
+ spanning-tree portfast
+!
+interface GigabitEthernet1/0/5
+ switchport trunk encapsulation dot1q
+ switchport mode trunk
+!
+interface GigabitEthernet1/0/6
+ switchport trunk encapsulation dot1q
+ switchport mode trunk
+!
+interface GigabitEthernet1/0/7
+ switchport access vlan 10
+ switchport mode access
+ spanning-tree portfast
+!
+interface GigabitEthernet1/0/8
+ switchport access vlan 65
+ switchport mode access
+ spanning-tree portfast
+!
+interface GigabitEthernet1/0/9
+ switchport access vlan 65
+ switchport mode access
+ spanning-tree portfast
+!
+interface GigabitEthernet1/0/10
+ switchport access vlan 65
+ switchport mode access
+ spanning-tree portfast
+!
+interface GigabitEthernet1/0/11
+ description ** Disk1-vlan 63-250 **
+ switchport trunk encapsulation dot1q
+ switchport mode trunk
+!
+interface GigabitEthernet1/0/12
+ description ** Disk2-vlan 63-251 **
+ switchport access vlan 65
+ switchport trunk encapsulation dot1q
+ switchport mode trunk
+ spanning-tree portfast
+!
+interface GigabitEthernet1/0/13
+ switchport access vlan 65
+ switchport mode access
+ spanning-tree portfast
+!
+interface GigabitEthernet1/0/14
+ description ** Pseries-180 **
+ switchport access vlan 65
+ switchport mode access
+ spanning-tree portfast
+!
+interface GigabitEthernet1/0/15
+ description ** Pseries-190 **
+ switchport access vlan 65
+ switchport mode access
+ spanning-tree portfast
+!
+interface GigabitEthernet1/0/16
+ switchport access vlan 100
+ switchport mode access
+ spanning-tree portfast
+!
+interface GigabitEthernet1/0/17
+ switchport access vlan 65
+ switchport mode access
+ spanning-tree portfast
+!
+interface GigabitEthernet1/0/18
+ description ** Pseries-182 **
+ switchport access vlan 65
+ switchport mode access
+ spanning-tree portfast
+!
+interface GigabitEthernet1/0/19
+ switchport access vlan 65
+ switchport mode access
+ spanning-tree portfast
+!
+interface GigabitEthernet1/0/20
+ description ** Z-Sereies-vlan 66 **
+ switchport access vlan 66
+ switchport mode access
+ spanning-tree portfast
+!
+interface GigabitEthernet1/0/21
+ description ** Z-Sereies-vlan 66 **
+ switchport access vlan 66
+ switchport mode access
+ spanning-tree portfast
+!
+interface GigabitEthernet1/0/22
+ description ** Z-Sereies-vlan 66 **
+ switchport access vlan 66
+ switchport mode access
+ spanning-tree portfast
+!
+interface GigabitEthernet1/0/23
+ description ** Z-Sereies-vlan 66 **
+ switchport access vlan 66
+ switchport mode access
+ spanning-tree portfast
+!
+interface GigabitEthernet1/0/24
+ description ** Z-Sereies-vlan 66 **
+ switchport access vlan 66
+ switchport mode access
+ spanning-tree portfast
+!
+interface GigabitEthernet1/0/25
+ description ** Z-Sereies-vlan 66 **
+ switchport access vlan 66
+ switchport mode access
+ spanning-tree portfast
+!
+interface GigabitEthernet1/0/26
+ description ** Z-Sereies-vlan 66 **
+ switchport access vlan 66
+ switchport mode access
+ spanning-tree portfast
+!
+interface GigabitEthernet1/0/27
+ description ** Z-Sereies-vlan 66 **
+ switchport access vlan 66
+ switchport mode access
+ spanning-tree portfast
+!
+interface GigabitEthernet1/0/28
+ description ** Z-Sereies-vlan 66 **
+ switchport access vlan 66
+ switchport mode access
+ spanning-tree portfast
+!
+interface GigabitEthernet1/0/29
+ description ** Z-Sereies-vlan 66 **
+ switchport access vlan 66
+ switchport mode access
+ spanning-tree portfast
+!
+interface GigabitEthernet1/0/30
+ description ** Z-Sereies-vlan 66 **
+ switchport access vlan 66
+ switchport mode access
+ spanning-tree portfast
+!
+interface GigabitEthernet1/0/31
+ description ** Z-Sereies-vlan 66 **
+ switchport access vlan 66
+ switchport mode access
+ spanning-tree portfast
+!
+interface GigabitEthernet1/0/32
+ description ** Z-Sereies-vlan 64 **
+ switchport access vlan 64
+ switchport mode access
+ spanning-tree portfast
+!
+interface GigabitEthernet1/0/33
+ description ** Z-Sereies-vlan 64 **
+ switchport access vlan 64
+ switchport mode access
+ spanning-tree portfast
+!
+interface GigabitEthernet1/0/34
+ description ** Z-Sereies-vlan 64 **
+ switchport access vlan 64
+ switchport mode access
+ spanning-tree portfast
+!
+interface GigabitEthernet1/0/35
+ description ** Z-Sereies-vlan 64 **
+ switchport access vlan 64
+ switchport mode access
+ spanning-tree portfast
+!
+interface GigabitEthernet1/0/36
+ description ** Z-Sereies-vlan 64 **
+ switchport access vlan 64
+ switchport mode access
+ spanning-tree portfast
+!
+interface GigabitEthernet1/0/37
+ description ** Z-Sereies-vlan 64 **
+ switchport access vlan 64
+ switchport mode access
+ spanning-tree portfast
+!
+interface GigabitEthernet1/0/38
+ description ** Z-Sereies-vlan 64 **
+ switchport access vlan 64
+ switchport mode access
+ spanning-tree portfast
+!
+interface GigabitEthernet1/0/39
+ description ** Z-Sereies-vlan 64 **
+ switchport access vlan 64
+ switchport mode access
+ spanning-tree portfast
+!
+interface GigabitEthernet1/0/40
+ description ** Z-Sereies-vlan 64 **
+ no switchport
+ no ip address
+ spanning-tree portfast
+!
+interface GigabitEthernet1/0/41
+ description ** Z-Sereies-vlan 64 **
+ switchport access vlan 65
+ switchport mode access
+ spanning-tree portfast
+!
+interface GigabitEthernet1/0/42
+ description ** Z-Sereies-vlan 64 **
+ switchport access vlan 64
+ switchport mode access
+ spanning-tree portfast
+!
+interface GigabitEthernet1/0/43
+ description ** Nemone Emza Server **
+ switchport access vlan 65
+ switchport mode access
+!
+interface GigabitEthernet1/0/44
+ description ** Nemone Emza Server **
+ switchport access vlan 65
+ switchport mode access
+ spanning-tree portfast
+!
+interface GigabitEthernet1/0/45
+ description ** 3845-DATA **
+ switchport access vlan 50
+!
+interface GigabitEthernet1/0/46
+ switchport access vlan 100
+ switchport mode access
+ spanning-tree portfast
+!
+interface GigabitEthernet1/0/47
+ switchport mode access
+ spanning-tree portfast
+!
+interface GigabitEthernet1/0/48
+ description ** 7206-STM1 **
+ switchport access vlan 50
+!
+interface GigabitEthernet1/0/49
+ switchport access vlan 110
+!
+interface GigabitEthernet1/0/50
+!
+interface GigabitEthernet1/0/51
+!
+interface GigabitEthernet1/0/52
+!
+interface Vlan1
+ no ip address
+!
+interface Vlan6
+ no ip address
+!
+interface Vlan10
+ no ip address
+!
+interface Vlan47
+ description ** Voice **
+ ip address 10.50.7.1 255.255.255.0
+ ip helper-address 10.50.1.10
+!
+interface Vlan50
+ description ** CORE **
+ ip address 10.50.0.254 255.255.255.0
+!
+interface Vlan57
+ ip address 10.50.57.1 255.255.255.0
+!
+interface Vlan63
+ ip address 10.50.63.1 255.255.255.0
+ ip access-group ETHERNET-IN-VLAN63 in
+!
+interface Vlan64
+ description ** Zseries **
+ ip address 10.50.64.1 255.255.255.0
+ ip access-group ETHERNET-IN-VLAN64 in
+!
+interface Vlan65
+ description ** Pseries **
+ ip address 10.50.65.1 255.255.255.0
+ ip access-group ETHERNET-IN-VLAN65 in
+!
+interface Vlan66
+ description ** TEST **
+ ip address 10.50.66.1 255.255.255.0
+ ip access-group ETHERNET-IN-VLAN66 in
+!
+interface Vlan93
+ description ** Herasat **
+ ip address 10.50.93.1 255.255.255.0
+!
+interface Vlan100
+ description ** PC **
+ ip address 10.50.1.1 255.255.255.0
+ ip access-group ETHERNET-IN-VLAN100 in
+!
+interface Vlan110
+ no ip address
+!
+interface Vlan164
+ ip address 10.0.64.1 255.255.255.0
+ shutdown
+!
+interface Vlan776
+ ip address 192.168.250.38 255.255.255.252
+!
+router ospf 30
+ router-id 10.50.0.254
+ log-adjacency-changes
+ passive-interface default
+ no passive-interface Vlan50
+ network 10.50.0.0 0.0.255.255 area 50
+!
+ip classless
+ip route 0.0.0.0 0.0.0.0 192.168.250.37 name Internet
+ip route 10.0.159.200 255.255.255.255 10.50.0.5 name MDS-TEHRAN
+no ip http server
+no ip http secure-server
+!
+ip tacacs source-interface Vlan50
+!
+ip access-list standard SNMP-READ
+ permit 10.0.50.0 0.0.1.255
+ip access-list standard SNMP-WRITE
+ permit 10.0.51.49
+ permit 10.0.51.48
+ permit 10.0.51.50
+ip access-list standard TELNET_ACCESS
+ remark ----------ALPHA Team----------
+ permit 10.0.201.36
+ permit 10.0.201.62
+!
+ip access-list extended ETHERNET-IN-VLAN100
+ permit ip host 10.50.1.8 host 10.0.53.8
+ permit ip host 10.50.1.92 host 10.0.204.243
+ remark ---------------      DENY      ---------------------
+ deny   udp any any range 135 netbios-ss
+ permit ip host 10.50.1.10 10.50.0.0 0.0.15.255
+ deny   tcp any any range 135 139
+ deny   udp any any eq 445
+ deny   tcp any any eq 445
+ deny   tcp any any eq 1026
+ deny   udp any any eq 1428
+ deny   udp any any eq 1434
+ deny   tcp any any eq 1434
+ deny   tcp any any eq 4444
+ permit ip host 10.50.1.200 host 10.50.66.25
+ permit ospf any any
+ permit ip 10.50.1.0 0.0.0.255 10.50.1.0 0.0.0.255
+ permit tcp host 10.50.1.92 host 10.0.53.98 eq 1521
+ permit tcp host 10.50.1.34 host 10.0.66.90 eq 2023
+ permit ip 10.50.1.0 0.0.0.255 10.0.73.0 0.0.0.255
+ permit ip 10.50.1.0 0.0.0.255 10.0.75.0 0.0.0.255
+ permit tcp host 10.50.1.92 host 10.0.76.158 eq www 443
+ permit tcp 10.50.1.0 0.0.0.255 eq telnet host 10.0.66.10
+ permit tcp 10.50.1.0 0.0.0.255 eq telnet host 10.0.66.140
+ permit tcp 10.50.1.0 0.0.0.255 eq telnet host 10.0.66.144
+ permit ip host 10.50.1.200 host 10.0.60.239
+ permit ip host 10.50.1.200 host 10.0.60.101
+ permit ip host 10.50.1.200 host 10.0.221.239
+ permit ip host 10.50.1.200 host 10.0.60.244
+ permit ip host 10.50.1.200 host 10.0.60.247
+ permit ip host 10.50.1.200 host 10.0.221.247
+ permit ip host 10.50.1.200 host 10.0.60.115
+ permit ip host 10.50.1.200 host 10.0.60.248
+ permit tcp host 10.50.1.200 eq 22 host 10.0.60.115
+ permit tcp host 10.50.1.200 eq 22 host 10.0.60.248
+ permit tcp host 10.50.1.200 eq 161 162 host 10.0.60.115
+ permit tcp host 10.50.1.200 eq 161 162 host 10.0.60.248
+ permit ip host 10.50.1.200 host 10.0.51.68
+ permit ip host 10.50.1.200 host 10.0.51.69
+ permit ip host 10.50.1.201 host 10.0.51.68
+ permit ip host 10.50.1.201 host 10.0.51.69
+ permit tcp host 10.50.1.38 eq 3389 host 10.0.60.150
+ permit tcp host 10.50.1.38 eq 3389 host 10.0.60.247
+ permit tcp host 10.50.1.38 eq 3389 host 10.0.50.6
+ permit tcp host 10.50.1.38 eq 3389 host 10.0.221.247
+ permit tcp host 10.50.1.38 eq 3389 host 10.0.221.150
+ permit tcp host 10.50.1.8 eq 3389 host 10.0.60.150
+ permit ip host 10.50.1.8 host 10.0.250.244
+ permit ip host 10.50.1.8 host 10.50.0.1
+ permit ip host 10.50.1.8 host 10.50.1.1
+ permit ip host 10.50.1.8 host 10.50.0.5
+ permit ip host 10.50.1.8 host 10.241.0.2
+ permit tcp host 10.50.1.38 eq 3389 10.0.60.0 0.0.0.255
+ permit tcp host 10.50.1.38 eq 3389 10.0.221.0 0.0.0.255
+ permit ip host 10.50.1.137 host 10.0.6.20
+ permit ip host 10.50.1.136 host 10.0.6.20
+ remark ---------------   HQ  ---------------
+ permit tcp host 10.50.1.8 host 10.50.1.1
+ permit udp 10.50.1.0 0.0.0.255 224.0.0.0 0.0.0.255
+ permit icmp 10.50.1.0 0.0.0.255 10.50.1.0 0.0.0.255
+ permit icmp 10.50.1.0 0.0.0.255 host 10.50.1.1
+ permit ip 10.50.0.0 0.0.1.255 10.0.50.0 0.0.1.255
+ remark ---------------      DNS      ---------------
+ permit ip 10.50.1.0 0.0.0.255 host 10.0.53.3
+ permit ip 10.50.1.0 0.0.0.255 host 10.0.53.14
+ permit ip host 10.50.1.92 host 10.0.74.25
+ permit ip host 10.50.1.10 host 10.0.53.36
+ remark ---------------      Monitoring CPU ---------------
+ permit ip host 10.50.1.8 host 10.50.64.20
+ permit ip host 10.50.1.8 host 10.50.64.30
+ permit ip host 10.50.1.33 host 10.50.64.20
+ permit ip host 10.50.1.33 host 10.50.64.30
+ permit ip host 10.50.1.38 host 10.50.64.20
+ permit ip host 10.50.1.38 host 10.50.64.30
+ permit ip host 10.50.1.40 host 10.50.64.20
+ permit ip host 10.50.1.40 host 10.50.64.30
+ permit ip host 10.50.1.8 host 10.0.250.2
+ permit ip host 10.50.1.8 host 10.0.250.6
+ remark ---------------     Anti-ESET ---------------
+ permit tcp host 10.50.1.15 host 10.0.53.156 eq 2221 2222 2223
+ permit ip host 10.50.1.15 host 10.0.112.43
+ permit ip host 10.50.1.16 host 10.0.54.112
+ permit ip host 10.50.1.16 host 10.0.112.44
+ permit ip host 10.50.1.16 host 10.0.53.10
+ permit ip host 10.50.1.100 host 10.0.85.53
+ permit ip host 10.50.1.101 host 10.0.85.53
+ permit ip 10.50.1.0 0.0.0.255 10.0.112.0 0.0.0.255
+ permit ip host 10.50.1.92 host 10.0.53.10
+ remark --------------- VideoConference ------------------
+ permit ip 10.50.1.230 0.0.0.1 host 10.0.55.150
+ permit tcp host 10.50.1.100 host 10.50.66.120 eq 2007 2009 2010
+ permit tcp host 10.50.1.101 host 10.50.66.120 eq 2007 2009 2010
+ permit ip 10.50.1.108 0.0.0.3 10.0.53.0 0.0.0.255
+ permit ip 10.50.1.108 0.0.0.3 10.0.68.0 0.0.0.255
+ permit tcp host 10.50.1.92 host 10.0.68.223 eq 443 www
+ permit tcp host 10.50.1.92 10.0.53.0 0.0.0.255 eq www 443 smtp pop3
+ permit ip host 10.50.1.237 host 10.50.65.118
+ permit ip host 10.50.1.50 host 10.50.66.120
+ permit ip host 10.50.1.51 host 10.50.66.120
+ permit ip host 10.50.1.52 host 10.50.66.120
+ permit ip host 10.50.1.50 host 10.50.66.50
+ permit ip host 10.50.1.51 host 10.50.66.50
+ permit ip host 10.50.1.52 host 10.50.66.50
+ remark ---------- Client-Access-To-Services ---------
+ permit ip host 10.50.1.8 host 10.0.68.150
+ permit ip host 10.50.1.8 host 10.0.68.223
+ permit ip host 10.50.1.8 host 10.0.76.55
+ permit ip host 10.50.1.8 host 10.0.76.91
+ permit ip host 10.50.1.8 host 10.0.76.148
+ permit ip host 10.50.1.8 host 10.60.66.29
+ permit ip host 10.50.1.50 host 10.0.68.150
+ permit ip host 10.50.1.50 host 10.0.68.223
+ permit ip host 10.50.1.50 host 10.0.76.55
+ permit ip host 10.50.1.50 host 10.0.76.91
+ permit ip host 10.50.1.50 host 10.0.76.148
+ permit ip host 10.50.1.50 host 10.60.66.29
+ permit ip host 10.50.1.51 host 10.0.68.150
+ permit ip host 10.50.1.51 host 10.0.68.223
+ permit ip host 10.50.1.51 host 10.0.76.55
+ permit ip host 10.50.1.51 host 10.0.76.91
+ permit ip host 10.50.1.51 host 10.0.76.148
+ permit ip host 10.50.1.51 host 10.60.66.29
+ permit ip host 10.50.1.52 host 10.0.68.150
+ permit ip host 10.50.1.52 host 10.0.68.223
+ permit ip host 10.50.1.52 host 10.0.76.55
+ permit ip host 10.50.1.52 host 10.0.76.91
+ permit ip host 10.50.1.52 host 10.0.76.148
+ permit ip host 10.50.1.52 host 10.60.66.29
+ permit ip host 10.50.1.92 host 10.0.68.150
+ permit ip host 10.50.1.92 host 10.0.68.223
+ permit ip host 10.50.1.92 host 10.0.76.55
+ permit ip host 10.50.1.92 host 10.0.76.91
+ permit ip host 10.50.1.92 host 10.0.76.148
+ permit ip host 10.50.1.92 host 10.60.66.29
+ permit ip host 10.50.1.92 host 10.0.54.173
+ permit ip host 10.50.1.50 host 10.0.54.173
+ permit ip host 10.50.1.51 host 10.0.54.173
+ permit ip host 10.50.1.8 host 10.0.54.173
+ permit ip host 10.50.1.8 10.0.50.0 0.0.1.255
+ remark --------------------- AntiVirus -----------------------
+ permit ip 10.50.1.0 0.0.0.255 host 10.0.54.182
+ permit ip 10.50.1.0 0.0.0.255 host 10.0.56.68
+ permit ip 10.50.1.0 0.0.0.255 host 10.0.9.10
+ permit ip host 10.50.1.109 host 10.0.54.173
+ permit ip host 10.50.1.110 host 10.0.54.173
+ permit ip host 10.50.1.115 host 10.0.54.173
+ permit ip host 10.50.1.52 host 10.0.54.173
+ permit ip host 10.50.1.8 host 10.0.76.190
+ permit ip host 10.50.1.50 host 10.0.76.190
+ permit ip host 10.50.1.51 host 10.0.76.190
+ permit ip host 10.50.1.109 host 10.0.76.190
+ permit ip host 10.50.1.110 host 10.0.76.190
+ permit ip host 10.50.1.115 host 10.0.76.190
+ permit ip host 10.50.1.92 host 10.0.76.190
+ permit ip host 10.50.1.52 host 10.0.76.190
+ permit ip 10.50.1.0 0.0.0.255 host 10.0.68.187
+ permit ip 10.50.1.0 0.0.0.255 host 10.0.54.173
+ permit ip 10.50.1.0 0.0.0.255 host 10.0.68.150
+ permit ip 10.50.1.0 0.0.0.255 host 10.0.68.223
+ permit ip host 10.50.1.8 host 10.0.54.120
+ permit ip host 10.50.1.8 host 10.0.118.131
+ip access-list extended ETHERNET-IN-VLAN63
+ remark ---------------      DENY      ---------------------
+ deny   udp any any range 135 netbios-ss
+ deny   tcp any any range 135 139
+ deny   tcp any any eq 445
+ deny   udp any any eq 445
+ deny   tcp any any eq 1026
+ deny   udp any any eq 1428
+ deny   udp any any eq 1434
+ deny   tcp any any eq 1434
+ deny   tcp any any eq 4444
+ permit ospf any any
+ permit icmp 10.50.63.0 0.0.0.255 10.50.63.0 0.0.0.255
+ permit udp 10.50.63.0 0.0.0.255 224.0.0.0 0.0.0.255
+ permit ip 10.50.63.0 0.0.0.255 10.0.50.0 0.0.1.255
+ permit tcp host 10.50.63.91 eq 3389 host 10.0.60.101
+ permit tcp host 10.50.63.92 eq 3389 host 10.0.60.101
+ permit tcp host 10.50.63.93 eq 3389 host 10.0.60.101
+ permit ip 10.50.63.0 0.0.0.255 host 10.0.54.182
+ permit ip 10.50.63.0 0.0.0.255 host 10.0.56.68
+ip access-list extended ETHERNET-IN-VLAN64
+ remark ---------------      DENY      ---------------------
+ deny   udp any any range 135 netbios-ss
+ deny   tcp any any range 135 139
+ deny   tcp any any eq 445
+ deny   udp any any eq 445
+ deny   tcp any any eq 1026
+ deny   udp any any eq 1428
+ deny   udp any any eq 1434
+ deny   tcp any any eq 1434
+ deny   tcp any any eq 4444
+ permit ospf any any
+ permit udp host 10.50.64.240 host 10.0.153.15
+ permit udp 10.50.64.0 0.0.0.255 224.0.0.0 0.0.0.255
+ permit icmp 10.50.64.0 0.0.0.255 10.50.64.0 0.0.0.255
+ permit icmp 10.50.64.0 0.0.0.255 host 10.50.64.1
+ permit ip 10.50.64.0 0.0.0.255 10.0.50.0 0.0.1.255
+ permit tcp host 10.50.64.30 host 10.0.52.51 eq 3009 3010
+ permit ip host 10.50.64.30 host 10.0.86.170
+ permit ip host 10.50.64.20 host 10.0.52.51
+ permit ip host 10.50.64.20 host 10.0.52.52
+ permit ip 10.50.64.0 0.0.0.255 10.0.60.0 0.0.0.255
+ permit ip 10.50.64.0 0.0.0.255 10.0.221.0 0.0.0.255
+ permit ip 10.50.64.0 0.0.0.255 10.0.66.0 0.0.0.255
+ permit ip 10.50.64.0 0.0.0.255 10.0.9.0 0.0.0.255
+ remark ---------------      Monitoring CPU ---------------
+ permit ip host 10.50.64.20 host 10.50.1.8
+ permit ip host 10.50.64.30 host 10.50.1.8
+ permit ip host 10.50.64.20 host 10.50.1.33
+ permit ip host 10.50.64.30 host 10.50.1.33
+ permit ip host 10.50.64.20 host 10.50.1.38
+ permit ip host 10.50.64.30 host 10.50.1.38
+ permit ip host 10.50.64.20 host 10.50.1.40
+ permit ip host 10.50.64.30 host 10.50.1.40
+ permit tcp host 10.50.64.142 eq telnet 24 host 10.60.1.185
+ permit ip host 10.50.64.142 10.0.235.0 0.0.0.255
+ permit ip host 10.50.64.143 10.0.235.0 0.0.0.255
+ permit ip host 10.50.64.142 10.0.9.0 0.0.0.255
+ permit ip host 10.50.64.143 10.0.9.0 0.0.0.255
+ip access-list extended ETHERNET-IN-VLAN65
+ remark ---------------      DENY      ---------------------
+ deny   udp any any range 135 netbios-ss
+ deny   tcp any any range 135 139
+ deny   tcp any any eq 445
+ deny   udp any any eq 445
+ deny   tcp any any eq 1026
+ deny   udp any any eq 1428
+ deny   udp any any eq 1434
+ deny   tcp any any eq 1434
+ deny   tcp any any eq 4444
+ permit ospf any any
+ permit ip 10.50.65.0 0.0.0.255 10.50.1.0 0.0.0.255
+ permit udp 10.50.65.0 0.0.0.255 224.0.0.0 0.0.0.255
+ permit icmp 10.50.65.0 0.0.0.255 10.50.65.0 0.0.0.255
+ permit icmp 10.50.65.0 0.0.0.255 host 10.50.65.1
+ permit ip 10.50.65.0 0.0.0.255 10.0.50.0 0.0.1.255
+ permit ip 10.50.65.0 0.0.0.255 10.0.62.0 0.0.0.255
+ permit ip 10.50.65.0 0.0.0.255 10.0.213.0 0.0.0.255
+ permit ip 10.50.65.0 0.0.0.255 10.0.223.0 0.0.0.255
+ permit ip 10.50.65.0 0.0.0.255 10.0.73.0 0.0.0.255
+ permit tcp host 10.50.65.169 host 10.0.65.65 eq 1500
+ permit ip host 10.50.65.184 host 10.0.65.184
+ permit tcp host 10.50.65.172 eq telnet host 10.0.60.65
+ permit tcp host 10.50.65.21 eq 22 host 10.0.112.37
+ permit tcp host 10.50.65.22 eq 22 host 10.0.112.37
+ permit tcp host 10.50.65.21 host 10.0.115.59
+ permit tcp host 10.50.65.171 eq 22 host 10.0.112.37
+ permit tcp host 10.50.65.172 eq 22 host 10.0.112.37
+ permit tcp host 10.50.65.183 eq 22 host 10.0.112.37
+ permit tcp host 10.50.65.184 eq 22 host 10.0.112.37
+ permit tcp host 10.50.65.116 host 10.0.49.40 eq www
+ permit tcp host 10.50.65.116 host 10.0.53.9 eq smtp
+ permit ip host 10.50.65.117 10.0.178.16 0.0.0.15
+ permit tcp host 10.50.65.21 10.0.178.16 0.0.0.15
+ permit tcp host 10.50.65.18 host 10.0.178.20
+ permit tcp host 10.50.65.18 host 10.0.178.29
+ permit tcp host 10.50.65.18 host 10.0.178.30
+ permit tcp host 10.50.65.35 host 10.0.178.20
+ permit tcp host 10.50.65.35 host 10.0.178.29
+ permit tcp host 10.50.65.35 host 10.0.178.30
+ permit tcp host 10.50.65.22 10.0.178.16 0.0.0.15
+ permit tcp host 10.50.65.22 host 10.0.115.59
+ permit tcp host 10.50.65.171 10.0.178.16 0.0.0.15
+ permit tcp host 10.50.65.172 10.0.178.16 0.0.0.15
+ permit tcp host 10.50.65.183 10.0.178.16 0.0.0.15
+ permit tcp host 10.50.65.184 10.0.178.16 0.0.0.15
+ permit ip host 10.50.65.116 10.0.178.16 0.0.0.15
+ remark -------------- Zabix-> MorabehehIsf -----------
+ permit udp host 10.50.65.117 host 10.0.115.10
+ permit udp host 10.50.65.117 host 10.0.115.11
+ permit udp host 10.50.65.117 host 10.0.115.12
+ permit udp host 10.50.65.117 host 10.0.115.15
+ permit icmp host 10.50.65.117 host 10.0.115.10
+ permit icmp host 10.50.65.117 host 10.0.115.11
+ permit icmp host 10.50.65.117 host 10.0.115.12
+ permit icmp host 10.50.65.117 host 10.0.115.15
+ remark -------------- Morabeheh-ADG -----------
+ permit tcp host 10.50.65.116 host 10.0.115.10
+ permit tcp host 10.50.65.116 host 10.0.115.11
+ permit tcp host 10.50.65.116 host 10.0.115.12
+ permit icmp host 10.50.65.116 host 10.0.115.10
+ permit icmp host 10.50.65.116 host 10.0.115.11
+ permit icmp host 10.50.65.116 host 10.0.115.12
+ permit tcp host 10.50.65.116 host 10.0.115.15
+ permit tcp host 10.50.65.115 host 10.0.115.15
+ permit tcp host 10.50.65.118 host 10.0.65.118
+ permit ip host 10.50.65.118 host 10.0.65.59
+ permit ip host 10.50.65.118 10.0.48.0 0.0.1.255
+ permit ip host 10.50.65.119 10.0.48.0 0.0.1.255
+ permit ip host 10.50.65.118 host 10.50.1.237
+ permit icmp host 10.50.65.118 host 10.0.65.118
+ permit icmp host 10.50.65.118 host 10.0.65.59
+ permit tcp host 10.50.65.118 host 10.0.68.150 eq smtp
+ permit tcp host 10.50.65.118 host 10.0.65.59
+ permit tcp host 10.50.65.118 host 10.0.86.17
+ permit tcp host 10.50.65.118 host 10.0.203.84
+ permit tcp host 10.50.65.183 eq 22 1821 8000 9000 6000 7000 host 10.0.176.17
+ permit tcp host 10.50.65.184 eq 22 1821 8000 9000 6000 7000 host 10.0.176.17
+ permit ip host 10.50.65.184 10.0.242.0 0.0.0.255
+ permit ip host 10.50.65.183 10.0.242.0 0.0.0.255
+ permit ip host 10.50.65.183 10.0.245.0 0.0.0.63
+ permit ip host 10.50.65.184 10.0.245.0 0.0.0.63
+ permit tcp host 10.50.65.183 eq 22 host 10.0.201.40
+ permit tcp host 10.50.65.184 eq 22 host 10.0.201.40
+ permit tcp host 10.50.65.183 eq 22 host 10.0.201.38
+ permit tcp host 10.50.65.184 eq 22 host 10.0.201.38
+ permit tcp host 10.50.65.183 host 10.0.204.70
+ permit tcp host 10.50.65.184 host 10.0.204.70
+ permit tcp host 10.50.65.18 host 10.0.204.70
+ permit tcp host 10.50.65.35 host 10.0.204.70
+ permit tcp host 10.50.65.183 host 10.0.204.143
+ permit tcp host 10.50.65.184 host 10.0.204.143
+ permit tcp host 10.50.65.18 host 10.0.204.143
+ permit tcp host 10.50.65.35 host 10.0.204.143
+ permit ip host 10.50.65.120 10.0.48.0 0.0.1.255
+ permit udp 10.50.65.0 0.0.0.255 host 10.50.0.1 eq ntp
+ permit ip host 10.50.65.121 10.0.48.0 0.0.1.255
+ permit ip host 10.50.65.122 10.0.48.0 0.0.1.255
+ permit ip host 10.50.65.123 10.0.48.0 0.0.1.255
+ permit ip host 10.50.65.124 10.0.48.0 0.0.1.255
+ permit ip host 10.50.65.125 10.0.48.0 0.0.1.255
+ permit ip host 10.50.65.126 10.0.48.0 0.0.1.255
+ permit ip host 10.50.65.127 10.0.48.0 0.0.1.255
+ permit ip host 10.50.65.128 10.0.48.0 0.0.1.255
+ permit ip host 10.50.65.120 host 10.0.53.90
+ permit ip 10.50.65.96 0.0.0.31 host 10.0.201.59
+ permit ip 10.50.65.96 0.0.0.31 host 10.0.201.163
+ permit ip 10.50.65.96 0.0.0.31 host 10.0.201.167
+ip access-list extended ETHERNET-IN-VLAN66
+ remark ---------------      DENY      ---------------------
+ deny   udp any any range 135 netbios-ss
+ deny   tcp any any range 135 139
+ deny   tcp any any eq 445
+ deny   udp any any eq 445
+ deny   tcp any any eq 1026
+ deny   udp any any eq 1428
+ deny   udp any any eq 1434
+ deny   tcp any any eq 1434
+ deny   tcp any any eq 4444
+ permit ospf any any
+ permit ip host 10.50.66.25 host 10.50.1.200
+ permit udp 10.50.66.0 0.0.0.255 224.0.0.0 0.0.0.255
+ permit icmp 10.50.66.0 0.0.0.255 10.50.66.0 0.0.0.255
+ permit icmp 10.50.66.0 0.0.0.255 host 10.50.66.1
+ permit ip 10.50.66.0 0.0.0.255 10.0.50.0 0.0.1.255
+ permit ip 10.50.66.0 0.0.0.255 10.0.60.0 0.0.0.255
+ permit ip 10.50.66.0 0.0.0.255 10.0.66.0 0.0.0.255
+ permit ip 10.50.66.0 0.0.0.255 10.0.221.0 0.0.0.255
+ permit tcp 10.50.66.120 0.0.0.1 eq telnet 24 host 10.60.1.181
+ permit tcp host 10.50.66.120 eq 3009 2010 host 10.0.86.17
+ permit tcp host 10.50.66.120 eq 3009 2010 host 10.0.86.20
+ permit tcp host 10.50.66.120 eq telnet 24 host 10.0.85.235
+ permit tcp host 10.50.66.120 eq telnet 24 host 10.0.85.236
+ permit tcp host 10.50.66.120 eq telnet 24 host 10.60.1.185
+ permit tcp host 10.50.66.100 eq telnet 2023 host 10.60.1.185
+ permit tcp host 10.50.66.120 eq telnet 24 host 10.0.72.103
+ permit tcp host 10.50.66.120 eq telnet 24 host 10.0.221.125
+ permit tcp host 10.50.66.120 eq 2007 2009 2010 3009 host 10.0.85.132
+ permit tcp host 10.50.66.120 eq 2007 3009 host 10.0.85.53
+ permit tcp host 10.50.66.120 eq 3009 host 10.0.85.160
+ permit tcp host 10.50.66.120 eq 2007 host 10.0.85.12
+ permit tcp host 10.50.66.120 host 10.50.1.101
+ permit tcp host 10.50.66.120 host 10.50.1.100
+ remark ----------------- GLIF-TEST --------------------
+ permit tcp host 10.50.66.120 eq 666 host 10.0.53.79
+ permit ip host 10.50.66.50 10.0.9.0 0.0.0.255
+ permit ip host 10.50.66.120 10.0.9.0 0.0.0.255
+ permit tcp host 10.50.66.120 eq 3007 3009 3010 host 10.0.85.230
+ permit tcp host 10.50.66.120 eq 3007 3009 3010 host 10.0.85.231
+ permit tcp host 10.50.66.120 eq 3007 3009 3010 host 10.0.85.232
+ permit tcp host 10.50.66.120 eq 3007 3009 3010 host 10.0.85.233
+ permit tcp host 10.50.66.120 eq 3007 3009 3010 host 10.0.85.234
+ permit tcp host 10.50.66.120 eq 3007 3009 3010 host 10.0.85.235
+ permit tcp host 10.50.66.120 eq 3007 3009 3010 host 10.0.85.236
+ permit tcp host 10.50.66.120 eq 3007 3009 3010 host 10.0.85.237
+ permit tcp host 10.50.66.120 eq 3007 3009 3010 host 10.0.85.238
+ permit tcp host 10.50.66.120 eq 3007 3009 3010 host 10.0.85.239
+ permit tcp host 10.50.66.120 eq 3007 3009 3010 host 10.0.85.240
+ permit tcp host 10.50.66.120 eq 3007 3009 3010 host 10.0.85.241
+ permit tcp host 10.50.66.120 eq 3007 3009 3010 host 10.0.85.242
+ permit tcp host 10.50.66.120 eq 3007 3009 3010 host 10.0.85.243
+ permit tcp host 10.50.66.120 eq 3007 3009 3010 host 10.0.85.244
+ permit tcp host 10.50.66.120 eq 3009 host 10.0.85.54
+ permit tcp host 10.50.66.120 eq 449 telnet 24 host 10.0.211.28
+ permit ip host 10.50.66.120 10.0.235.0 0.0.0.255
+ permit ip host 10.50.66.121 10.0.235.0 0.0.0.255
+ permit ip host 10.50.66.50 10.0.235.0 0.0.0.255
+ permit ip host 10.50.66.51 10.0.235.0 0.0.0.255
+ permit ip host 10.50.66.121 10.0.9.0 0.0.0.255
+ permit ip host 10.50.66.51 10.0.9.0 0.0.0.255
+ permit ip host 10.50.66.120 host 10.50.1.50
+ permit ip host 10.50.66.120 host 10.50.1.51
+ permit ip host 10.50.66.120 host 10.50.1.52
+ permit ip host 10.50.66.50 host 10.50.1.50
+ permit ip host 10.50.66.50 host 10.50.1.51
+ permit ip host 10.50.66.50 host 10.50.1.52
+ permit tcp host 10.50.66.120 eq 3009 host 10.0.86.170
+ permit ip host 10.50.66.120 host 10.0.86.16
+!
+logging source-interface Loopback0
+logging 10.0.51.63
+logging 10.0.51.25
+!
+snmp-server group LMS v3 priv read myview write myview access SNMP-WRITE
+snmp-server group NMS v3 priv access SNMP-READ
+snmp-server view myview mib-2 included
+snmp-server view myview system included
+snmp-server view myview cisco included
+tacacs-server host 10.0.51.56
+tacacs-server host 10.0.51.57
+tacacs-server directed-request
+tacacs-server key 7 0132154A145A555F
+!
+no vstack
+banner motd 
+       ===
+      -+ +-
+      | | |                Keshavarzi Bank Network
+   <--\ | /-->
+  ##| ||||| |##
+ ###| |+++| |###
+/____\\ | //____\                 WARNING:
+  <###\|||/###>
+   +====+====+   Access is restricted to authorized users only.
+   | WAN-BKI |    Unauthorized access is a violation of state,
+   +===+=+===+             civil and criminal laws.
+       +=+
+
+privilege exec level 3 terminal monitor
+privilege exec level 2 configure terminal
+privilege exec level 2 configure
+!
+line con 0
+ authorization exec CACS
+ login authentication CACS
+line vty 0 4
+ privilege level 15
+ authorization commands 2 CACS
+ authorization exec CACS
+ accounting exec CACS
+ login authentication CACS
+ transport output telnet ssh
+line vty 5 15
+ privilege level 15
+ authorization commands 2 CACS
+ authorization exec CACS
+ accounting exec CACS
+ login authentication CACS
+ transport output telnet ssh
+!
+no scheduler max-sched-time
+ntp authentication-key 1 md5 045A0C14066C4E4F0712 7
+ntp authenticate
+ntp trusted-key 1
+ntp clock-period 36029925
+ntp source Vlan100
+ntp server 10.0.51.27
+end

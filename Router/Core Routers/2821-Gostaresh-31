@@ -1,0 +1,738 @@
+
+!
+! Last configuration change at 12:50:54 Tehran Tue Feb 17 2026 by m-hossain
+! NVRAM config last updated at 12:01:29 Tehran Thu Feb 19 2026 by pyth0nuser
+!
+version 12.4
+service timestamps debug datetime msec
+service timestamps log datetime localtime
+no service password-encryption
+!
+hostname 2821-Gostaresh
+!
+boot-start-marker
+boot system flash c2800nm-adventerprisek9-mz.124-22.T.bin
+boot-end-marker
+!
+card type e1 0 1
+logging message-counter syslog
+enable secret 5 $1$jL9T$ywAe5K4QO1VTaOJnCZNIb/
+!
+aaa new-model
+!
+!
+aaa group server tacacs+ ACSServers
+ server-private 10.0.51.56 key 7 106F1A574A46415B
+ server-private 10.0.51.57 key 7 047A184840701F1E
+ ip vrf forwarding VRF-Mgmt
+ ip tacacs source-interface GigabitEthernet0/1
+!
+aaa authentication login CACS group ACSServers local
+aaa authentication enable default group ACSServers enable
+aaa authorization console
+aaa authorization config-commands
+aaa authorization exec CACS group ACSServers local 
+aaa authorization commands 0 CACS group ACSServers local 
+aaa authorization commands 1 CACS group ACSServers local 
+aaa authorization commands 2 CACS group ACSServers local 
+aaa authorization commands 3 CACS group ACSServers local 
+aaa authorization commands 15 CACS group ACSServers local 
+aaa accounting exec CACS
+ action-type start-stop
+ group ACSServers
+!
+aaa accounting commands 0 CACS
+ action-type start-stop
+ group ACSServers
+!
+aaa accounting commands 1 CACS
+ action-type start-stop
+ group ACSServers
+!
+aaa accounting commands 2 CACS
+ action-type start-stop
+ group ACSServers
+!
+aaa accounting commands 3 CACS
+ action-type start-stop
+ group ACSServers
+!
+aaa accounting commands 15 CACS
+ action-type start-stop
+ group ACSServers
+!
+aaa accounting network CACS
+ action-type start-stop
+ group ACSServers
+!
+aaa accounting connection CACS
+ action-type start-stop
+ group ACSServers
+!
+aaa accounting system default
+ action-type start-stop
+ group ACSServers
+!
+!
+!
+aaa session-id common
+clock timezone Tehran 3 30
+clock summer-time THR recurring 3 Sat Mar 0:00 last Tue Sep 0:00
+no network-clock-participate wic 1 
+!
+dot11 syslog
+no ip source-route
+!
+ip traffic-export profile MJH mode capture
+  bidirectional
+!
+ip traffic-export profile aaa mode capture
+!
+!
+ip cef
+!
+!
+no ip domain lookup
+ip domain name agri-bank.com
+ip vrf VRF-Mgmt
+!
+no ipv6 cef
+!
+multilink bundle-name authenticated
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+voice-card 0
+!
+!
+!
+!
+!
+username reza privilege 15 secret 5 $1$b19R$EfeAIUIIi7DEhnO5i0YX90
+username saman privilege 15 secret 5 $1$y01S$Mi0tyoOhcPrcVy0oVKG8i/
+username bkroot privilege 15 secret 5 $1$Gzu7$9eiGCgNH7.EwrJ7EyDJKy1
+archive
+ log config
+  hidekeys
+ path tftp://10.0.51.40/Core/$h
+ write-memory
+! 
+!
+crypto isakmp policy 10
+ encr aes
+ authentication pre-share
+ group 2
+crypto isakmp key G!#97 address 10.30.164.42
+crypto isakmp key G!#BNo2 address 10.250.0.28
+!
+!
+crypto ipsec transform-set GS esp-aes esp-sha-hmac 
+!
+crypto map GS-MAP 1 ipsec-isakmp 
+ set peer 10.30.164.42
+ set transform-set GS 
+ match address GS-IPSEC-ACL
+!
+crypto map GSBN2-MAP 1 ipsec-isakmp 
+ set peer 10.250.0.28
+ set transform-set GS 
+ match address GSBN2-ACL
+!
+!
+!
+controller E1 0/1/0
+ framing NO-CRC4 
+ channel-group 0 timeslots 1-31
+!
+controller E1 0/1/1
+ channel-group 0 timeslots 1-31
+!
+ip tftp source-interface GigabitEthernet0/1
+ip ssh source-interface Vlan251
+ip ssh version 2
+!
+class-map match-all LimitCAMCM
+ match access-group name LimitCAM
+class-map match-all Camera-Restriction
+ match access-group name Camera-Restriction
+class-map match-all undesireable-udp
+ match access-group 198
+!
+!
+policy-map LimitCAMPM
+ class LimitCAMCM
+    bandwidth 256
+   police cir 256000
+     exceed-action drop 
+policy-map Camera-Restriction-Child
+ class Camera-Restriction
+    priority percent 30
+  set dscp af13
+policy-map Queueing
+ class Camera-Restriction
+    priority percent 30
+  set dscp af13
+ class class-default
+    bandwidth percent 70
+    fair-queue
+     random-detect dscp-based
+  set dscp af11
+policy-map Camera-Restriction
+ class class-default
+    shape average 32000000
+  service-policy Camera-Restriction-Child
+policy-map drop-udp
+ class undesireable-udp
+   drop
+policy-map Shaping
+ class Camera-Restriction
+    police 15000000 2000000 2000000 conform-action transmit  exceed-action drop  violate-action drop 
+!
+!
+!
+!
+!
+interface Loopback9752
+ no ip address
+!
+interface Tunnel100
+ description ** Intrnaet-Gostaresh **
+ ip address 10.255.255.32 255.255.255.254
+ ip mtu 1400
+ ip flow ingress
+ ip flow egress
+ ip tcp adjust-mss 1360
+ ip ospf cost 5
+ load-interval 30
+ keepalive 3 3
+ cdp enable
+ tunnel source 10.30.42.7
+ tunnel destination 10.30.164.42
+!
+interface Tunnel101
+ ip address 10.255.255.34 255.255.255.254
+ ip mtu 1400
+ ip flow ingress
+ ip flow egress
+ ip tcp adjust-mss 1360
+ ip ospf cost 5
+ load-interval 30
+ keepalive 3 3
+ cdp enable
+ tunnel source 10.250.0.25
+ tunnel destination 10.250.0.28
+!
+interface GigabitEthernet0/0
+ description ** 3750X-Agg-WAN **
+ ip address 10.0.153.22 255.255.255.0
+ ip flow ingress
+ ip flow egress
+ ip ospf authentication message-digest
+ ip ospf message-digest-key 1 md5 7 1304100002
+ duplex auto
+ speed auto
+!
+interface GigabitEthernet0/1
+ description ** MGMT **
+ ip vrf forwarding VRF-Mgmt
+ ip address 10.0.51.14 255.255.255.0
+ duplex auto
+ speed auto
+!
+interface FastEthernet0/0/0
+ description ** Intranet-Gostaresh **
+ switchport access vlan 251
+!
+interface FastEthernet0/0/1
+ description ** HTSC-Chamran-Wireless **
+ switchport access vlan 128
+!
+interface FastEthernet0/0/2
+!
+interface FastEthernet0/0/3
+!
+interface Serial0/1/0:0
+ description ** PTP-Gostaresh **
+ ip address 10.0.250.225 255.255.255.252
+ encapsulation ppp
+ ip ospf cost 200
+ load-interval 30
+!
+interface Serial0/1/1:0
+ ip address 10.0.250.225 255.255.255.252
+ encapsulation ppp
+!
+interface Vlan1
+ no ip address
+ shutdown
+!
+interface Vlan251
+ description ** Intranet-Gostaresh **
+ ip address 10.30.42.7 255.255.255.0
+ no ip redirects
+ crypto map GS-MAP
+!
+interface Async0/322
+ no ip address
+ encapsulation slip
+!
+interface Async0/323
+ no ip address
+ encapsulation slip
+!
+interface Async0/324
+ no ip address
+ encapsulation slip
+!
+interface Async0/325
+ no ip address
+ encapsulation slip
+!
+interface Async0/326
+ no ip address
+ encapsulation slip
+!
+interface Async0/327
+ no ip address
+ encapsulation slip
+!
+interface Async0/328
+ no ip address
+ encapsulation slip
+!
+interface Async0/329
+ no ip address
+ encapsulation slip
+!
+interface Async0/330
+ no ip address
+ encapsulation slip
+!
+interface Async0/331
+ no ip address
+ encapsulation slip
+!
+interface Async0/332
+ no ip address
+ encapsulation slip
+!
+interface Async0/333
+ no ip address
+ encapsulation slip
+!
+interface Async0/334
+ no ip address
+ encapsulation slip
+!
+interface Async0/335
+ no ip address
+ encapsulation slip
+!
+interface Async0/336
+ no ip address
+ encapsulation slip
+!
+interface Async0/337
+ no ip address
+ encapsulation slip
+!
+interface Async0/338
+ no ip address
+ encapsulation slip
+!
+interface Async0/339
+ no ip address
+ encapsulation slip
+!
+interface Async0/340
+ no ip address
+ encapsulation slip
+!
+interface Async0/341
+ no ip address
+ encapsulation slip
+!
+interface Async0/342
+ no ip address
+ encapsulation slip
+!
+interface Async0/343
+ no ip address
+ encapsulation slip
+!
+interface Async0/344
+ no ip address
+ encapsulation slip
+!
+interface Async0/345
+ no ip address
+ encapsulation slip
+!
+interface Async0/346
+ no ip address
+ encapsulation slip
+!
+interface Async0/347
+ no ip address
+ encapsulation slip
+!
+interface Async0/348
+ no ip address
+ encapsulation slip
+!
+interface Async0/349
+ no ip address
+ encapsulation slip
+!
+interface Async0/350
+ no ip address
+ encapsulation slip
+!
+interface Async0/351
+ no ip address
+ encapsulation slip
+!
+interface Async0/352
+ no ip address
+ encapsulation slip
+!
+interface Async0/353
+ no ip address
+ encapsulation slip
+!
+interface Async0/354
+ no ip address
+ encapsulation slip
+!
+interface Async0/355
+ no ip address
+ encapsulation slip
+!
+interface Async0/356
+ no ip address
+ encapsulation slip
+!
+interface Async0/357
+ no ip address
+ encapsulation slip
+!
+interface Async0/386
+ no ip address
+ encapsulation slip
+!
+interface Async0/387
+ no ip address
+ encapsulation slip
+!
+interface Async0/388
+ no ip address
+ encapsulation slip
+!
+interface Async0/389
+ no ip address
+ encapsulation slip
+!
+interface Async0/390
+ no ip address
+ encapsulation slip
+!
+interface Async0/391
+ no ip address
+ encapsulation slip
+!
+interface Async0/392
+ no ip address
+ encapsulation slip
+!
+interface Async0/393
+ no ip address
+ encapsulation slip
+!
+interface Async0/394
+ no ip address
+ encapsulation slip
+!
+interface Async0/395
+ no ip address
+ encapsulation slip
+!
+interface Async0/396
+ no ip address
+ encapsulation slip
+!
+interface Async0/397
+ no ip address
+ encapsulation slip
+!
+interface Async0/398
+ no ip address
+ encapsulation slip
+!
+interface Async0/399
+ no ip address
+ encapsulation slip
+!
+interface Async0/400
+ no ip address
+ encapsulation slip
+!
+interface Async0/401
+ no ip address
+ encapsulation slip
+!
+interface Async0/402
+ no ip address
+ encapsulation slip
+!
+interface Async0/403
+ no ip address
+ encapsulation slip
+!
+interface Async0/404
+ no ip address
+ encapsulation slip
+!
+interface Async0/405
+ no ip address
+ encapsulation slip
+!
+interface Async0/406
+ no ip address
+ encapsulation slip
+!
+interface Async0/407
+ no ip address
+ encapsulation slip
+!
+interface Async0/408
+ no ip address
+ encapsulation slip
+!
+interface Async0/409
+ no ip address
+ encapsulation slip
+!
+interface Async0/410
+ no ip address
+ encapsulation slip
+!
+interface Async0/411
+ no ip address
+ encapsulation slip
+!
+interface Async0/412
+ no ip address
+ encapsulation slip
+!
+interface Async0/413
+ no ip address
+ encapsulation slip
+!
+interface Async0/414
+ no ip address
+ encapsulation slip
+!
+interface Async0/415
+ no ip address
+ encapsulation slip
+!
+interface Async0/416
+ no ip address
+ encapsulation slip
+!
+interface Async0/417
+ no ip address
+ encapsulation slip
+!
+interface Async0/418
+ no ip address
+ encapsulation slip
+!
+interface Async0/419
+ no ip address
+ encapsulation slip
+!
+interface Async0/420
+ no ip address
+ encapsulation slip
+!
+interface Async0/421
+ no ip address
+ encapsulation slip
+!
+router ospf 1
+ router-id 10.0.153.22
+ log-adjacency-changes
+ network 10.0.153.22 0.0.0.0 area 0
+ network 10.0.250.225 0.0.0.0 area 0
+ network 10.255.255.32 0.0.0.0 area 0
+ network 10.255.255.34 0.0.0.0 area 0
+!
+ip forward-protocol nd
+ip route 0.0.0.0 0.0.0.0 Null0
+ip route 10.30.164.42 255.255.255.255 10.30.42.1 name Intranet-new
+ip route 10.42.6.0 255.255.255.0 10.0.153.1
+ip route 10.60.5.0 255.255.255.0 10.0.250.226 name CameraRestriction
+ip route 192.168.10.14 255.255.255.255 10.0.153.1 name Arya-Satna
+ip route 192.168.10.104 255.255.255.255 10.0.153.1
+ip route 192.168.67.0 255.255.255.0 10.0.153.1
+ip route 192.168.113.0 255.255.255.0 10.0.153.1
+ip route 192.168.114.0 255.255.255.0 10.0.153.1
+ip route 192.168.115.0 255.255.255.0 10.0.153.1
+ip route 192.168.117.0 255.255.255.0 10.0.153.1
+ip route 192.168.119.0 255.255.255.0 10.0.153.1
+ip route 192.168.200.0 255.255.255.0 10.0.153.1
+ip route 192.168.202.0 255.255.255.0 10.0.153.1 name irSolar-VoIP
+ip route vrf VRF-Mgmt 10.0.0.0 255.0.0.0 10.0.51.1 name OOB-MGMT
+no ip http server
+no ip http secure-server
+!
+ip flow-cache timeout active 1
+ip flow-export source GigabitEthernet0/1
+ip flow-export version 5
+ip flow-export destination 10.0.51.61 9996 vrf VRF-Mgmt
+!
+!
+ip access-list standard SNMP-READ
+ permit 10.0.50.0 0.0.1.255
+ip access-list standard SNMP-WRITE
+ permit 10.0.51.49
+ permit 10.0.51.48
+ip access-list standard TELNET-ACCESS
+ permit 10.0.50.0 0.0.1.255
+ deny   any log
+!
+ip access-list extended Camera-Restriction
+ permit ip 10.0.207.0 0.0.0.255 10.60.5.0 0.0.0.255
+ip access-list extended GS-IPSEC-ACL
+ permit gre host 10.30.42.7 host 10.30.164.42
+ip access-list extended GSBN2-ACL
+ permit gre host 10.250.0.25 host 10.250.0.28
+ip access-list extended LimitCAM
+ permit ip any 10.60.5.0 0.0.0.255
+ permit ip 10.60.5.0 0.0.0.255 any
+ip access-list extended Test
+ deny   ip host 10.0.207.171 any
+ permit ip any any
+ip access-list extended WirelessMgmt
+ permit ip host 10.0.50.7 host 10.250.0.27
+!
+logging trap notifications
+logging source-interface GigabitEthernet0/0
+logging host 10.0.51.25 vrf VRF-Mgmt
+logging host 10.0.51.58 vrf VRF-Mgmt
+access-list 198 deny   ip any any fragments
+access-list 198 permit udp any any eq 18999
+access-list 199 permit icmp any any echo
+access-list 199 permit icmp any any echo-reply
+snmp-server group LMS v3 priv match exact read myview write myview access SNMP-WRITE
+snmp-server group NMS v3 auth match exact 
+snmp-server group NMS v3 priv match exact access SNMP-READ
+snmp-server group nms-net v3 auth match exact 
+snmp-server view myview mib-2 included
+snmp-server view myview system included
+snmp-server view myview cisco included
+snmp-server ifindex persist
+snmp-server host 10.0.51.32 vrf VRF-Mgmt version 3 auth nms-net 
+snmp-server host 10.0.51.58 vrf VRF-Mgmt version 3 auth nms-net 
+snmp-server host 10.0.51.60 vrf VRF-Mgmt version 3 auth nms-net 
+snmp-server host 10.0.51.72 vrf VRF-Mgmt version 3 auth nms-net 
+!
+!
+!
+!
+route-map WirelessMgmtRM permit 10
+ match ip address WirelessMgmt
+ set interface Tunnel100
+!
+route-map WirelessMgmtRM permit 20
+!
+!
+!
+!
+control-plane
+ service-policy input drop-udp
+!
+!
+!
+ccm-manager fax protocol cisco
+!
+mgcp fax t38 ecm
+!
+!
+!
+!
+!
+banner motd 
+**********************************************************************************
+*       ===                                                           ===        *
+*      -+ +-                                                         -+ +-       *
+*      | | |                Keshavarzi Bank Network                  | | |       *
+*   <--\ | /-->                                                   <--\ | /-->    *
+*  ##| ||||| |##                                                 ##| ||||| |##   *
+* ###| |+++| |###                                               ###| |+++| |###  *
+*/____\\ | //____\                 WARNING:                    /____\\ | //____\ *
+*  <###\|||/###>                                                 <###\|||/###>   *
+*   +====+====+   Access is restricted to authorized users only.  +====+====+    *
+*   | WAN-BKI |    Unauthorized access is a violation of state,   | WAN-BKI |    *
+*   +===+=+===+             civil and criminal laws.              +===+=+===+    *
+*       +=+                                                           +=+        *
+**********************************************************************************
+
+!
+line con 0
+ authorization exec CACS
+ login authentication CACS
+ transport preferred none
+ stopbits 1
+line aux 0
+ stopbits 1
+line 0/322 0/357
+line 0/386 0/421
+line vty 0 4
+ access-class TELNET-ACCESS in vrf-also
+ privilege level 15
+ authorization commands 2 CACS
+ authorization exec CACS
+ accounting commands 15 CACS
+ accounting exec CACS
+ login authentication CACS
+ transport input telnet ssh
+ transport output telnet ssh
+line vty 5 15
+ access-class TELNET-ACCESS in vrf-also
+ privilege level 15
+ authorization commands 2 CACS
+ authorization exec CACS
+ accounting exec CACS
+ login authentication CACS
+ transport input ssh
+ transport output ssh
+!
+scheduler allocate 20000 1000
+ntp authentication-key 1 md5 130410000241062B252F 7
+ntp authenticate
+ntp trusted-key 1
+ntp source GigabitEthernet0/1
+ntp update-calendar
+ntp server vrf VRF-Mgmt 10.0.51.27
+end

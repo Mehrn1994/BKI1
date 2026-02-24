@@ -1,0 +1,297 @@
+
+!
+! Last configuration change at 13:31:58 Tehran Thu Jan 15 2026 by m-hossain
+! NVRAM config last updated at 12:01:09 Tehran Thu Feb 19 2026 by pyth0nuser
+!
+upgrade fpd auto
+version 15.0
+no service pad
+service timestamps debug datetime msec
+service timestamps log datetime msec
+service password-encryption
+!
+hostname 7206-STM1
+!
+boot-start-marker
+boot system disk2:c7200p-adventerprisek9-mz.150-1.M.bin
+boot-end-marker
+!
+enable secret 5 $1$MlBU$YFg2RkkVUF5PmsITvByOn.
+!
+aaa new-model
+!
+!
+aaa group server tacacs+ ACSServers
+ server-private 10.0.51.56 key 7 11280A4B5843585C
+ server-private 10.0.51.57 key 7 11280A4B5843585C
+ ip vrf forwarding mgmt-intf
+ ip tacacs source-interface Fddi0/2
+!
+aaa authentication login CACS group ACSServers local
+aaa authentication enable default group ACSServers enable
+aaa authorization console
+aaa authorization config-commands
+aaa authorization exec CACS group ACSServers local 
+aaa accounting exec CACS
+ action-type start-stop
+ group ACSServers
+!
+!
+!
+!
+!
+!
+aaa session-id common
+!
+!
+!
+clock timezone Tehran 3 30
+no ip subnet-zero
+ip source-route
+ip cef
+!
+!
+ip vrf mgmt-intf
+!
+!
+!
+ip domain name agri-bank.com
+no ipv6 cef
+!
+multilink bundle-name authenticated
+!
+!
+!
+!
+!
+!
+!
+!
+archive
+ log config
+  hidekeys
+ path tftp://10.0.51.40/Core/$h
+ write-memory
+username bkiadmin privilege 15 secret 5 $1$9/i.$iXiExZespKknBTzB1Vg3g1
+username reza privilege 15 secret 5 $1$aITp$on0t8jtU/2.4PmdwKsO/r/
+!
+redundancy
+!
+!
+ip telnet source-interface POS1/0
+ip tftp source-interface FastEthernet0/2
+ip ssh time-out 30
+ip ssh authentication-retries 2
+ip ssh version 2
+! 
+!
+!
+!
+!
+!
+!
+!
+interface GigabitEthernet0/1
+ description ** To-ASR **
+ ip address 10.0.153.17 255.255.255.0
+ ip ospf authentication message-digest
+ ip ospf message-digest-key 1 md5 7 1304100002
+ duplex auto
+ speed 1000
+ media-type sfp
+ negotiation auto
+ !
+!
+interface FastEthernet0/2
+ ip vrf forwarding mgmt-intf
+ ip address 10.0.51.17 255.255.255.0
+ duplex auto
+ speed auto
+ !
+!
+interface GigabitEthernet0/2
+ no ip address
+ duplex auto
+ speed auto
+ media-type rj45
+ negotiation auto
+ !
+!
+interface GigabitEthernet0/3
+ description ** MDS-1-> g1/4 **
+ mtu 3000
+ ip address 10.0.160.1 255.255.255.0
+ duplex auto
+ speed auto
+ media-type rj45
+ negotiation auto
+ !
+!
+interface POS1/0
+ description ** STM1-First **
+ ip address 10.0.250.6 255.255.255.240
+ encapsulation ppp
+ ip ospf cost 400
+ load-interval 30
+ ppp multilink
+ ppp multilink group 1
+ crc 32
+ clock source internal
+ pos framing sdh
+ !
+!
+interface POS2/0
+ description ** STM1-Second **
+ ip address 10.0.250.244 255.255.255.240
+ encapsulation ppp
+ ip ospf cost 400
+ load-interval 30
+ ppp multilink
+ ppp multilink group 1
+ crc 32
+ pos framing sdh
+ !
+!
+router ospf 153
+ router-id 10.0.153.17
+ log-adjacency-changes
+ network 10.0.153.17 0.0.0.0 area 0
+ distribute-list Filter-default-route in
+!
+ip forward-protocol nd
+no ip http server
+no ip http secure-server
+!
+!
+ip route 0.0.0.0 0.0.0.0 10.0.153.1
+ip route 10.50.1.118 255.255.255.255 10.0.250.7
+ip route 10.50.1.118 255.255.255.255 10.0.250.245
+ip route 10.50.57.0 255.255.255.0 POS1/0
+ip route 10.50.57.0 255.255.255.0 POS2/0
+ip route 10.50.65.0 255.255.255.0 POS1/0 name PC-Servers
+ip route 10.50.65.0 255.255.255.0 POS2/0 name PC-Servers
+ip route 10.50.159.200 255.255.255.255 10.0.250.7
+ip route 10.50.159.200 255.255.255.255 10.0.250.245 5
+ip route 10.50.160.200 255.255.255.255 10.0.250.245
+ip route 10.50.160.200 255.255.255.255 10.0.250.7 5
+ip route vrf mgmt-intf 0.0.0.0 0.0.0.0 10.0.51.1
+!
+ip access-list standard Filter-default-route
+ deny   0.0.0.0
+ deny   10.255.0.0
+ deny   10.134.44.0 0.0.0.255
+ permit any
+ip access-list standard SNMP-READ
+ permit 10.0.50.0 0.0.1.255
+ip access-list standard SNMP-WRITE
+ permit 10.0.51.49
+ permit 10.0.51.48
+ permit 10.0.51.50
+ip access-list standard TELNET-ACCESS
+ permit 10.0.50.0 0.0.1.255
+ deny   any log
+!
+ip sla logging traps
+logging 10.0.51.63
+!
+!
+!
+!
+snmp-server group LMS v3 priv read myview write myview access SNMP-WRITE
+snmp-server group NMS v3 auth 
+snmp-server group NMS v3 priv access SNMP-READ
+snmp-server view myview mib-2 included
+snmp-server view myview system included
+snmp-server view myview cisco included
+snmp-server community agrinms2010 RO
+snmp-server community public RO
+snmp-server host 10.0.51.32 vrf mgmt-intf version 3 auth nms-net 
+snmp-server host 10.0.51.58 vrf mgmt-intf version 3 auth nms-net 
+snmp-server host 10.0.51.60 vrf mgmt-intf version 3 auth nms-net 
+snmp-server host 10.0.51.72 vrf mgmt-intf version 3 auth nms-net 
+!
+!
+control-plane
+ !
+!
+!
+mgcp fax t38 ecm
+mgcp behavior g729-variants static-pt
+!
+!
+privilege interface level 3 shutdown
+privilege interface level 3 no shutdown
+privilege interface level 3 no
+privilege configure level 3 interface
+privilege exec level 3 traceroute
+privilege exec level 3 ping
+privilege exec level 2 configure terminal
+privilege exec level 2 configure
+privilege exec level 3 terminal monitor
+privilege exec level 3 terminal
+privilege exec level 3 no debug
+privilege exec level 3 no
+banner motd 
+
+
+
+
+       ===                                                           ===
+      -+ +-                                                         -+ +-
+      | | |                Keshavarzi Bank Network                  | | |
+   <--\ | /-->                                                   <--\ | /-->
+  ##| ||||| |##                                                 ##| ||||| |##
+ ###| |+++| |###                                               ###| |+++| |###
+/____\\ | //____\                 WARNING:                    /____\\ | //____\
+  <###\|||/###>                                                 <###\|||/###>
+   +====+====+   Access is restricted to authorized users only.  +====+====+
+   | WAN-BKI |    Unauthorized access is a violation of state,   | WAN-BKI |
+   +===+=+===+             civil and criminal laws.              +===+=+===+
+       +=+                                                           +=+
+
+
+
+
+
+
+!
+line con 0
+ privilege level 15
+ authorization exec CACS
+ accounting commands 15 CACS
+ accounting exec CACS
+ login authentication CACS
+ stopbits 1
+line aux 0
+ stopbits 1
+line vty 0 4
+ access-class TELNET-ACCESS in vrf-also
+ timeout login response 60
+ privilege level 15
+ authorization commands 2 CACS
+ authorization exec CACS
+ accounting commands 15 CACS
+ accounting exec CACS
+ login authentication CACS
+ transport preferred none
+ transport input ssh
+ transport output telnet ssh
+line vty 5 15
+ access-class TELNET-ACCESS in vrf-also
+ privilege level 15
+ authorization commands 2 CACS
+ authorization exec CACS
+ accounting exec CACS
+ login authentication CACS
+ transport preferred none
+ transport input ssh
+ transport output telnet ssh
+!
+scheduler max-task-time 5000
+ntp authentication-key 1 md5 104F0E0B0C5A100A020F 7
+ntp authenticate
+ntp trusted-key 1
+ntp source FastEthernet0/2
+ntp update-calendar
+ntp server vrf mgmt-intf 10.0.51.27 version 3
+end
