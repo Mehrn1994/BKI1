@@ -896,20 +896,6 @@ end`;
     const intBranchCfg = `!
 ! ===== Branch Router (${branchName}) - APN غیرمالی =====
 !
-crypto isakmp policy 101
- encr aes
- authentication pre-share
- group 2
-!
-crypto isakmp key G!l@n3tIntr@n3t address ${INT_HUB_APN_IP}
-!
-crypto ipsec transform-set GILANETTS esp-aes esp-sha-hmac
-!
-crypto map GILANET 10 ipsec-isakmp
- set peer ${INT_HUB_APN_IP}
- set transform-set GILANETTS
- match address GILANET-ACL
-!
 interface Loopback2
  ip address ${loop2} 255.255.255.255
 !
@@ -928,7 +914,6 @@ interface Tunnel200
 interface ${wanIface}
  ip address ${autoIntApnIp} 255.255.255.0 secondary
  ip virtual-reassembly
- crypto map GILANET
 !
 router ospf ${INT_OSPF_PROCESS}
  router-id ${loop2}
@@ -937,9 +922,6 @@ router ospf ${INT_OSPF_PROCESS}
  network ${loop2} 0.0.0.0 area ${ospfArea}
 !
 ip nat inside source list intnat interface Loopback2 overload
-!
-ip access-list extended GILANET-ACL
- permit gre host ${autoIntApnIp} host ${INT_HUB_APN_IP}
 !
 ip access-list extended intnat
  permit ip ${lanNet} 0.0.0.255 10.0.54.0 0.0.0.255
@@ -970,9 +952,6 @@ interface Tunnel${intHubTunnelId}
 !
 router ospf ${INT_OSPF_PROCESS}
  network ${autoIntTunnel200.hub_ip} 0.0.0.0 area ${ospfArea}
-!
-ip access-list extended GILANET-AccessList
- permit gre host ${INT_HUB_APN_IP} host ${autoIntApnIp}
 !`;
 
     const routeName = branchNameEn;

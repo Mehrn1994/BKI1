@@ -1304,11 +1304,94 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
 
+        // Pagination state
+        let allReservations = [];
+        let currentPage = 1;
+        const FIRST_PAGE_SIZE = 4;
+        const OTHER_PAGE_SIZE = 8;
+
+        function getPageData(page) {
+            if (page === 1) {
+                return allReservations.slice(0, FIRST_PAGE_SIZE);
+            }
+            const start = FIRST_PAGE_SIZE + (page - 2) * OTHER_PAGE_SIZE;
+            return allReservations.slice(start, start + OTHER_PAGE_SIZE);
+        }
+
+        function getTotalPages() {
+            if (allReservations.length <= FIRST_PAGE_SIZE) return 1;
+            return 1 + Math.ceil((allReservations.length - FIRST_PAGE_SIZE) / OTHER_PAGE_SIZE);
+        }
+
+        function renderPagination() {
+            const totalPages = getTotalPages();
+            let paginationDiv = document.getElementById('reservationPagination');
+            if (!paginationDiv) {
+                paginationDiv = document.createElement('div');
+                paginationDiv.id = 'reservationPagination';
+                paginationDiv.style.cssText = 'display:flex; justify-content:center; align-items:center; gap:6px; margin-top:16px; flex-wrap:wrap;';
+                document.getElementById('reservationsTable').appendChild(paginationDiv);
+            }
+            if (totalPages <= 1) { paginationDiv.innerHTML = ''; return; }
+
+            let html = '';
+            const btnStyle = (active) => `padding:8px 14px; border-radius:8px; border:1px solid ${active ? '#3b82f6' : 'rgba(255,255,255,0.15)'}; background:${active ? '#3b82f6' : 'rgba(255,255,255,0.05)'}; color:${active ? '#fff' : 'var(--text-primary,#e2e8f0)'}; cursor:pointer; font-size:13px; font-weight:${active ? '700' : '500'}; transition:all 0.2s;`;
+
+            html += `<button onclick="goToPage(${currentPage - 1})" style="${btnStyle(false)}" ${currentPage === 1 ? 'disabled style="opacity:0.4;cursor:default;"' : ''}>&#9664;</button>`;
+
+            for (let i = 1; i <= totalPages; i++) {
+                if (totalPages > 7 && i > 3 && i < totalPages - 1 && Math.abs(i - currentPage) > 1) {
+                    if (i === 4 || i === totalPages - 2) html += `<span style="color:var(--text-muted,#64748b);padding:0 4px;">...</span>`;
+                    continue;
+                }
+                html += `<button onclick="goToPage(${i})" style="${btnStyle(i === currentPage)}">${i}</button>`;
+            }
+
+            html += `<button onclick="goToPage(${currentPage + 1})" style="${btnStyle(false)}" ${currentPage === totalPages ? 'disabled style="opacity:0.4;cursor:default;"' : ''}>&#9654;</button>`;
+            html += `<span style="margin-right:12px; font-size:12px; color:var(--text-muted,#64748b);">${allReservations.length} رکورد</span>`;
+            paginationDiv.innerHTML = html;
+        }
+
+        function goToPage(page) {
+            const totalPages = getTotalPages();
+            if (page < 1 || page > totalPages) return;
+            currentPage = page;
+            renderReservationRows();
+            renderPagination();
+        }
+
+        function renderReservationRows() {
+            const tbody = document.getElementById('reservationsBody');
+            const pageData = getPageData(currentPage);
+            tbody.innerHTML = '';
+            pageData.forEach(res => {
+                const tr = document.createElement('tr');
+                const statusClass = res.status === 'RESERVED' ? 'status-reserved' : 'status-used';
+                const statusText = res.status === 'RESERVED' ? 'رزرو شده' : 'استفاده شده';
+                const releaseBtn = res.status === 'RESERVED'
+                    ? `<button class="btn-release" onclick="releaseIP('${escJs(res.lan_ip)}')">آزادسازی</button>`
+                    : '-';
+                tr.innerHTML = `
+                    <td><strong>${escHtml(res.lan_ip)}</strong></td>
+                    <td>${escHtml(res.province)}</td>
+                    <td>${escHtml(res.point_name_persian)}</td>
+                    <td>${escHtml(res.point_type)}</td>
+                    <td>${escHtml(res.request_number)}</td>
+                    <td>${escHtml(res.reserved_by)}</td>
+                    <td>${escHtml(formatDateTime(res.reserved_date))}</td>
+                    <td>${escHtml(formatDateTime(res.expiry_date))}</td>
+                    <td><span class="status-badge ${statusClass}">${statusText}</span></td>
+                    <td>${releaseBtn}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
         // Load reservations table
         async function loadReservations() {
             try {
                 const response = await fetch('/api/reserved-ips');
-                const reservations = await response.json();
+                allReservations = await response.json();
 
                 const loadingDiv = document.getElementById('loadingReservations');
                 const tableDiv = document.getElementById('reservationsTable');
@@ -1317,39 +1400,16 @@ document.addEventListener('DOMContentLoaded', function() {
                 loadingDiv.style.display = 'none';
                 tableDiv.style.display = 'block';
 
-                if (reservations.length === 0) {
+                if (allReservations.length === 0) {
                     tbody.innerHTML = '<tr><td colspan="10" style="text-align: center; color: #999;">هیچ رزروی وجود ندارد</td></tr>';
                     return;
                 }
 
-                tbody.innerHTML = '';
-                reservations.forEach(res => {
-                    const tr = document.createElement('tr');
+                currentPage = 1;
+                renderReservationRows();
+                renderPagination();
 
-                    const statusClass = res.status === 'RESERVED' ? 'status-reserved' : 'status-used';
-                    const statusText = res.status === 'RESERVED' ? 'رزرو شده' : 'استفاده شده';
-
-                    const releaseBtn = res.status === 'RESERVED'
-                        ? `<button class="btn-release" onclick="releaseIP('${escJs(res.lan_ip)}')">آزادسازی</button>`
-                        : '-';
-
-                    tr.innerHTML = `
-                        <td><strong>${escHtml(res.lan_ip)}</strong></td>
-                        <td>${escHtml(res.province)}</td>
-                        <td>${escHtml(res.point_name_persian)}</td>
-                        <td>${escHtml(res.point_type)}</td>
-                        <td>${escHtml(res.request_number)}</td>
-                        <td>${escHtml(res.reserved_by)}</td>
-                        <td>${escHtml(formatDateTime(res.reserved_date))}</td>
-                        <td>${escHtml(formatDateTime(res.expiry_date))}</td>
-                        <td><span class="status-badge ${statusClass}">${statusText}</span></td>
-                        <td>${releaseBtn}</td>
-                    `;
-
-                    tbody.appendChild(tr);
-                });
-
-                console.log(`✓ Loaded ${reservations.length} reservations`);
+                console.log(`✓ Loaded ${allReservations.length} reservations`);
             } catch (error) {
                 console.error('Error loading reservations:', error);
                 showAlert('error', 'خطا در بارگذاری لیست رزروها');

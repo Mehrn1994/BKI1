@@ -1135,8 +1135,8 @@ document.addEventListener('DOMContentLoaded', function() {
                             province: document.getElementById('province').value || '',
                             branch_name: (selectedBranchData && selectedBranchData.name) ? selectedBranchData.name : (branchNameEn || ''),
                             username: currentUsername,
-                            wan_ip: wanIp,
-                            tunnel_dest: tunnelDest
+                            wan_ip: tunnelDest,
+                            tunnel_dest: wanIp
                         })
                     });
                     const result = await res.json();

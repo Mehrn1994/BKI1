@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>نقشه شبکه ایران</title>
+<style>
+:root {
+    --bg-primary: #0a0e1a; --bg-card: rgba(17,24,39,0.9);
+    --text-primary: #e2e8f0; --text-secondary: #94a3b8; --text-muted: #64748b;
+    --border-color: rgba(255,255,255,0.08); --accent-blue: #3b82f6;
+    --accent-green: #10b981; --accent-cyan: #06b6d4;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body {
+    font-family: 'Segoe UI', Tahoma, sans-serif;
+    background: var(--bg-primary); color: var(--text-primary);
+    min-height: 100vh; overflow: hidden;
+}
+.header {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    background: rgba(10,14,26,0.95); backdrop-filter: blur(20px);
+    border-bottom: 1px solid var(--border-color); padding: 10px 20px;
+    display: flex; align-items: center; justify-content: space-between;
+}
+.header h1 { font-size: 16px; display: flex; align-items: center; gap: 8px; }
+.back-btn {
+    display: inline-flex; align-items: center; gap: 6px; padding: 6px 14px;
+    border-radius: 8px; text-decoration: none; background: rgba(255,255,255,0.06);
+    color: var(--text-primary); font-size: 12px; border: 1px solid var(--border-color);
+}
+.stats-bar {
+    display: flex; gap: 12px; font-size: 12px; color: var(--text-secondary);
+}
+.stats-bar span { display: flex; align-items: center; gap: 4px; }
+.stats-bar .num { color: var(--accent-cyan); font-weight: 700; }
+#mapContainer {
+    position: fixed; top: 46px; left: 0; right: 0; bottom: 0;
+    overflow: hidden; cursor: grab;
+}
+#mapSvg { width: 100%; height: 100%; }
+/* Tooltip */
+.tooltip {
+    display: none; position: fixed; z-index: 200;
+    background: rgba(15,23,42,0.95); backdrop-filter: blur(16px);
+    border: 1px solid rgba(59,130,246,0.3); border-radius: 12px;
+    padding: 16px; max-width: 420px; min-width: 280px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.6); font-size: 12px;
+    pointer-events: none;
+}
+.tooltip.active { display: block; }
+.tooltip .tt-title { font-size: 15px; font-weight: 700; color: #3b82f6; margin-bottom: 8px; display: flex; align-items: center; gap: 8px; }
+.tooltip .tt-model { font-size: 11px; color: var(--accent-cyan); background: rgba(6,182,212,0.1); padding: 2px 8px; border-radius: 4px; }
+.tooltip .tt-section { margin-top: 10px; }
+.tooltip .tt-label { font-size: 10px; font-weight: 700; color: var(--accent-green); margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.5px; }
+.tooltip .tt-item { font-size: 11px; color: var(--text-secondary); padding: 2px 0; font-family: 'Consolas', monospace; direction: ltr; text-align: left; }
+.tooltip .tt-badge { display: inline-block; padding: 1px 6px; border-radius: 3px; font-size: 10px; font-weight: 600; }
+.tooltip .tt-iface { background: rgba(59,130,246,0.15); color: #93c5fd; }
+.tooltip .tt-nat { background: rgba(239,68,68,0.15); color: #fca5a5; }
+/* Legend */
+.legend {
+    position: fixed; bottom: 16px; right: 16px; z-index: 100;
+    background: var(--bg-card); border: 1px solid var(--border-color);
+    border-radius: 12px; padding: 14px; font-size: 11px;
+}
+.legend-item { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+.legend-dot { width: 12px; height: 12px; border-radius: 50%; }
+/* Animated traffic flow */
+@keyframes flowDash { to { stroke-dashoffset: -20; } }
+.flow-line { animation: flowDash 1s linear infinite; }
+</style>
+</head>
+<body>
+<div class="header">
+    <h1>&#127758; نقشه شبکه ایران - Core Routers</h1>
+    <div class="stats-bar">
+        <span>&#128421; روترها: <span class="num" id="nodeCount">0</span></span>
+        <span>&#128279; لینک‌ها: <span class="num" id="linkCount">0</span></span>
+        <span>&#128203; NAT: <span class="num" id="natCount">0</span></span>
+    </div>
+    <a href="/" class="back-btn">&#8592; صفحه اصلی</a>
+</div>
+
+<div id="mapContainer">
+    <svg id="mapSvg" viewBox="0 0 1000 800"></svg>
+</div>
+
+<div class="tooltip" id="tooltip"></div>
+
+<div class="legend">
+    <div style="font-weight:700; margin-bottom:8px; color:var(--accent-blue);">&#128204; راهنما</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#3b82f6;"></div> ASR1002X</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#10b981;"></div> Cisco 3845</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#f59e0b;"></div> Cisco 3825</div>
+    <div class="legend-item"><div class="legend-dot" style="background:rgba(59,130,246,0.3);"></div> <span style="color:var(--text-muted);">ارتباط WAN</span></div>
+</div>
+
+<script>
+const svg = document.getElementById('mapSvg');
+const tooltip = document.getElementById('tooltip');
+let nodesData = [], linksData = [];
+
+function getColor(model) {
+    if (model.includes('ASR')) return '#3b82f6';
+    if (model.includes('3845')) return '#10b981';
+    return '#f59e0b';
+}
+
+function getRadius(node) {
+    if (node.id.includes('Tehran')) return 14;
+    if (node.tunnels_count > 50) return 11;
+    return 9;
+}
+
+async function loadMap() {
+    try {
+        const res = await fetch('/api/network-map/topology');
+        const data = await res.json();
+        nodesData = data.nodes || [];
+        linksData = data.links || [];
+
+        document.getElementById('nodeCount').textContent = data.total_routers;
+        document.getElementById('linkCount').textContent = data.total_links;
+        const totalNat = nodesData.reduce((s, n) => s + n.nat_count, 0);
+        document.getElementById('natCount').textContent = totalNat;
+
+        drawMap();
+    } catch (err) {
+        console.error('Map load error:', err);
+    }
+}
+
+function drawMap() {
+    let svgContent = '';
+
+    // Background grid
+    svgContent += '<defs>';
+    svgContent += '<pattern id="grid" width="50" height="50" patternUnits="userSpaceOnUse">';
+    svgContent += '<path d="M 50 0 L 0 0 0 50" fill="none" stroke="rgba(255,255,255,0.02)" stroke-width="1"/>';
+    svgContent += '</pattern>';
+    // Glow filter
+    svgContent += '<filter id="glow"><feGaussianBlur stdDeviation="3" result="coloredBlur"/><feMerge><feMergeNode in="coloredBlur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>';
+    // Animated dash for traffic
+    svgContent += '</defs>';
+    svgContent += '<rect width="1000" height="800" fill="url(#grid)"/>';
+
+    // Title
+    svgContent += '<text x="500" y="30" text-anchor="middle" fill="rgba(255,255,255,0.06)" font-size="48" font-weight="900" font-family="sans-serif">IRAN NETWORK</text>';
+
+    // Node position map
+    const nodeMap = {};
+    nodesData.forEach(n => {
+        nodeMap[n.id] = { x: n.x * 10, y: n.y * 8 + 60 };
+    });
+
+    // Draw links
+    linksData.forEach(link => {
+        const src = nodeMap[link.source];
+        const tgt = nodeMap[link.target];
+        if (!src || !tgt) return;
+
+        const isTunnel = link.tunnel !== 'WAN';
+        const color = isTunnel ? 'rgba(59,130,246,0.4)' : 'rgba(255,255,255,0.06)';
+        const width = isTunnel ? 1.5 : 0.8;
+
+        // Curved line
+        const mx = (src.x + tgt.x) / 2;
+        const my = (src.y + tgt.y) / 2 - 15;
+
+        svgContent += `<path d="M${src.x},${src.y} Q${mx},${my} ${tgt.x},${tgt.y}"
+            fill="none" stroke="${color}" stroke-width="${width}" opacity="0.7"/>`;
+
+        // Animated traffic flow
+        if (isTunnel) {
+            svgContent += `<path d="M${src.x},${src.y} Q${mx},${my} ${tgt.x},${tgt.y}"
+                fill="none" stroke="rgba(59,130,246,0.6)" stroke-width="1"
+                stroke-dasharray="4 16" class="flow-line" opacity="0.5"/>`;
+        }
+    });
+
+    // Draw nodes
+    nodesData.forEach(node => {
+        const pos = nodeMap[node.id];
+        if (!pos) return;
+        const color = getColor(node.model || node.id);
+        const r = getRadius(node);
+        const isTehran = node.id.includes('Tehran');
+
+        // Outer glow
+        svgContent += `<circle cx="${pos.x}" cy="${pos.y}" r="${r + 6}" fill="${color}" opacity="0.1"/>`;
+        // Node circle
+        svgContent += `<circle cx="${pos.x}" cy="${pos.y}" r="${r}" fill="${color}" opacity="0.85"
+            stroke="${color}" stroke-width="2" filter="url(#glow)" style="cursor:pointer;"
+            data-node="${node.id}"
+            onmouseenter="showTooltip(event,'${node.id}')"
+            onmouseleave="hideTooltip()"/>`;
+
+        // Label
+        const labelY = pos.y + r + 14;
+        svgContent += `<text x="${pos.x}" y="${labelY}" text-anchor="middle"
+            fill="var(--text-secondary)" font-size="${isTehran ? 11 : 9}" font-weight="${isTehran ? 700 : 500}"
+            font-family="Segoe UI, Tahoma, sans-serif">${node.label}</text>`;
+
+        // Hostname below
+        svgContent += `<text x="${pos.x}" y="${labelY + 12}" text-anchor="middle"
+            fill="var(--text-muted)" font-size="7" font-family="Consolas, monospace">${node.id}</text>`;
+
+        // Tunnel count badge
+        if (node.tunnels_count > 0) {
+            svgContent += `<circle cx="${pos.x + r}" cy="${pos.y - r}" r="7" fill="#ef4444"/>`;
+            svgContent += `<text x="${pos.x + r}" y="${pos.y - r + 3}" text-anchor="middle"
+                fill="white" font-size="7" font-weight="700">${node.tunnels_count}</text>`;
+        }
+    });
+
+    svg.innerHTML = svgContent;
+}
+
+function showTooltip(event, nodeId) {
+    const node = nodesData.find(n => n.id === nodeId);
+    if (!node) return;
+
+    let html = `<div class="tt-title">${node.label} <span class="tt-model">${node.model || node.id}</span></div>`;
+    html += `<div style="color:var(--text-muted);font-size:11px;">hostname: ${node.id}</div>`;
+
+    // Stats row
+    html += `<div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;">`;
+    html += `<span class="tt-badge tt-iface">${node.interfaces_count} interfaces</span>`;
+    html += `<span class="tt-badge tt-iface">${node.tunnels_count} tunnels</span>`;
+    html += `<span class="tt-badge tt-nat">${node.nat_count} NAT rules</span>`;
+    html += `<span class="tt-badge" style="background:rgba(16,185,129,0.15);color:#6ee7b7;">${node.ospf_count} OSPF</span>`;
+    html += `</div>`;
+
+    // Interfaces
+    if (node.interfaces && node.interfaces.length > 0) {
+        html += `<div class="tt-section"><div class="tt-label">Interfaces</div>`;
+        node.interfaces.slice(0, 6).forEach(i => {
+            html += `<div class="tt-item">${i.name}: ${i.ip}/${i.mask}${i.description ? ' - ' + i.description : ''}</div>`;
+        });
+        if (node.interfaces.length > 6) html += `<div class="tt-item" style="color:var(--text-muted);">... +${node.interfaces.length - 6} more</div>`;
+        html += `</div>`;
+    }
+
+    // NAT rules
+    if (node.nat_rules && node.nat_rules.length > 0) {
+        html += `<div class="tt-section"><div class="tt-label">NAT Rules</div>`;
+        node.nat_rules.slice(0, 6).forEach(r => {
+            html += `<div class="tt-item">${r}</div>`;
+        });
+        if (node.nat_rules.length > 6) html += `<div class="tt-item" style="color:var(--text-muted);">... +${node.nat_rules.length - 6} more</div>`;
+        html += `</div>`;
+    }
+
+    // OSPF
+    if (node.ospf && node.ospf.length > 0) {
+        html += `<div class="tt-section"><div class="tt-label">OSPF</div>`;
+        node.ospf.forEach(o => {
+            html += `<div class="tt-item">Process ${o.process}: ${o.networks.length} networks</div>`;
+        });
+        html += `</div>`;
+    }
+
+    tooltip.innerHTML = html;
+    tooltip.classList.add('active');
+
+    // Position tooltip
+    const rect = tooltip.getBoundingClientRect();
+    let x = event.clientX + 15;
+    let y = event.clientY - 10;
+    if (x + rect.width > window.innerWidth) x = event.clientX - rect.width - 15;
+    if (y + rect.height > window.innerHeight) y = window.innerHeight - rect.height - 10;
+    tooltip.style.left = x + 'px';
+    tooltip.style.top = y + 'px';
+}
+
+function hideTooltip() {
+    tooltip.classList.remove('active');
+}
+
+// Pan/zoom
+let isPanning = false, startX, startY, viewBox = {x:0, y:0, w:1000, h:800};
+const container = document.getElementById('mapContainer');
+
+container.addEventListener('mousedown', e => {
+    if (e.target.tagName === 'circle') return;
+    isPanning = true; startX = e.clientX; startY = e.clientY;
+    container.style.cursor = 'grabbing';
+});
+container.addEventListener('mousemove', e => {
+    if (!isPanning) return;
+    const dx = (e.clientX - startX) * viewBox.w / container.clientWidth;
+    const dy = (e.clientY - startY) * viewBox.h / container.clientHeight;
+    viewBox.x -= dx; viewBox.y -= dy;
+    startX = e.clientX; startY = e.clientY;
+    svg.setAttribute('viewBox', `${viewBox.x} ${viewBox.y} ${viewBox.w} ${viewBox.h}`);
+});
+container.addEventListener('mouseup', () => { isPanning = false; container.style.cursor = 'grab'; });
+container.addEventListener('wheel', e => {
+    e.preventDefault();
+    const scale = e.deltaY > 0 ? 1.1 : 0.9;
+    const mx = (e.clientX / container.clientWidth) * viewBox.w + viewBox.x;
+    const my = (e.clientY / container.clientHeight) * viewBox.h + viewBox.y;
+    viewBox.w *= scale; viewBox.h *= scale;
+    viewBox.x = mx - (e.clientX / container.clientWidth) * viewBox.w;
+    viewBox.y = my - (e.clientY / container.clientHeight) * viewBox.h;
+    svg.setAttribute('viewBox', `${viewBox.x} ${viewBox.y} ${viewBox.w} ${viewBox.h}`);
+});
+
+loadMap();
+</script>
+</body>
+</html>

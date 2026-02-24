@@ -42,6 +42,9 @@ def create_app():
     from app.routes.admin import admin_bp
     from app.routes.export import export_bp
     from app.routes.tools import tools_bp
+    from app.routes.shared_files import shared_files_bp
+    from app.routes.reports import reports_bp
+    from app.routes.network_map import network_map_bp
 
     app.register_blueprint(pages_bp)
     app.register_blueprint(auth_bp)
@@ -54,6 +57,9 @@ def create_app():
     app.register_blueprint(admin_bp)
     app.register_blueprint(export_bp)
     app.register_blueprint(tools_bp)
+    app.register_blueprint(shared_files_bp)
+    app.register_blueprint(reports_bp)
+    app.register_blueprint(network_map_bp)
 
     # Optional: Remote connection module
     try:

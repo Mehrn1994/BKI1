@@ -44,7 +44,7 @@ def search_services():
                 cursor.execute("SELECT id, tunnel_name, province, ip_address, ip_lan, reserved_by, reserved_at FROM intranet_tunnels WHERE (ip_address LIKE ? OR ip_intranet LIKE ?) AND LOWER(status)='reserved'", (like_q, like_q))
                 for r in cursor.fetchall(): add_result(r, 'intranet_tunnels', 'Intranet')
             elif search_type == 'ip_vpls':
-                cursor.execute("SELECT id, branch_name, province, ip_address, wan_ip, username, reservation_date FROM vpls_tunnels WHERE (ip_address LIKE ? OR wan_ip LIKE ?) AND LOWER(status)='reserved'", (like_q, like_q))
+                cursor.execute("SELECT id, COALESCE(branch_name, REPLACE(REPLACE(description, '** ', ''), ' **', '')), province, ip_address, wan_ip, username, reservation_date FROM vpls_tunnels WHERE (ip_address LIKE ? OR wan_ip LIKE ? OR tunnel_dest LIKE ?) AND LOWER(status) IN ('reserved', 'used')", (like_q, like_q, like_q))
                 for r in cursor.fetchall(): add_result(r, 'vpls_tunnels', 'MPLS/VPLS')
             elif search_type == 'ip_ptmp':
                 try:
@@ -71,7 +71,7 @@ def _search_by_branch(cursor, like_q, add_result):
     cursor.execute("SELECT id, tunnel_name, province, ip_address, ip_lan, reserved_by, reserved_at FROM intranet_tunnels WHERE (tunnel_name LIKE ? OR description LIKE ?) AND LOWER(status)='reserved'", (like_q, like_q))
     for r in cursor.fetchall(): add_result(r, 'intranet_tunnels', 'Intranet')
 
-    cursor.execute("SELECT id, branch_name, province, ip_address, wan_ip, username, reservation_date FROM vpls_tunnels WHERE branch_name LIKE ? AND LOWER(status)='reserved'", (like_q,))
+    cursor.execute("SELECT id, COALESCE(branch_name, REPLACE(REPLACE(description, '** ', ''), ' **', '')), province, ip_address, wan_ip, username, reservation_date FROM vpls_tunnels WHERE (branch_name LIKE ? OR description LIKE ?) AND LOWER(status) IN ('reserved', 'used')", (like_q, like_q))
     for r in cursor.fetchall(): add_result(r, 'vpls_tunnels', 'MPLS/VPLS')
 
     cursor.execute("SELECT id, branch_name, '', ip_address, '', username, reservation_date FROM tunnel_mali WHERE branch_name LIKE ? AND branch_name IS NOT NULL AND branch_name != ''", (like_q,))
