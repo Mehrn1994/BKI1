@@ -3,308 +3,776 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>نقشه شبکه ایران</title>
+<title>نقشه شبکه بانک کشاورزی</title>
 <style>
 :root {
-    --bg-primary: #0a0e1a; --bg-card: rgba(17,24,39,0.9);
-    --text-primary: #e2e8f0; --text-secondary: #94a3b8; --text-muted: #64748b;
-    --border-color: rgba(255,255,255,0.08); --accent-blue: #3b82f6;
-    --accent-green: #10b981; --accent-cyan: #06b6d4;
+    --bg: #060b18; --bg-card: rgba(15,23,42,0.95); --bg-panel: rgba(10,18,35,0.98);
+    --text: #e2e8f0; --text2: #94a3b8; --text3: #64748b;
+    --border: rgba(255,255,255,0.08); --blue: #3b82f6; --green: #10b981;
+    --cyan: #06b6d4; --red: #ef4444; --amber: #f59e0b; --purple: #8b5cf6;
 }
-* { margin:0; padding:0; box-sizing:border-box; }
-body {
-    font-family: 'Segoe UI', Tahoma, sans-serif;
-    background: var(--bg-primary); color: var(--text-primary);
-    min-height: 100vh; overflow: hidden;
-}
-.header {
-    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
-    background: rgba(10,14,26,0.95); backdrop-filter: blur(20px);
-    border-bottom: 1px solid var(--border-color); padding: 10px 20px;
-    display: flex; align-items: center; justify-content: space-between;
-}
-.header h1 { font-size: 16px; display: flex; align-items: center; gap: 8px; }
-.back-btn {
-    display: inline-flex; align-items: center; gap: 6px; padding: 6px 14px;
-    border-radius: 8px; text-decoration: none; background: rgba(255,255,255,0.06);
-    color: var(--text-primary); font-size: 12px; border: 1px solid var(--border-color);
-}
-.stats-bar {
-    display: flex; gap: 12px; font-size: 12px; color: var(--text-secondary);
-}
-.stats-bar span { display: flex; align-items: center; gap: 4px; }
-.stats-bar .num { color: var(--accent-cyan); font-weight: 700; }
-#mapContainer {
-    position: fixed; top: 46px; left: 0; right: 0; bottom: 0;
-    overflow: hidden; cursor: grab;
-}
-#mapSvg { width: 100%; height: 100%; }
-/* Tooltip */
-.tooltip {
-    display: none; position: fixed; z-index: 200;
-    background: rgba(15,23,42,0.95); backdrop-filter: blur(16px);
-    border: 1px solid rgba(59,130,246,0.3); border-radius: 12px;
-    padding: 16px; max-width: 420px; min-width: 280px;
-    box-shadow: 0 20px 60px rgba(0,0,0,0.6); font-size: 12px;
-    pointer-events: none;
-}
-.tooltip.active { display: block; }
-.tooltip .tt-title { font-size: 15px; font-weight: 700; color: #3b82f6; margin-bottom: 8px; display: flex; align-items: center; gap: 8px; }
-.tooltip .tt-model { font-size: 11px; color: var(--accent-cyan); background: rgba(6,182,212,0.1); padding: 2px 8px; border-radius: 4px; }
-.tooltip .tt-section { margin-top: 10px; }
-.tooltip .tt-label { font-size: 10px; font-weight: 700; color: var(--accent-green); margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.5px; }
-.tooltip .tt-item { font-size: 11px; color: var(--text-secondary); padding: 2px 0; font-family: 'Consolas', monospace; direction: ltr; text-align: left; }
-.tooltip .tt-badge { display: inline-block; padding: 1px 6px; border-radius: 3px; font-size: 10px; font-weight: 600; }
-.tooltip .tt-iface { background: rgba(59,130,246,0.15); color: #93c5fd; }
-.tooltip .tt-nat { background: rgba(239,68,68,0.15); color: #fca5a5; }
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Segoe UI',Tahoma,sans-serif;background:var(--bg);color:var(--text);height:100vh;overflow:hidden;display:flex;flex-direction:column}
+
+/* Header */
+.hdr{height:48px;background:rgba(10,14,26,0.96);backdrop-filter:blur(20px);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 16px;gap:16px;z-index:100;flex-shrink:0}
+.hdr h1{font-size:15px;white-space:nowrap}
+.hdr .stats{display:flex;gap:14px;font-size:12px;color:var(--text2);margin-right:auto}
+.hdr .stats b{color:var(--cyan)}
+.hdr .btn{padding:5px 12px;border-radius:6px;background:rgba(255,255,255,0.06);color:var(--text);font-size:11px;border:1px solid var(--border);cursor:pointer;text-decoration:none;display:flex;align-items:center;gap:4px}
+.hdr .btn:hover{background:rgba(255,255,255,0.12)}
+.hdr .btn.active{background:rgba(59,130,246,0.2);border-color:rgba(59,130,246,0.4);color:#93c5fd}
+
+/* Filter bar */
+.filters{height:36px;background:rgba(10,14,26,0.8);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 16px;gap:8px;flex-shrink:0}
+.filters label{font-size:11px;color:var(--text3)}
+.ftag{padding:3px 10px;border-radius:12px;font-size:10px;cursor:pointer;border:1px solid var(--border);background:transparent;color:var(--text2);transition:.15s}
+.ftag:hover{border-color:rgba(255,255,255,0.2)}
+.ftag.on{background:rgba(59,130,246,0.2);border-color:var(--blue);color:#93c5fd}
+
+/* Main layout */
+.main{flex:1;display:flex;overflow:hidden;position:relative}
+#mapWrap{flex:1;position:relative;overflow:hidden;cursor:grab}
+#mapWrap.grabbing{cursor:grabbing}
+#mapSvg{width:100%;height:100%}
+
+/* Detail Panel */
+#detailPanel{width:0;overflow:hidden;background:var(--bg-panel);border-right:1px solid var(--border);transition:width .3s ease;flex-shrink:0;display:flex;flex-direction:column}
+#detailPanel.open{width:520px}
+.panel-head{padding:14px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;flex-shrink:0}
+.panel-head h2{font-size:15px;flex:1}
+.panel-head .cat{font-size:10px;padding:2px 8px;border-radius:4px;font-weight:600}
+.panel-close{width:28px;height:28px;border-radius:6px;border:1px solid var(--border);background:transparent;color:var(--text2);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:16px}
+.panel-close:hover{background:rgba(255,255,255,0.1)}
+.panel-body{flex:1;overflow-y:auto;padding:0}
+.panel-tabs{display:flex;border-bottom:1px solid var(--border);flex-shrink:0}
+.ptab{flex:1;padding:8px;text-align:center;font-size:11px;cursor:pointer;color:var(--text3);border-bottom:2px solid transparent;transition:.15s}
+.ptab:hover{color:var(--text)}
+.ptab.on{color:var(--blue);border-bottom-color:var(--blue)}
+.tab-content{display:none;padding:14px 16px}
+.tab-content.on{display:block}
+
+/* Schematic styles */
+.sch-card{background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:10px}
+.sch-title{font-size:11px;font-weight:700;color:var(--cyan);margin-bottom:8px;display:flex;align-items:center;gap:6px}
+.sch-row{display:flex;align-items:center;gap:8px;padding:4px 0;font-size:11px;direction:ltr;text-align:left}
+.sch-label{color:var(--text3);min-width:60px;font-size:10px}
+.sch-val{color:var(--text2);font-family:Consolas,monospace}
+.sch-badge{display:inline-block;padding:1px 6px;border-radius:3px;font-size:9px;font-weight:600}
+.badge-in{background:rgba(16,185,129,0.15);color:#6ee7b7}
+.badge-out{background:rgba(239,68,68,0.15);color:#fca5a5}
+.badge-pool{background:rgba(139,92,246,0.15);color:#c4b5fd}
+.badge-static{background:rgba(245,158,11,0.15);color:#fcd34d}
+.badge-crypto{background:rgba(236,72,153,0.15);color:#f9a8d4}
+
+/* Flow diagram */
+.flow-box{background:rgba(255,255,255,0.02);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:10px}
+.flow-step{display:flex;align-items:center;gap:10px;padding:8px 0}
+.flow-icon{width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
+.flow-arrow{color:var(--blue);font-size:18px;text-align:center;padding:2px 0;width:36px}
+.flow-text{flex:1}
+.flow-text b{font-size:12px;display:block;color:var(--text)}
+.flow-text small{font-size:10px;color:var(--text3);font-family:Consolas,monospace;direction:ltr}
+
 /* Legend */
-.legend {
-    position: fixed; bottom: 16px; right: 16px; z-index: 100;
-    background: var(--bg-card); border: 1px solid var(--border-color);
-    border-radius: 12px; padding: 14px; font-size: 11px;
-}
-.legend-item { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
-.legend-dot { width: 12px; height: 12px; border-radius: 50%; }
-/* Animated traffic flow */
-@keyframes flowDash { to { stroke-dashoffset: -20; } }
-.flow-line { animation: flowDash 1s linear infinite; }
+.legend{position:absolute;bottom:14px;left:14px;background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:12px 14px;font-size:10px;z-index:50}
+.leg-row{display:flex;align-items:center;gap:6px;margin-bottom:4px}
+.leg-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.leg-line{width:20px;height:0;border-top:2px;flex-shrink:0}
+
+/* Loading */
+.loading{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:var(--bg);z-index:200}
+.loading .spinner{width:40px;height:40px;border:3px solid var(--border);border-top-color:var(--blue);border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes flowAnim{to{stroke-dashoffset:-24}}
+@keyframes pulse{0%,100%{opacity:.6}50%{opacity:1}}
+
+/* Scrollbar */
+::-webkit-scrollbar{width:5px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.1);border-radius:4px}
 </style>
 </head>
 <body>
-<div class="header">
-    <h1>&#127758; نقشه شبکه ایران - Core Routers</h1>
-    <div class="stats-bar">
-        <span>&#128421; روترها: <span class="num" id="nodeCount">0</span></span>
-        <span>&#128279; لینک‌ها: <span class="num" id="linkCount">0</span></span>
-        <span>&#128203; NAT: <span class="num" id="natCount">0</span></span>
+
+<div class="hdr">
+    <h1>&#127758; نقشه شبکه بانک کشاورزی</h1>
+    <div class="stats">
+        <span>&#128421; تجهیزات: <b id="sTotal">0</b></span>
+        <span>Core: <b id="sCore">0</b></span>
+        <span>استانی: <b id="sProv">0</b></span>
+        <span>&#128279; لینک: <b id="sLinks">0</b></span>
     </div>
-    <a href="/" class="back-btn">&#8592; صفحه اصلی</a>
+    <button class="btn" id="btnTraceMode" onclick="toggleTraceMode()">&#9881; حالت Trace</button>
+    <button class="btn" onclick="resetView()">&#8634; ریست نما</button>
+    <a href="/" class="btn">&#8592; صفحه اصلی</a>
 </div>
 
-<div id="mapContainer">
-    <svg id="mapSvg" viewBox="0 0 1000 800"></svg>
+<div class="filters" id="filterBar">
+    <label>فیلتر:</label>
+    <button class="ftag on" data-cat="all" onclick="setFilter('all',this)">همه</button>
+    <button class="ftag" data-cat="core-router" onclick="setFilter('core-router',this)">Core Routers</button>
+    <button class="ftag" data-cat="core-switch" onclick="setFilter('core-switch',this)">Core Switches</button>
+    <button class="ftag" data-cat="provincial-router" onclick="setFilter('provincial-router',this)">روترهای استانی</button>
+    <span style="margin-right:auto"></span>
+    <label>جستجو:</label>
+    <input type="text" id="searchBox" placeholder="hostname / استان..."
+        style="background:rgba(255,255,255,0.06);border:1px solid var(--border);border-radius:6px;padding:3px 10px;color:var(--text);font-size:11px;width:180px;outline:none"
+        oninput="filterSearch(this.value)">
 </div>
 
-<div class="tooltip" id="tooltip"></div>
+<div class="main">
+    <div id="mapWrap">
+        <svg id="mapSvg" viewBox="0 0 1000 800"></svg>
+        <div class="legend" id="legendBox">
+            <div style="font-weight:700;margin-bottom:6px;color:var(--blue);">راهنما</div>
+            <div class="leg-row"><div class="leg-dot" style="background:#ef4444"></div> Core Router</div>
+            <div class="leg-row"><div class="leg-dot" style="background:#8b5cf6"></div> Core Switch</div>
+            <div class="leg-row"><div class="leg-dot" style="background:#3b82f6"></div> ASR1002X</div>
+            <div class="leg-row"><div class="leg-dot" style="background:#10b981"></div> Cisco 3845</div>
+            <div class="leg-row"><div class="leg-dot" style="background:#f59e0b"></div> Cisco 3825</div>
+            <div class="leg-row"><svg width="20" height="8"><line x1="0" y1="4" x2="20" y2="4" stroke="#3b82f6" stroke-width="2"/><polygon points="16,1 20,4 16,7" fill="#3b82f6"/></svg> Tunnel</div>
+            <div class="leg-row"><svg width="20" height="8"><line x1="0" y1="4" x2="20" y2="4" stroke="rgba(255,255,255,0.15)" stroke-width="1" stroke-dasharray="3,3"/></svg> WAN</div>
+        </div>
+        <div class="loading" id="loadingOverlay"><div class="spinner"></div></div>
+    </div>
 
-<div class="legend">
-    <div style="font-weight:700; margin-bottom:8px; color:var(--accent-blue);">&#128204; راهنما</div>
-    <div class="legend-item"><div class="legend-dot" style="background:#3b82f6;"></div> ASR1002X</div>
-    <div class="legend-item"><div class="legend-dot" style="background:#10b981;"></div> Cisco 3845</div>
-    <div class="legend-item"><div class="legend-dot" style="background:#f59e0b;"></div> Cisco 3825</div>
-    <div class="legend-item"><div class="legend-dot" style="background:rgba(59,130,246,0.3);"></div> <span style="color:var(--text-muted);">ارتباط WAN</span></div>
+    <div id="detailPanel">
+        <div class="panel-head">
+            <h2 id="panelTitle">-</h2>
+            <span class="cat" id="panelCat" style="background:rgba(59,130,246,0.15);color:#93c5fd;">-</span>
+            <button class="panel-close" onclick="closePanel()">&times;</button>
+        </div>
+        <div class="panel-tabs">
+            <div class="ptab on" data-tab="overview" onclick="switchTab('overview',this)">خلاصه</div>
+            <div class="ptab" data-tab="nat" onclick="switchTab('nat',this)">NAT</div>
+            <div class="ptab" data-tab="routes" onclick="switchTab('routes',this)">مسیرها</div>
+            <div class="ptab" data-tab="flow" onclick="switchTab('flow',this)">فلو ترافیک</div>
+        </div>
+        <div class="panel-body">
+            <div class="tab-content on" id="tab-overview"></div>
+            <div class="tab-content" id="tab-nat"></div>
+            <div class="tab-content" id="tab-routes"></div>
+            <div class="tab-content" id="tab-flow"></div>
+        </div>
+    </div>
 </div>
 
 <script>
 const svg = document.getElementById('mapSvg');
-const tooltip = document.getElementById('tooltip');
-let nodesData = [], linksData = [];
+const mapWrap = document.getElementById('mapWrap');
+let nodesData=[], linksData=[], nodeMap={}, selectedNode=null, traceMode=false;
+let activeFilter='all', searchQuery='';
+let vb={x:-50,y:-20,w:1100,h:880};
 
-function getColor(model) {
-    if (model.includes('ASR')) return '#3b82f6';
-    if (model.includes('3845')) return '#10b981';
-    return '#f59e0b';
+// Colors by category/model
+function nodeColor(n){
+    if(n.category==='core-router') return '#ef4444';
+    if(n.category==='core-switch') return '#8b5cf6';
+    if(n.model==='ASR1002X') return '#3b82f6';
+    if(n.model==='3845') return '#10b981';
+    if(n.model==='3825') return '#f59e0b';
+    return '#64748b';
+}
+function nodeRadius(n){
+    if(n.category==='core-router') return 16;
+    if(n.category==='core-switch') return 13;
+    if(n.tunnels_count>80) return 14;
+    if(n.tunnels_count>30) return 12;
+    return 10;
+}
+function catLabel(c){
+    return {'core-router':'Core Router','core-switch':'Core Switch','provincial-router':'استانی','other':'سایر'}[c]||c;
+}
+function catColor(c){
+    return {'core-router':'rgba(239,68,68,0.15);color:#fca5a5','core-switch':'rgba(139,92,246,0.15);color:#c4b5fd','provincial-router':'rgba(59,130,246,0.15);color:#93c5fd'}[c]||'rgba(100,116,139,0.15);color:#94a3b8';
 }
 
-function getRadius(node) {
-    if (node.id.includes('Tehran')) return 14;
-    if (node.tunnels_count > 50) return 11;
-    return 9;
-}
-
-async function loadMap() {
-    try {
-        const res = await fetch('/api/network-map/topology');
-        const data = await res.json();
-        nodesData = data.nodes || [];
-        linksData = data.links || [];
-
-        document.getElementById('nodeCount').textContent = data.total_routers;
-        document.getElementById('linkCount').textContent = data.total_links;
-        const totalNat = nodesData.reduce((s, n) => s + n.nat_count, 0);
-        document.getElementById('natCount').textContent = totalNat;
-
+// ============ LOAD ============
+async function loadMap(){
+    try{
+        const res=await fetch('/api/network-map/topology');
+        const data=await res.json();
+        nodesData=data.nodes||[];
+        linksData=data.links||[];
+        document.getElementById('sTotal').textContent=data.total_routers;
+        document.getElementById('sCore').textContent=data.core_count||0;
+        document.getElementById('sProv').textContent=data.provincial_count||0;
+        document.getElementById('sLinks').textContent=data.total_links;
+        buildPositions();
         drawMap();
-    } catch (err) {
-        console.error('Map load error:', err);
-    }
+    }catch(e){console.error(e)}
+    document.getElementById('loadingOverlay').style.display='none';
 }
 
-function drawMap() {
-    let svgContent = '';
-
-    // Background grid
-    svgContent += '<defs>';
-    svgContent += '<pattern id="grid" width="50" height="50" patternUnits="userSpaceOnUse">';
-    svgContent += '<path d="M 50 0 L 0 0 0 50" fill="none" stroke="rgba(255,255,255,0.02)" stroke-width="1"/>';
-    svgContent += '</pattern>';
-    // Glow filter
-    svgContent += '<filter id="glow"><feGaussianBlur stdDeviation="3" result="coloredBlur"/><feMerge><feMergeNode in="coloredBlur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>';
-    // Animated dash for traffic
-    svgContent += '</defs>';
-    svgContent += '<rect width="1000" height="800" fill="url(#grid)"/>';
-
-    // Title
-    svgContent += '<text x="500" y="30" text-anchor="middle" fill="rgba(255,255,255,0.06)" font-size="48" font-weight="900" font-family="sans-serif">IRAN NETWORK</text>';
-
-    // Node position map
-    const nodeMap = {};
-    nodesData.forEach(n => {
-        nodeMap[n.id] = { x: n.x * 10, y: n.y * 8 + 60 };
+function buildPositions(){
+    nodeMap={};
+    nodesData.forEach(n=>{
+        nodeMap[n.id]={x:n.x*10, y:n.y*9+40, node:n};
     });
+    // Spread overlapping nodes
+    const grid={};
+    Object.keys(nodeMap).forEach(id=>{
+        const p=nodeMap[id];
+        const key=Math.round(p.x/25)+'_'+Math.round(p.y/25);
+        if(!grid[key]) grid[key]=[];
+        grid[key].push(id);
+    });
+    Object.values(grid).forEach(ids=>{
+        if(ids.length<=1) return;
+        const cx=nodeMap[ids[0]].x, cy=nodeMap[ids[0]].y;
+        const step=35;
+        ids.forEach((id,i)=>{
+            if(i===0) return;
+            const angle=(2*Math.PI*i)/ids.length;
+            nodeMap[id].x=cx+Math.cos(angle)*step*(1+Math.floor(i/6)*0.5);
+            nodeMap[id].y=cy+Math.sin(angle)*step*(1+Math.floor(i/6)*0.5);
+        });
+    });
+}
+
+// ============ DRAW ============
+function drawMap(){
+    let s='';
+    // Defs
+    s+='<defs>';
+    s+='<marker id="arrowBlue" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="rgba(59,130,246,0.6)"/></marker>';
+    s+='<marker id="arrowHigh" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#3b82f6"/></marker>';
+    s+='<marker id="arrowRed" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#ef4444"/></marker>';
+    s+='<filter id="glow"><feGaussianBlur stdDeviation="4" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>';
+    s+='<filter id="glowBig"><feGaussianBlur stdDeviation="8" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>';
+    s+='<pattern id="grid" width="50" height="50" patternUnits="userSpaceOnUse"><path d="M50 0L0 0 0 50" fill="none" stroke="rgba(255,255,255,0.015)" stroke-width="0.5"/></pattern>';
+    s+='</defs>';
+    s+='<rect x="-200" y="-200" width="1400" height="1200" fill="url(#grid)"/>';
+    s+='<text x="500" y="780" text-anchor="middle" fill="rgba(255,255,255,0.03)" font-size="60" font-weight="900" font-family="sans-serif">BKI NETWORK MAP</text>';
+
+    const visible=getVisibleNodes();
+    const visibleIds=new Set(visible.map(n=>n.id));
 
     // Draw links
-    linksData.forEach(link => {
-        const src = nodeMap[link.source];
-        const tgt = nodeMap[link.target];
-        if (!src || !tgt) return;
+    linksData.forEach((link,idx)=>{
+        if(!visibleIds.has(link.source)||!visibleIds.has(link.target)) return;
+        const src=nodeMap[link.source], tgt=nodeMap[link.target];
+        if(!src||!tgt) return;
 
-        const isTunnel = link.tunnel !== 'WAN';
-        const color = isTunnel ? 'rgba(59,130,246,0.4)' : 'rgba(255,255,255,0.06)';
-        const width = isTunnel ? 1.5 : 0.8;
+        const isHighlighted=selectedNode&&(link.source===selectedNode||link.target===selectedNode);
+        const isWan=link.type==='wan';
+        const dx=tgt.x-src.x, dy=tgt.y-src.y;
+        const dist=Math.sqrt(dx*dx+dy*dy);
+        // Curve offset
+        const cx=(src.x+tgt.x)/2+dy*0.12, cy=(src.y+tgt.y)/2-dx*0.12;
 
-        // Curved line
-        const mx = (src.x + tgt.x) / 2;
-        const my = (src.y + tgt.y) / 2 - 15;
-
-        svgContent += `<path d="M${src.x},${src.y} Q${mx},${my} ${tgt.x},${tgt.y}"
-            fill="none" stroke="${color}" stroke-width="${width}" opacity="0.7"/>`;
-
-        // Animated traffic flow
-        if (isTunnel) {
-            svgContent += `<path d="M${src.x},${src.y} Q${mx},${my} ${tgt.x},${tgt.y}"
-                fill="none" stroke="rgba(59,130,246,0.6)" stroke-width="1"
-                stroke-dasharray="4 16" class="flow-line" opacity="0.5"/>`;
+        if(isHighlighted){
+            // Highlighted link
+            s+=`<path d="M${src.x},${src.y} Q${cx},${cy} ${tgt.x},${tgt.y}" fill="none" stroke="#3b82f6" stroke-width="2.5" opacity="0.8" marker-end="url(#arrowHigh)"/>`;
+            // Animated flow
+            s+=`<path d="M${src.x},${src.y} Q${cx},${cy} ${tgt.x},${tgt.y}" fill="none" stroke="#60a5fa" stroke-width="1.5" stroke-dasharray="6 12" opacity="0.8" style="animation:flowAnim 1s linear infinite"/>`;
+        } else if(selectedNode){
+            // Dimmed
+            s+=`<path d="M${src.x},${src.y} Q${cx},${cy} ${tgt.x},${tgt.y}" fill="none" stroke="rgba(255,255,255,0.03)" stroke-width="0.5"/>`;
+        } else if(isWan){
+            s+=`<path d="M${src.x},${src.y} Q${cx},${cy} ${tgt.x},${tgt.y}" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="0.5" stroke-dasharray="4 4"/>`;
+        } else {
+            s+=`<path d="M${src.x},${src.y} Q${cx},${cy} ${tgt.x},${tgt.y}" fill="none" stroke="rgba(59,130,246,0.25)" stroke-width="1" marker-end="url(#arrowBlue)"/>`;
+            // Subtle flow
+            s+=`<path d="M${src.x},${src.y} Q${cx},${cy} ${tgt.x},${tgt.y}" fill="none" stroke="rgba(59,130,246,0.3)" stroke-width="0.8" stroke-dasharray="4 16" opacity="0.5" style="animation:flowAnim 2s linear infinite"/>`;
         }
     });
 
     // Draw nodes
-    nodesData.forEach(node => {
-        const pos = nodeMap[node.id];
-        if (!pos) return;
-        const color = getColor(node.model || node.id);
-        const r = getRadius(node);
-        const isTehran = node.id.includes('Tehran');
+    visible.forEach(n=>{
+        const p=nodeMap[n.id];
+        if(!p) return;
+        const c=nodeColor(n), r=nodeRadius(n);
+        const isSelected=selectedNode===n.id;
+        const isDimmed=selectedNode&&!isSelected&&!isNeighbor(n.id);
+        const opacity=isDimmed?0.15:1;
 
-        // Outer glow
-        svgContent += `<circle cx="${pos.x}" cy="${pos.y}" r="${r + 6}" fill="${color}" opacity="0.1"/>`;
-        // Node circle
-        svgContent += `<circle cx="${pos.x}" cy="${pos.y}" r="${r}" fill="${color}" opacity="0.85"
-            stroke="${color}" stroke-width="2" filter="url(#glow)" style="cursor:pointer;"
-            data-node="${node.id}"
-            onmouseenter="showTooltip(event,'${node.id}')"
-            onmouseleave="hideTooltip()"/>`;
+        // Outer pulse for core
+        if(n.category==='core-router'&&!isDimmed){
+            s+=`<circle cx="${p.x}" cy="${p.y}" r="${r+12}" fill="${c}" opacity="0.06" style="animation:pulse 3s ease infinite"/>`;
+        }
+
+        // Glow
+        s+=`<circle cx="${p.x}" cy="${p.y}" r="${r+5}" fill="${c}" opacity="${isDimmed?0.02:0.1}"/>`;
+
+        // Shape: core=rounded rect, switch=diamond, router=circle
+        if(n.category==='core-router'){
+            const sz=r*1.4;
+            s+=`<rect x="${p.x-sz}" y="${p.y-sz}" width="${sz*2}" height="${sz*2}" rx="5" fill="${c}" opacity="${isDimmed?0.15:0.9}" stroke="${isSelected?'#fff':c}" stroke-width="${isSelected?3:1.5}" filter="${isSelected?'url(#glowBig)':'url(#glow)'}" style="cursor:pointer" data-node="${n.id}"/>`;
+        } else if(n.category==='core-switch'){
+            const sz=r*1.2;
+            s+=`<polygon points="${p.x},${p.y-sz} ${p.x+sz},${p.y} ${p.x},${p.y+sz} ${p.x-sz},${p.y}" fill="${c}" opacity="${isDimmed?0.15:0.85}" stroke="${isSelected?'#fff':c}" stroke-width="${isSelected?3:1.5}" filter="url(#glow)" style="cursor:pointer" data-node="${n.id}"/>`;
+        } else {
+            s+=`<circle cx="${p.x}" cy="${p.y}" r="${r}" fill="${c}" opacity="${isDimmed?0.15:0.85}" stroke="${isSelected?'#fff':c}" stroke-width="${isSelected?3:2}" filter="${isSelected?'url(#glowBig)':'url(#glow)'}" style="cursor:pointer" data-node="${n.id}"/>`;
+        }
 
         // Label
-        const labelY = pos.y + r + 14;
-        svgContent += `<text x="${pos.x}" y="${labelY}" text-anchor="middle"
-            fill="var(--text-secondary)" font-size="${isTehran ? 11 : 9}" font-weight="${isTehran ? 700 : 500}"
-            font-family="Segoe UI, Tahoma, sans-serif">${node.label}</text>`;
+        if(!isDimmed){
+            const ly=p.y+r+13;
+            s+=`<text x="${p.x}" y="${ly}" text-anchor="middle" fill="${isSelected?'#fff':'var(--text2)'}" font-size="${n.category==='core-router'?10:9}" font-weight="${n.category==='core-router'?700:500}" font-family="Segoe UI,Tahoma,sans-serif">${n.label}</text>`;
+            if(n.category!=='core-router'&&n.category!=='core-switch'){
+                s+=`<text x="${p.x}" y="${ly+11}" text-anchor="middle" fill="var(--text3)" font-size="7" font-family="Consolas,monospace">${n.id}</text>`;
+            } else {
+                s+=`<text x="${p.x}" y="${ly+11}" text-anchor="middle" fill="var(--text3)" font-size="7" font-family="Consolas,monospace">${n.id}</text>`;
+            }
+        }
 
-        // Hostname below
-        svgContent += `<text x="${pos.x}" y="${labelY + 12}" text-anchor="middle"
-            fill="var(--text-muted)" font-size="7" font-family="Consolas, monospace">${node.id}</text>`;
-
-        // Tunnel count badge
-        if (node.tunnels_count > 0) {
-            svgContent += `<circle cx="${pos.x + r}" cy="${pos.y - r}" r="7" fill="#ef4444"/>`;
-            svgContent += `<text x="${pos.x + r}" y="${pos.y - r + 3}" text-anchor="middle"
-                fill="white" font-size="7" font-weight="700">${node.tunnels_count}</text>`;
+        // Badge: tunnel count
+        if(n.tunnels_count>0&&!isDimmed){
+            s+=`<circle cx="${p.x+r-2}" cy="${p.y-r+2}" r="7" fill="${n.tunnels_count>50?'#ef4444':'#6366f1'}" stroke="var(--bg)" stroke-width="1"/>`;
+            s+=`<text x="${p.x+r-2}" y="${p.y-r+5}" text-anchor="middle" fill="#fff" font-size="6" font-weight="700">${n.tunnels_count>999?'1k+':n.tunnels_count}</text>`;
+        }
+        // Badge: NAT count
+        if(n.nat_count>0&&!isDimmed){
+            s+=`<circle cx="${p.x-r+2}" cy="${p.y-r+2}" r="6" fill="#f59e0b" stroke="var(--bg)" stroke-width="1"/>`;
+            s+=`<text x="${p.x-r+2}" y="${p.y-r+5}" text-anchor="middle" fill="#000" font-size="5.5" font-weight="700">N</text>`;
         }
     });
 
-    svg.innerHTML = svgContent;
+    svg.innerHTML=s;
+    svg.setAttribute('viewBox',`${vb.x} ${vb.y} ${vb.w} ${vb.h}`);
+
+    // Add click handlers
+    svg.querySelectorAll('[data-node]').forEach(el=>{
+        el.addEventListener('click', e=>{
+            e.stopPropagation();
+            const id=el.getAttribute('data-node');
+            selectNode(id);
+        });
+    });
 }
 
-function showTooltip(event, nodeId) {
-    const node = nodesData.find(n => n.id === nodeId);
-    if (!node) return;
+function getVisibleNodes(){
+    return nodesData.filter(n=>{
+        if(activeFilter!=='all'&&n.category!==activeFilter) return false;
+        if(searchQuery){
+            const q=searchQuery.toLowerCase();
+            if(!n.id.toLowerCase().includes(q)&&!n.label.includes(searchQuery)&&!(n.abbr||'').toLowerCase().includes(q)) return false;
+        }
+        return true;
+    });
+}
 
-    let html = `<div class="tt-title">${node.label} <span class="tt-model">${node.model || node.id}</span></div>`;
-    html += `<div style="color:var(--text-muted);font-size:11px;">hostname: ${node.id}</div>`;
+function isNeighbor(id){
+    if(!selectedNode) return false;
+    return linksData.some(l=>(l.source===selectedNode&&l.target===id)||(l.target===selectedNode&&l.source===id));
+}
 
-    // Stats row
-    html += `<div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;">`;
-    html += `<span class="tt-badge tt-iface">${node.interfaces_count} interfaces</span>`;
-    html += `<span class="tt-badge tt-iface">${node.tunnels_count} tunnels</span>`;
-    html += `<span class="tt-badge tt-nat">${node.nat_count} NAT rules</span>`;
-    html += `<span class="tt-badge" style="background:rgba(16,185,129,0.15);color:#6ee7b7;">${node.ospf_count} OSPF</span>`;
-    html += `</div>`;
+// ============ SELECTION & PANEL ============
+function selectNode(id){
+    if(selectedNode===id){selectedNode=null; closePanel(); drawMap(); return;}
+    selectedNode=id;
+    drawMap();
+    openPanel(id);
+}
+
+function closePanel(){
+    selectedNode=null;
+    document.getElementById('detailPanel').classList.remove('open');
+    drawMap();
+}
+
+function openPanel(id){
+    const node=nodesData.find(n=>n.id===id);
+    if(!node) return;
+    const panel=document.getElementById('detailPanel');
+    panel.classList.add('open');
+    document.getElementById('panelTitle').textContent=node.label+' ('+node.id+')';
+    document.getElementById('panelCat').textContent=catLabel(node.category);
+    document.getElementById('panelCat').style.cssText='background:'+catColor(node.category);
+
+    renderOverviewTab(node);
+    renderNatTab(node);
+    renderRoutesTab(node);
+    renderFlowTab(node);
+    switchTab('overview', document.querySelector('.ptab[data-tab="overview"]'));
+}
+
+function switchTab(name, el){
+    document.querySelectorAll('.ptab').forEach(t=>t.classList.remove('on'));
+    document.querySelectorAll('.tab-content').forEach(t=>t.classList.remove('on'));
+    if(el) el.classList.add('on');
+    document.getElementById('tab-'+name).classList.add('on');
+}
+
+// ============ OVERVIEW TAB ============
+function renderOverviewTab(node){
+    let h='';
+    // Stats cards
+    h+=`<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:14px">`;
+    h+=miniCard('Interfaces', node.interfaces_count, '#3b82f6');
+    h+=miniCard('Tunnels', node.tunnels_count, '#8b5cf6');
+    h+=miniCard('NAT Rules', node.nat_count, '#ef4444');
+    h+=miniCard('OSPF', node.ospf_count, '#10b981');
+    h+=miniCard('Static Routes', node.static_routes_count, '#f59e0b');
+    h+=miniCard('ACL', node.acl_count, '#06b6d4');
+    h+=`</div>`;
 
     // Interfaces
-    if (node.interfaces && node.interfaces.length > 0) {
-        html += `<div class="tt-section"><div class="tt-label">Interfaces</div>`;
-        node.interfaces.slice(0, 6).forEach(i => {
-            html += `<div class="tt-item">${i.name}: ${i.ip}/${i.mask}${i.description ? ' - ' + i.description : ''}</div>`;
+    if(node.interfaces&&node.interfaces.length){
+        h+=`<div class="sch-card"><div class="sch-title">&#128268; اینترفیس‌ها</div>`;
+        node.interfaces.forEach(i=>{
+            const natBadge=i.nat? `<span class="sch-badge ${i.nat==='inside'?'badge-in':'badge-out'}">${i.nat}</span>`:'';
+            const cryptoBadge=i.crypto_map? `<span class="sch-badge badge-crypto">&#128274; ${i.crypto_map}</span>`:'';
+            h+=`<div class="sch-row">
+                <span class="sch-val" style="min-width:140px">${i.name}</span>
+                <span class="sch-val" style="color:var(--cyan)">${i.ip}/${i.mask}</span>
+                ${natBadge}${cryptoBadge}
+            </div>`;
+            if(i.description) h+=`<div style="padding-left:148px;font-size:10px;color:var(--text3);margin-top:-2px">${i.description}</div>`;
         });
-        if (node.interfaces.length > 6) html += `<div class="tt-item" style="color:var(--text-muted);">... +${node.interfaces.length - 6} more</div>`;
-        html += `</div>`;
+        h+=`</div>`;
     }
 
-    // NAT rules
-    if (node.nat_rules && node.nat_rules.length > 0) {
-        html += `<div class="tt-section"><div class="tt-label">NAT Rules</div>`;
-        node.nat_rules.slice(0, 6).forEach(r => {
-            html += `<div class="tt-item">${r}</div>`;
+    // Tunnels (summary)
+    if(node.tunnels&&node.tunnels.length){
+        h+=`<div class="sch-card"><div class="sch-title">&#128384; تونل‌ها (${node.tunnels_count})</div>`;
+        node.tunnels.slice(0,8).forEach(t=>{
+            const natBadge=t.nat? `<span class="sch-badge ${t.nat==='inside'?'badge-in':'badge-out'}">${t.nat}</span>`:'';
+            h+=`<div class="sch-row">
+                <span class="sch-val" style="min-width:80px">${t.name}</span>
+                <span class="sch-val" style="color:var(--cyan)">${t.ip}</span>
+                <span style="color:var(--text3);font-size:9px">${t.tunnel_dst||''}</span>
+                ${natBadge}
+            </div>`;
+            if(t.description) h+=`<div style="padding-left:88px;font-size:10px;color:var(--text3);margin-top:-2px">${t.description}</div>`;
         });
-        if (node.nat_rules.length > 6) html += `<div class="tt-item" style="color:var(--text-muted);">... +${node.nat_rules.length - 6} more</div>`;
-        html += `</div>`;
+        if(node.tunnels.length>8) h+=`<div style="text-align:center;color:var(--text3);font-size:10px;padding-top:6px">+${node.tunnels.length-8} تونل دیگر</div>`;
+        h+=`</div>`;
     }
+
+    // Crypto
+    if(node.crypto_maps&&node.crypto_maps.length){
+        h+=`<div class="sch-card"><div class="sch-title">&#128274; Crypto Maps</div>`;
+        node.crypto_maps.forEach(c=>{
+            h+=`<div class="sch-row"><span class="sch-badge badge-crypto">${c}</span></div>`;
+        });
+        h+=`</div>`;
+    }
+
+    document.getElementById('tab-overview').innerHTML=h;
+}
+
+function miniCard(label,val,color){
+    return `<div style="background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:8px;padding:10px;text-align:center">
+        <div style="font-size:20px;font-weight:800;color:${color}">${val}</div>
+        <div style="font-size:9px;color:var(--text3);margin-top:2px">${label}</div>
+    </div>`;
+}
+
+// ============ NAT TAB ============
+function renderNatTab(node){
+    let h='';
+    if(!node.nat_rules||!node.nat_rules.length){
+        h+=`<div style="text-align:center;padding:30px;color:var(--text3)">بدون قانون NAT</div>`;
+        document.getElementById('tab-nat').innerHTML=h; return;
+    }
+
+    // NAT interfaces diagram
+    if(node.nat_interfaces&&node.nat_interfaces.length){
+        h+=`<div class="sch-card"><div class="sch-title">&#128256; NAT Interfaces</div>`;
+        h+=`<div style="display:flex;gap:20px;justify-content:center;padding:10px">`;
+        const insides=node.nat_interfaces.filter(i=>i.side==='inside');
+        const outsides=node.nat_interfaces.filter(i=>i.side==='outside');
+        h+=`<div style="text-align:center">
+            <div style="font-size:9px;color:var(--green);font-weight:700;margin-bottom:6px">INSIDE</div>`;
+        insides.forEach(i=>{
+            h+=`<div style="background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.3);border-radius:6px;padding:4px 10px;margin:3px 0;font-size:10px;font-family:Consolas,monospace;direction:ltr">${i.name}</div>`;
+        });
+        h+=`</div>`;
+        h+=`<div style="display:flex;align-items:center;font-size:24px;color:var(--blue)">&#10132;</div>`;
+        h+=`<div style="text-align:center;padding:12px;border:2px solid ${nodeColor(node)};border-radius:12px;min-width:80px">
+            <div style="font-size:16px">&#128421;</div>
+            <div style="font-size:10px;font-weight:700">${node.id}</div>
+            <div style="font-size:8px;color:var(--text3)">NAT</div>
+        </div>`;
+        h+=`<div style="display:flex;align-items:center;font-size:24px;color:var(--red)">&#10132;</div>`;
+        h+=`<div style="text-align:center">
+            <div style="font-size:9px;color:var(--red);font-weight:700;margin-bottom:6px">OUTSIDE</div>`;
+        outsides.forEach(i=>{
+            h+=`<div style="background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);border-radius:6px;padding:4px 10px;margin:3px 0;font-size:10px;font-family:Consolas,monospace;direction:ltr">${i.name}</div>`;
+        });
+        h+=`</div></div></div>`;
+    }
+
+    // NAT Rules - schematic
+    const dynamics=node.nat_rules.filter(r=>r.type==='dynamic');
+    const statics=node.nat_rules.filter(r=>r.type==='static');
+    const pools=node.nat_rules.filter(r=>r.type==='pool');
+
+    if(dynamics.length){
+        h+=`<div class="sch-card"><div class="sch-title">&#128260; Dynamic NAT / PAT</div>`;
+        dynamics.forEach(r=>{
+            h+=`<div class="flow-box" style="padding:10px;margin-bottom:6px">`;
+            h+=`<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">`;
+            // Source
+            h+=`<div style="background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.3);border-radius:6px;padding:4px 8px;font-size:10px;direction:ltr">`;
+            h+=`<span style="color:var(--green);font-weight:700">ACL:</span> <span style="color:var(--text)">${r.acl||'?'}</span></div>`;
+            // Arrow
+            h+=`<span style="color:var(--blue);font-size:16px">&#10132;</span>`;
+            // Destination
+            if(r.pool){
+                h+=`<div style="background:rgba(139,92,246,0.1);border:1px solid rgba(139,92,246,0.3);border-radius:6px;padding:4px 8px;font-size:10px;direction:ltr">`;
+                h+=`<span style="color:var(--purple);font-weight:700">Pool:</span> <span style="color:var(--text)">${r.pool}</span></div>`;
+            } else if(r.interface){
+                h+=`<div style="background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);border-radius:6px;padding:4px 8px;font-size:10px;direction:ltr">`;
+                h+=`<span style="color:var(--red);font-weight:700">Interface:</span> <span style="color:var(--text)">${r.interface}</span></div>`;
+            }
+            if(r.overload) h+=`<span class="sch-badge badge-static">PAT (overload)</span>`;
+            h+=`</div></div>`;
+        });
+        h+=`</div>`;
+    }
+
+    if(statics.length){
+        h+=`<div class="sch-card"><div class="sch-title">&#128204; Static NAT</div>`;
+        statics.forEach(r=>{
+            h+=`<div class="sch-row" style="gap:6px">`;
+            h+=`<span style="background:rgba(16,185,129,0.1);border-radius:4px;padding:2px 6px;font-size:10px;direction:ltr;color:var(--green)">${r.inside_ip||'?'}</span>`;
+            h+=`<span style="color:var(--blue)">&#10132;</span>`;
+            h+=`<span style="background:rgba(239,68,68,0.1);border-radius:4px;padding:2px 6px;font-size:10px;direction:ltr;color:var(--red)">${r.outside_ip||'?'}</span>`;
+            h+=`</div>`;
+        });
+        h+=`</div>`;
+    }
+
+    if(pools.length){
+        h+=`<div class="sch-card"><div class="sch-title">&#127922; NAT Pools</div>`;
+        pools.forEach(r=>{
+            h+=`<div class="sch-row"><span class="sch-badge badge-pool">${r.name}</span><span class="sch-val" style="direction:ltr">${r.start} - ${r.end}</span></div>`;
+        });
+        h+=`</div>`;
+    }
+
+    document.getElementById('tab-nat').innerHTML=h;
+}
+
+// ============ ROUTES TAB ============
+function renderRoutesTab(node){
+    let h='';
 
     // OSPF
-    if (node.ospf && node.ospf.length > 0) {
-        html += `<div class="tt-section"><div class="tt-label">OSPF</div>`;
-        node.ospf.forEach(o => {
-            html += `<div class="tt-item">Process ${o.process}: ${o.networks.length} networks</div>`;
+    if(node.ospf&&node.ospf.length){
+        h+=`<div class="sch-card"><div class="sch-title">&#128752; OSPF</div>`;
+        node.ospf.forEach(o=>{
+            h+=`<div style="margin-bottom:8px">`;
+            h+=`<div style="font-size:11px;font-weight:700;color:var(--green);direction:ltr">Process ${o.process}${o.router_id?' (RID: '+o.router_id+')':''}</div>`;
+            if(o.networks&&o.networks.length){
+                o.networks.slice(0,10).forEach(net=>{
+                    h+=`<div class="sch-row"><span class="sch-val">${net.net} ${net.wildcard}</span><span class="sch-badge badge-in">Area ${net.area}</span></div>`;
+                });
+                if(o.networks.length>10) h+=`<div style="font-size:9px;color:var(--text3)">+${o.networks.length-10} more networks</div>`;
+            }
+            if(o.redistribute&&o.redistribute.length){
+                o.redistribute.forEach(r=>{
+                    h+=`<div class="sch-row"><span class="sch-badge badge-static">redistribute</span><span class="sch-val">${r}</span></div>`;
+                });
+            }
+            h+=`</div>`;
         });
-        html += `</div>`;
+        h+=`</div>`;
     }
 
-    tooltip.innerHTML = html;
-    tooltip.classList.add('active');
+    // Static routes
+    if(node.static_routes&&node.static_routes.length){
+        h+=`<div class="sch-card"><div class="sch-title">&#128736; Static Routes (${node.static_routes_count})</div>`;
+        node.static_routes.slice(0,20).forEach(r=>{
+            h+=`<div class="sch-row" style="gap:4px">`;
+            h+=`<span class="sch-val" style="min-width:130px;color:var(--cyan)">${r.dest} ${r.mask}</span>`;
+            h+=`<span style="color:var(--text3);font-size:10px">&#10132;</span>`;
+            h+=`<span class="sch-val">${r.next_hop}</span>`;
+            if(r.name) h+=`<span style="font-size:9px;color:var(--amber)">${r.name}</span>`;
+            h+=`</div>`;
+        });
+        if(node.static_routes_count>20) h+=`<div style="text-align:center;color:var(--text3);font-size:10px;padding-top:6px">+${node.static_routes_count-20} مسیر دیگر</div>`;
+        h+=`</div>`;
+    }
 
-    // Position tooltip
-    const rect = tooltip.getBoundingClientRect();
-    let x = event.clientX + 15;
-    let y = event.clientY - 10;
-    if (x + rect.width > window.innerWidth) x = event.clientX - rect.width - 15;
-    if (y + rect.height > window.innerHeight) y = window.innerHeight - rect.height - 10;
-    tooltip.style.left = x + 'px';
-    tooltip.style.top = y + 'px';
+    // ACL
+    if(node.access_lists&&Object.keys(node.access_lists).length){
+        h+=`<div class="sch-card"><div class="sch-title">&#128737; Access Lists</div>`;
+        Object.entries(node.access_lists).forEach(([name, entries])=>{
+            h+=`<div style="margin-bottom:8px"><div style="font-size:11px;font-weight:600;color:var(--purple);direction:ltr;margin-bottom:3px">${name} (${entries.length} entries)</div>`;
+            entries.slice(0,5).forEach(e=>{
+                const ac=e.action==='permit'?'badge-in':'badge-out';
+                h+=`<div class="sch-row" style="gap:4px"><span class="sch-badge ${ac}">${e.action}</span><span class="sch-val" style="font-size:10px">${e.rule}</span></div>`;
+            });
+            if(entries.length>5) h+=`<div style="font-size:9px;color:var(--text3)">+${entries.length-5} more</div>`;
+            h+=`</div>`;
+        });
+        h+=`</div>`;
+    }
+
+    if(!h) h=`<div style="text-align:center;padding:30px;color:var(--text3)">بدون مسیر</div>`;
+    document.getElementById('tab-routes').innerHTML=h;
 }
 
-function hideTooltip() {
-    tooltip.classList.remove('active');
+// ============ FLOW TAB (Traffic Path) ============
+function renderFlowTab(node){
+    let h='';
+    h+=`<div style="font-size:11px;color:var(--text2);margin-bottom:12px">مسیر ترافیک از <b style="color:var(--cyan)">${node.label}</b> تا Core:</div>`;
+
+    // Find path to core
+    const path=findPathToCore(node.id);
+
+    if(!path||path.length===0){
+        if(node.category==='core-router'){
+            h+=`<div class="flow-box"><div style="text-align:center;padding:16px">`;
+            h+=`<div style="font-size:28px;margin-bottom:8px">&#127919;</div>`;
+            h+=`<div style="font-size:13px;font-weight:700;color:var(--red)">این دستگاه خود Core است</div>`;
+            h+=`<div style="font-size:10px;color:var(--text3);margin-top:4px">ترافیک مستقیم از اینجا ارسال می‌شود</div>`;
+            h+=`</div></div>`;
+        } else {
+            h+=`<div style="text-align:center;padding:30px;color:var(--text3)">مسیر پیدا نشد</div>`;
+        }
+    } else {
+        h+=`<div class="flow-box">`;
+        path.forEach((step, idx)=>{
+            const sn=nodesData.find(n=>n.id===step.node);
+            const color=sn?nodeColor(sn):'#64748b';
+            const icon=sn&&sn.category==='core-router'?'&#128421;':sn&&sn.category==='core-switch'?'&#128433;':'&#128268;';
+
+            h+=`<div class="flow-step" style="cursor:pointer" onclick="selectNode('${step.node}')">`;
+            h+=`<div class="flow-icon" style="background:${color}20;border:2px solid ${color}">${icon}</div>`;
+            h+=`<div class="flow-text"><b>${sn?sn.label:step.node}</b>`;
+            h+=`<small>${step.node}${step.via?' via '+step.via:''}</small>`;
+            if(step.tunnel) h+=`<small style="color:var(--blue)">Tunnel: ${step.tunnel}</small>`;
+            // Show NAT if this device has NAT
+            if(sn&&sn.nat_count>0){
+                h+=`<div style="margin-top:3px"><span class="sch-badge badge-static" style="font-size:8px">NAT: ${sn.nat_count} rules</span></div>`;
+            }
+            h+=`</div></div>`;
+
+            if(idx<path.length-1){
+                const link=step.link_info;
+                h+=`<div style="display:flex;align-items:center;gap:8px;padding:0 16px">`;
+                h+=`<div class="flow-arrow">&#8595;</div>`;
+                if(link){
+                    h+=`<div style="font-size:9px;color:var(--text3);direction:ltr">${link.tunnel||'WAN'} ${link.src_ip?'('+link.src_ip+' -> '+link.dst_ip+')':''}</div>`;
+                }
+                h+=`</div>`;
+            }
+        });
+        h+=`</div>`;
+    }
+
+    // Connected neighbors
+    const neighbors=linksData.filter(l=>l.source===node.id||l.target===node.id);
+    if(neighbors.length){
+        h+=`<div class="sch-card"><div class="sch-title">&#128279; اتصالات مستقیم (${neighbors.length})</div>`;
+        neighbors.slice(0,15).forEach(l=>{
+            const peer=l.source===node.id?l.target:l.source;
+            const peerNode=nodesData.find(n=>n.id===peer);
+            const pColor=peerNode?nodeColor(peerNode):'#64748b';
+            h+=`<div class="sch-row" style="cursor:pointer;padding:4px;border-radius:4px" onclick="selectNode('${peer}')">`;
+            h+=`<div style="width:8px;height:8px;border-radius:50%;background:${pColor};flex-shrink:0"></div>`;
+            h+=`<span class="sch-val" style="min-width:130px">${peerNode?peerNode.label:peer}</span>`;
+            h+=`<span style="font-size:9px;color:var(--text3);direction:ltr">${l.tunnel||'WAN'}</span>`;
+            h+=`</div>`;
+        });
+        if(neighbors.length>15) h+=`<div style="text-align:center;font-size:9px;color:var(--text3);padding-top:4px">+${neighbors.length-15} more</div>`;
+        h+=`</div>`;
+    }
+
+    document.getElementById('tab-flow').innerHTML=h;
 }
 
-// Pan/zoom
-let isPanning = false, startX, startY, viewBox = {x:0, y:0, w:1000, h:800};
-const container = document.getElementById('mapContainer');
+function findPathToCore(startId){
+    // BFS from startId to any core-router
+    const coreIds=new Set(nodesData.filter(n=>n.category==='core-router').map(n=>n.id));
+    if(coreIds.has(startId)) return [];
 
-container.addEventListener('mousedown', e => {
-    if (e.target.tagName === 'circle') return;
-    isPanning = true; startX = e.clientX; startY = e.clientY;
-    container.style.cursor = 'grabbing';
+    // Build adjacency
+    const adj={};
+    linksData.forEach(l=>{
+        if(!adj[l.source]) adj[l.source]=[];
+        if(!adj[l.target]) adj[l.target]=[];
+        adj[l.source].push({peer:l.target, link:l});
+        adj[l.target].push({peer:l.source, link:l});
+    });
+
+    const visited=new Set([startId]);
+    const queue=[{node:startId, path:[{node:startId, via:'', tunnel:'', link_info:null}]}];
+
+    while(queue.length){
+        const {node, path}=queue.shift();
+        const neighbors=adj[node]||[];
+        for(const {peer, link} of neighbors){
+            if(visited.has(peer)) continue;
+            visited.add(peer);
+            const newPath=[...path, {
+                node:peer, via:link.src_ip||'', tunnel:link.tunnel||'',
+                link_info:link
+            }];
+            if(coreIds.has(peer)) return newPath;
+            queue.push({node:peer, path:newPath});
+        }
+    }
+    return null;
+}
+
+// ============ FILTERS ============
+function setFilter(cat, el){
+    activeFilter=cat;
+    document.querySelectorAll('.ftag').forEach(b=>b.classList.remove('on'));
+    el.classList.add('on');
+    drawMap();
+}
+function filterSearch(val){
+    searchQuery=val;
+    drawMap();
+}
+
+// ============ TRACE MODE ============
+function toggleTraceMode(){
+    traceMode=!traceMode;
+    document.getElementById('btnTraceMode').classList.toggle('active', traceMode);
+}
+
+// ============ PAN & ZOOM ============
+let isPanning=false, panStart={x:0,y:0};
+mapWrap.addEventListener('mousedown',e=>{
+    if(e.target.closest('[data-node]')) return;
+    isPanning=true; panStart={x:e.clientX,y:e.clientY};
+    mapWrap.classList.add('grabbing');
 });
-container.addEventListener('mousemove', e => {
-    if (!isPanning) return;
-    const dx = (e.clientX - startX) * viewBox.w / container.clientWidth;
-    const dy = (e.clientY - startY) * viewBox.h / container.clientHeight;
-    viewBox.x -= dx; viewBox.y -= dy;
-    startX = e.clientX; startY = e.clientY;
-    svg.setAttribute('viewBox', `${viewBox.x} ${viewBox.y} ${viewBox.w} ${viewBox.h}`);
+window.addEventListener('mousemove',e=>{
+    if(!isPanning) return;
+    const dx=(e.clientX-panStart.x)*vb.w/mapWrap.clientWidth;
+    const dy=(e.clientY-panStart.y)*vb.h/mapWrap.clientHeight;
+    vb.x-=dx; vb.y-=dy;
+    panStart={x:e.clientX, y:e.clientY};
+    svg.setAttribute('viewBox',`${vb.x} ${vb.y} ${vb.w} ${vb.h}`);
 });
-container.addEventListener('mouseup', () => { isPanning = false; container.style.cursor = 'grab'; });
-container.addEventListener('wheel', e => {
+window.addEventListener('mouseup',()=>{isPanning=false; mapWrap.classList.remove('grabbing');});
+mapWrap.addEventListener('wheel',e=>{
     e.preventDefault();
-    const scale = e.deltaY > 0 ? 1.1 : 0.9;
-    const mx = (e.clientX / container.clientWidth) * viewBox.w + viewBox.x;
-    const my = (e.clientY / container.clientHeight) * viewBox.h + viewBox.y;
-    viewBox.w *= scale; viewBox.h *= scale;
-    viewBox.x = mx - (e.clientX / container.clientWidth) * viewBox.w;
-    viewBox.y = my - (e.clientY / container.clientHeight) * viewBox.h;
-    svg.setAttribute('viewBox', `${viewBox.x} ${viewBox.y} ${viewBox.w} ${viewBox.h}`);
+    const s=e.deltaY>0?1.08:0.92;
+    const mx=(e.clientX/mapWrap.clientWidth)*vb.w+vb.x;
+    const my=(e.clientY/mapWrap.clientHeight)*vb.h+vb.y;
+    vb.w*=s; vb.h*=s;
+    vb.x=mx-(e.clientX/mapWrap.clientWidth)*vb.w;
+    vb.y=my-(e.clientY/mapWrap.clientHeight)*vb.h;
+    svg.setAttribute('viewBox',`${vb.x} ${vb.y} ${vb.w} ${vb.h}`);
 });
+
+// Click empty space to deselect
+mapWrap.addEventListener('click',e=>{
+    if(!e.target.closest('[data-node]')&&selectedNode){
+        selectedNode=null; closePanel(); drawMap();
+    }
+});
+
+function resetView(){
+    vb={x:-50,y:-20,w:1100,h:880};
+    svg.setAttribute('viewBox',`${vb.x} ${vb.y} ${vb.w} ${vb.h}`);
+    selectedNode=null; closePanel(); activeFilter='all'; searchQuery='';
+    document.getElementById('searchBox').value='';
+    document.querySelectorAll('.ftag').forEach(b=>b.classList.remove('on'));
+    document.querySelector('.ftag[data-cat="all"]').classList.add('on');
+    drawMap();
+}
 
 loadMap();
 </script>
