@@ -62,3 +62,18 @@ def db_manager_page():
 @pages_bp.route('/service-management')
 def service_management_page():
     return render_template('service_management.html')
+
+
+@pages_bp.route('/shared-files')
+def shared_files_page():
+    return render_template('shared_files.html')
+
+
+@pages_bp.route('/reports')
+def reports_page():
+    return render_template('reports.html')
+
+
+@pages_bp.route('/network-map')
+def network_map_page():
+    return render_template('network_map.html')
