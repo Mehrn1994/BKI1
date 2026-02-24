@@ -1,0 +1,1794 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>مدیریت دیتابیس - Network Portal</title>
+    <style>
+/* ========== THEME SYSTEM ========== */
+:root {
+    --bg-primary: #0f172a;
+    --bg-secondary: #1e293b;
+    --bg-card: rgba(30, 41, 59, 0.8);
+    --bg-header: rgba(30, 41, 59, 0.9);
+    --text-primary: #e2e8f0;
+    --text-secondary: #94a3b8;
+    --text-muted: #64748b;
+    --border-color: rgba(255, 255, 255, 0.1);
+    --shadow-color: rgba(0, 0, 0, 0.3);
+    --input-bg: rgba(15, 23, 42, 0.8);
+    --input-border: rgba(255, 255, 255, 0.2);
+    --card-hover: rgba(255, 255, 255, 0.05);
+}
+
+
+[data-theme="light"] {
+    --bg-primary: #f8fafc;
+    --bg-secondary: #f1f5f9;
+    --bg-card: #ffffff;
+    --bg-header: #ffffff;
+    --text-primary: #0f172a;
+    --text-secondary: #334155;
+    --text-muted: #475569;
+    --border-color: rgba(0, 0, 0, 0.15);
+    --shadow-color: rgba(0, 0, 0, 0.1);
+    --input-bg: #ffffff;
+    --input-border: rgba(0, 0, 0, 0.2);
+    --card-hover: rgba(0, 0, 0, 0.05);
+}
+
+body { transition: background 0.3s ease, color 0.3s ease; }
+
+[data-theme="light"] body {
+    background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 100%) !important;
+    color: var(--text-primary) !important;
+}
+
+[data-theme="light"] .header, [data-theme="light"] header,
+[data-theme="light"] .top-bar, [data-theme="light"] .navbar {
+    background: var(--bg-header) !important;
+    border-color: var(--border-color) !important;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08) !important;
+}
+
+[data-theme="light"] .card, [data-theme="light"] .form-section,
+[data-theme="light"] .config-section, [data-theme="light"] .result-section,
+[data-theme="light"] .section, [data-theme="light"] .panel,
+[data-theme="light"] .main-card, [data-theme="light"] .box {
+    background: var(--bg-card) !important;
+    border-color: var(--border-color) !important;
+    color: var(--text-primary) !important;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.06) !important;
+}
+
+[data-theme="light"] input, [data-theme="light"] select, [data-theme="light"] textarea {
+    background: var(--input-bg) !important;
+    border: 1px solid var(--input-border) !important;
+    color: #0f172a !important;
+}
+
+[data-theme="light"] input::placeholder { color: #64748b !important; }
+[data-theme="light"] select option { background: #fff; color: #0f172a; }
+
+[data-theme="light"] label, [data-theme="light"] .form-label,
+[data-theme="light"] h1, [data-theme="light"] h2, [data-theme="light"] h3, [data-theme="light"] h4,
+[data-theme="light"] .section-title, [data-theme="light"] .title,
+[data-theme="light"] .app-title h1, [data-theme="light"] .app-title p {
+    color: #0f172a !important;
+}
+
+[data-theme="light"] p, [data-theme="light"] span:not(.badge):not(.tag), 
+[data-theme="light"] div:not(.btn):not(.badge) {
+    color: inherit;
+}
+
+[data-theme="light"] .hint, [data-theme="light"] .info-text, [data-theme="light"] small,
+[data-theme="light"] .description, [data-theme="light"] .help-text,
+[data-theme="light"] .form-hint, [data-theme="light"] .note {
+    color: #334155 !important;
+}
+
+[data-theme="light"] .user-display, [data-theme="light"] .user-info,
+[data-theme="light"] .user-name, [data-theme="light"] #currentUser {
+    color: #0f172a !important;
+}
+
+[data-theme="light"] .badge, [data-theme="light"] .tag, [data-theme="light"] .count {
+    color: #fff !important;
+}
+
+[data-theme="light"] a:not(.btn):not(button):not(.back-btn):not(.logout-link) {
+    color: #2563eb !important;
+}
+
+[data-theme="light"] .back-btn, [data-theme="light"] .logout-link {
+    color: #dc2626 !important;
+}
+
+[data-theme="light"] pre, [data-theme="light"] code, [data-theme="light"] .config-output,
+[data-theme="light"] .output-box, [data-theme="light"] .code-block {
+    background: #1e293b !important;
+    color: #e2e8f0 !important;
+}
+
+[data-theme="light"] table { border-color: var(--border-color) !important; }
+[data-theme="light"] th, [data-theme="light"] td { 
+    border-color: var(--border-color) !important;
+    color: #0f172a !important;
+}
+[data-theme="light"] th { background: #f1f5f9 !important; color: #0f172a !important; }
+[data-theme="light"] tr:hover { background: #f8fafc !important; }
+
+[data-theme="light"] .success, [data-theme="light"] .alert-success,
+[data-theme="light"] .success-box, [data-theme="light"] .ip-reserved {
+    background: #dcfce7 !important;
+    color: #166534 !important;
+    border-color: #86efac !important;
+}
+
+[data-theme="light"] .error, [data-theme="light"] .alert-error,
+[data-theme="light"] .error-box {
+    background: #fee2e2 !important;
+    color: #991b1b !important;
+    border-color: #fca5a5 !important;
+}
+
+[data-theme="light"] .warning, [data-theme="light"] .alert-warning {
+    background: #fef3c7 !important;
+    color: #92400e !important;
+    border-color: #fcd34d !important;
+}
+
+[data-theme="light"] .info-box, [data-theme="light"] .notice,
+[data-theme="light"] .auto-ip-info {
+    background: #eff6ff !important;
+    color: #1e40af !important;
+    border-color: #93c5fd !important;
+}
+
+[data-theme="light"] .btn-primary, [data-theme="light"] button[type="submit"] {
+    background: #2563eb !important;
+    color: #fff !important;
+}
+
+[data-theme="light"] .btn-secondary {
+    background: #64748b !important;
+    color: #fff !important;
+}
+
+[data-theme="light"] .free-count { color: #059669 !important; font-weight: bold; }
+[data-theme="light"] .used-count { color: #dc2626 !important; font-weight: bold; }
+
+/* Router boxes for intranet */
+[data-theme="light"] .router-box, [data-theme="light"] .device-box {
+    background: #fff !important;
+    border: 1px solid #e2e8f0 !important;
+    color: #0f172a !important;
+}
+
+[data-theme="light"] .router-header, [data-theme="light"] .device-box-header {
+    color: #0f172a !important;
+}
+
+/* Stats cards */
+[data-theme="light"] .stat-card {
+    background: #fff !important;
+    border: 1px solid #e2e8f0 !important;
+}
+
+[data-theme="light"] .stat-card .value {
+    color: #2563eb !important;
+}
+
+[data-theme="light"] .stat-card .label {
+    color: #475569 !important;
+}
+
+.theme-toggle {
+    background: var(--bg-card, rgba(30,41,59,0.8));
+    border: 1px solid var(--border-color, rgba(255,255,255,0.1));
+    border-radius: 50%;
+    width: 36px;
+    height: 36px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
+    transition: all 0.3s ease;
+    margin-left: 10px;
+}
+.theme-toggle:hover { transform: scale(1.1); }
+/* ========== END THEME ========== */
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, sans-serif;
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            min-height: 100vh;
+            color: #e2e8f0;
+        }
+        
+        /* Animated Background */
+        .bg-animation {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            overflow: hidden;
+        }
+        
+        .bg-animation::before,
+        .bg-animation::after {
+            content: '';
+            position: absolute;
+            width: 400px;
+            height: 400px;
+            border-radius: 50%;
+            filter: blur(80px);
+            opacity: 0.3;
+            animation: float 20s ease-in-out infinite;
+        }
+        
+        .bg-animation::before {
+            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+            top: 10%;
+            left: 10%;
+        }
+        
+        .bg-animation::after {
+            background: linear-gradient(135deg, #06b6d4, #10b981);
+            bottom: 10%;
+            right: 10%;
+            animation-delay: -10s;
+        }
+        
+        @keyframes float {
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            25% { transform: translate(50px, 50px) scale(1.1); }
+            50% { transform: translate(0, 100px) scale(1); }
+            75% { transform: translate(-50px, 50px) scale(0.9); }
+        }
+        
+        /* Header */
+        .header {
+            background: rgba(30, 41, 59, 0.9);
+            backdrop-filter: blur(10px);
+            padding: 16px 32px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        
+        .header h1 {
+            font-size: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .header-actions {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+        
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #3b82f6, #2563eb);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(59, 130, 246, 0.4);
+        }
+        
+        .btn-success {
+            background: linear-gradient(135deg, #10b981, #059669);
+            color: white;
+        }
+        
+        .btn-success:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(16, 185, 129, 0.4);
+        }
+        
+        .btn-warning {
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+            color: white;
+        }
+        
+        .btn-danger {
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+            color: white;
+        }
+        
+        .btn-secondary {
+            background: rgba(100, 116, 139, 0.3);
+            color: #e2e8f0;
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+        
+        .btn-secondary:hover {
+            background: rgba(100, 116, 139, 0.5);
+        }
+        
+        /* Main Container */
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 32px;
+        }
+        
+        /* Stats Cards */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 32px;
+        }
+        
+        .stat-card {
+            background: rgba(30, 41, 59, 0.6);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            padding: 24px;
+            border: 1px solid rgba(255,255,255,0.1);
+            transition: all 0.3s ease;
+        }
+        
+        .stat-card:hover {
+            transform: translateY(-4px);
+            border-color: rgba(59, 130, 246, 0.5);
+        }
+        
+        .stat-card .icon {
+            font-size: 2rem;
+            margin-bottom: 12px;
+        }
+        
+        .stat-card .value {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #3b82f6;
+        }
+        
+        .stat-card .label {
+            color: #94a3b8;
+            font-size: 14px;
+            margin-top: 4px;
+        }
+        
+        /* Main Grid */
+        .main-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+        }
+        
+        @media (max-width: 1024px) {
+            .main-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        /* Cards */
+        .card {
+            background: rgba(30, 41, 59, 0.6);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            border: 1px solid rgba(255,255,255,0.1);
+            overflow: hidden;
+        }
+        
+        .card-header {
+            padding: 20px 24px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .card-header h2 {
+            font-size: 1.1rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .card-body {
+            padding: 24px;
+        }
+        
+        /* Upload Zone */
+        .upload-zone {
+            border: 2px dashed rgba(59, 130, 246, 0.5);
+            border-radius: 12px;
+            padding: 48px;
+            text-align: center;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            background: rgba(59, 130, 246, 0.05);
+        }
+        
+        .upload-zone:hover,
+        .upload-zone.dragover {
+            border-color: #3b82f6;
+            background: rgba(59, 130, 246, 0.1);
+        }
+        
+        .upload-zone .icon {
+            font-size: 4rem;
+            margin-bottom: 16px;
+            opacity: 0.5;
+        }
+        
+        .upload-zone p {
+            color: #94a3b8;
+            margin-bottom: 16px;
+        }
+        
+        .upload-zone input[type="file"] {
+            display: none;
+        }
+        
+        /* Table Selection */
+        .table-selection {
+            margin-top: 24px;
+        }
+        
+        .table-selection label {
+            display: block;
+            margin-bottom: 12px;
+            font-weight: 500;
+        }
+        
+        .radio-group {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        
+        .radio-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 16px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 1px solid transparent;
+        }
+        
+        .radio-item:hover {
+            background: rgba(255,255,255,0.1);
+        }
+        
+        .radio-item.selected {
+            border-color: #3b82f6;
+            background: rgba(59, 130, 246, 0.1);
+        }
+        
+        .radio-item input[type="radio"] {
+            width: 18px;
+            height: 18px;
+            accent-color: #3b82f6;
+        }
+        
+        .radio-item .info {
+            flex: 1;
+        }
+        
+        .radio-item .info .name {
+            font-weight: 500;
+        }
+        
+        .radio-item .info .desc {
+            font-size: 12px;
+            color: #94a3b8;
+        }
+        
+        .radio-item .count {
+            background: rgba(59, 130, 246, 0.2);
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            color: #3b82f6;
+        }
+        
+        /* Preview Section */
+        .preview-section {
+            margin-top: 24px;
+            display: none;
+        }
+        
+        .preview-section.show {
+            display: block;
+        }
+        
+        .preview-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+        
+        .preview-table-wrapper {
+            max-height: 300px;
+            overflow: auto;
+            border-radius: 8px;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        
+        .preview-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+        
+        .preview-table th,
+        .preview-table td {
+            padding: 10px 12px;
+            text-align: right;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            white-space: nowrap;
+        }
+        
+        .preview-table th {
+            background: rgba(59, 130, 246, 0.2);
+            font-weight: 600;
+            position: sticky;
+            top: 0;
+        }
+        
+        .preview-table tr:hover {
+            background: rgba(255,255,255,0.05);
+        }
+        
+        /* Activity Log */
+        .activity-log {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        
+        .activity-item {
+            display: flex;
+            gap: 12px;
+            padding: 16px;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+        
+        .activity-item:last-child {
+            border-bottom: none;
+        }
+        
+        .activity-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+        
+        .activity-icon.upload {
+            background: rgba(59, 130, 246, 0.2);
+            color: #3b82f6;
+        }
+        
+        .activity-icon.backup {
+            background: rgba(245, 158, 11, 0.2);
+            color: #f59e0b;
+        }
+        
+        .activity-icon.success {
+            background: rgba(16, 185, 129, 0.2);
+            color: #10b981;
+        }
+        
+        .activity-icon.error {
+            background: rgba(239, 68, 68, 0.2);
+            color: #ef4444;
+        }
+        
+        .activity-content {
+            flex: 1;
+        }
+        
+        .activity-content .title {
+            font-weight: 500;
+            margin-bottom: 4px;
+        }
+        
+        .activity-content .desc {
+            font-size: 13px;
+            color: #94a3b8;
+        }
+        
+        .activity-content .time {
+            font-size: 12px;
+            color: #64748b;
+            margin-top: 4px;
+        }
+        
+        /* Progress Bar */
+        .progress-container {
+            margin-top: 24px;
+            display: none;
+        }
+        
+        .progress-container.show {
+            display: block;
+        }
+        
+        .progress-bar {
+            height: 8px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 4px;
+            overflow: hidden;
+            margin-bottom: 12px;
+        }
+        
+        .progress-bar .fill {
+            height: 100%;
+            background: linear-gradient(90deg, #3b82f6, #10b981);
+            border-radius: 4px;
+            transition: width 0.3s ease;
+            width: 0%;
+        }
+        
+        .progress-status {
+            text-align: center;
+            color: #94a3b8;
+            font-size: 14px;
+        }
+        
+        /* Toast */
+        .toast-container {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        
+        .toast {
+            padding: 16px 24px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            animation: slideIn 0.3s ease;
+            min-width: 300px;
+        }
+        
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .toast.success {
+            background: linear-gradient(135deg, #10b981, #059669);
+            color: white;
+        }
+        
+        .toast.error {
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+            color: white;
+        }
+        
+        .toast.info {
+            background: linear-gradient(135deg, #3b82f6, #2563eb);
+            color: white;
+        }
+        
+        /* Modal */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.7);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+        
+        .modal-overlay.show {
+            display: flex;
+        }
+        
+        .modal {
+            background: #1e293b;
+            border-radius: 16px;
+            max-width: 600px;
+            width: 90%;
+            max-height: 80vh;
+            overflow: auto;
+            animation: modalIn 0.3s ease;
+        }
+        
+        @keyframes modalIn {
+            from {
+                opacity: 0;
+                transform: scale(0.9);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+        
+        .modal-header {
+            padding: 20px 24px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .modal-header h3 {
+            font-size: 1.2rem;
+        }
+        
+        .modal-close {
+            background: none;
+            border: none;
+            color: #94a3b8;
+            font-size: 1.5rem;
+            cursor: pointer;
+        }
+        
+        .modal-body {
+            padding: 24px;
+        }
+        
+        .modal-footer {
+            padding: 16px 24px;
+            border-top: 1px solid rgba(255,255,255,0.1);
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+        }
+        
+        /* Column Mapping */
+        .column-mapping {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+        
+        .mapping-row {
+            display: grid;
+            grid-template-columns: 1fr auto 1fr;
+            gap: 16px;
+            align-items: center;
+        }
+        
+        .mapping-row select {
+            padding: 10px 12px;
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 8px;
+            color: #e2e8f0;
+            font-size: 14px;
+        }
+        
+        .mapping-arrow {
+            color: #3b82f6;
+            font-size: 1.2rem;
+        }
+        
+        .mapping-label {
+            padding: 10px 12px;
+            background: rgba(59, 130, 246, 0.1);
+            border-radius: 8px;
+            font-size: 14px;
+        }
+        
+        /* Help Text */
+        .help-text {
+            background: rgba(59, 130, 246, 0.1);
+            border: 1px solid rgba(59, 130, 246, 0.3);
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 20px;
+        }
+        
+        .help-text h4 {
+            color: #3b82f6;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .help-text p {
+            font-size: 13px;
+            color: #94a3b8;
+            line-height: 1.6;
+        }
+        
+        /* Full Width Card */
+        .full-width {
+            grid-column: 1 / -1;
+        }
+        
+        /* Backup List */
+        .backup-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        
+        .backup-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 8px;
+        }
+        
+        .backup-item .info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .backup-item .icon {
+            font-size: 1.5rem;
+        }
+        
+        .backup-item .details .name {
+            font-weight: 500;
+        }
+        
+        .backup-item .details .date {
+            font-size: 12px;
+            color: #94a3b8;
+        }
+        
+        .backup-item .size {
+            color: #94a3b8;
+            font-size: 14px;
+        }
+    
+
+
+    
+/* ========== BETTER FONTS ========== */
+body {
+    font-size: 16px !important;
+    line-height: 1.6 !important;
+}
+
+h1 { font-size: 1.8rem !important; font-weight: 700 !important; }
+h2 { font-size: 1.4rem !important; font-weight: 700 !important; }
+h3 { font-size: 1.2rem !important; font-weight: 600 !important; }
+h4 { font-size: 1.1rem !important; font-weight: 600 !important; }
+
+label, .form-label {
+    font-size: 15px !important;
+    font-weight: 600 !important;
+    color: var(--text-primary, inherit) !important;
+}
+
+input, select, textarea {
+    font-size: 15px !important;
+    padding: 12px 14px !important;
+}
+
+.section-title, .title {
+    font-size: 1.15rem !important;
+    font-weight: 700 !important;
+}
+
+.hint, .info-text, .help-text, .form-hint, small, .note, .description {
+    font-size: 14px !important;
+    font-weight: 500 !important;
+}
+
+.btn, button:not(.theme-toggle) {
+    font-size: 15px !important;
+    font-weight: 600 !important;
+}
+
+table { font-size: 15px !important; }
+th { font-weight: 700 !important; }
+th, td { padding: 12px 14px !important; }
+
+.info-box, .notice, .alert, .success-box, .error-box, .auto-ip-info, .ip-reserved {
+    font-size: 15px !important;
+    font-weight: 500 !important;
+    padding: 14px 18px !important;
+}
+
+.badge, .tag, .count {
+    font-size: 13px !important;
+    font-weight: 600 !important;
+    padding: 5px 12px !important;
+}
+
+.user-display, .user-info, .user-name {
+    font-size: 15px !important;
+    font-weight: 600 !important;
+}
+
+pre, code, .config-output, .output-box {
+    font-size: 14px !important;
+    line-height: 1.5 !important;
+}
+
+.app-title h1 { font-size: 1.8rem !important; font-weight: 700 !important; }
+.app-title p { font-size: 15px !important; font-weight: 500 !important; }
+
+/* Light theme text improvements */
+[data-theme="light"] label, 
+[data-theme="light"] .form-label,
+[data-theme="light"] .section-title, 
+[data-theme="light"] .title,
+[data-theme="light"] h1, 
+[data-theme="light"] h2, 
+[data-theme="light"] h3 {
+    color: #0f172a !important;
+}
+
+[data-theme="light"] .hint, 
+[data-theme="light"] small,
+[data-theme="light"] .info-text, 
+[data-theme="light"] .description,
+[data-theme="light"] .help-text {
+    color: #334155 !important;
+}
+
+[data-theme="light"] input,
+[data-theme="light"] select,
+[data-theme="light"] textarea {
+    color: #0f172a !important;
+    background: #fff !important;
+    border: 1px solid rgba(0,0,0,0.2) !important;
+}
+
+[data-theme="light"] input::placeholder {
+    color: #64748b !important;
+}
+/* ========== END BETTER FONTS ========== */
+
+    </style>
+
+<script>
+// Theme System - runs immediately
+(function() {
+    var theme = localStorage.getItem('theme') || 'dark';
+    document.documentElement.setAttribute('data-theme', theme);
+})();
+
+function toggleTheme() {
+    var current = document.documentElement.getAttribute('data-theme') || 'dark';
+    var next = current === 'dark' ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', next);
+    localStorage.setItem('theme', next);
+    var icon = document.getElementById('themeIcon');
+    if (icon) icon.textContent = next === 'dark' ? '🌙' : '☀️';
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    var icon = document.getElementById('themeIcon');
+    if (icon) {
+        var theme = localStorage.getItem('theme') || 'dark';
+        icon.textContent = theme === 'dark' ? '🌙' : '☀️';
+    }
+});
+</script>
+</head>
+<body>
+    <div class="bg-animation"></div>
+    
+    <header class="header">
+        <h1>📊 مدیریت دیتابیس</h1>
+        <div class="header-actions">
+            <button class="theme-toggle" onclick="toggleTheme()" title="تغییر تم"><span id="themeIcon">🌙</span></button>
+            <button class="btn btn-secondary" onclick="location.href='/'">
+                🏠 بازگشت به داشبورد
+            </button>
+            <button class="btn btn-warning" onclick="createBackup()">
+                💾 Backup دیتابیس
+            </button>
+            <span id="currentUser" style="color: var(--text-secondary, #94a3b8);"></span>
+        </div>
+    </header>
+    
+    <div class="container">
+        <!-- Stats -->
+        <div class="stats-grid" id="statsGrid">
+            <div class="stat-card">
+                <div class="icon">📍</div>
+                <div class="value" id="statLanIps">-</div>
+                <div class="label">LAN IPs</div>
+            </div>
+            <div class="stat-card">
+                <div class="icon">🔗</div>
+                <div class="value" id="statTunnels">-</div>
+                <div class="label">Tunnels</div>
+            </div>
+            <div class="stat-card">
+                <div class="icon">🟣</div>
+                <div class="value" id="statApnIps">-</div>
+                <div class="label">APN غیرمالی</div>
+            </div>
+            <div class="stat-card">
+                <div class="icon">🟢</div>
+                <div class="value" id="statApnMali">-</div>
+                <div class="label">APN مالی</div>
+            </div>
+        </div>
+        
+        <!-- Main Grid -->
+        <div class="main-grid">
+            <!-- Upload Section -->
+            <div class="card">
+                <div class="card-header">
+                    <h2>📤 آپلود فایل Excel</h2>
+                </div>
+                <div class="card-body">
+                    <div class="help-text">
+                        <h4>💡 راهنما</h4>
+                        <p>
+                            فایل Excel خود را انتخاب کنید یا drag & drop کنید. 
+                            سپس جدول مقصد را انتخاب کنید و داده‌ها را پیش‌نمایش کنید.
+                            قبل از هر آپلود، یک backup خودکار گرفته می‌شود.
+                        </p>
+                    </div>
+                    
+                    <div class="upload-zone" id="uploadZone">
+                        <div class="icon">📁</div>
+                        <p>فایل Excel را اینجا بکشید و رها کنید<br>یا کلیک کنید</p>
+                        <button class="btn btn-primary">انتخاب فایل</button>
+                        <input type="file" id="fileInput" accept=".xlsx,.xls,.csv">
+                    </div>
+                    
+                    <div id="selectedFile" style="margin-top: 16px; display: none;">
+                        <div style="display: flex; align-items: center; gap: 12px; padding: 16px; background: rgba(16, 185, 129, 0.1); border-radius: 8px; border: 1px solid rgba(16, 185, 129, 0.3);">
+                            <span style="font-size: 2rem;">📄</span>
+                            <div style="flex: 1;">
+                                <div id="fileName" style="font-weight: 500;"></div>
+                                <div id="fileSize" style="font-size: 12px; color: #94a3b8;"></div>
+                            </div>
+                            <button class="btn btn-danger" onclick="clearFile()" style="padding: 8px 16px;">✕</button>
+                        </div>
+                    </div>
+                    
+                    <div class="table-selection" id="tableSelection" style="display: none;">
+                        <label>📋 انتخاب جدول مقصد:</label>
+                        <div class="radio-group" id="radioGroup">
+                            <!-- Radio items will be populated dynamically -->
+                        </div>
+                    </div>
+                    
+                    <!-- Preview Section -->
+                    <div class="preview-section" id="previewSection">
+                        <div class="preview-header">
+                            <h3>👀 پیش‌نمایش داده‌ها</h3>
+                            <span id="previewCount" style="color: #94a3b8;"></span>
+                        </div>
+                        <div class="preview-table-wrapper">
+                            <table class="preview-table" id="previewTable">
+                                <thead id="previewHeader"></thead>
+                                <tbody id="previewBody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                    
+                    <!-- Progress -->
+                    <div class="progress-container" id="progressContainer">
+                        <div class="progress-bar">
+                            <div class="fill" id="progressFill"></div>
+                        </div>
+                        <div class="progress-status" id="progressStatus">در حال پردازش...</div>
+                    </div>
+                    
+                    <!-- Actions -->
+                    <div style="margin-top: 24px; display: flex; gap: 12px;" id="uploadActions" style="display: none;">
+                        <button class="btn btn-success" id="btnUpload" onclick="uploadData()" disabled>
+                            ⬆️ آپلود و بروزرسانی
+                        </button>
+                        <button class="btn btn-secondary" onclick="previewData()">
+                            👁️ پیش‌نمایش
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Activity Log -->
+            <div class="card">
+                <div class="card-header">
+                    <h2>📜 تاریخچه فعالیت‌ها</h2>
+                    <button class="btn btn-secondary" onclick="loadActivity()" style="padding: 8px 16px;">🔄</button>
+                </div>
+                <div class="card-body">
+                    <div class="activity-log" id="activityLog">
+                        <!-- Activity items will be populated -->
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Backups -->
+            <div class="card full-width">
+                <div class="card-header">
+                    <h2>💾 Backup های موجود</h2>
+                    <button class="btn btn-secondary" onclick="loadBackups()" style="padding: 8px 16px;">🔄 بارگذاری</button>
+                </div>
+                <div class="card-body">
+                    <div class="backup-list" id="backupList">
+                        <div style="text-align: center; color: #94a3b8; padding: 32px;">
+                            در حال بارگذاری...
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Column Mapping Modal -->
+    <div class="modal-overlay" id="mappingModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3>🔗 تطبیق ستون‌ها</h3>
+                <button class="modal-close" onclick="closeMappingModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p style="margin-bottom: 16px; color: #94a3b8;">
+                    ستون‌های فایل Excel را به فیلدهای دیتابیس متصل کنید:
+                </p>
+                <div class="column-mapping" id="columnMapping">
+                    <!-- Mapping rows will be added dynamically -->
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeMappingModal()">انصراف</button>
+                <button class="btn btn-success" onclick="applyMapping()">تأیید و ادامه</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Toast Container -->
+    <div class="toast-container" id="toastContainer"></div>
+    
+    <script>
+        // ============ Global Variables ============
+        let currentFile = null;
+        let fileData = null;
+        let selectedTable = null;
+        let columnMapping = {};
+        
+        const tableInfo = {
+            'lan_ips': {
+                name: 'LAN IPs',
+                desc: 'IP های LAN شعب و نقاط',
+                fields: ['province', 'branch_name', 'octet1', 'octet2', 'octet3', 'username', 'reservation_date', 'row_number']
+            },
+            'apn_ips': {
+                name: 'APN غیرمالی',
+                desc: 'IP های APN-INT-HUB',
+                fields: ['province', 'x', 'y', 'branch_name', 'loop2', 'tun200', 'asr_loop', 'asr_tun']
+            },
+            'apn_mali': {
+                name: 'APN مالی',
+                desc: 'IP های ISR-APN-RO',
+                fields: ['province', 'x', 'y', 'branch_name', 'loop0', 'tun156', 'status']
+            },
+            'intranet_tunnels': {
+                name: 'Intranet Tunnels',
+                desc: 'Tunnel های Intranet',
+                fields: ['IP Address', 'Intr-Tun', 'Loop0', 'Province', 'Branch Name', 'status']
+            },
+            'tunnel_ips': {
+                name: 'Tunnel IPs',
+                desc: 'IP های Tunnel 200',
+                fields: ['province', 'tunnel_ip', 'loop0', 'branch_name', 'status']
+            }
+        };
+        
+        // Session timeout: 8 hours
+        const SESSION_TIMEOUT = 8 * 60 * 60 * 1000;
+        function checkSessionTimeout() {
+            const sessionStart = localStorage.getItem('sessionStart');
+            if (sessionStart && (Date.now() - parseInt(sessionStart)) > SESSION_TIMEOUT) {
+                localStorage.clear(); sessionStorage.clear();
+                alert('جلسه شما منقضی شده است. لطفاً دوباره وارد شوید.');
+                location.href = '/login';
+                return true;
+            }
+            return false;
+        }
+
+        // ============ Initialization ============
+        document.addEventListener('DOMContentLoaded', function() {
+            // Check session timeout
+            if (checkSessionTimeout()) return;
+
+            // Check authentication
+            const username = localStorage.getItem('currentUser') || localStorage.getItem('username') || sessionStorage.getItem('username');
+            if (!username) {
+                location.href = '/login';
+                return;
+            }
+
+            // Check if user is admin (Sahebdel only)
+            if (username !== 'Sahebdel') {
+                alert('⛔ شما دسترسی به این صفحه ندارید!\n\nفقط کاربر Sahebdel می‌تواند به مدیریت دیتابیس دسترسی داشته باشد.');
+                location.href = '/';
+                return;
+            }
+            
+            document.getElementById('currentUser').textContent = '👤 ' + username + ' (Admin)';
+            
+            // Load stats
+            loadStats();
+            
+            // Load activity
+            loadActivity();
+            
+            // Load backups
+            loadBackups();
+            
+            // Setup upload zone
+            setupUploadZone();
+            
+            // Populate table selection
+            populateTableSelection();
+        });
+        
+        // ============ Stats ============
+        async function loadStats() {
+            try {
+                const response = await fetch('/api/stats');
+                const data = await response.json();
+                
+                document.getElementById('statLanIps').textContent = formatNumber(data.lan_ips?.total || 0);
+                document.getElementById('statTunnels').textContent = formatNumber(data.tunnels?.total || 0);
+                document.getElementById('statApnIps').textContent = formatNumber(data.apn?.total || 0);
+                document.getElementById('statApnMali').textContent = formatNumber(data.apn_mali?.total || 0);
+                
+                // Update table counts in radio group
+                updateTableCounts(data);
+            } catch (error) {
+                console.error('Error loading stats:', error);
+            }
+        }
+        
+        function updateTableCounts(data) {
+            const counts = {
+                'lan_ips': data.lan_ips?.total || 0,
+                'apn_ips': data.apn?.total || 0,
+                'apn_mali': data.apn_mali?.total || 0,
+                'intranet_tunnels': data.tunnels?.total || 0,
+                'tunnel_ips': 0 // Will be fetched separately if needed
+            };
+            
+            for (const [table, count] of Object.entries(counts)) {
+                const countEl = document.querySelector(`.radio-item[data-table="${table}"] .count`);
+                if (countEl) {
+                    countEl.textContent = formatNumber(count) + ' رکورد';
+                }
+            }
+        }
+        
+        function formatNumber(num) {
+            return new Intl.NumberFormat('fa-IR').format(num);
+        }
+        
+        // ============ Upload Zone ============
+        function setupUploadZone() {
+            const zone = document.getElementById('uploadZone');
+            const fileInput = document.getElementById('fileInput');
+            
+            zone.addEventListener('click', () => fileInput.click());
+            
+            zone.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                zone.classList.add('dragover');
+            });
+            
+            zone.addEventListener('dragleave', () => {
+                zone.classList.remove('dragover');
+            });
+            
+            zone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                zone.classList.remove('dragover');
+                if (e.dataTransfer.files.length) {
+                    handleFile(e.dataTransfer.files[0]);
+                }
+            });
+            
+            fileInput.addEventListener('change', (e) => {
+                if (e.target.files.length) {
+                    handleFile(e.target.files[0]);
+                }
+            });
+        }
+        
+        function handleFile(file) {
+            const validTypes = ['.xlsx', '.xls', '.csv'];
+            const ext = '.' + file.name.split('.').pop().toLowerCase();
+            
+            if (!validTypes.includes(ext)) {
+                showToast('فقط فایل‌های Excel و CSV پشتیبانی می‌شوند', 'error');
+                return;
+            }
+            
+            currentFile = file;
+            fileData = null;
+            
+            document.getElementById('uploadZone').style.display = 'none';
+            document.getElementById('selectedFile').style.display = 'block';
+            document.getElementById('fileName').textContent = file.name;
+            document.getElementById('fileSize').textContent = formatFileSize(file.size);
+            document.getElementById('tableSelection').style.display = 'block';
+            document.getElementById('uploadActions').style.display = 'flex';
+            
+            // Auto-detect table based on filename
+            autoDetectTable(file.name);
+            
+            showToast('فایل انتخاب شد: ' + file.name, 'success');
+        }
+        
+        function clearFile() {
+            currentFile = null;
+            fileData = null;
+            selectedTable = null;
+            
+            document.getElementById('uploadZone').style.display = 'block';
+            document.getElementById('selectedFile').style.display = 'none';
+            document.getElementById('tableSelection').style.display = 'none';
+            document.getElementById('uploadActions').style.display = 'none';
+            document.getElementById('previewSection').classList.remove('show');
+            document.getElementById('fileInput').value = '';
+            
+            // Clear radio selection
+            document.querySelectorAll('.radio-item').forEach(item => {
+                item.classList.remove('selected');
+                item.querySelector('input').checked = false;
+            });
+            
+            document.getElementById('btnUpload').disabled = true;
+        }
+        
+        function formatFileSize(bytes) {
+            if (bytes < 1024) return bytes + ' B';
+            if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+            return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+        }
+        
+        function autoDetectTable(filename) {
+            const lower = filename.toLowerCase();
+            let detected = null;
+            
+            if (lower.includes('ipplan') || lower.includes('lan')) {
+                detected = 'lan_ips';
+            } else if (lower.includes('apn-int') || lower.includes('apn_int')) {
+                detected = 'apn_ips';
+            } else if (lower.includes('isr-apn') || lower.includes('mali') || lower.includes('مالی')) {
+                detected = 'apn_mali';
+            } else if (lower.includes('guilanet') || lower.includes('tunnel') || lower.includes('intranet')) {
+                detected = 'intranet_tunnels';
+            }
+            
+            if (detected) {
+                selectTable(detected);
+            }
+        }
+        
+        // ============ Table Selection ============
+        function populateTableSelection() {
+            const radioGroup = document.getElementById('radioGroup');
+            radioGroup.innerHTML = '';
+            
+            for (const [key, info] of Object.entries(tableInfo)) {
+                const item = document.createElement('div');
+                item.className = 'radio-item';
+                item.dataset.table = key;
+                item.innerHTML = `
+                    <input type="radio" name="targetTable" value="${key}" id="radio_${key}">
+                    <div class="info">
+                        <div class="name">${info.name}</div>
+                        <div class="desc">${info.desc}</div>
+                    </div>
+                    <div class="count">-</div>
+                `;
+                item.addEventListener('click', () => selectTable(key));
+                radioGroup.appendChild(item);
+            }
+        }
+        
+        function selectTable(tableName) {
+            selectedTable = tableName;
+            
+            document.querySelectorAll('.radio-item').forEach(item => {
+                if (item.dataset.table === tableName) {
+                    item.classList.add('selected');
+                    item.querySelector('input').checked = true;
+                } else {
+                    item.classList.remove('selected');
+                    item.querySelector('input').checked = false;
+                }
+            });
+            
+            document.getElementById('btnUpload').disabled = false;
+        }
+        
+        // ============ Preview ============
+        async function previewData() {
+            if (!currentFile) {
+                showToast('لطفاً یک فایل انتخاب کنید', 'error');
+                return;
+            }
+            
+            showProgress('در حال خواندن فایل...');
+            
+            const formData = new FormData();
+            formData.append('file', currentFile);
+            formData.append('preview', 'true');
+            
+            try {
+                const response = await fetch('/api/db/preview-excel', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const result = await response.json();
+                
+                if (result.error) {
+                    showToast(result.error, 'error');
+                    hideProgress();
+                    return;
+                }
+                
+                fileData = result;
+                displayPreview(result);
+                hideProgress();
+                
+            } catch (error) {
+                showToast('خطا در خواندن فایل: ' + error.message, 'error');
+                hideProgress();
+            }
+        }
+        
+        function displayPreview(data) {
+            const section = document.getElementById('previewSection');
+            const header = document.getElementById('previewHeader');
+            const body = document.getElementById('previewBody');
+            const count = document.getElementById('previewCount');
+            
+            // Set count
+            count.textContent = `${formatNumber(data.total_rows)} ردیف (نمایش ${Math.min(20, data.total_rows)} ردیف اول)`;
+            
+            // Build header
+            header.innerHTML = '<tr>' + data.columns.map(col => `<th>${col}</th>`).join('') + '</tr>';
+            
+            // Build body (first 20 rows)
+            body.innerHTML = data.preview.map(row => 
+                '<tr>' + data.columns.map(col => `<td>${row[col] ?? '-'}</td>`).join('') + '</tr>'
+            ).join('');
+            
+            section.classList.add('show');
+        }
+        
+        // ============ Upload ============
+        async function uploadData() {
+            if (!currentFile) {
+                showToast('لطفاً یک فایل انتخاب کنید', 'error');
+                return;
+            }
+            
+            if (!selectedTable) {
+                showToast('لطفاً جدول مقصد را انتخاب کنید', 'error');
+                return;
+            }
+            
+            if (!confirm(`آیا مطمئن هستید که می‌خواهید جدول "${tableInfo[selectedTable].name}" را بروزرسانی کنید؟\n\nیک backup خودکار قبل از تغییرات گرفته می‌شود.`)) {
+                return;
+            }
+            
+            showProgress('در حال ایجاد backup...');
+            
+            const formData = new FormData();
+            formData.append('file', currentFile);
+            formData.append('table', selectedTable);
+            formData.append('username', localStorage.getItem('currentUser'));
+            
+            try {
+                // Create backup first
+                await createBackup(true);
+                
+                updateProgress(30, 'در حال آپلود فایل...');
+                
+                const response = await fetch('/api/db/import-excel', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                updateProgress(70, 'در حال پردازش داده‌ها...');
+                
+                const result = await response.json();
+                
+                if (result.error) {
+                    showToast(result.error, 'error');
+                    hideProgress();
+                    return;
+                }
+                
+                updateProgress(100, 'تکمیل شد!');
+                
+                setTimeout(() => {
+                    hideProgress();
+                    showToast(`✅ ${formatNumber(result.inserted)} ردیف اضافه و ${formatNumber(result.updated)} ردیف بروزرسانی شد`, 'success');
+                    
+                    // Refresh stats
+                    loadStats();
+                    loadActivity();
+                    
+                    // Clear file
+                    clearFile();
+                }, 500);
+                
+            } catch (error) {
+                showToast('خطا در آپلود: ' + error.message, 'error');
+                hideProgress();
+            }
+        }
+        
+        // ============ Backup ============
+        async function createBackup(silent = false) {
+            try {
+                const response = await fetch('/api/db/backup', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username: localStorage.getItem('currentUser') })
+                });
+                
+                const result = await response.json();
+                
+                if (result.error) {
+                    if (!silent) showToast(result.error, 'error');
+                    return false;
+                }
+                
+                if (!silent) {
+                    showToast('✅ Backup ایجاد شد: ' + result.filename, 'success');
+                    loadBackups();
+                }
+                
+                return true;
+                
+            } catch (error) {
+                if (!silent) showToast('خطا در ایجاد backup: ' + error.message, 'error');
+                return false;
+            }
+        }
+        
+        async function loadBackups() {
+            const list = document.getElementById('backupList');
+            
+            try {
+                const response = await fetch('/api/db/backups');
+                const backups = await response.json();
+                
+                if (backups.length === 0) {
+                    list.innerHTML = '<div style="text-align: center; color: #94a3b8; padding: 32px;">هیچ backup ای وجود ندارد</div>';
+                    return;
+                }
+                
+                list.innerHTML = backups.map(backup => `
+                    <div class="backup-item">
+                        <div class="info">
+                            <span class="icon">💾</span>
+                            <div class="details">
+                                <div class="name">${backup.filename}</div>
+                                <div class="date">${backup.date}</div>
+                            </div>
+                        </div>
+                        <div class="size">${backup.size}</div>
+                        <button class="btn btn-secondary" onclick="restoreBackup('${backup.filename}')" style="padding: 8px 12px;">
+                            🔄 بازیابی
+                        </button>
+                    </div>
+                `).join('');
+                
+            } catch (error) {
+                list.innerHTML = '<div style="text-align: center; color: #ef4444; padding: 32px;">خطا در بارگذاری</div>';
+            }
+        }
+        
+        async function restoreBackup(filename) {
+            if (!confirm(`آیا مطمئن هستید که می‌خواهید دیتابیس را از "${filename}" بازیابی کنید؟\n\nدیتابیس فعلی جایگزین می‌شود.`)) {
+                return;
+            }
+            
+            try {
+                const response = await fetch('/api/db/restore', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ filename: filename })
+                });
+                
+                const result = await response.json();
+                
+                if (result.error) {
+                    showToast(result.error, 'error');
+                    return;
+                }
+                
+                showToast('✅ دیتابیس بازیابی شد', 'success');
+                loadStats();
+                loadActivity();
+                
+            } catch (error) {
+                showToast('خطا در بازیابی: ' + error.message, 'error');
+            }
+        }
+        
+        // ============ Activity ============
+        async function loadActivity() {
+            const log = document.getElementById('activityLog');
+            
+            try {
+                const response = await fetch('/api/db/activity');
+                const activities = await response.json();
+                
+                if (activities.length === 0) {
+                    log.innerHTML = '<div style="text-align: center; color: #94a3b8; padding: 32px;">هیچ فعالیتی ثبت نشده</div>';
+                    return;
+                }
+                
+                log.innerHTML = activities.map(act => `
+                    <div class="activity-item">
+                        <div class="activity-icon ${act.type}">
+                            ${act.type === 'upload' ? '📤' : act.type === 'backup' ? '💾' : act.type === 'success' ? '✅' : '❌'}
+                        </div>
+                        <div class="activity-content">
+                            <div class="title">${act.title}</div>
+                            <div class="desc">${act.description}</div>
+                            <div class="time">${act.time} - ${act.user}</div>
+                        </div>
+                    </div>
+                `).join('');
+                
+            } catch (error) {
+                log.innerHTML = '<div style="text-align: center; color: #94a3b8; padding: 32px;">در حال بارگذاری...</div>';
+            }
+        }
+        
+        // ============ Progress ============
+        function showProgress(status) {
+            const container = document.getElementById('progressContainer');
+            const statusEl = document.getElementById('progressStatus');
+            const fill = document.getElementById('progressFill');
+            
+            container.classList.add('show');
+            statusEl.textContent = status;
+            fill.style.width = '10%';
+        }
+        
+        function updateProgress(percent, status) {
+            const statusEl = document.getElementById('progressStatus');
+            const fill = document.getElementById('progressFill');
+            
+            fill.style.width = percent + '%';
+            if (status) statusEl.textContent = status;
+        }
+        
+        function hideProgress() {
+            const container = document.getElementById('progressContainer');
+            container.classList.remove('show');
+        }
+        
+        // ============ Toast ============
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            toast.className = 'toast ' + type;
+            toast.innerHTML = `
+                <span>${type === 'success' ? '✅' : type === 'error' ? '❌' : 'ℹ️'}</span>
+                <span>${message}</span>
+            `;
+            container.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                setTimeout(() => toast.remove(), 300);
+            }, 4000);
+        }
+        
+        // ============ Column Mapping Modal ============
+        function showMappingModal(excelColumns) {
+            const mapping = document.getElementById('columnMapping');
+            const dbFields = tableInfo[selectedTable].fields;
+            
+            mapping.innerHTML = dbFields.map(field => `
+                <div class="mapping-row">
+                    <select id="map_${field}">
+                        <option value="">-- انتخاب ستون --</option>
+                        ${excelColumns.map(col => `<option value="${col}">${col}</option>`).join('')}
+                    </select>
+                    <span class="mapping-arrow">→</span>
+                    <div class="mapping-label">${field}</div>
+                </div>
+            `).join('');
+            
+            // Auto-match columns
+            dbFields.forEach(field => {
+                const select = document.getElementById('map_' + field);
+                const match = excelColumns.find(col => 
+                    col.toLowerCase() === field.toLowerCase() ||
+                    col.toLowerCase().includes(field.toLowerCase()) ||
+                    field.toLowerCase().includes(col.toLowerCase())
+                );
+                if (match) select.value = match;
+            });
+            
+            document.getElementById('mappingModal').classList.add('show');
+        }
+        
+        function closeMappingModal() {
+            document.getElementById('mappingModal').classList.remove('show');
+        }
+        
+        function applyMapping() {
+            const dbFields = tableInfo[selectedTable].fields;
+            columnMapping = {};
+            
+            dbFields.forEach(field => {
+                const select = document.getElementById('map_' + field);
+                if (select.value) {
+                    columnMapping[select.value] = field;
+                }
+            });
+            
+            closeMappingModal();
+            showToast('تطبیق ستون‌ها ذخیره شد', 'success');
+        }
+    </script>
+
+{% include 'chat_widget.html' %}
+</body>
+</html>
