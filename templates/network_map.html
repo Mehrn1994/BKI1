@@ -106,6 +106,13 @@ canvas{display:block;width:100%;height:100%}
         <div style="font-size:7px;color:var(--t3);margin-top:6px;border-top:1px solid var(--brd);padding-top:4px">Click: Select | DblClick: Details<br>Scroll: Zoom | Drag: Pan</div>
     </div>
     <div class="load" id="loader"><div class="sp"></div><span>Loading topology...</span></div>
+    <div id="diagBox" style="display:none;position:absolute;top:50px;right:12px;background:rgba(8,12,24,0.95);backdrop-filter:blur(16px);border:1px solid rgba(34,211,238,0.3);border-radius:10px;padding:12px 16px;font-size:10px;z-index:150;color:#e2e8f0;max-width:320px;box-shadow:0 8px 24px rgba(0,0,0,0.5)">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+            <span style="font-weight:700;font-size:11px;background:linear-gradient(135deg,#22d3ee,#818cf8);-webkit-background-clip:text;-webkit-text-fill-color:transparent">Topology Info</span>
+            <button onclick="this.parentElement.parentElement.style.display='none'" style="background:none;border:1px solid rgba(100,116,139,0.3);border-radius:4px;color:#94a3b8;cursor:pointer;font-size:12px;width:20px;height:20px;display:flex;align-items:center;justify-content:center">&times;</button>
+        </div>
+        <div id="diagContent" style="font-family:Consolas,monospace;font-size:9px;direction:ltr;text-align:left;line-height:1.6"></div>
+    </div>
 </div>
 <div id="panel">
     <div class="ph"><h2 id="pTitle">-</h2><span class="badge" id="pBadge">-</span><button class="pcl" onclick="closeP()">&times;</button></div>
@@ -145,7 +152,7 @@ window.addEventListener('resize',resize);
 
 async function loadData(){
     try{
-        const r=await fetch('/api/network-map/topology'),d=await r.json();
+        const r=await fetch('/api/network-map/topology?_t='+Date.now()),d=await r.json();
         ND=d.nodes||[];LD=d.links||[];
         console.log('Topology version:',d._version||'OLD','links:',d.total_links);
         document.getElementById('sT').textContent=d.total_routers;
@@ -153,10 +160,34 @@ async function loadData(){
         document.getElementById('sSw').textContent=d.switch_count||0;
         document.getElementById('sP').textContent=d.provincial_count||0;
         document.getElementById('sL').textContent=d.total_links;
+        // Show diagnostic panel
+        showDiag(d);
         buildGraph();fitView();mkParticles();
         document.getElementById('loader').style.display='none';
         animate();
     }catch(e){document.getElementById('loader').innerHTML='<span style="color:#f472b6">Error loading</span>';}
+}
+function showDiag(d){
+    const box=document.getElementById('diagBox'),ct=document.getElementById('diagContent');
+    if(!box||!ct)return;
+    // Count links per node
+    const lc={};d.links.forEach(l=>{lc[l.source]=(lc[l.source]||0)+1;lc[l.target]=(lc[l.target]||0)+1;});
+    const top5=Object.entries(lc).sort((a,b)=>b[1]-a[1]).slice(0,5);
+    // Count provincial-to-provincial links (should be 0)
+    const provNodes=new Set(d.nodes.filter(n=>n.category==='provincial-router').map(n=>n.id));
+    let p2p=0;d.links.forEach(l=>{if(provNodes.has(l.source)&&provNodes.has(l.target))p2p++;});
+    let html=`<div style="color:${d._version==='v5-hub-spoke-fixed'?'#34d399':'#f472b6'};font-weight:bold;font-size:11px;margin-bottom:4px">`;
+    html+=`Version: ${d._version||'UNKNOWN (OLD CODE!)'}</div>`;
+    html+=`Total links: ${d.total_links} | Core: ${d.core_count} | Switch: ${d.switch_count} | Provincial: ${d.provincial_count}<br>`;
+    html+=`<span style="color:${p2p===0?'#34d399':'#f472b6'}">Provincial↔Provincial links: ${p2p} ${p2p===0?'✓':'✗ BUG!'}</span><br>`;
+    html+=`<br><b>Top connected nodes:</b><br>`;
+    top5.forEach(([name,cnt])=>{
+        const nd=d.nodes.find(n=>n.id===name);
+        const cat=nd?nd.category:'?';
+        html+=`${name} <span style="color:#94a3b8">(${cat})</span>: <b style="color:#22d3ee">${cnt}</b> links<br>`;
+    });
+    ct.innerHTML=html;
+    box.style.display='block';
 }
 
 function buildGraph(){
@@ -336,7 +367,7 @@ function animate(){
 }
 
 // ── HIT TEST ──
-function hit(sx,sy){const w=s2w(sx,sy);let best=null,bd=1e9;getVis().forEach(n=>{const dx=n.wx-w.x,dy=n.wy-w.y,d=Math.sqrt(dx*dx+dy*dy),hr=n.pal.r*1.5/cam.z;if(d<hr&&d<bd){best=n;bd=d;}});return best;}
+function hit(sx,sy){let best=null,bd=1e9;getVis().forEach(n=>{const s=w2s(n.wx,n.wy);const dx=sx-s.x,dy=sy-s.y,d=Math.sqrt(dx*dx+dy*dy);const hr=n.pal.r*cam.z+8;if(d<hr&&d<bd){best=n;bd=d;}});return best;}
 
 // ── MOUSE ──
 let clickT=null,lastCT=0;
