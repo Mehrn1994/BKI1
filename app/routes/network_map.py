@@ -419,4 +419,5 @@ def get_topology():
         'core_count': core_count,
         'switch_count': switch_count,
         'provincial_count': provincial_count,
+        '_version': 'v4-hub-spoke-3wan',
     })

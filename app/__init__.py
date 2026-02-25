@@ -17,6 +17,7 @@ def create_app():
 
     app.config['SECRET_KEY'] = Config.SECRET_KEY
     app.config['MAX_CONTENT_LENGTH'] = Config.MAX_CONTENT_LENGTH
+    app.config['TEMPLATES_AUTO_RELOAD'] = True
 
     # CORS - restricted origins (not wildcard)
     CORS(app, origins=Config.CORS_ORIGINS)
