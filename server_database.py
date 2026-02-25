@@ -4465,7 +4465,7 @@ def network_map_topology():
         # Position logic
         if category == 'core-switch' and sw_prov and sw_prov in PROVINCE_MAP_INFO:
             pinfo = PROVINCE_MAP_INFO[sw_prov]
-            x, y, label = pinfo['x'] + 6, pinfo['y'] + 4, pinfo['fa'] + ' SW'
+            x, y, label = pinfo['x'] + 8, pinfo['y'] + 6, pinfo['fa'] + ' SW'
         elif category == 'core-router' and info['hostname'] in CORE_POSITIONS:
             cp = CORE_POSITIONS[info['hostname']]
             x, y, label = cp[0], cp[1], cp[2]
