@@ -521,54 +521,72 @@ body { transition: background 0.3s ease, color 0.3s ease; }
             background: #dc2626;
         }
 
-        /* Email Card Table - Professional Style */
+        /* Email Card - Formal Bank Letter Style */
+        .email-letter-wrapper {
+            direction: rtl;
+            font-family: 'B Nazanin', 'Segoe UI', Tahoma, Arial, sans-serif;
+            background: #fff;
+            padding: 10px 0;
+            margin-bottom: 20px;
+        }
+
+        .email-letter-header {
+            text-align: right;
+            margin-bottom: 12px;
+            line-height: 2;
+        }
+
+        .email-letter-recipient {
+            font-size: 15px;
+            font-weight: 700;
+            color: #0d6e5b;
+        }
+
+        .email-letter-greeting {
+            font-size: 15px;
+            font-weight: 700;
+            color: #0d6e5b;
+        }
+
+        .email-letter-body {
+            font-size: 13px;
+            color: #333;
+            margin-bottom: 14px;
+            line-height: 1.8;
+            text-align: right;
+        }
+
         .email-card-table {
             width: 100%;
             border-collapse: collapse;
             direction: rtl;
-            font-family: 'Segoe UI', Tahoma, Arial, sans-serif;
+            font-family: 'B Nazanin', 'Segoe UI', Tahoma, Arial, sans-serif;
             margin-bottom: 20px;
-            border: 2px solid #2563eb;
-            border-radius: 12px;
-            overflow: hidden;
-            box-shadow: 0 4px 15px rgba(37, 99, 235, 0.2);
+            border: 1px solid #999;
         }
 
         .email-card-table thead {
-            background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+            background: #1a8a7a;
         }
 
         .email-card-table th {
             color: white;
-            padding: 16px 14px;
+            padding: 10px 12px;
             font-weight: 700;
-            font-size: 14px;
+            font-size: 13px;
             text-align: center;
-            border-left: 1px solid rgba(255,255,255,0.2);
-            letter-spacing: 0.5px;
-        }
-
-        .email-card-table th:last-child {
-            border-left: none;
+            border: 1px solid #999;
+            white-space: nowrap;
         }
 
         .email-card-table td {
-            padding: 16px 14px;
+            padding: 10px 12px;
             text-align: center;
-            font-size: 14px;
+            font-size: 13px;
             font-weight: 500;
-            border-bottom: 1px solid #e5e7eb;
-            border-left: 1px solid #e5e7eb;
-            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+            border: 1px solid #ccc;
+            background: #f8f9fa;
             color: #1e293b;
-        }
-
-        .email-card-table td:last-child {
-            border-left: none;
-        }
-
-        .email-card-table tr:last-child td {
-            border-bottom: none;
         }
 
         .email-card-actions {
@@ -1639,31 +1657,42 @@ document.addEventListener('DOMContentLoaded', function() {
             // Convert dates to Persian calendar format
             const creationDate = formatPersianDate(new Date());
             const expiryDate = formatPersianDate(new Date(Date.now() + 60 * 24 * 60 * 60 * 1000)); // +60 days
+            // Persian date for reference line (compact format)
+            const refDate = formatPersianDate(new Date()).replace(/\//g, '');
 
-            // Build the table HTML
+            // Build the formal bank letter HTML
             const tableHtml = `
-                <table class="email-card-table" id="emailCardTable">
-                    <thead>
-                        <tr>
-                            <th>ردیف</th>
-                            <th>مدیریت</th>
-                            <th>محل استقرار</th>
-                            <th>IP</th>
-                            <th>تاریخ ایجاد</th>
-                            <th>تاریخ انقضا</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td>1</td>
-                            <td>${data.province}</td>
-                            <td>${data.point_name}</td>
-                            <td style="direction:ltr; font-family:monospace; font-weight:bold;">${data.lan_ip}/24</td>
-                            <td>${creationDate}</td>
-                            <td>${expiryDate}</td>
-                        </tr>
-                    </tbody>
-                </table>
+                <div class="email-letter-wrapper" id="emailCardTable">
+                    <div class="email-letter-header">
+                        <div class="email-letter-recipient">جناب آقای همایون زاده &ndash; رئیس واحد مدیریت، طراحی و توسعه شبکه</div>
+                        <div class="email-letter-greeting">با سلام و احترام ؛</div>
+                    </div>
+                    <div class="email-letter-body">
+                        عطف به نامه ی شماره ${data.request_number || '---'} مورخ ${refDate} .IP مورد نیاز به شرح جدول ذیل اعلام می شود.
+                    </div>
+                    <table class="email-card-table">
+                        <thead>
+                            <tr>
+                                <th>ردیف</th>
+                                <th>مدیریت</th>
+                                <th>محل استقرار</th>
+                                <th>IP</th>
+                                <th>تاریخ ایجاد</th>
+                                <th>تاریخ انقضا</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>1</td>
+                                <td>${data.province}</td>
+                                <td>${data.point_name}</td>
+                                <td style="direction:ltr; font-family:monospace; font-weight:bold;">${data.lan_ip}/24</td>
+                                <td>${creationDate}</td>
+                                <td>${expiryDate}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
             `;
 
             // Create modal if not exists
@@ -1675,19 +1704,19 @@ document.addEventListener('DOMContentLoaded', function() {
                 modal.innerHTML = `
                     <div class="email-modal-content">
                         <div class="email-modal-header">
-                            <span class="email-modal-title">📧 کارت رزرو برای ایمیل</span>
+                            <span class="email-modal-title">کارت رزرو برای ایمیل</span>
                             <button class="close-modal-btn" onclick="closeEmailCardModal()">×</button>
                         </div>
                         <div class="email-instructions">
-                            <strong>📌 راهنما:</strong> جدول زیر را کپی کرده و در ایمیل خود Paste کنید. این جدول حاوی اطلاعات رزرو IP است.
+                            <strong>راهنما:</strong> متن زیر را کپی کرده و در ایمیل خود Paste کنید. این نامه حاوی اطلاعات رزرو IP با فرمت رسمی است.
                         </div>
                         <div id="emailCardContent"></div>
                         <div class="email-card-actions">
                             <button class="copy-card-btn" onclick="copyEmailCard()">
-                                📋 کپی جدول برای ایمیل
+                                کپی نامه برای ایمیل
                             </button>
                             <button class="new-reserve-btn" onclick="closeEmailCardModal()">
-                                ✅ بستن و رزرو جدید
+                                بستن و رزرو جدید
                             </button>
                         </div>
                     </div>
@@ -1708,37 +1737,67 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
 
-        // Copy email card to clipboard
+        // Copy email card to clipboard (rich HTML for email clients)
         async function copyEmailCard() {
-            const table = document.getElementById('emailCardTable');
+            const wrapper = document.getElementById('emailCardTable');
             const copyBtn = document.querySelector('.copy-card-btn');
-            
-            if (!table) {
-                showAlert('error', '❌ جدول پیدا نشد');
+
+            if (!wrapper) {
+                showAlert('error', 'جدول پیدا نشد');
                 return;
             }
-            
-            // Build tab-separated text for copying
-            const rows = table.querySelectorAll('tr');
+
+            // Build plain text version of the formal letter
+            const headerEl = wrapper.querySelector('.email-letter-header');
+            const bodyEl = wrapper.querySelector('.email-letter-body');
+            const tableEl = wrapper.querySelector('.email-card-table');
+
             let textContent = '';
-            
-            rows.forEach(row => {
-                const cells = row.querySelectorAll('th, td');
-                const rowText = Array.from(cells).map(cell => cell.textContent.trim()).join('\t');
-                textContent += rowText + '\n';
-            });
-            
-            // Try modern clipboard API first
+            if (headerEl) {
+                textContent += headerEl.textContent.trim().replace(/\s+/g, ' ').replace(/ – /, ' – ') + '\n\n';
+            }
+            if (bodyEl) {
+                textContent += bodyEl.textContent.trim() + '\n\n';
+            }
+            if (tableEl) {
+                const rows = tableEl.querySelectorAll('tr');
+                rows.forEach(row => {
+                    const cells = row.querySelectorAll('th, td');
+                    const rowText = Array.from(cells).map(cell => cell.textContent.trim()).join('\t');
+                    textContent += rowText + '\n';
+                });
+            }
+
+            // Try rich HTML copy first (preserves formatting in email clients)
+            try {
+                const htmlContent = wrapper.outerHTML;
+                const blob = new Blob([htmlContent], { type: 'text/html' });
+                const textBlob = new Blob([textContent], { type: 'text/plain' });
+                const clipboardItem = new ClipboardItem({
+                    'text/html': blob,
+                    'text/plain': textBlob
+                });
+                await navigator.clipboard.write([clipboardItem]);
+
+                copyBtn.innerHTML = 'کپی شد! در ایمیل Paste کنید';
+                copyBtn.classList.add('copy-success');
+                setTimeout(() => {
+                    copyBtn.innerHTML = 'کپی نامه برای ایمیل';
+                    copyBtn.classList.remove('copy-success');
+                }, 3000);
+                return;
+            } catch (err) {
+                console.log('Rich copy failed, trying text fallback:', err);
+            }
+
+            // Fallback: plain text copy
             if (navigator.clipboard && navigator.clipboard.writeText) {
                 try {
                     await navigator.clipboard.writeText(textContent);
-                    
-                    // Show success
-                    copyBtn.innerHTML = '✅ کپی شد! در ایمیل Paste کنید';
+                    copyBtn.innerHTML = 'کپی شد! در ایمیل Paste کنید';
                     copyBtn.classList.add('copy-success');
-                    
                     setTimeout(() => {
-                        copyBtn.innerHTML = '📋 کپی جدول برای ایمیل';
+                        copyBtn.innerHTML = 'کپی نامه برای ایمیل';
                         copyBtn.classList.remove('copy-success');
                     }, 3000);
                     return;
@@ -1746,8 +1805,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     console.error('Clipboard API failed:', err);
                 }
             }
-            
-            // Fallback: Use execCommand
+
+            // Final fallback: execCommand
             try {
                 const textArea = document.createElement('textarea');
                 textArea.value = textContent;
@@ -1757,24 +1816,23 @@ document.addEventListener('DOMContentLoaded', function() {
                 document.body.appendChild(textArea);
                 textArea.focus();
                 textArea.select();
-                
+
                 const successful = document.execCommand('copy');
                 document.body.removeChild(textArea);
-                
+
                 if (successful) {
-                    copyBtn.innerHTML = '✅ کپی شد! در ایمیل Paste کنید';
+                    copyBtn.innerHTML = 'کپی شد! در ایمیل Paste کنید';
                     copyBtn.classList.add('copy-success');
-                    
                     setTimeout(() => {
-                        copyBtn.innerHTML = '📋 کپی جدول برای ایمیل';
+                        copyBtn.innerHTML = 'کپی نامه برای ایمیل';
                         copyBtn.classList.remove('copy-success');
                     }, 3000);
                 } else {
-                    showAlert('error', '❌ خطا در کپی کردن');
+                    showAlert('error', 'خطا در کپی کردن');
                 }
             } catch (fallbackErr) {
                 console.error('Fallback copy failed:', fallbackErr);
-                showAlert('error', '❌ خطا در کپی کردن. لطفاً جدول را دستی انتخاب و کپی کنید.');
+                showAlert('error', 'خطا در کپی کردن. لطفاً متن را دستی انتخاب و کپی کنید.');
             }
         }
 
