@@ -126,7 +126,7 @@ canvas{display:block;width:100%;height:100%}
 <script>
 const canvas=document.getElementById('graphCanvas'),ctx=canvas.getContext('2d'),wrap=document.getElementById('canvasWrap'),ttip=document.getElementById('tooltip');
 let W,H,dpr,ND=[],LD=[],nodes=[],links=[],selected=null,hovered=null,filter='all',searchStr='';
-let cam={x:0,y:0,z:1},tCam={x:0,y:0,z:1},savedCam=null;
+let cam={x:0,y:0,z:1},tCam={x:0,y:0,z:1};
 let particles=[],dragging=false,dragS={x:0,y:0},camS={x:0,y:0};
 const P={
     'core-router':{c:['#f472b6','#fb923c'],g:'#f472b6',r:20},
@@ -161,13 +161,18 @@ async function loadData(){
 function buildGraph(){
     const SX=10,SY=8;
     nodes=ND.map(n=>({...n,wx:n.x*SX,wy:n.y*SY,pal:gP(n),pulse:Math.random()*Math.PI*2}));
-    // Spread overlapping nodes (core routers)
+    // Spread overlapping nodes (provincial + switch at same province)
     const pm={};
-    nodes.forEach(n=>{const k=Math.round(n.wx/5)+'_'+Math.round(n.wy/5);if(!pm[k])pm[k]=[];pm[k].push(n);});
+    nodes.forEach(n=>{const k=Math.round(n.wx/8)+'_'+Math.round(n.wy/8);if(!pm[k])pm[k]=[];pm[k].push(n);});
     Object.values(pm).forEach(g=>{
-        if(g.length>1){
-            const step=Math.PI*2/g.length,sp=25+g.length*5;
+        if(g.length>1&&g.length<=6){
+            const step=Math.PI*2/g.length,sp=18+g.length*4;
             g.forEach((n,i)=>{n.wx+=Math.cos(step*i-Math.PI/2)*sp;n.wy+=Math.sin(step*i-Math.PI/2)*sp;});
+        }else if(g.length>6){
+            // Grid layout for large groups
+            const cols=Math.ceil(Math.sqrt(g.length)),sp=40;
+            const sx=-(cols-1)*sp/2,sy=-(Math.ceil(g.length/cols)-1)*sp/2;
+            g.forEach((n,i)=>{n.wx+=sx+(i%cols)*sp;n.wy+=sy+Math.floor(i/cols)*sp;});
         }
     });
     const nm={};nodes.forEach(n=>nm[n.id]=n);
@@ -188,7 +193,7 @@ function fitView(){
     const vn=getVis();(vn.length?vn:nodes).forEach(n=>{if(n.wx<x1)x1=n.wx;if(n.wx>x2)x2=n.wx;if(n.wy<y1)y1=n.wy;if(n.wy>y2)y2=n.wy;});
     const pad=60,rx=x2-x1,ry=y2-y1;
     const z=Math.min(rx>0?(W-pad*2)/rx:2,ry>0?(H-pad*2)/ry:2,3.5);
-    tCam={x:(x1+x2)/2,y:(y1+y2)/2,z};cam={...tCam};savedCam={...tCam};
+    tCam={x:(x1+x2)/2,y:(y1+y2)/2,z};cam={...tCam};
 }
 
 function getVis(){return nodes.filter(n=>{if(filter!=='all'&&n.category!==filter)return false;if(searchStr){const q=searchStr.toLowerCase();if(!n.id.toLowerCase().includes(q)&&!n.label.includes(searchStr)&&!(n.abbr||'').toLowerCase().includes(q))return false;}return true;});}
@@ -266,8 +271,8 @@ function drawNodes(vis,t){
         const isSel=selected===n.id,isHov=hovered===n.id,nb=isNb(n.id);
         const dim=selected&&!isSel&&!nb;
         if(dim){
-            ctx.beginPath();ctx.arc(s.x,s.y,r*.6,0,Math.PI*2);ctx.fillStyle='rgba(100,116,139,0.05)';ctx.fill();
-            if(cam.z>.4){ctx.fillStyle='rgba(100,116,139,0.12)';ctx.font=`${Math.max(6,7*cam.z)}px Inter`;ctx.textAlign='center';ctx.textBaseline='top';ctx.fillText(n.id,s.x,s.y+r*.6+4*cam.z);}
+            ctx.beginPath();ctx.arc(s.x,s.y,r*.6,0,Math.PI*2);ctx.fillStyle='rgba(100,116,139,0.08)';ctx.fill();
+            if(cam.z>.4){ctx.fillStyle='rgba(148,163,184,0.3)';ctx.font=`${Math.max(6,7*cam.z)}px Inter`;ctx.textAlign='center';ctx.textBaseline='top';ctx.fillText(n.id,s.x,s.y+r*.6+4*cam.z);}
             return;
         }
         // Pulse ring for core
@@ -297,10 +302,10 @@ function drawNodes(vis,t){
         ctx.font=`${isSel?'bold ':''}${Math.max(7,(n.category==='core-router'?10:9)*cam.z)}px Inter`;
         ctx.textAlign='center';ctx.textBaseline='top';
         ctx.fillText(n.id,s.x,s.y+r+5*cam.z);
-        // Province name subtitle
-        if(n.label!==n.id&&cam.z>.5){
-            ctx.fillStyle='rgba(100,116,139,0.6)';ctx.font=`${Math.max(6,7*cam.z)}px Inter`;
-            ctx.fillText(n.label,s.x,s.y+r+(5+12)*cam.z);
+        // Province name subtitle (Farsi)
+        if(n.label!==n.id&&cam.z>.4){
+            ctx.fillStyle=isSel?'rgba(253,224,71,0.95)':'rgba(226,232,240,0.75)';ctx.font=`${isSel?'bold ':''}${Math.max(7,9*cam.z)}px Inter`;
+            ctx.fillText(n.label,s.x,s.y+r+(5+13)*cam.z);
         }
         // Badge
         if(n.tunnels_count>0&&cam.z>.5){
@@ -340,12 +345,12 @@ canvas.addEventListener('click',e=>{
     const now=Date.now();if(now-lastCT<350){clearTimeout(clickT);lastCT=now;return;}lastCT=now;
     clickT=setTimeout(()=>{
         if(h){
-            if(selected===h.id){selected=null;if(savedCam)tCam={...savedCam};}
-            else{if(!selected)savedCam={...tCam};selected=h.id;tCam={x:h.wx,y:h.wy,z:Math.max(cam.z,2.2)};}
-        }else if(selected){selected=null;if(savedCam)tCam={...savedCam};closeP();}
+            if(selected===h.id){selected=null;}
+            else{selected=h.id;}
+        }else if(selected){selected=null;closeP();}
     },220);
 });
-canvas.addEventListener('dblclick',e=>{e.preventDefault();const r=canvas.getBoundingClientRect(),h=hit(e.clientX-r.left,e.clientY-r.top);if(h){if(!selected)savedCam={...tCam};selected=h.id;tCam={x:h.wx,y:h.wy,z:Math.max(cam.z,2.2)};openP(h.id);}});
+canvas.addEventListener('dblclick',e=>{e.preventDefault();const r=canvas.getBoundingClientRect(),h=hit(e.clientX-r.left,e.clientY-r.top);if(h){selected=h.id;openP(h.id);}});
 canvas.addEventListener('wheel',e=>{e.preventDefault();const f=e.deltaY>0?.92:1.08,nz=Math.max(.15,Math.min(6,tCam.z*f));const r=canvas.getBoundingClientRect(),mx=e.clientX-r.left,my=e.clientY-r.top;const wx=(mx-W/2)/cam.z+cam.x,wy=(my-H/2)/cam.z+cam.y;tCam.z=nz;tCam.x=wx-(mx-W/2)/nz;tCam.y=wy-(my-H/2)/nz;},{passive:false});
 
 function setF(f,el){filter=f;document.querySelectorAll('.ft').forEach(b=>b.classList.remove('on'));el.classList.add('on');selected=null;}
