@@ -147,6 +147,7 @@ async function loadData(){
     try{
         const r=await fetch('/api/network-map/topology'),d=await r.json();
         ND=d.nodes||[];LD=d.links||[];
+        console.log('Topology version:',d._version||'OLD','links:',d.total_links);
         document.getElementById('sT').textContent=d.total_routers;
         document.getElementById('sC').textContent=d.core_count||0;
         document.getElementById('sSw').textContent=d.switch_count||0;
