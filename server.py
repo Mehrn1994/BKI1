@@ -28,7 +28,8 @@ def main():
                      debug=Config.DEBUG, allow_unsafe_werkzeug=True)
     else:
         print(f"Starting server on port {Config.PORT}...")
-        app.run(host='0.0.0.0', port=Config.PORT, debug=Config.DEBUG)
+        app.run(host='0.0.0.0', port=Config.PORT, debug=Config.DEBUG,
+                use_reloader=True)
 
 
 if __name__ == '__main__':

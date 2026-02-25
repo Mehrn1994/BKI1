@@ -4411,6 +4411,7 @@ def network_map_topology():
         return jsonify({'nodes':[],'links':[],'error':'Router directory not found'})
 
     parsed = {}
+    node_categories = {}
     all_files = []
     for subdir in ['', 'Core Routers', 'Core Switches']:
         scan_dir = os.path.join(router_dir, subdir) if subdir else router_dir
@@ -4428,15 +4429,15 @@ def network_map_topology():
         category, model = _get_device_category(info['hostname'], fname, subdir)
         abbr = _extract_province_abbr(info['hostname'])
 
-        # Position: core switches near their province, core routers in ring
+        # Position: core switches near their province, core routers above map
         sw_prov = _extract_switch_province(info['hostname']) if category == 'core-switch' else None
 
         if category == 'core-switch' and sw_prov and sw_prov in PROVINCE_MAP_INFO:
             pinfo = PROVINCE_MAP_INFO[sw_prov]
             x, y, label = pinfo['x'] + 3, pinfo['y'] + 2, pinfo['fa'] + ' SW'
-        elif info['hostname'] in CORE_DEVICE_MAP:
-            ci = CORE_DEVICE_MAP[info['hostname']]
-            x, y, label = ci['x'], ci['y'], ci['fa']
+        elif category == 'core-router':
+            # Core routers positioned above the map in Data Center zone
+            x, y, label = 42, -28, CORE_DEVICE_MAP.get(info['hostname'], {}).get('fa', info['hostname'])
         elif abbr in PROVINCE_MAP_INFO:
             pinfo = PROVINCE_MAP_INFO[abbr]
             x, y, label = pinfo['x'], pinfo['y'], pinfo['fa']
@@ -4464,87 +4465,97 @@ def network_map_topology():
         }
         nodes.append(node)
         parsed[info['hostname']] = info
+        node_categories[info['hostname']] = category
 
-    # Build comprehensive IP lookup
-    node_ips = {}
-    node_subnets = []
-    for h, inf in parsed.items():
-        for iface in inf['interfaces']:
-            if iface['ip']:
-                node_ips[iface['ip']] = h
-                try:
-                    net = _ipaddr.IPv4Network(f"{iface['ip']}/{iface['mask']}", strict=False)
-                    node_subnets.append((net, iface['ip'], h, iface['name']))
-                except: pass
-        for t in inf['tunnels']:
-            if t.get('tunnel_src') and t['tunnel_src'] not in node_ips:
-                node_ips[t['tunnel_src']] = h
-            if t.get('ip'):
-                node_ips[t['ip']] = h
+    # ── Position core routers ABOVE the map (Data Center zone) ──
+    WAN_HUB_NAMES = ['ASR1006-WAN-MB', 'WAN-INTR1', 'WAN-INTR2']
+    core_nodes = [n for n in nodes if n['category'] == 'core-router']
+    wan_hubs = [n for n in core_nodes if n['id'] in WAN_HUB_NAMES]
+    other_cores = [n for n in core_nodes if n['id'] not in WAN_HUB_NAMES]
 
-    # 1) Tunnel destination matching
+    # WAN hubs: prominent row at top
+    hub_pos = {'ASR1006-WAN-MB': (42, -28), 'WAN-INTR1': (30, -28), 'WAN-INTR2': (54, -28)}
+    for n in wan_hubs:
+        if n['id'] in hub_pos:
+            n['x'], n['y'] = hub_pos[n['id']]
+
+    # Other core routers: two rows below WAN hubs
+    if other_cores:
+        half = (len(other_cores) + 1) // 2
+        spacing = 6
+        for idx, n in enumerate(other_cores):
+            if idx < half:
+                row_count, row_y, i = half, -19, idx
+            else:
+                row_count, row_y, i = len(other_cores) - half, -12, idx - half
+            total_w = (row_count - 1) * spacing
+            n['x'] = round(42 - total_w / 2 + i * spacing, 1)
+            n['y'] = row_y
+
+    # ── Build links: STRICT hub-spoke (no provincial↔provincial!) ──
+    core_router_set = {h for h, c in node_categories.items() if c == 'core-router'}
     seen = set()
-    for h, inf in parsed.items():
-        for t in inf['tunnels']:
-            dst = t.get('tunnel_dst','')
-            if dst and dst in node_ips:
-                peer = node_ips[dst]
-                if peer == h: continue
-                lk = tuple(sorted([h, peer]))
-                if lk not in seen:
-                    seen.add(lk)
-                    links.append({'source':h,'target':peer,'tunnel':t['name'],
-                        'description':t.get('description',''),'src_ip':t.get('tunnel_src',''),
-                        'dst_ip':dst,'type':'tunnel'})
 
-    # 2) Subnet matching - find devices sharing the same /30 or /31 subnet
-    for i in range(len(node_subnets)):
-        net_i, ip_i, host_i, iface_i = node_subnets[i]
-        if net_i.prefixlen < 24: continue  # only match small subnets
-        for j in range(i+1, len(node_subnets)):
-            net_j, ip_j, host_j, iface_j = node_subnets[j]
-            if host_i == host_j: continue
-            if net_i == net_j:
-                lk = tuple(sorted([host_i, host_j]))
-                if lk not in seen:
-                    seen.add(lk)
-                    links.append({'source':host_i,'target':host_j,
-                        'tunnel':f'{iface_i}<->{iface_j}','description':f'{ip_i} <-> {ip_j}',
-                        'src_ip':ip_i,'dst_ip':ip_j,'type':'subnet'})
+    def add_link(src, tgt, link_type, label):
+        lk = tuple(sorted([src, tgt]))
+        if lk not in seen and src != tgt:
+            seen.add(lk)
+            links.append({'source': src, 'target': tgt, 'type': link_type,
+                          'tunnel': label, 'description': label,
+                          'src_ip': '', 'dst_ip': ''})
 
-    # 3) Provincial routers without links → connect to WAN hub
-    core_ids = set(n['id'] for n in nodes if n['category'] == 'core-router')
-    linked = set()
-    for l in links: linked.add(l['source']); linked.add(l['target'])
-    wan_hub = next((c for c in ['ASR1006-WAN-MB','WAN-INTR1','INT-4451'] if c in core_ids), None)
-    if not wan_hub and core_ids: wan_hub = list(core_ids)[0]
-    if wan_hub:
-        for n in nodes:
-            if n['category'] == 'provincial-router' and n['id'] not in linked:
-                lk = tuple(sorted([n['id'], wan_hub]))
-                if lk not in seen:
-                    seen.add(lk)
-                    links.append({'source':wan_hub,'target':n['id'],'tunnel':'WAN',
-                        'description':'WAN Link','src_ip':'','dst_ip':'','type':'wan'})
+    # Find actual WAN hubs that exist
+    wan_hub_ids = [n['id'] for n in wan_hubs]
+    if not wan_hub_ids:
+        wan_hub_ids = sorted(core_router_set)[:1]
+    primary_hub = wan_hub_ids[0] if wan_hub_ids else None
 
-    # 4) Core switches without links → connect to their province router
-    prov_routers = {n['province']:n['id'] for n in nodes if n['category']=='provincial-router'}
+    # 1) Provincial routers → distributed among WAN hubs (round-robin)
+    provincial_list = sorted([h for h, c in node_categories.items() if c == 'provincial-router'])
+    for i, hostname in enumerate(provincial_list):
+        hub = wan_hub_ids[i % len(wan_hub_ids)] if wan_hub_ids else None
+        if hub:
+            add_link(hub, hostname, 'wan', 'WAN')
+
+    # 2) Core switches → connect to their province's router
+    prov_to_router = {}
     for n in nodes:
-        if n['category']=='core-switch' and n['id'] not in linked:
-            pr = prov_routers.get(n.get('province'))
-            if pr:
-                lk = tuple(sorted([n['id'], pr]))
-                if lk not in seen:
-                    seen.add(lk)
-                    links.append({'source':pr,'target':n['id'],'tunnel':'LAN',
-                        'description':'Switch Link','src_ip':'','dst_ip':'','type':'lan'})
+        if n['category'] == 'provincial-router':
+            abbr = n.get('abbr', '')
+            if abbr and abbr in PROVINCE_MAP_INFO:
+                prov_to_router[abbr] = n['id']
+
+    for n in nodes:
+        if n['category'] == 'core-switch':
+            prov = n.get('province', '')
+            matched_router = prov_to_router.get(prov)
+            if matched_router:
+                add_link(matched_router, n['id'], 'lan', 'LAN')
+            elif primary_hub:
+                add_link(primary_hub, n['id'], 'lan', 'LAN')
+
+    # 3) Other core routers → connect to primary WAN hub
+    if primary_hub:
+        for hostname in sorted(core_router_set):
+            if hostname not in wan_hub_ids:
+                add_link(primary_hub, hostname, 'core', 'Core')
+
+    # 4) WAN hubs interconnect
+    for i in range(len(wan_hub_ids)):
+        for j in range(i + 1, len(wan_hub_ids)):
+            add_link(wan_hub_ids[i], wan_hub_ids[j], 'core', 'WAN Backbone')
+
+    core_count = sum(1 for n in nodes if n['category'] == 'core-router')
+    switch_count = sum(1 for n in nodes if n['category'] == 'core-switch')
+    provincial_count = sum(1 for n in nodes if n['category'] == 'provincial-router')
 
     return jsonify({
         'nodes': nodes, 'links': links,
         'total_routers': len(nodes), 'total_links': len(links),
-        'core_count': len([n for n in nodes if n['category']=='core-router']),
-        'switch_count': len([n for n in nodes if n['category']=='core-switch']),
-        'provincial_count': len([n for n in nodes if n['category']=='provincial-router']),
+        'core_count': core_count,
+        'switch_count': switch_count,
+        'provincial_count': provincial_count,
+        '_version': 'v5-hub-spoke-fixed',
     })
 
 # Core device positioning ring
