@@ -4410,6 +4410,38 @@ def network_map_topology():
     if not os.path.exists(router_dir):
         return jsonify({'nodes':[],'links':[],'error':'Router directory not found'})
 
+    # ── Core router positions: 4 tiers above Iran map ──
+    CORE_POSITIONS = {
+        # Tier 1 (y=-28): Primary WAN backbone hubs
+        'WAN-INTR1':       (30, -28, 'WAN INTR1'),
+        'ASR1006-WAN-MB':  (45, -28, 'ASR1006 WAN'),
+        'WAN-INTR2':       (60, -28, 'WAN INTR2'),
+        # Tier 2 (y=-20): Major service routers
+        'ISR-APN-RO':      (22, -20, 'APN Router'),
+        'APN-INT-HUB':     (34, -20, 'APN HUB'),
+        'INT-4451':         (45, -20, 'Intranet'),
+        'EXT-Edge-4451':    (56, -20, 'EXT Edge'),
+        'PSP-4451':         (68, -20, 'PSP'),
+        # Tier 3 (y=-12): Infrastructure & aggregation
+        'BKC-4451':         (18, -12, 'BKC'),
+        'AGG-WAN-SW':       (28, -12, 'AGG WAN'),
+        'EXT-AGG':          (38, -12, 'EXT AGG'),
+        'BKI-MAGFA':        (48, -12, 'MAGFA'),
+        '3825-NIBN':        (58, -12, 'NIBN'),
+        'Router-HTSC':      (68, -12, 'HTSC'),
+        'SW-Roof-To-Site':  (78, -12, 'Roof-Site'),
+        # Tier 4 (y=-5): Legacy & secondary devices
+        '7206-STM1':        (14, -5, 'STM1'),
+        'V-Jahad-3825':     (24, -5, 'Jahad'),
+        '4451-PBN':         (34, -5, 'PBN'),
+        '2821-Gostaresh':   (44, -5, 'Gostaresh'),
+        '2821-Mizan':       (54, -5, 'Mizan MCI'),
+        '3825-Sabt&Rotbe':  (64, -5, 'Sabt'),
+        '4500-Site-To-Roof':(74, -5, 'Site-Roof'),
+        'NIBN-Tarasht':     (82, -5, 'Tarasht'),
+        '1841-ISC':         (90, -5, 'ISC Test'),
+    }
+
     parsed = {}
     node_categories = {}
     all_files = []
@@ -4428,16 +4460,18 @@ def network_map_topology():
         if not info or not info['hostname']: continue
         category, model = _get_device_category(info['hostname'], fname, subdir)
         abbr = _extract_province_abbr(info['hostname'])
-
-        # Position: core switches near their province, core routers above map
         sw_prov = _extract_switch_province(info['hostname']) if category == 'core-switch' else None
 
+        # Position logic
         if category == 'core-switch' and sw_prov and sw_prov in PROVINCE_MAP_INFO:
             pinfo = PROVINCE_MAP_INFO[sw_prov]
             x, y, label = pinfo['x'] + 3, pinfo['y'] + 2, pinfo['fa'] + ' SW'
+        elif category == 'core-router' and info['hostname'] in CORE_POSITIONS:
+            cp = CORE_POSITIONS[info['hostname']]
+            x, y, label = cp[0], cp[1], cp[2]
         elif category == 'core-router':
-            # Core routers positioned above the map in Data Center zone
-            x, y, label = 42, -28, CORE_DEVICE_MAP.get(info['hostname'], {}).get('fa', info['hostname'])
+            # Fallback for unknown core routers
+            x, y, label = 45, -5, CORE_DEVICE_MAP.get(info['hostname'], {}).get('fa', info['hostname'])
         elif abbr in PROVINCE_MAP_INFO:
             pinfo = PROVINCE_MAP_INFO[abbr]
             x, y, label = pinfo['x'], pinfo['y'], pinfo['fa']
@@ -4467,36 +4501,11 @@ def network_map_topology():
         parsed[info['hostname']] = info
         node_categories[info['hostname']] = category
 
-    # ── Position core routers ABOVE the map (Data Center zone) ──
-    WAN_HUB_NAMES = ['ASR1006-WAN-MB', 'WAN-INTR1', 'WAN-INTR2']
-    core_nodes = [n for n in nodes if n['category'] == 'core-router']
-    wan_hubs = [n for n in core_nodes if n['id'] in WAN_HUB_NAMES]
-    other_cores = [n for n in core_nodes if n['id'] not in WAN_HUB_NAMES]
-
-    # WAN hubs: prominent row at top
-    hub_pos = {'ASR1006-WAN-MB': (42, -28), 'WAN-INTR1': (30, -28), 'WAN-INTR2': (54, -28)}
-    for n in wan_hubs:
-        if n['id'] in hub_pos:
-            n['x'], n['y'] = hub_pos[n['id']]
-
-    # Other core routers: two rows below WAN hubs
-    if other_cores:
-        half = (len(other_cores) + 1) // 2
-        spacing = 6
-        for idx, n in enumerate(other_cores):
-            if idx < half:
-                row_count, row_y, i = half, -19, idx
-            else:
-                row_count, row_y, i = len(other_cores) - half, -12, idx - half
-            total_w = (row_count - 1) * spacing
-            n['x'] = round(42 - total_w / 2 + i * spacing, 1)
-            n['y'] = row_y
-
-    # ── Build links: STRICT hub-spoke (no provincial↔provincial!) ──
-    core_router_set = {h for h, c in node_categories.items() if c == 'core-router'}
+    # ── Build links based on REAL tunnel analysis ──
     seen = set()
-
-    def add_link(src, tgt, link_type, label):
+    def add_link(src, tgt, link_type, label=''):
+        if src not in node_categories or tgt not in node_categories:
+            return  # skip if device not found
         lk = tuple(sorted([src, tgt]))
         if lk not in seen and src != tgt:
             seen.add(lk)
@@ -4504,46 +4513,85 @@ def network_map_topology():
                           'tunnel': label, 'description': label,
                           'src_ip': '', 'dst_ip': ''})
 
-    # Find actual WAN hubs that exist
-    wan_hub_ids = [n['id'] for n in wan_hubs]
-    if not wan_hub_ids:
-        wan_hub_ids = sorted(core_router_set)[:1]
-    primary_hub = wan_hub_ids[0] if wan_hub_ids else None
-
-    # 1) Provincial routers → distributed among WAN hubs (round-robin)
     provincial_list = sorted([h for h, c in node_categories.items() if c == 'provincial-router'])
-    for i, hostname in enumerate(provincial_list):
-        hub = wan_hub_ids[i % len(wan_hub_ids)] if wan_hub_ids else None
-        if hub:
-            add_link(hub, hostname, 'wan', 'WAN')
+    core_set = {h for h, c in node_categories.items() if c == 'core-router'}
 
-    # 2) Core switches → connect to their province's router
+    # ── 1) ASR1006-WAN-MB → ALL provinces (MPLS backbone, Tunnel1-36) ──
+    for prov in provincial_list:
+        add_link('ASR1006-WAN-MB', prov, 'mpls', 'MPLS Backbone')
+
+    # ── 2) WAN-INTR1 → ALL provinces (WAN tunnels via 10.30.42.200) ──
+    for prov in provincial_list:
+        add_link('WAN-INTR1', prov, 'wan', 'WAN Link')
+
+    # ── 3) WAN-INTR2 → ALL provinces (WAN tunnels via 10.30.42.201) ──
+    for prov in provincial_list:
+        add_link('WAN-INTR2', prov, 'wan', 'WAN Link')
+
+    # ── 4) ISR-APN-RO → ALL provinces (APN tunnels via 10.250.46.1) ──
+    for prov in provincial_list:
+        add_link('ISR-APN-RO', prov, 'apn', 'APN Link')
+
+    # ── 5) Core-to-Core interconnections (based on actual config analysis) ──
+    # WAN backbone triangle
+    add_link('ASR1006-WAN-MB', 'WAN-INTR1', 'backbone', 'WAN Backbone')
+    add_link('ASR1006-WAN-MB', 'WAN-INTR2', 'backbone', 'WAN Backbone')
+    add_link('WAN-INTR1', 'WAN-INTR2', 'backbone', 'WAN Backbone')
+    # APN network
+    add_link('ISR-APN-RO', 'APN-INT-HUB', 'backbone', 'APN Core')
+    add_link('ISR-APN-RO', 'ASR1006-WAN-MB', 'backbone', 'APN-WAN')
+    # Intranet / services
+    add_link('INT-4451', 'ASR1006-WAN-MB', 'core', 'Core Link')
+    add_link('INT-4451', 'WAN-INTR1', 'core', 'Core Link')
+    # External edge
+    add_link('EXT-Edge-4451', 'ASR1006-WAN-MB', 'core', 'Core Link')
+    add_link('EXT-Edge-4451', 'EXT-AGG', 'core', 'Aggregation')
+    # PSP & BKC
+    add_link('PSP-4451', 'ASR1006-WAN-MB', 'core', 'Core Link')
+    add_link('BKC-4451', 'ASR1006-WAN-MB', 'core', 'Core Link')
+    # Aggregation switches
+    add_link('AGG-WAN-SW', 'ASR1006-WAN-MB', 'core', 'Aggregation')
+    add_link('AGG-WAN-SW', 'WAN-INTR1', 'core', 'Aggregation')
+    add_link('EXT-AGG', 'ASR1006-WAN-MB', 'core', 'Aggregation')
+    # MAGFA, NIBN, HTSC, etc.
+    add_link('BKI-MAGFA', 'ASR1006-WAN-MB', 'core', 'Core Link')
+    add_link('3825-NIBN', 'ASR1006-WAN-MB', 'core', 'Core Link')
+    add_link('Router-HTSC', 'ASR1006-WAN-MB', 'core', 'Core Link')
+    add_link('SW-Roof-To-Site', '4500-Site-To-Roof', 'core', 'Site Link')
+    add_link('4500-Site-To-Roof', 'ASR1006-WAN-MB', 'core', 'Core Link')
+    # Legacy
+    add_link('7206-STM1', 'ASR1006-WAN-MB', 'core', 'Legacy')
+    add_link('V-Jahad-3825', 'ASR1006-WAN-MB', 'core', 'Legacy')
+    add_link('4451-PBN', 'ASR1006-WAN-MB', 'core', 'Core Link')
+    add_link('2821-Gostaresh', 'ASR1006-WAN-MB', 'core', 'Core Link')
+    add_link('2821-Mizan', 'ASR1006-WAN-MB', 'core', 'Core Link')
+    add_link('3825-Sabt&Rotbe', 'ASR1006-WAN-MB', 'core', 'Core Link')
+    add_link('NIBN-Tarasht', '3825-NIBN', 'core', 'NIBN Link')
+    add_link('1841-ISC', 'ASR1006-WAN-MB', 'core', 'Core Link')
+
+    # ── 6) Core switches → their province's router ──
     prov_to_router = {}
     for n in nodes:
         if n['category'] == 'provincial-router':
-            abbr = n.get('abbr', '')
-            if abbr and abbr in PROVINCE_MAP_INFO:
-                prov_to_router[abbr] = n['id']
+            a = n.get('abbr', '')
+            if a and a in PROVINCE_MAP_INFO:
+                prov_to_router[a] = n['id']
 
     for n in nodes:
         if n['category'] == 'core-switch':
             prov = n.get('province', '')
-            matched_router = prov_to_router.get(prov)
-            if matched_router:
-                add_link(matched_router, n['id'], 'lan', 'LAN')
-            elif primary_hub:
-                add_link(primary_hub, n['id'], 'lan', 'LAN')
+            matched = prov_to_router.get(prov)
+            if matched:
+                add_link(matched, n['id'], 'lan', 'LAN')
+            else:
+                # Try connecting to nearest hub
+                add_link('ASR1006-WAN-MB', n['id'], 'lan', 'LAN')
 
-    # 3) Other core routers → connect to primary WAN hub
-    if primary_hub:
-        for hostname in sorted(core_router_set):
-            if hostname not in wan_hub_ids:
-                add_link(primary_hub, hostname, 'core', 'Core')
-
-    # 4) WAN hubs interconnect
-    for i in range(len(wan_hub_ids)):
-        for j in range(i + 1, len(wan_hub_ids)):
-            add_link(wan_hub_ids[i], wan_hub_ids[j], 'core', 'WAN Backbone')
+    # ── Count by type ──
+    type_counts = {}
+    for l in links:
+        t = l['type']
+        type_counts[t] = type_counts.get(t, 0) + 1
 
     core_count = sum(1 for n in nodes if n['category'] == 'core-router')
     switch_count = sum(1 for n in nodes if n['category'] == 'core-switch')
@@ -4555,7 +4603,8 @@ def network_map_topology():
         'core_count': core_count,
         'switch_count': switch_count,
         'provincial_count': provincial_count,
-        '_version': 'v5-hub-spoke-fixed',
+        'link_types': type_counts,
+        '_version': 'v6-accurate-topology',
     })
 
 # Core device positioning ring

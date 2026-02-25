@@ -22,6 +22,8 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--t
 .ft.on{background:rgba(34,211,238,0.1);border-color:rgba(34,211,238,0.4);color:var(--accent1)}
 #searchBox{background:rgba(255,255,255,0.04);border:1px solid var(--brd2);border-radius:6px;padding:3px 10px;color:var(--text);font-size:9px;width:180px;outline:none;font-family:inherit}
 #searchBox:focus{border-color:rgba(34,211,238,0.4)}
+.lt-btn{padding:3px 8px;border-radius:14px;font-size:8px;cursor:pointer;border:1px solid var(--brd2);background:transparent;transition:all .2s;font-weight:600;opacity:.5}
+.lt-btn.on{opacity:1;background:rgba(255,255,255,0.04)}
 .main{flex:1;display:flex;overflow:hidden;position:relative;z-index:1}
 #canvasWrap{flex:1;position:relative;overflow:hidden;cursor:grab}
 #canvasWrap.grabbing{cursor:grabbing}
@@ -84,11 +86,19 @@ canvas{display:block;width:100%;height:100%}
     <a href="/" class="btn">&#8592; Home</a>
 </div>
 <div class="filters">
-    <label>Filter:</label>
+    <label>Nodes:</label>
     <button class="ft on" data-f="all" onclick="setF('all',this)">All</button>
     <button class="ft" data-f="core-router" onclick="setF('core-router',this)">Core</button>
     <button class="ft" data-f="core-switch" onclick="setF('core-switch',this)">Switch</button>
     <button class="ft" data-f="provincial-router" onclick="setF('provincial-router',this)">Provincial</button>
+    <span style="width:1px;height:18px;background:var(--brd2);margin:0 6px"></span>
+    <label>Links:</label>
+    <button class="lt-btn on" data-lt="mpls" onclick="toggleLT('mpls',this)" style="border-color:rgba(244,114,182,0.4);color:#f472b6">MPLS</button>
+    <button class="lt-btn on" data-lt="wan" onclick="toggleLT('wan',this)" style="border-color:rgba(34,211,238,0.4);color:#22d3ee">WAN</button>
+    <button class="lt-btn on" data-lt="apn" onclick="toggleLT('apn',this)" style="border-color:rgba(52,211,153,0.4);color:#34d399">APN</button>
+    <button class="lt-btn on" data-lt="core" onclick="toggleLT('core',this)" style="border-color:rgba(129,140,248,0.4);color:#818cf8">Core</button>
+    <button class="lt-btn on" data-lt="backbone" onclick="toggleLT('backbone',this)" style="border-color:rgba(251,191,36,0.4);color:#fbbf24">Backbone</button>
+    <button class="lt-btn on" data-lt="lan" onclick="toggleLT('lan',this)" style="border-color:rgba(148,163,184,0.4);color:#94a3b8">LAN</button>
     <span style="flex:1"></span>
     <input id="searchBox" placeholder="Search hostname..." oninput="doSearch(this.value)">
 </div>
@@ -97,12 +107,19 @@ canvas{display:block;width:100%;height:100%}
     <canvas id="graphCanvas"></canvas>
     <div id="tooltip"></div>
     <div class="legend">
-        <div class="lt">LEGEND</div>
+        <div class="lt">DEVICES</div>
         <div class="lr"><div class="ld" style="background:linear-gradient(135deg,#f472b6,#fb923c);box-shadow:0 0 6px #f472b6"></div>Core Router</div>
         <div class="lr"><div class="ld" style="background:linear-gradient(135deg,#818cf8,#c084fc);box-shadow:0 0 6px #818cf8"></div>Core Switch</div>
         <div class="lr"><div class="ld" style="background:linear-gradient(135deg,#22d3ee,#3b82f6);box-shadow:0 0 6px #22d3ee"></div>ASR1002X</div>
         <div class="lr"><div class="ld" style="background:linear-gradient(135deg,#34d399,#22d3ee);box-shadow:0 0 6px #34d399"></div>3845</div>
         <div class="lr"><div class="ld" style="background:linear-gradient(135deg,#fbbf24,#f97316);box-shadow:0 0 6px #fbbf24"></div>3825</div>
+        <div class="lt" style="margin-top:8px">LINKS</div>
+        <div class="lr"><div style="width:16px;height:2px;background:#f472b6;border-radius:1px"></div>MPLS Backbone</div>
+        <div class="lr"><div style="width:16px;height:2px;background:#22d3ee;border-radius:1px"></div>WAN</div>
+        <div class="lr"><div style="width:16px;height:2px;background:#34d399;border-radius:1px"></div>APN</div>
+        <div class="lr"><div style="width:16px;height:2px;background:#818cf8;border-radius:1px"></div>Core</div>
+        <div class="lr"><div style="width:16px;height:2px;background:#fbbf24;border-radius:1px"></div>Backbone</div>
+        <div class="lr"><div style="width:16px;height:2px;background:#94a3b8;border-radius:1px"></div>LAN</div>
         <div style="font-size:7px;color:var(--t3);margin-top:6px;border-top:1px solid var(--brd);padding-top:4px">Click: Select | DblClick: Details<br>Scroll: Zoom | Drag: Pan</div>
     </div>
     <div class="load" id="loader"><div class="sp"></div><span>Loading topology...</span></div>
@@ -135,6 +152,8 @@ const canvas=document.getElementById('graphCanvas'),ctx=canvas.getContext('2d'),
 let W,H,dpr,ND=[],LD=[],nodes=[],links=[],selected=null,hovered=null,filter='all',searchStr='';
 let cam={x:0,y:0,z:1},tCam={x:0,y:0,z:1};
 let particles=[],dragging=false,dragS={x:0,y:0},camS={x:0,y:0};
+let activeLinkTypes=new Set(['mpls','wan','apn','core','backbone','lan']);
+const LINK_COLORS={mpls:'#f472b6',wan:'#22d3ee',apn:'#34d399',core:'#818cf8',backbone:'#fbbf24',lan:'#94a3b8'};
 const P={
     'core-router':{c:['#f472b6','#fb923c'],g:'#f472b6',r:20},
     'core-switch':{c:['#818cf8','#c084fc'],g:'#818cf8',r:14},
@@ -170,21 +189,28 @@ async function loadData(){
 function showDiag(d){
     const box=document.getElementById('diagBox'),ct=document.getElementById('diagContent');
     if(!box||!ct)return;
-    // Count links per node
     const lc={};d.links.forEach(l=>{lc[l.source]=(lc[l.source]||0)+1;lc[l.target]=(lc[l.target]||0)+1;});
     const top5=Object.entries(lc).sort((a,b)=>b[1]-a[1]).slice(0,5);
-    // Count provincial-to-provincial links (should be 0)
     const provNodes=new Set(d.nodes.filter(n=>n.category==='provincial-router').map(n=>n.id));
     let p2p=0;d.links.forEach(l=>{if(provNodes.has(l.source)&&provNodes.has(l.target))p2p++;});
-    let html=`<div style="color:${d._version==='v5-hub-spoke-fixed'?'#34d399':'#f472b6'};font-weight:bold;font-size:11px;margin-bottom:4px">`;
-    html+=`Version: ${d._version||'UNKNOWN (OLD CODE!)'}</div>`;
-    html+=`Total links: ${d.total_links} | Core: ${d.core_count} | Switch: ${d.switch_count} | Provincial: ${d.provincial_count}<br>`;
-    html+=`<span style="color:${p2p===0?'#34d399':'#f472b6'}">Provincial↔Provincial links: ${p2p} ${p2p===0?'✓':'✗ BUG!'}</span><br>`;
-    html+=`<br><b>Top connected nodes:</b><br>`;
+    const ver=d._version||'UNKNOWN';
+    let html=`<div style="color:${ver.includes('v6')?'#34d399':'#f472b6'};font-weight:bold;font-size:11px;margin-bottom:4px">`;
+    html+=`Version: ${ver}</div>`;
+    html+=`Nodes: ${d.total_routers} | Links: ${d.total_links}<br>`;
+    html+=`Core: ${d.core_count} | Switch: ${d.switch_count} | Provincial: ${d.provincial_count}<br>`;
+    if(d.link_types){
+        html+=`<br><b>Links by type:</b><br>`;
+        const ltc={'mpls':'#f472b6','wan':'#22d3ee','apn':'#34d399','core':'#818cf8','backbone':'#fbbf24','lan':'#94a3b8'};
+        Object.entries(d.link_types).forEach(([t,c])=>{
+            html+=`<span style="color:${ltc[t]||'#94a3b8'}">${t.toUpperCase()}</span>: <b>${c}</b> &nbsp;`;
+        });
+        html+='<br>';
+    }
+    html+=`<span style="color:${p2p===0?'#34d399':'#f472b6'}">Provincial↔Provincial: ${p2p} ${p2p===0?'✓':'✗'}</span><br>`;
+    html+=`<br><b>Top connected:</b><br>`;
     top5.forEach(([name,cnt])=>{
         const nd=d.nodes.find(n=>n.id===name);
-        const cat=nd?nd.category:'?';
-        html+=`${name} <span style="color:#94a3b8">(${cat})</span>: <b style="color:#22d3ee">${cnt}</b> links<br>`;
+        html+=`${name}: <b style="color:#22d3ee">${cnt}</b><br>`;
     });
     ct.innerHTML=html;
     box.style.display='block';
@@ -214,7 +240,8 @@ function buildGraph(){
 function mkParticles(){
     particles=[];
     links.forEach((l,i)=>{
-        const cnt=l.type==='core'?4:l.sn.category==='core-router'||l.tn.category==='core-router'?2:1;
+        if(!activeLinkTypes.has(l.type))return;
+        const cnt=l.type==='backbone'?4:l.type==='core'?3:l.type==='mpls'?2:1;
         for(let j=0;j<cnt;j++)particles.push({li:i,t:Math.random(),spd:.001+Math.random()*.003,sz:1+Math.random()*1.5,op:.3+Math.random()*.5});
     });
 }
@@ -257,28 +284,27 @@ function drawLinks(vis,t){
     const vids=new Set(vis.map(n=>n.id));
     links.forEach(l=>{
         if(!vids.has(l.source)||!vids.has(l.target))return;
+        if(!activeLinkTypes.has(l.type))return;
         const a=w2s(l.sn.wx,l.sn.wy),b=w2s(l.tn.wx,l.tn.wy);
         const isSel=selected&&(l.source===selected||l.target===selected);
         const dim=selected&&!isSel;
         const mx=(a.x+b.x)/2,my=(a.y+b.y)/2,dx=b.x-a.x,dy=b.y-a.y;
-        const cx=mx+dy*.08,cy=my-dx*.08;
+        const cx=mx+dy*.06,cy=my-dx*.06;
+        const lc=LINK_COLORS[l.type]||'#64748b';
 
         if(isSel){
-            // Bright glow - Fuselab style gradient line
             ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.quadraticCurveTo(cx,cy,b.x,b.y);
-            ctx.strokeStyle='rgba(244,114,182,0.12)';ctx.lineWidth=8*cam.z;ctx.stroke();
+            ctx.strokeStyle=hex2(lc,0.15);ctx.lineWidth=8*cam.z;ctx.stroke();
             ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.quadraticCurveTo(cx,cy,b.x,b.y);
-            const gr=ctx.createLinearGradient(a.x,a.y,b.x,b.y);
-            gr.addColorStop(0,'#fb923c');gr.addColorStop(.5,'#f472b6');gr.addColorStop(1,'#818cf8');
-            ctx.strokeStyle=gr;ctx.lineWidth=2.5*cam.z;ctx.stroke();
+            ctx.strokeStyle=lc;ctx.lineWidth=2.5*cam.z;ctx.stroke();
         }else if(dim){
             ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.quadraticCurveTo(cx,cy,b.x,b.y);
             ctx.strokeStyle='rgba(100,116,139,0.03)';ctx.lineWidth=.3;ctx.stroke();
         }else{
+            const op=l.type==='backbone'?0.25:l.type==='core'?0.18:l.type==='mpls'?0.15:l.type==='lan'?0.12:0.08;
+            const lw=l.type==='backbone'?1.5:l.type==='core'?1.2:l.type==='mpls'?0.9:0.6;
             ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.quadraticCurveTo(cx,cy,b.x,b.y);
-            const gr=ctx.createLinearGradient(a.x,a.y,b.x,b.y);
-            gr.addColorStop(0,'rgba(34,211,238,0.12)');gr.addColorStop(1,'rgba(129,140,248,0.12)');
-            ctx.strokeStyle=gr;ctx.lineWidth=.8*cam.z;ctx.stroke();
+            ctx.strokeStyle=hex2(lc,op);ctx.lineWidth=lw*cam.z;ctx.stroke();
         }
     });
 }
@@ -287,20 +313,21 @@ function drawPart(vis,t){
     const vids=new Set(vis.map(n=>n.id));
     particles.forEach(p=>{
         const l=links[p.li];if(!l||!vids.has(l.source)||!vids.has(l.target))return;
+        if(!activeLinkTypes.has(l.type))return;
         const dim=selected&&l.source!==selected&&l.target!==selected;if(dim)return;
         p.t+=p.spd;if(p.t>1)p.t-=1;
         const a=w2s(l.sn.wx,l.sn.wy),b=w2s(l.tn.wx,l.tn.wy);
         const mx=(a.x+b.x)/2,my=(a.y+b.y)/2,dx=b.x-a.x,dy=b.y-a.y;
-        const cx=mx+dy*.08,cy=my-dx*.08;
+        const cx=mx+dy*.06,cy=my-dx*.06;
         const tt=p.t,x=(1-tt)*(1-tt)*a.x+2*(1-tt)*tt*cx+tt*tt*b.x,y=(1-tt)*(1-tt)*a.y+2*(1-tt)*tt*cy+tt*tt*b.y;
         const isSel=selected&&(l.source===selected||l.target===selected);
+        const lc=LINK_COLORS[l.type]||'#22d3ee';
         const sz=p.sz*cam.z*(isSel?1.8:1);
-        // Glow
         const gr=ctx.createRadialGradient(x,y,0,x,y,sz*4);
-        gr.addColorStop(0,isSel?'rgba(244,114,182,0.4)':'rgba(34,211,238,0.15)');gr.addColorStop(1,'transparent');
+        gr.addColorStop(0,isSel?hex2(lc,0.4):'rgba(34,211,238,0.15)');gr.addColorStop(1,'transparent');
         ctx.fillStyle=gr;ctx.fillRect(x-sz*4,y-sz*4,sz*8,sz*8);
         ctx.beginPath();ctx.arc(x,y,sz,0,Math.PI*2);
-        ctx.fillStyle=isSel?'#f472b6':'rgba(34,211,238,0.6)';ctx.globalAlpha=p.op*(isSel?1:.5);ctx.fill();ctx.globalAlpha=1;
+        ctx.fillStyle=isSel?lc:'rgba(34,211,238,0.6)';ctx.globalAlpha=p.op*(isSel?1:.5);ctx.fill();ctx.globalAlpha=1;
     });
 }
 
@@ -396,7 +423,8 @@ canvas.addEventListener('wheel',e=>{e.preventDefault();const f=e.deltaY>0?.92:1.
 
 function setF(f,el){filter=f;document.querySelectorAll('.ft').forEach(b=>b.classList.remove('on'));el.classList.add('on');selected=null;}
 function doSearch(v){searchStr=v;}
-function resetAll(){selected=null;hovered=null;filter='all';searchStr='';document.getElementById('searchBox').value='';document.querySelectorAll('.ft').forEach(b=>b.classList.remove('on'));document.querySelector('.ft[data-f="all"]').classList.add('on');closeP();fitView();}
+function toggleLT(lt,el){if(activeLinkTypes.has(lt)){activeLinkTypes.delete(lt);el.classList.remove('on');}else{activeLinkTypes.add(lt);el.classList.add('on');}mkParticles();}
+function resetAll(){selected=null;hovered=null;filter='all';searchStr='';document.getElementById('searchBox').value='';document.querySelectorAll('.ft').forEach(b=>b.classList.remove('on'));document.querySelector('.ft[data-f="all"]').classList.add('on');activeLinkTypes=new Set(['mpls','wan','apn','core','backbone','lan']);document.querySelectorAll('.lt-btn').forEach(b=>b.classList.add('on'));closeP();fitView();}
 
 // ── PANEL ──
 function closeP(){document.getElementById('panel').classList.remove('open');}
