@@ -317,87 +317,63 @@ def get_topology():
         parsed_configs[hostname] = info
         node_categories[hostname] = category
 
-    # Build links - strict hub-spoke: provincial routers connect ONLY to core routers
-    node_ips = {}
-    for node_info in parsed_configs.values():
-        for iface in node_info['interfaces']:
-            node_ips[iface['ip']] = node_info['hostname']
-
+    # Build links - STRICT hub-spoke topology
+    # Provincial routers ONLY connect to the main WAN hub (no tunnel matching)
     core_router_set = {h for h, c in node_categories.items() if c == 'core-router'}
     core_switch_set = {h for h, c in node_categories.items() if c == 'core-switch'}
-    all_core_set = core_router_set | core_switch_set
     seen_links = set()
-
-    # Tunnel-based links: only create if one end is core-router
-    for hostname, info in parsed_configs.items():
-        for tunnel in info['tunnels']:
-            dst = tunnel.get('tunnel_dst', '')
-            if dst in node_ips:
-                target = node_ips[dst]
-                if hostname == target:
-                    continue
-                # Only create link if at least one end is a CORE ROUTER (not just switch)
-                if hostname not in core_router_set and target not in core_router_set:
-                    continue
-                link_key = tuple(sorted([hostname, target]))
-                if link_key not in seen_links:
-                    seen_links.add(link_key)
-                    links.append({
-                        'source': hostname,
-                        'target': target,
-                        'type': 'tunnel',
-                        'tunnel': tunnel['name'],
-                        'src_ip': tunnel.get('tunnel_src', ''),
-                        'dst_ip': dst,
-                    })
 
     # Find main WAN hub routers
     hub_nodes = sorted(core_router_set)
 
-    # Every provincial router connects to ONE core router (hub-spoke)
+    # 1) Every provincial router connects to ONE core router (hub)
     if hub_nodes:
         hub = hub_nodes[0]
         for hostname, category in node_categories.items():
             if category == 'provincial-router':
-                has_core_router_link = any(
-                    l for l in links
-                    if hostname in (l['source'], l['target'])
-                    and (l['source'] in core_router_set or l['target'] in core_router_set)
-                )
-                if not has_core_router_link:
-                    link_key = tuple(sorted([hostname, hub]))
-                    if link_key not in seen_links:
-                        seen_links.add(link_key)
-                        links.append({
-                            'source': hub,
-                            'target': hostname,
-                            'type': 'wan',
-                            'tunnel': 'WAN',
-                            'src_ip': '',
-                            'dst_ip': '',
-                        })
+                link_key = tuple(sorted([hostname, hub]))
+                if link_key not in seen_links:
+                    seen_links.add(link_key)
+                    links.append({
+                        'source': hub,
+                        'target': hostname,
+                        'type': 'wan',
+                        'tunnel': 'WAN',
+                        'src_ip': '',
+                        'dst_ip': '',
+                    })
 
-    # Core switches connect to the closest core router (or first hub)
+    # 2) Core routers connect to each other
+    hub_list = sorted(core_router_set)
+    for i in range(len(hub_list)):
+        for j in range(i + 1, min(i + 3, len(hub_list))):
+            link_key = tuple(sorted([hub_list[i], hub_list[j]]))
+            if link_key not in seen_links:
+                seen_links.add(link_key)
+                links.append({
+                    'source': hub_list[i],
+                    'target': hub_list[j],
+                    'type': 'core',
+                    'tunnel': 'Core Link',
+                    'src_ip': '',
+                    'dst_ip': '',
+                })
+
+    # 3) Core switches connect to the first core router
     if hub_nodes:
         for hostname, category in node_categories.items():
             if category == 'core-switch':
-                has_cr_link = any(
-                    l for l in links
-                    if hostname in (l['source'], l['target'])
-                    and (l['source'] in core_router_set or l['target'] in core_router_set)
-                )
-                if not has_cr_link:
-                    link_key = tuple(sorted([hostname, hub_nodes[0]]))
-                    if link_key not in seen_links:
-                        seen_links.add(link_key)
-                        links.append({
-                            'source': hub_nodes[0],
-                            'target': hostname,
-                            'type': 'lan',
-                            'tunnel': 'LAN',
-                            'src_ip': '',
-                            'dst_ip': '',
-                        })
+                link_key = tuple(sorted([hostname, hub_nodes[0]]))
+                if link_key not in seen_links:
+                    seen_links.add(link_key)
+                    links.append({
+                        'source': hub_nodes[0],
+                        'target': hostname,
+                        'type': 'lan',
+                        'tunnel': 'LAN',
+                        'src_ip': '',
+                        'dst_ip': '',
+                    })
 
     core_count = sum(1 for n in nodes if n['category'] == 'core-router')
     switch_count = sum(1 for n in nodes if n['category'] == 'core-switch')
