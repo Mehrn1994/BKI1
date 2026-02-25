@@ -11,42 +11,44 @@ ROUTER_DIR = os.path.join(Config.BASE_DIR, 'Router')
 CORE_ROUTER_DIR = os.path.join(ROUTER_DIR, 'Core Routers')
 CORE_SWITCH_DIR = os.path.join(ROUTER_DIR, 'Core Switches')
 
-# Province abbreviation to Farsi name + approximate lat/lng for Iran map (normalized 0-100)
+# Province abbreviation to Farsi name + Iran map coordinates
+# x,y based on real geographic positions (longitude mapped to x, latitude inverted to y)
+# Iran approx bounds: lon 44-63, lat 25-40 → normalized to 0-100
 PROVINCE_INFO = {
-    'AZSH': {'fa': 'آذربایجان شرقی', 'x': 28, 'y': 12},
-    'AZGH': {'fa': 'آذربایجان غربی', 'x': 20, 'y': 12},
-    'ARD': {'fa': 'اردبیل', 'x': 32, 'y': 8},
-    'ESF': {'fa': 'اصفهان', 'x': 48, 'y': 50},
-    'ALZ': {'fa': 'البرز', 'x': 42, 'y': 28},
-    'ILM': {'fa': 'ایلام', 'x': 25, 'y': 45},
-    'BSH': {'fa': 'بوشهر', 'x': 44, 'y': 70},
-    'M1-Tehran': {'fa': 'تهران ۱', 'x': 44, 'y': 30},
-    'M2-Tehran': {'fa': 'تهران ۲', 'x': 46, 'y': 30},
-    'OSTehran': {'fa': 'استان تهران', 'x': 44, 'y': 32},
-    'KHRJ': {'fa': 'خراسان جنوبی', 'x': 72, 'y': 50},
-    'KHR': {'fa': 'خراسان رضوی', 'x': 72, 'y': 35},
-    'KhShomali': {'fa': 'خراسان شمالی', 'x': 70, 'y': 25},
-    'KHZ': {'fa': 'خوزستان', 'x': 34, 'y': 55},
-    'ZNJ': {'fa': 'زنجان', 'x': 32, 'y': 22},
-    'SMN': {'fa': 'سمنان', 'x': 55, 'y': 28},
-    'SNB': {'fa': 'سیستان و بلوچستان', 'x': 82, 'y': 65},
-    'FRS': {'fa': 'فارس', 'x': 48, 'y': 65},
-    'QZV': {'fa': 'قزوین', 'x': 38, 'y': 25},
-    'QOM': {'fa': 'قم', 'x': 44, 'y': 35},
-    'LOR': {'fa': 'لرستان', 'x': 32, 'y': 42},
-    'MAZ': {'fa': 'مازندران', 'x': 48, 'y': 20},
-    'MRZ': {'fa': 'مرکزی', 'x': 40, 'y': 38},
-    'HMZ': {'fa': 'هرمزگان', 'x': 55, 'y': 78},
-    'HMD': {'fa': 'همدان', 'x': 34, 'y': 35},
-    'CHB': {'fa': 'چهارمحال و بختیاری', 'x': 42, 'y': 50},
-    'KRD': {'fa': 'کردستان', 'x': 26, 'y': 30},
-    'KRM': {'fa': 'کرمان', 'x': 62, 'y': 60},
-    'KRMJ': {'fa': 'کرمانشاه', 'x': 26, 'y': 38},
-    'KNB': {'fa': 'کهگیلویه و بویراحمد', 'x': 42, 'y': 58},
-    'GLS': {'fa': 'گلستان', 'x': 58, 'y': 18},
-    'GIL': {'fa': 'گیلان', 'x': 38, 'y': 16},
-    'YZD': {'fa': 'یزد', 'x': 56, 'y': 52},
-    'KRSH': {'fa': 'کرمانشاه', 'x': 26, 'y': 38},
+    'AZSH': {'fa': 'آذربایجان شرقی', 'x': 18, 'y': 8},    # Tabriz 46.3,38.1
+    'AZGH': {'fa': 'آذربایجان غربی', 'x': 10, 'y': 9},    # Urmia 45.1,37.6
+    'ARD': {'fa': 'اردبیل', 'x': 24, 'y': 5},              # Ardabil 48.3,38.3
+    'ESF': {'fa': 'اصفهان', 'x': 42, 'y': 50},             # Isfahan 51.7,32.7
+    'ALZ': {'fa': 'البرز', 'x': 40, 'y': 22},              # Karaj 50.9,35.8
+    'ILM': {'fa': 'ایلام', 'x': 16, 'y': 48},              # Ilam 46.4,33.6
+    'BSH': {'fa': 'بوشهر', 'x': 40, 'y': 72},              # Bushehr 50.8,28.9
+    'M1-Tehran': {'fa': 'تهران ۱', 'x': 42, 'y': 24},      # Tehran center
+    'M2-Tehran': {'fa': 'تهران ۲', 'x': 43, 'y': 25},      # Tehran
+    'OSTehran': {'fa': 'استان تهران', 'x': 41, 'y': 23},   # Tehran
+    'KHRJ': {'fa': 'خراسان جنوبی', 'x': 74, 'y': 48},      # Birjand 59.2,32.9
+    'KHR': {'fa': 'خراسان رضوی', 'x': 76, 'y': 28},        # Mashhad 59.6,36.3
+    'KhShomali': {'fa': 'خراسان شمالی', 'x': 70, 'y': 18},  # Bojnurd 57.3,37.5
+    'KHZ': {'fa': 'خوزستان', 'x': 26, 'y': 58},            # Ahvaz 48.7,31.3
+    'ZNJ': {'fa': 'زنجان', 'x': 24, 'y': 18},              # Zanjan 48.5,36.7
+    'SMN': {'fa': 'سمنان', 'x': 50, 'y': 24},              # Semnan 53.4,35.6
+    'SNB': {'fa': 'سیستان و بلوچستان', 'x': 90, 'y': 72},  # Zahedan 60.9,29.5
+    'FRS': {'fa': 'فارس', 'x': 48, 'y': 68},               # Shiraz 52.5,29.6
+    'QZV': {'fa': 'قزوین', 'x': 36, 'y': 20},              # Qazvin 50.0,36.3
+    'QOM': {'fa': 'قم', 'x': 40, 'y': 32},                 # Qom 50.9,34.6
+    'LOR': {'fa': 'لرستان', 'x': 24, 'y': 44},             # Khorramabad 48.4,33.5
+    'MAZ': {'fa': 'مازندران', 'x': 46, 'y': 14},           # Sari 53.1,36.6
+    'MRZ': {'fa': 'مرکزی', 'x': 36, 'y': 36},              # Arak 49.7,34.1
+    'HMZ': {'fa': 'هرمزگان', 'x': 58, 'y': 82},            # Bandar Abbas 56.3,27.2
+    'HMD': {'fa': 'همدان', 'x': 26, 'y': 34},              # Hamadan 48.5,34.8
+    'CHB': {'fa': 'چهارمحال و بختیاری', 'x': 38, 'y': 52},  # Shahrekord 50.9,32.3
+    'KRD': {'fa': 'کردستان', 'x': 16, 'y': 30},            # Sanandaj 47.0,35.3
+    'KRM': {'fa': 'کرمان', 'x': 66, 'y': 62},              # Kerman 57.1,30.3
+    'KRMJ': {'fa': 'کرمانشاه', 'x': 14, 'y': 38},          # Kermanshah 47.1,34.3
+    'KNB': {'fa': 'کهگیلویه و بویراحمد', 'x': 38, 'y': 60}, # Yasuj 51.6,30.7
+    'GLS': {'fa': 'گلستان', 'x': 56, 'y': 12},             # Gorgan 54.4,36.8
+    'GIL': {'fa': 'گیلان', 'x': 34, 'y': 10},              # Rasht 49.6,37.3
+    'YZD': {'fa': 'یزد', 'x': 56, 'y': 52},                # Yazd 54.4,31.9
+    'KRSH': {'fa': 'کرمانشاه', 'x': 14, 'y': 38},          # Kermanshah alias
 }
 
 
@@ -185,6 +187,33 @@ def _abbr_from_hostname(hostname):
     return hostname
 
 
+def _extract_province_from_name(hostname):
+    """Try to extract province abbreviation from any hostname format."""
+    # First try standard format
+    abbr = _abbr_from_hostname(hostname)
+    if abbr in PROVINCE_INFO:
+        return abbr
+
+    # Try matching province abbreviations anywhere in hostname (for core switches)
+    hn_upper = hostname.upper()
+    for prov_key in PROVINCE_INFO:
+        pk_upper = prov_key.upper().replace('-', '')
+        if len(pk_upper) >= 3 and pk_upper in hn_upper:
+            return prov_key
+
+    # Special cases for switches: SW3560X-ESF, SW3560X-KHR, etc.
+    parts = hostname.replace('_', '-').split('-')
+    for part in parts:
+        for prov_key in PROVINCE_INFO:
+            if part.upper() == prov_key.upper():
+                return prov_key
+            # Partial match like "Teh" for Tehran, "Maz" for Mazandaran
+            if len(part) >= 3 and part.upper().startswith(prov_key.upper()[:3]):
+                return prov_key
+
+    return None
+
+
 def _classify_device(hostname, source_dir):
     """Classify a device based on its source directory and hostname."""
     if source_dir == 'core-router':
@@ -235,13 +264,19 @@ def get_topology():
         abbr = _abbr_from_hostname(hostname)
         pinfo = PROVINCE_INFO.get(abbr, {})
 
-        # For core devices, position them in the center (Tehran area)
+        # For core switches, try harder to find province
+        if not pinfo and category == 'core-switch':
+            prov = _extract_province_from_name(hostname)
+            if prov:
+                abbr = prov
+                pinfo = PROVINCE_INFO.get(abbr, {})
+
+        # Position based on category
         if category == 'core-router':
-            cx, cy = 45, 30
+            cx, cy = 42, 24  # Tehran center
         elif category == 'core-switch':
-            # Place switches near their province if identifiable, else near center
-            cx = pinfo.get('x', 45)
-            cy = pinfo.get('y', 32)
+            cx = pinfo.get('x', 42)
+            cy = pinfo.get('y', 24)
         else:
             cx = pinfo.get('x', 50)
             cy = pinfo.get('y', 50)
@@ -282,16 +317,18 @@ def get_topology():
         parsed_configs[hostname] = info
         node_categories[hostname] = category
 
-    # Build links from tunnel destinations
-    # Only allow links where at least one end is a core device
+    # Build links - strict hub-spoke: provincial routers connect ONLY to core routers
     node_ips = {}
     for node_info in parsed_configs.values():
         for iface in node_info['interfaces']:
             node_ips[iface['ip']] = node_info['hostname']
 
-    core_set = {h for h, c in node_categories.items() if c in ('core-router', 'core-switch')}
+    core_router_set = {h for h, c in node_categories.items() if c == 'core-router'}
+    core_switch_set = {h for h, c in node_categories.items() if c == 'core-switch'}
+    all_core_set = core_router_set | core_switch_set
     seen_links = set()
 
+    # Tunnel-based links: only create if one end is core-router
     for hostname, info in parsed_configs.items():
         for tunnel in info['tunnels']:
             dst = tunnel.get('tunnel_dst', '')
@@ -299,8 +336,8 @@ def get_topology():
                 target = node_ips[dst]
                 if hostname == target:
                     continue
-                # Only create link if at least one end is a core device
-                if hostname not in core_set and target not in core_set:
+                # Only create link if at least one end is a CORE ROUTER (not just switch)
+                if hostname not in core_router_set and target not in core_router_set:
                     continue
                 link_key = tuple(sorted([hostname, target]))
                 if link_key not in seen_links:
@@ -314,20 +351,20 @@ def get_topology():
                         'dst_ip': dst,
                     })
 
-    # Ensure all provincial routers connect to at least one core router
-    # Find main hub core routers
-    hub_nodes = [h for h in core_set if node_categories[h] == 'core-router']
+    # Find main WAN hub routers
+    hub_nodes = sorted(core_router_set)
+
+    # Every provincial router connects to ONE core router (hub-spoke)
     if hub_nodes:
-        hub = hub_nodes[0]  # Primary core router
+        hub = hub_nodes[0]
         for hostname, category in node_categories.items():
             if category == 'provincial-router':
-                # Check if this provincial router already has a link to any core
-                has_core_link = any(
+                has_core_router_link = any(
                     l for l in links
                     if hostname in (l['source'], l['target'])
-                    and (l['source'] in core_set or l['target'] in core_set)
+                    and (l['source'] in core_router_set or l['target'] in core_router_set)
                 )
-                if not has_core_link:
+                if not has_core_router_link:
                     link_key = tuple(sorted([hostname, hub]))
                     if link_key not in seen_links:
                         seen_links.add(link_key)
@@ -340,30 +377,27 @@ def get_topology():
                             'dst_ip': '',
                         })
 
-    # Core switches connect to core routers
-    for hostname, category in node_categories.items():
-        if category == 'core-switch':
-            has_core_link = any(
-                l for l in links
-                if hostname in (l['source'], l['target'])
-                and any(
-                    node_categories.get(l['source']) == 'core-router'
-                    or node_categories.get(l['target']) == 'core-router'
-                    for _ in [1]
+    # Core switches connect to the closest core router (or first hub)
+    if hub_nodes:
+        for hostname, category in node_categories.items():
+            if category == 'core-switch':
+                has_cr_link = any(
+                    l for l in links
+                    if hostname in (l['source'], l['target'])
+                    and (l['source'] in core_router_set or l['target'] in core_router_set)
                 )
-            )
-            if not has_core_link and hub_nodes:
-                link_key = tuple(sorted([hostname, hub_nodes[0]]))
-                if link_key not in seen_links:
-                    seen_links.add(link_key)
-                    links.append({
-                        'source': hub_nodes[0],
-                        'target': hostname,
-                        'type': 'lan',
-                        'tunnel': 'LAN',
-                        'src_ip': '',
-                        'dst_ip': '',
-                    })
+                if not has_cr_link:
+                    link_key = tuple(sorted([hostname, hub_nodes[0]]))
+                    if link_key not in seen_links:
+                        seen_links.add(link_key)
+                        links.append({
+                            'source': hub_nodes[0],
+                            'target': hostname,
+                            'type': 'lan',
+                            'tunnel': 'LAN',
+                            'src_ip': '',
+                            'dst_ip': '',
+                        })
 
     core_count = sum(1 for n in nodes if n['category'] == 'core-router')
     switch_count = sum(1 for n in nodes if n['category'] == 'core-switch')
