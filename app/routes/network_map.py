@@ -1,4 +1,5 @@
 """Network map routes - Parse core router configs and build topology."""
+import math
 import os
 import re
 from flask import Blueprint, jsonify
@@ -317,63 +318,94 @@ def get_topology():
         parsed_configs[hostname] = info
         node_categories[hostname] = category
 
-    # Build links - STRICT hub-spoke topology
-    # Provincial routers ONLY connect to the main WAN hub (no tunnel matching)
+    # ── Position core routers in a grid (not all at same point) ──
+    # Identify main WAN hub routers by name
+    WAN_HUB_NAMES = ['ASR1006-WAN-MB', 'WAN-INTR1', 'WAN-INTR2']
+    wan_hub_positions = {
+        'ASR1006-WAN-MB': (42, 18),
+        'WAN-INTR1': (37, 24),
+        'WAN-INTR2': (47, 24),
+    }
+    core_nodes = [n for n in nodes if n['category'] == 'core-router']
+    wan_hubs = [n for n in core_nodes if n['id'] in WAN_HUB_NAMES]
+    other_cores = [n for n in core_nodes if n['id'] not in WAN_HUB_NAMES]
+
+    # Position WAN hubs in a triangle
+    for n in wan_hubs:
+        pos = wan_hub_positions.get(n['id'])
+        if pos:
+            n['x'], n['y'] = pos
+
+    # Position other core routers in a grid below WAN hubs
+    if other_cores:
+        cols = min(7, max(4, math.ceil(math.sqrt(len(other_cores)))))
+        spacing = 4
+        total_w = (cols - 1) * spacing
+        start_x = 42 - total_w / 2
+        start_y = 30
+        for i, n in enumerate(other_cores):
+            col = i % cols
+            row = i // cols
+            n['x'] = round(start_x + col * spacing, 1)
+            n['y'] = round(start_y + row * spacing, 1)
+
+    # ── Build links ──
     core_router_set = {h for h, c in node_categories.items() if c == 'core-router'}
-    core_switch_set = {h for h, c in node_categories.items() if c == 'core-switch'}
     seen_links = set()
 
-    # Find main WAN hub routers
-    hub_nodes = sorted(core_router_set)
+    def add_link(src, tgt, link_type, label):
+        lk = tuple(sorted([src, tgt]))
+        if lk not in seen_links and src != tgt:
+            seen_links.add(lk)
+            links.append({
+                'source': src, 'target': tgt,
+                'type': link_type, 'tunnel': label,
+                'src_ip': '', 'dst_ip': '',
+            })
 
-    # 1) Every provincial router connects to ONE core router (hub)
-    if hub_nodes:
-        hub = hub_nodes[0]
-        for hostname, category in node_categories.items():
-            if category == 'provincial-router':
-                link_key = tuple(sorted([hostname, hub]))
-                if link_key not in seen_links:
-                    seen_links.add(link_key)
-                    links.append({
-                        'source': hub,
-                        'target': hostname,
-                        'type': 'wan',
-                        'tunnel': 'WAN',
-                        'src_ip': '',
-                        'dst_ip': '',
-                    })
+    # Find actual WAN hubs that exist in our data
+    wan_hub_ids = [n['id'] for n in wan_hubs]
+    if not wan_hub_ids:
+        wan_hub_ids = sorted(core_router_set)[:1]
+    primary_hub = wan_hub_ids[0] if wan_hub_ids else None
 
-    # 2) Core routers connect to each other
-    hub_list = sorted(core_router_set)
-    for i in range(len(hub_list)):
-        for j in range(i + 1, min(i + 3, len(hub_list))):
-            link_key = tuple(sorted([hub_list[i], hub_list[j]]))
-            if link_key not in seen_links:
-                seen_links.add(link_key)
-                links.append({
-                    'source': hub_list[i],
-                    'target': hub_list[j],
-                    'type': 'core',
-                    'tunnel': 'Core Link',
-                    'src_ip': '',
-                    'dst_ip': '',
-                })
+    # 1) Provincial routers → distributed among WAN hubs
+    provincial_list = sorted(
+        [h for h, c in node_categories.items() if c == 'provincial-router']
+    )
+    for i, hostname in enumerate(provincial_list):
+        hub = wan_hub_ids[i % len(wan_hub_ids)] if wan_hub_ids else None
+        if hub:
+            add_link(hub, hostname, 'wan', 'WAN')
 
-    # 3) Core switches connect to the first core router
-    if hub_nodes:
-        for hostname, category in node_categories.items():
-            if category == 'core-switch':
-                link_key = tuple(sorted([hostname, hub_nodes[0]]))
-                if link_key not in seen_links:
-                    seen_links.add(link_key)
-                    links.append({
-                        'source': hub_nodes[0],
-                        'target': hostname,
-                        'type': 'lan',
-                        'tunnel': 'LAN',
-                        'src_ip': '',
-                        'dst_ip': '',
-                    })
+    # 2) Core switches → connect to their province's router (by abbreviation)
+    # Build province → provincial router lookup
+    prov_to_router = {}
+    for hostname, category in node_categories.items():
+        if category == 'provincial-router':
+            abbr = _abbr_from_hostname(hostname)
+            if abbr and abbr in PROVINCE_INFO:
+                prov_to_router[abbr] = hostname
+
+    for hostname, category in node_categories.items():
+        if category == 'core-switch':
+            prov = _extract_province_from_name(hostname)
+            matched_router = prov_to_router.get(prov) if prov else None
+            if matched_router:
+                add_link(matched_router, hostname, 'lan', 'LAN')
+            elif primary_hub:
+                add_link(primary_hub, hostname, 'lan', 'LAN')
+
+    # 3) Other core routers → connect to primary WAN hub
+    if primary_hub:
+        for hostname in sorted(core_router_set):
+            if hostname not in wan_hub_ids:
+                add_link(primary_hub, hostname, 'core', 'Core')
+
+    # 4) WAN hubs interconnect
+    for i in range(len(wan_hub_ids)):
+        for j in range(i + 1, len(wan_hub_ids)):
+            add_link(wan_hub_ids[i], wan_hub_ids[j], 'core', 'WAN Backbone')
 
     core_count = sum(1 for n in nodes if n['category'] == 'core-router')
     switch_count = sum(1 for n in nodes if n['category'] == 'core-switch')
