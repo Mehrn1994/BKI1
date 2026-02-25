@@ -4410,36 +4410,36 @@ def network_map_topology():
     if not os.path.exists(router_dir):
         return jsonify({'nodes':[],'links':[],'error':'Router directory not found'})
 
-    # ── Core router positions: 4 tiers above Iran map ──
+    # ── Core router positions: 4 tiers above Iran map (wider spacing) ──
     CORE_POSITIONS = {
-        # Tier 1 (y=-28): Primary WAN backbone hubs
-        'WAN-INTR1':       (30, -28, 'WAN INTR1'),
-        'ASR1006-WAN-MB':  (45, -28, 'ASR1006 WAN'),
-        'WAN-INTR2':       (60, -28, 'WAN INTR2'),
-        # Tier 2 (y=-20): Major service routers
-        'ISR-APN-RO':      (22, -20, 'APN Router'),
-        'APN-INT-HUB':     (34, -20, 'APN HUB'),
-        'INT-4451':         (45, -20, 'Intranet'),
-        'EXT-Edge-4451':    (56, -20, 'EXT Edge'),
-        'PSP-4451':         (68, -20, 'PSP'),
-        # Tier 3 (y=-12): Infrastructure & aggregation
-        'BKC-4451':         (18, -12, 'BKC'),
-        'AGG-WAN-SW':       (28, -12, 'AGG WAN'),
-        'EXT-AGG':          (38, -12, 'EXT AGG'),
-        'BKI-MAGFA':        (48, -12, 'MAGFA'),
-        '3825-NIBN':        (58, -12, 'NIBN'),
-        'Router-HTSC':      (68, -12, 'HTSC'),
-        'SW-Roof-To-Site':  (78, -12, 'Roof-Site'),
-        # Tier 4 (y=-5): Legacy & secondary devices
-        '7206-STM1':        (14, -5, 'STM1'),
-        'V-Jahad-3825':     (24, -5, 'Jahad'),
-        '4451-PBN':         (34, -5, 'PBN'),
-        '2821-Gostaresh':   (44, -5, 'Gostaresh'),
-        '2821-Mizan':       (54, -5, 'Mizan MCI'),
-        '3825-Sabt&Rotbe':  (64, -5, 'Sabt'),
-        '4500-Site-To-Roof':(74, -5, 'Site-Roof'),
-        'NIBN-Tarasht':     (82, -5, 'Tarasht'),
-        '1841-ISC':         (90, -5, 'ISC Test'),
+        # Tier 1 (y=-35): Primary WAN backbone hubs - prominent, wide apart
+        'WAN-INTR1':       (22, -35, 'WAN INTR1'),
+        'ASR1006-WAN-MB':  (50, -35, 'ASR1006 WAN'),
+        'WAN-INTR2':       (78, -35, 'WAN INTR2'),
+        # Tier 2 (y=-25): Major service routers
+        'ISR-APN-RO':      (14, -25, 'APN Router'),
+        'APN-INT-HUB':     (30, -25, 'APN HUB'),
+        'INT-4451':         (50, -25, 'Intranet'),
+        'EXT-Edge-4451':    (70, -25, 'EXT Edge'),
+        'PSP-4451':         (86, -25, 'PSP'),
+        # Tier 3 (y=-16): Infrastructure & aggregation
+        'BKC-4451':         (10, -16, 'BKC'),
+        'AGG-WAN-SW':       (24, -16, 'AGG WAN'),
+        'EXT-AGG':          (38, -16, 'EXT AGG'),
+        'BKI-MAGFA':        (52, -16, 'MAGFA'),
+        '3825-NIBN':        (66, -16, 'NIBN'),
+        'Router-HTSC':      (78, -16, 'HTSC'),
+        'SW-Roof-To-Site':  (90, -16, 'Roof-Site'),
+        # Tier 4 (y=-8): Legacy & secondary devices
+        '7206-STM1':        (8,  -8, 'STM1'),
+        'V-Jahad-3825':     (22, -8, 'Jahad'),
+        '4451-PBN':         (36, -8, 'PBN'),
+        '2821-Gostaresh':   (50, -8, 'Gostaresh'),
+        '2821-Mizan':       (64, -8, 'Mizan MCI'),
+        '3825-Sabt&Rotbe':  (76, -8, 'Sabt'),
+        '4500-Site-To-Roof':(88, -8, 'Site-Roof'),
+        'NIBN-Tarasht':     (68, -16, 'Tarasht'),
+        '1841-ISC':         (92, -16, 'ISC Test'),
     }
 
     parsed = {}
@@ -4465,7 +4465,7 @@ def network_map_topology():
         # Position logic
         if category == 'core-switch' and sw_prov and sw_prov in PROVINCE_MAP_INFO:
             pinfo = PROVINCE_MAP_INFO[sw_prov]
-            x, y, label = pinfo['x'] + 3, pinfo['y'] + 2, pinfo['fa'] + ' SW'
+            x, y, label = pinfo['x'] + 6, pinfo['y'] + 4, pinfo['fa'] + ' SW'
         elif category == 'core-router' and info['hostname'] in CORE_POSITIONS:
             cp = CORE_POSITIONS[info['hostname']]
             x, y, label = cp[0], cp[1], cp[2]
