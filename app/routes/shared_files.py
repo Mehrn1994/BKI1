@@ -13,13 +13,7 @@ shared_files_bp = Blueprint('shared_files', __name__)
 
 SHARED_DIR = os.path.join(Config.BASE_DIR, 'data', 'shared_files')
 MAX_FILE_SIZE = 100 * 1024 * 1024  # 100 MB
-ALLOWED_EXTENSIONS = {
-    'pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx',
-    'txt', 'csv', 'zip', 'rar', '7z', 'tar', 'gz',
-    'png', 'jpg', 'jpeg', 'gif', 'bmp', 'svg',
-    'bin', 'ios', 'img', 'conf', 'cfg', 'log',
-    'py', 'sh', 'bat', 'json', 'xml', 'yaml', 'yml'
-}
+ALLOWED_EXTENSIONS = None  # No restriction - all file types allowed
 
 
 def _get_file_info(filepath):
@@ -66,8 +60,6 @@ def upload_file():
             return jsonify({'status': 'error', 'error': 'No file selected'}), 400
 
         ext = file.filename.rsplit('.', 1)[-1].lower() if '.' in file.filename else ''
-        if ext not in ALLOWED_EXTENSIONS:
-            return jsonify({'status': 'error', 'error': f'File type .{ext} not allowed'}), 400
 
         # Check file size
         file.seek(0, 2)
