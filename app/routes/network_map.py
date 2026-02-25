@@ -318,36 +318,41 @@ def get_topology():
         parsed_configs[hostname] = info
         node_categories[hostname] = category
 
-    # ── Position core routers in a grid (not all at same point) ──
-    # Identify main WAN hub routers by name
+    # ── Position core routers ABOVE the map (separate Data Center zone) ──
+    # This prevents accidental clicks on core routers when targeting provincials.
+    # Provincial routers are at y >= 5, core routers will be at y < 0.
     WAN_HUB_NAMES = ['ASR1006-WAN-MB', 'WAN-INTR1', 'WAN-INTR2']
-    wan_hub_positions = {
-        'ASR1006-WAN-MB': (42, 18),
-        'WAN-INTR1': (37, 24),
-        'WAN-INTR2': (47, 24),
-    }
     core_nodes = [n for n in nodes if n['category'] == 'core-router']
     wan_hubs = [n for n in core_nodes if n['id'] in WAN_HUB_NAMES]
     other_cores = [n for n in core_nodes if n['id'] not in WAN_HUB_NAMES]
 
-    # Position WAN hubs in a triangle
-    for n in wan_hubs:
-        pos = wan_hub_positions.get(n['id'])
-        if pos:
-            n['x'], n['y'] = pos
+    # WAN hubs: prominent row at top
+    hub_positions = [
+        ('ASR1006-WAN-MB', 42, -28),
+        ('WAN-INTR1', 30, -28),
+        ('WAN-INTR2', 54, -28),
+    ]
+    for name, hx, hy in hub_positions:
+        for n in wan_hubs:
+            if n['id'] == name:
+                n['x'], n['y'] = hx, hy
 
-    # Position other core routers in a grid below WAN hubs
+    # Other core routers: two rows below WAN hubs, wide spread
     if other_cores:
-        cols = min(7, max(4, math.ceil(math.sqrt(len(other_cores)))))
-        spacing = 4
-        total_w = (cols - 1) * spacing
-        start_x = 42 - total_w / 2
-        start_y = 30
-        for i, n in enumerate(other_cores):
-            col = i % cols
-            row = i // cols
-            n['x'] = round(start_x + col * spacing, 1)
-            n['y'] = round(start_y + row * spacing, 1)
+        half = (len(other_cores) + 1) // 2
+        spacing = 6
+        for idx, n in enumerate(other_cores):
+            if idx < half:
+                row_count = half
+                row_y = -19
+                i = idx
+            else:
+                row_count = len(other_cores) - half
+                row_y = -12
+                i = idx - half
+            total_w = (row_count - 1) * spacing
+            n['x'] = round(42 - total_w / 2 + i * spacing, 1)
+            n['y'] = row_y
 
     # ── Build links ──
     core_router_set = {h for h, c in node_categories.items() if c == 'core-router'}

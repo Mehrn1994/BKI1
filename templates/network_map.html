@@ -213,6 +213,13 @@ function drawBg(){
     for(let x=Math.floor(tl.x/gs)*gs;x<=br.x;x+=gs){const s=w2s(x,0);ctx.moveTo(s.x,0);ctx.lineTo(s.x,H);}
     for(let y=Math.floor(tl.y/gs)*gs;y<=br.y;y+=gs){const s=w2s(0,y);ctx.moveTo(0,s.y);ctx.lineTo(W,s.y);}
     ctx.stroke();
+    // Separator line between Data Center zone (y<0) and Geographic map (y>=0)
+    const sep=w2s(-100,0),sep2=w2s(1100,0);
+    ctx.strokeStyle='rgba(34,211,238,0.08)';ctx.lineWidth=1;ctx.setLineDash([8,6]);
+    ctx.beginPath();ctx.moveTo(sep.x,sep.y);ctx.lineTo(sep2.x,sep2.y);ctx.stroke();ctx.setLineDash([]);
+    // Label
+    const lbl=w2s(420,-30);
+    if(lbl.y>-50&&lbl.y<H+50){ctx.fillStyle='rgba(34,211,238,0.15)';ctx.font=`bold ${Math.max(8,11*cam.z)}px Inter`;ctx.textAlign='center';ctx.fillText('TEHRAN DATA CENTER',lbl.x,lbl.y);}
 }
 
 function drawLinks(vis,t){
@@ -323,6 +330,8 @@ function animate(){
     const t=performance.now()/1000;
     cam.x+=(tCam.x-cam.x)*.1;cam.y+=(tCam.y-cam.y)*.1;cam.z+=(tCam.z-cam.z)*.1;
     const vis=getVis();drawBg();drawLinks(vis,t);drawPart(vis,t);drawNodes(vis,t);
+    // Debug: show selected node info
+    if(selected){const sn=nodes.find(n=>n.id===selected);if(sn){const lc=links.filter(l=>l.source===selected||l.target===selected).length;ctx.fillStyle='rgba(253,224,71,0.9)';ctx.font='bold 11px Inter';ctx.textAlign='left';ctx.textBaseline='top';ctx.fillText(`Selected: ${selected} (${sn.category}) | Links: ${lc}`,10,H-20);}}
     requestAnimationFrame(animate);
 }
 
