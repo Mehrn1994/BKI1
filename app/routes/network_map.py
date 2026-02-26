@@ -299,7 +299,7 @@ def _parse_nat_full(filepath):
         if not nat_side:
             continue
 
-        ip_m = re.search(r'ip address\s+(\S+)\s+(\S+)', block)
+        ip_m = re.search(r'ip address\s+(\d+\.\d+\.\d+\.\d+)\s+(\d+\.\d+\.\d+\.\d+)', block)
         desc_m = re.search(r'description\s+(.+)', block)
 
         entry = {
@@ -371,7 +371,7 @@ def _parse_nat_full(filepath):
         acl_block = am.group(2)
         entries = []
         for em in re.finditer(
-            r'^\s*(permit|deny)\s+(ip|tcp|udp|icmp|any)\s+(\S+)(?:\s+(\S+))?(?:\s+(\S+))?(?:\s+(\S+))?',
+            r'^\s*(?:\d+\s+)?(permit|deny)\s+(ip|tcp|udp|icmp|any)\s+(\S+)(?:\s+(\S+))?(?:\s+(\S+))?(?:\s+(\S+))?',
             acl_block, re.MULTILINE
         ):
             entries.append({
@@ -395,7 +395,7 @@ def _parse_nat_full(filepath):
         acl_block = am.group(2)
         entries = []
         for em in re.finditer(
-            r'^\s*(permit|deny)\s+(\S+)(?:\s+(\S+))?',
+            r'^\s*(?:\d+\s+)?(permit|deny)\s+(\S+)(?:\s+(\S+))?',
             acl_block, re.MULTILINE
         ):
             src = em.group(2)
