@@ -750,6 +750,10 @@ def reports_page():
 def network_map_page():
     return render_template('network_map.html')
 
+@app.route('/nat-diagram')
+def nat_diagram_page():
+    return render_template('nat_diagram.html')
+
 # ==================== FINGLISH TO PERSIAN TRANSLATION ====================
 FINGLISH_DICT = {
     # Common branch/place name words
@@ -892,6 +896,7 @@ def _load_custom_translations():
         pass
 
 _load_custom_translations()
+# fuzzy-cache is built lazily on first call (after FINGLISH_DICT is final)
 
 # Build reverse dictionary for Persian-to-Finglish search
 PERSIAN_TO_FINGLISH = {}
@@ -900,68 +905,136 @@ for en, fa in FINGLISH_DICT.items():
         PERSIAN_TO_FINGLISH[fa] = []
     PERSIAN_TO_FINGLISH[fa].append(en)
 
+import difflib as _difflib
+
+# Flat list of all keys for fuzzy matching — rebuilt when dict changes
+_FINGLISH_KEYS_CACHE = []
+
+def _rebuild_fuzzy_cache():
+    """Rebuild the flat list of dict keys used by difflib matching."""
+    global _FINGLISH_KEYS_CACHE
+    _FINGLISH_KEYS_CACHE = list(FINGLISH_DICT.keys())
+
+def _fuzzy_lookup(token, cutoff=0.78):
+    """Find the closest FINGLISH_DICT key for *token* using difflib.
+
+    Returns the Persian value for the best match, or None if no match
+    is above *cutoff* similarity.  Higher cutoff = stricter matching.
+    Strategy:
+      1. Try exact-case match first (already done by caller).
+      2. Try close matches against the full key list (case-sensitive).
+      3. Retry case-insensitively against lowercase key variants.
+    A minimum token length of 4 is enforced to avoid false positives on
+    short abbreviations.
+    """
+    if len(token) < 4:
+        return None
+    if not _FINGLISH_KEYS_CACHE:
+        _rebuild_fuzzy_cache()
+
+    # Case-sensitive pass
+    matches = _difflib.get_close_matches(token, _FINGLISH_KEYS_CACHE,
+                                          n=1, cutoff=cutoff)
+    if matches:
+        return FINGLISH_DICT[matches[0]]
+
+    # Case-insensitive pass: build a lowercase → original map on the fly
+    lower_map = {k.lower(): k for k in _FINGLISH_KEYS_CACHE}
+    ci_matches = _difflib.get_close_matches(token.lower(), list(lower_map.keys()),
+                                             n=1, cutoff=cutoff)
+    if ci_matches:
+        original_key = lower_map[ci_matches[0]]
+        return FINGLISH_DICT[original_key]
+
+    return None
+
+
 def translate_finglish(name):
     """Translate a Finglish/English branch name to Persian.
 
-    Returns the Persian translation if any part could be translated,
-    or an empty string if no translation was found at all.
+    Strategy (fastest-first):
+      1. Direct dict lookup (exact).
+      2. Persian-chars guard — already Persian, return as-is.
+      3. Strip bandwidth/numeric suffix then direct lookup.
+      4. Split on hyphens / underscores / spaces → word-by-word dict lookup.
+         • Also tries combining adjacent tokens (CamelCase combos).
+         • Variants: exact / lowercase / capitalize / UPPER.
+      5. Fuzzy matching via difflib for any token that still didn't match
+         (only for tokens ≥ 4 chars and similarity ≥ 0.78).
+
+    Returns:
+      - Persian translation string if at least one token was translated.
+      - Empty string if nothing could be translated.
     """
     if not name:
         return ''
-    # Direct match first (fastest path)
+
+    import re as _re
+
+    # ── 1. Direct exact match ────────────────────────────────────────────────
     if name in FINGLISH_DICT:
         return FINGLISH_DICT[name]
-    # If already Persian (contains Persian chars), return as-is
-    import re as _re
+
+    # ── 2. Already Persian? ──────────────────────────────────────────────────
     if _re.search(r'[\u0600-\u06FF]', name):
         return name
-    # Remove bandwidth suffixes like -512, -448K, -1M, -512k etc.
+
+    # ── 3. Strip numeric/bandwidth suffix ───────────────────────────────────
     clean = _re.sub(r'[-_ ]?\d+[KkMm]?(bps)?$', '', name).strip()
-    if clean != name and clean in FINGLISH_DICT:
+    if clean and clean != name and clean in FINGLISH_DICT:
         return FINGLISH_DICT[clean]
-    # Try splitting on hyphens/underscores/spaces first
-    parts = _re.split(r'[-_ ]', clean)
+
+    # ── 4 & 5. Token-by-token + fuzzy ───────────────────────────────────────
+    parts = _re.split(r'[-_ ]', clean or name)
     if len(parts) == 1:
-        # Single token: try CamelCase split "ImamReza" -> ["Imam", "Reza"]
-        parts = _re.findall(r'[A-Z][a-z]*|[a-z]+|[A-Z]{2,}', clean)
-    # Filter empty parts
+        # Single token: try CamelCase split  "ImamReza" → ["Imam","Reza"]
+        parts = _re.findall(r'[A-Z][a-z]*|[a-z]{2,}|[A-Z]{2,}', clean or name)
     parts = [p for p in parts if p]
     if not parts:
         return ''
+
     translated = []
     any_translated = False
     i = 0
     while i < len(parts):
         p = parts[i]
-        # Try combining current + next token (e.g. "Imam" + "Reza" = "ImamReza")
         matched = False
+
+        # ── 4a. Try combining current + next (e.g. "Imam"+"Reza"="ImamReza") ─
         if i + 1 < len(parts):
-            combo = p + parts[i + 1]
-            if combo in FINGLISH_DICT:
-                translated.append(FINGLISH_DICT[combo])
-                any_translated = True
-                i += 2
+            for combo in (p + parts[i + 1],
+                          p.capitalize() + parts[i + 1].capitalize()):
+                if combo in FINGLISH_DICT:
+                    translated.append(FINGLISH_DICT[combo])
+                    any_translated = True
+                    i += 2
+                    matched = True
+                    break
+            if matched:
                 continue
-            # Also try with capitalize/lower combo
-            combo_cap = p.capitalize() + parts[i + 1].capitalize()
-            if combo_cap in FINGLISH_DICT:
-                translated.append(FINGLISH_DICT[combo_cap])
-                any_translated = True
-                i += 2
-                continue
-        # Single token lookup (exact, lowercase, capitalize)
+
+        # ── 4b. Single token — exact / lowercase / capitalize / UPPER ────────
         for variant in (p, p.lower(), p.capitalize(), p.upper()):
             if variant in FINGLISH_DICT:
                 translated.append(FINGLISH_DICT[variant])
                 any_translated = True
                 matched = True
                 break
+
+        # ── 5. Fuzzy fallback (difflib) ───────────────────────────────────────
         if not matched:
-            translated.append(p)   # keep original token
+            fuzzy_result = _fuzzy_lookup(p)
+            if fuzzy_result:
+                translated.append(fuzzy_result)
+                any_translated = True
+                matched = True
+
+        if not matched:
+            translated.append(p)   # keep original token unchanged
         i += 1
 
     if not any_translated:
-        return ''   # nothing was translated — signal no Persian equivalent found
+        return ''
     return ' '.join(translated)
 
 def get_persian_search_variants(query):
@@ -4889,6 +4962,253 @@ CORE_DEVICE_MAP = {
 }
 
 
+# ==================== NAT DIAGRAM PARSER ====================
+
+def _sdb_scan_all_routers():
+    """Return list of (filepath, fname, category) for every router/switch config."""
+    base = os.path.dirname(__file__)
+    router_dir   = os.path.join(base, 'Router')
+    core_r_dir   = os.path.join(router_dir, 'Core Routers')
+    core_sw_dir  = os.path.join(router_dir, 'Core Switches')
+    results = []
+
+    def _add_dir(directory, category):
+        if not os.path.isdir(directory):
+            return
+        for fname in sorted(os.listdir(directory)):
+            fpath = os.path.join(directory, fname)
+            if os.path.isfile(fpath) and os.path.getsize(fpath) >= 100:
+                results.append((fpath, fname, category))
+
+    # Provincial routers sit directly in Router/ (not in subdirs)
+    if os.path.isdir(router_dir):
+        for fname in sorted(os.listdir(router_dir)):
+            fpath = os.path.join(router_dir, fname)
+            if os.path.isfile(fpath) and os.path.getsize(fpath) >= 100:
+                results.append((fpath, fname, 'provincial-router'))
+
+    _add_dir(core_r_dir,  'core-router')
+    _add_dir(core_sw_dir, 'core-switch')
+    return results
+
+
+def _sdb_parse_nat_full(filepath):
+    """Deep-parse one Cisco config file and return complete NAT flow data."""
+    import re as _r
+    try:
+        with open(filepath, 'r', encoding='utf-8', errors='ignore') as fh:
+            content = fh.read()
+    except Exception:
+        return None
+
+    result = {
+        'hostname': '',
+        'inside_interfaces': [],
+        'outside_interfaces': [],
+        'nat_rules': [],
+        'nat_pools': [],
+        'acl_content': {},
+    }
+
+    m = _r.search(r'^hostname\s+(.+)', content, _r.MULTILINE)
+    if m:
+        result['hostname'] = m.group(1).strip()
+
+    # ── Interface blocks ────────────────────────────────────────────────────
+    iface_re = _r.compile(
+        r'^interface\s+(\S+)(.*?)(?=^interface\s|\Z)',
+        _r.MULTILINE | _r.DOTALL
+    )
+    for im in iface_re.finditer(content):
+        block = im.group(2)
+        nat_side = _r.search(r'ip nat\s+(inside|outside)', block)
+        if not nat_side:
+            continue
+        ip_m   = _r.search(r'ip address\s+(\S+)\s+(\S+)', block)
+        desc_m = _r.search(r'description\s+(.+)', block)
+        entry = {
+            'name':        im.group(1),
+            'ip':          ip_m.group(1)   if ip_m   else '',
+            'mask':        ip_m.group(2)   if ip_m   else '',
+            'description': desc_m.group(1).strip().strip('"') if desc_m else '',
+        }
+        if nat_side.group(1) == 'inside':
+            result['inside_interfaces'].append(entry)
+        else:
+            result['outside_interfaces'].append(entry)
+
+    # ── NAT rules ────────────────────────────────────────────────────────────
+    for nm in _r.finditer(r'^ip nat\s+(?:inside|outside)\s+source\s+(.+)',
+                           content, _r.MULTILINE):
+        rt = nm.group(1).strip()
+        if 'static' in rt:
+            parts = rt.split()
+            rule = {'type': 'static'}
+            idx = 1  # skip 'static'
+            if len(parts) > idx and parts[idx] in ('tcp', 'udp'):
+                rule['protocol']    = parts[idx]
+                rule['inside_ip']   = parts[idx+1] if len(parts) > idx+1 else ''
+                rule['inside_port'] = parts[idx+2] if len(parts) > idx+2 else ''
+                rule['outside_ip']  = parts[idx+3] if len(parts) > idx+3 else ''
+                rule['outside_port']= parts[idx+4] if len(parts) > idx+4 else ''
+            else:
+                rule['inside_ip']  = parts[idx]   if len(parts) > idx   else ''
+                rule['outside_ip'] = parts[idx+1] if len(parts) > idx+1 else ''
+        else:
+            acl_m   = _r.search(r'list\s+(\S+)',      rt)
+            pool_m  = _r.search(r'pool\s+(\S+)',      rt)
+            iface_m = _r.search(r'interface\s+(\S+)', rt)
+            rule = {
+                'type':          'dynamic',
+                'acl':           acl_m.group(1)   if acl_m   else '',
+                'pool':          pool_m.group(1)  if pool_m  else '',
+                'overload_intf': iface_m.group(1) if iface_m else '',
+                'overload':      'overload' in rt,
+                'pat':           'overload' in rt,
+            }
+        result['nat_rules'].append(rule)
+
+    # ── NAT pools ────────────────────────────────────────────────────────────
+    for pm in _r.finditer(
+        r'^ip nat pool\s+(\S+)\s+(\S+)\s+(\S+)\s+'
+        r'(?:netmask\s+(\S+)|prefix-length\s+(\S+))',
+        content, _r.MULTILINE
+    ):
+        result['nat_pools'].append({
+            'name':     pm.group(1),
+            'start_ip': pm.group(2),
+            'end_ip':   pm.group(3),
+            'netmask':  pm.group(4) or '',
+            'prefix':   pm.group(5) or '',
+        })
+
+    # ── Extended ACLs ────────────────────────────────────────────────────────
+    ext_acl_re = _r.compile(
+        r'^ip access-list extended\s+(\S+)\s*\n(.*?)'
+        r'(?=^ip access-list\s|^router\s|^!\s*\n!\s*\n|^ip nat\s|\Z)',
+        _r.MULTILINE | _r.DOTALL
+    )
+    for am in ext_acl_re.finditer(content):
+        entries = []
+        for em in _r.finditer(
+            r'^\s*(permit|deny)\s+(\S+)\s+(\S+)(?:\s+(\S+))?'
+            r'(?:\s+(\S+))?(?:\s+(\S+))?',
+            am.group(2), _r.MULTILINE
+        ):
+            entries.append({
+                'action':   em.group(1),
+                'proto':    em.group(2),
+                'src':      em.group(3),
+                'src_wild': em.group(4) or '',
+                'dst':      em.group(5) or 'any',
+                'dst_wild': em.group(6) or '',
+            })
+        if entries:
+            result['acl_content'][am.group(1)] = entries
+
+    # ── Standard ACLs ────────────────────────────────────────────────────────
+    std_acl_re = _r.compile(
+        r'^ip access-list standard\s+(\S+)\s*\n(.*?)'
+        r'(?=^ip access-list\s|^router\s|^!\s*\n!\s*\n|\Z)',
+        _r.MULTILINE | _r.DOTALL
+    )
+    for am in std_acl_re.finditer(content):
+        entries = []
+        for em in _r.finditer(r'^\s*(permit|deny)\s+(\S+)(?:\s+(\S+))?',
+                               am.group(2), _r.MULTILINE):
+            src = em.group(2)
+            wild = em.group(3) or ''
+            if src in ('any', 'host'):
+                src = f"{src} {wild}".strip()
+                wild = ''
+            entries.append({'action': em.group(1), 'proto': 'ip',
+                            'src': src, 'src_wild': wild, 'dst': 'any', 'dst_wild': ''})
+        if entries:
+            result['acl_content'][am.group(1)] = entries
+
+    # ── Numbered ACLs ────────────────────────────────────────────────────────
+    for am in _r.finditer(r'^access-list\s+(\S+)\s+(permit|deny)\s+(.+)',
+                           content, _r.MULTILINE):
+        acl_name = am.group(1)
+        pts = am.group(3).strip().split()
+        if acl_name not in result['acl_content']:
+            result['acl_content'][acl_name] = []
+        result['acl_content'][acl_name].append({
+            'action':   am.group(2),
+            'proto':    'ip',
+            'src':      pts[0] if pts else '',
+            'src_wild': pts[1] if len(pts) > 1 else '',
+            'dst':      pts[2] if len(pts) > 2 else 'any',
+            'dst_wild': pts[3] if len(pts) > 3 else '',
+        })
+
+    return result
+
+
+# Province abbreviation map (hostname → abbreviation) re-used from topology
+_PROV_ABBR_RE = None
+def _sdb_abbr_from_hostname(hostname):
+    """Extract province abbreviation from router hostname (best-effort)."""
+    import re as _r
+    if not hostname:
+        return ''
+    m = _r.search(r'(?:^|[-_])([A-Z]{2,6})(?:[-_\d]|$)', hostname)
+    return m.group(1) if m else ''
+
+
+@app.route('/api/network-map/nat-diagram', methods=['GET'])
+def nat_diagram_api():
+    """Return full NAT flow data for all routers/switches for visualization."""
+    PROVINCE_FA = {
+        'ALZ':'البرز','ARD':'اردبیل','AZGH':'آذربایجان غربی','AZSH':'آذربایجان شرقی',
+        'BSH':'بوشهر','CHB':'چهارمحال','ESF':'اصفهان','FRS':'فارس','GIL':'گیلان',
+        'GLS':'گلستان','HMD':'همدان','HMZ':'هرمزگان','ILM':'ایلام','KHR':'خراسان رضوی',
+        'KHRJ':'خراسان جنوبی','KHZ':'خوزستان','KNB':'کرمانشاه','KRD':'کردستان',
+        'KRM':'کرمان','KRMJ':'کرمانشاه','KRSH':'خراسان شمالی','LOR':'لرستان',
+        'MAZ':'مازندران','MRZ':'مرکزی','QOM':'قم','QZV':'قزوین','SMN':'سمنان',
+        'SNB':'سمنان','YZD':'یزد','ZNJ':'زنجان',
+    }
+    all_files = _sdb_scan_all_routers()
+    devices = []
+
+    for filepath, fname, category in all_files:
+        data = _sdb_parse_nat_full(filepath)
+        if not data or not data['nat_rules']:
+            continue
+
+        # Enrich dynamic rules with ACL entries and overload IP
+        for rule in data['nat_rules']:
+            if rule.get('type') == 'dynamic' and rule.get('acl'):
+                rule['acl_entries'] = data['acl_content'].get(rule['acl'], [])
+                rule['overload_ip'] = ''
+                for oi in data['outside_interfaces']:
+                    if oi['name'] == rule.get('overload_intf', ''):
+                        rule['overload_ip'] = oi['ip']
+                        break
+
+        abbr = _sdb_abbr_from_hostname(data['hostname'])
+        devices.append({
+            'hostname':          data['hostname'],
+            'label':             PROVINCE_FA.get(abbr, data['hostname']),
+            'abbr':              abbr,
+            'category':          category,
+            'source_file':       fname,
+            'inside_interfaces': data['inside_interfaces'],
+            'outside_interfaces':data['outside_interfaces'],
+            'nat_rules':         data['nat_rules'],
+            'nat_pools':         data['nat_pools'],
+        })
+
+    order = {'core-router': 0, 'provincial-router': 1, 'core-switch': 2}
+    devices.sort(key=lambda d: (order.get(d['category'], 3), d['hostname']))
+
+    return jsonify({
+        'devices':     devices,
+        'total':       len(devices),
+        'total_rules': sum(len(d['nat_rules']) for d in devices),
+    })
+
+
 # ==================== CUSTOM TRANSLATIONS API ====================
 @app.route('/api/translations', methods=['GET'])
 def get_translations():
@@ -4920,11 +5240,12 @@ def add_translation():
                        (name_en, name_fa, username, now))
         conn.commit()
         conn.close()
-        # Update in-memory dict
+        # Update in-memory dicts and invalidate fuzzy cache
         FINGLISH_DICT[name_en] = name_fa
         if name_fa not in PERSIAN_TO_FINGLISH:
             PERSIAN_TO_FINGLISH[name_fa] = []
         PERSIAN_TO_FINGLISH[name_fa].append(name_en)
+        _rebuild_fuzzy_cache()   # keep fuzzy index up-to-date
         log_activity('info', 'افزودن ترجمه', f'{name_en} → {name_fa}', username)
         return jsonify({'status': 'ok', 'message': f'ترجمه "{name_en}" → "{name_fa}" اضافه شد'})
     except Exception as e:
@@ -4943,7 +5264,7 @@ def delete_translation(tid):
             fa = row['name_fa']
             cursor.execute("DELETE FROM custom_translations WHERE id = ?", (tid,))
             conn.commit()
-            # Remove from in-memory dicts
+            # Remove from in-memory dicts and rebuild fuzzy cache
             FINGLISH_DICT.pop(en, None)
             if fa in PERSIAN_TO_FINGLISH:
                 try:
@@ -4952,6 +5273,7 @@ def delete_translation(tid):
                     pass
                 if not PERSIAN_TO_FINGLISH[fa]:
                     del PERSIAN_TO_FINGLISH[fa]
+            _rebuild_fuzzy_cache()
         conn.close()
         return jsonify({'status': 'ok'})
     except Exception as e:
