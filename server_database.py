@@ -867,7 +867,6 @@ FINGLISH_DICT = {
     'QabusGonbad': 'قابوس گنبد',
     'KhajehNasir': 'خواجه نصیر',
     'BaqeSafa': 'باغ صفا',
-    'SalmanFarsi': 'سلمان فارسی',
     'RahAhan': 'راه‌آهن',
     # VPLS-specific names
     'JebalBarez': 'جبال بارز', 'Family': 'فمیلی', 'Market': 'مارکت',
@@ -884,16 +883,23 @@ FINGLISH_DICT = {
 }
 
 # Load custom translations from DB at startup
+# NOTE: Called BEFORE PERSIAN_TO_FINGLISH is built, so we only update
+# FINGLISH_DICT here. The reverse mapping is built right after this call
+# from the fully-populated FINGLISH_DICT (which then includes custom entries).
 def _load_custom_translations():
+    loaded = 0
     try:
         conn = sqlite3.connect(DB_PATH)
         cursor = conn.cursor()
         cursor.execute("SELECT name_en, name_fa FROM custom_translations")
         for row in cursor.fetchall():
             FINGLISH_DICT[row[0]] = row[1]
+            loaded += 1
         conn.close()
-    except Exception:
-        pass
+        if loaded:
+            print(f"Loaded {loaded} custom translations from DB")
+    except Exception as e:
+        print(f"Warning: Failed to load custom translations: {e}")
 
 _load_custom_translations()
 # fuzzy-cache is built lazily on first call (after FINGLISH_DICT is final)
@@ -4673,7 +4679,7 @@ def _parse_router_config_v2(filepath):
     # Access lists
     for m in _re.finditer(r'^ip access-list (?:extended|standard)\s+(\S+)\s*\n((?:.*\n)*?)(?=^ip access-list|^!\s*$|\Z)', content, _re.MULTILINE):
         acl_name = m.group(1)
-        entries = _re.findall(r'^\s+(permit|deny)\s+(.+)', m.group(2), _re.MULTILINE)
+        entries = _re.findall(r'^\s+(?:\d+\s+)?(permit|deny)\s+(.+)', m.group(2), _re.MULTILINE)
         info['access_lists'][acl_name] = [{'action':a,'rule':r.strip()} for a,r in entries[:20]]
     for m in _re.finditer(r'^access-list\s+(\d+)\s+(permit|deny)\s+(.+)', content, _re.MULTILINE):
         num = m.group(1)
@@ -5024,7 +5030,7 @@ def _sdb_parse_nat_full(filepath):
         nat_side = _r.search(r'ip nat\s+(inside|outside)', block)
         if not nat_side:
             continue
-        ip_m   = _r.search(r'ip address\s+(\S+)\s+(\S+)', block)
+        ip_m   = _r.search(r'ip address\s+(\d+\.\d+\.\d+\.\d+)\s+(\d+\.\d+\.\d+\.\d+)', block)
         desc_m = _r.search(r'description\s+(.+)', block)
         entry = {
             'name':        im.group(1),
@@ -5091,7 +5097,7 @@ def _sdb_parse_nat_full(filepath):
     for am in ext_acl_re.finditer(content):
         entries = []
         for em in _r.finditer(
-            r'^\s*(permit|deny)\s+(\S+)\s+(\S+)(?:\s+(\S+))?'
+            r'^\s*(?:\d+\s+)?(permit|deny)\s+(\S+)\s+(\S+)(?:\s+(\S+))?'
             r'(?:\s+(\S+))?(?:\s+(\S+))?',
             am.group(2), _r.MULTILINE
         ):
@@ -5114,7 +5120,7 @@ def _sdb_parse_nat_full(filepath):
     )
     for am in std_acl_re.finditer(content):
         entries = []
-        for em in _r.finditer(r'^\s*(permit|deny)\s+(\S+)(?:\s+(\S+))?',
+        for em in _r.finditer(r'^\s*(?:\d+\s+)?(permit|deny)\s+(\S+)(?:\s+(\S+))?',
                                am.group(2), _r.MULTILINE):
             src = em.group(2)
             wild = em.group(3) or ''
@@ -5244,7 +5250,8 @@ def add_translation():
         FINGLISH_DICT[name_en] = name_fa
         if name_fa not in PERSIAN_TO_FINGLISH:
             PERSIAN_TO_FINGLISH[name_fa] = []
-        PERSIAN_TO_FINGLISH[name_fa].append(name_en)
+        if name_en not in PERSIAN_TO_FINGLISH[name_fa]:
+            PERSIAN_TO_FINGLISH[name_fa].append(name_en)
         _rebuild_fuzzy_cache()   # keep fuzzy index up-to-date
         log_activity('info', 'افزودن ترجمه', f'{name_en} → {name_fa}', username)
         return jsonify({'status': 'ok', 'message': f'ترجمه "{name_en}" → "{name_fa}" اضافه شد'})

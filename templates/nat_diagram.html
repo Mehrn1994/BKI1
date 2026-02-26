@@ -337,8 +337,8 @@ function buildDeviceCard(dev) {
     <div class="device-header" onclick="toggleCard('${cardId}')">
       <div class="device-icon ${catClass(dev.category)}">${catIcon(dev.category)}</div>
       <div class="device-info">
-        <div class="device-name">${dev.hostname}</div>
-        <div class="device-label">${dev.label || dev.abbr || ''} &nbsp;·&nbsp; ${dev.category} &nbsp;·&nbsp; <span style="direction:ltr">${dev.source_file}</span></div>
+        <div class="device-name">${escH(dev.hostname)}</div>
+        <div class="device-label">${escH(dev.label || dev.abbr || '')} &nbsp;·&nbsp; ${escH(dev.category)} &nbsp;·&nbsp; <span style="direction:ltr">${escH(dev.source_file)}</span></div>
       </div>
       <div class="device-badges">${badges}</div>
       <span class="device-chevron">⌄</span>
@@ -348,10 +348,10 @@ function buildDeviceCard(dev) {
 }
 
 function buildDynFlow(rule, dev, idx) {
-  // Find matching inside interfaces
-  const insideIntfs = dev.inside_interfaces;
-  const outsideIntf = dev.outside_interfaces.find(o => o.name === rule.overload_intf);
-  const allOutside = dev.outside_interfaces;
+  // Find matching inside interfaces (with null safety)
+  const insideIntfs = dev.inside_interfaces || [];
+  const allOutside = dev.outside_interfaces || [];
+  const outsideIntf = allOutside.find(o => o.name === rule.overload_intf) || null;
 
   // Source networks from ACL
   const aclEntries = rule.acl_entries || [];
