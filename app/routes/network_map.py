@@ -52,6 +52,19 @@ PROVINCE_INFO = {
     'KRSH': {'fa': 'کرمانشاه', 'x': 14, 'y': 38},          # Kermanshah alias
 }
 
+# Aliases for province abbreviation matching (switch hostnames use different formats)
+PROVINCE_ALIASES = {
+    'KHSH': 'KhShomali',   # SW3560X-KHSH → Khorasan Shomali
+    'Teh': 'OSTehran',     # SW3560X-TehB, SW3650X-TEH → Tehran
+    'TehB': 'OSTehran',
+    'TEH': 'OSTehran',
+    'Maz': 'MAZ',          # SW3560X-Maz → Mazandaran
+    'AzGh': 'AZGH',        # SW3850-AzGh → Azerbaijan Gharbi
+    'Babolsar': 'MAZ',     # Core-SW-Babolsar → Mazandaran
+    'CENTERII': 'OSTehran', # 3750-1-CENTERII → Tehran data center
+    'Tehran': 'OSTehran',  # MO-SH-Tehran-CORESW → Tehran
+}
+
 
 def _parse_config(filepath):
     """Parse a Cisco IOS config file and extract key info."""
@@ -195,6 +208,20 @@ def _extract_province_from_name(hostname):
     if abbr in PROVINCE_INFO:
         return abbr
 
+    # Check aliases for the abbreviation
+    if abbr in PROVINCE_ALIASES:
+        return PROVINCE_ALIASES[abbr]
+
+    # Try matching aliases in any part of hostname
+    parts = hostname.replace('_', '-').split('-')
+    for part in parts:
+        if part in PROVINCE_ALIASES:
+            return PROVINCE_ALIASES[part]
+        # Case-insensitive alias check
+        for alias_key, alias_val in PROVINCE_ALIASES.items():
+            if part.upper() == alias_key.upper():
+                return alias_val
+
     # Try matching province abbreviations anywhere in hostname (for core switches)
     hn_upper = hostname.upper()
     for prov_key in PROVINCE_INFO:
@@ -203,13 +230,12 @@ def _extract_province_from_name(hostname):
             return prov_key
 
     # Special cases for switches: SW3560X-ESF, SW3560X-KHR, etc.
-    parts = hostname.replace('_', '-').split('-')
     for part in parts:
         for prov_key in PROVINCE_INFO:
             if part.upper() == prov_key.upper():
                 return prov_key
             # Partial match like "Teh" for Tehran, "Maz" for Mazandaran
-            if len(part) >= 3 and part.upper().startswith(prov_key.upper()[:3]):
+            if len(part) >= 3 and len(prov_key) >= 3 and part.upper().startswith(prov_key.upper()[:3]):
                 return prov_key
 
     return None
@@ -354,63 +380,164 @@ def get_topology():
             n['x'] = round(42 - total_w / 2 + i * spacing, 1)
             n['y'] = row_y
 
-    # ── Build links ──
+    # ── Build IP → hostname lookup for tunnel-based link detection ──
+    ip_to_hostname = {}
+    for hostname, info in parsed_configs.items():
+        for iface in info['interfaces']:
+            if iface.get('ip') and iface['ip'] != 'negotiated':
+                ip_to_hostname[iface['ip']] = hostname
+        for tunnel in info['tunnels']:
+            if tunnel.get('ip') and tunnel['ip'] != 'negotiated':
+                ip_to_hostname[tunnel['ip']] = hostname
+            # Also map tunnel source IPs
+            if tunnel.get('tunnel_src') and not tunnel['tunnel_src'].startswith(('Loopback', 'GigabitEthernet', 'FastEthernet')):
+                ip_to_hostname[tunnel['tunnel_src']] = hostname
+
     core_router_set = {h for h, c in node_categories.items() if c == 'core-router'}
     seen_links = set()
 
-    def add_link(src, tgt, link_type, label):
+    def add_link(src, tgt, link_type, label, src_ip='', dst_ip=''):
         lk = tuple(sorted([src, tgt]))
         if lk not in seen_links and src != tgt:
             seen_links.add(lk)
             links.append({
                 'source': src, 'target': tgt,
                 'type': link_type, 'tunnel': label,
-                'src_ip': '', 'dst_ip': '',
+                'src_ip': src_ip, 'dst_ip': dst_ip,
             })
 
-    # Find actual WAN hubs that exist in our data
+    def _classify_tunnel_link(tunnel_name, tunnel_ip, src_hostname, dst_hostname):
+        """Classify tunnel link type based on name, IP ranges, and endpoints."""
+        tname_lower = tunnel_name.lower()
+        # APN tunnels typically have specific naming or IP patterns
+        if 'apn' in tname_lower:
+            return 'apn'
+        # Check tunnel IP to classify
+        if tunnel_ip:
+            parts = tunnel_ip.split('.')
+            if len(parts) == 4:
+                first = int(parts[0]) if parts[0].isdigit() else 0
+                second = int(parts[1]) if parts[1].isdigit() else 0
+                # 172.16.x.x - typically MPLS/VPLS tunnels
+                if first == 172 and 16 <= second <= 31:
+                    return 'mpls'
+                # 10.200.x.x or Tunnel200+ - typically APN
+                if first == 10 and second == 200:
+                    return 'apn'
+                # 10.100.x.x - typically WAN tunnels
+                if first == 10 and second == 100:
+                    return 'wan'
+        # Tunnel number heuristic
+        tnum_m = re.search(r'Tunnel(\d+)', tunnel_name)
+        if tnum_m:
+            tnum = int(tnum_m.group(1))
+            if tnum >= 200:
+                return 'apn'
+            if tnum >= 100:
+                return 'mpls'
+        # If both are core routers → backbone
+        if src_hostname in core_router_set and dst_hostname in core_router_set:
+            return 'backbone'
+        return 'wan'
+
+    # Find WAN hubs
     wan_hub_ids = [n['id'] for n in wan_hubs]
     if not wan_hub_ids:
         wan_hub_ids = sorted(core_router_set)[:1]
     primary_hub = wan_hub_ids[0] if wan_hub_ids else None
 
-    # 1) Provincial routers → distributed among WAN hubs
+    # ═══════════════════════════════════════════════════
+    # STEP 1: Tunnel-based links (real connectivity from configs)
+    # ═══════════════════════════════════════════════════
+    tunnel_connected = set()  # Track which nodes have tunnel-based links
+    for hostname, info in parsed_configs.items():
+        for tunnel in info['tunnels']:
+            dst_ip = tunnel.get('tunnel_dst', '')
+            if not dst_ip:
+                continue
+            # Find which router owns this destination IP
+            dst_hostname = ip_to_hostname.get(dst_ip)
+            if dst_hostname and dst_hostname != hostname:
+                link_type = _classify_tunnel_link(
+                    tunnel.get('name', ''), tunnel.get('ip', ''),
+                    hostname, dst_hostname
+                )
+                add_link(hostname, dst_hostname, link_type,
+                         tunnel.get('name', 'Tunnel'),
+                         tunnel.get('ip', ''), dst_ip)
+                tunnel_connected.add(hostname)
+                tunnel_connected.add(dst_hostname)
+
+    # ═══════════════════════════════════════════════════
+    # STEP 2: Fallback WAN links for provincials without tunnel links
+    # ═══════════════════════════════════════════════════
     provincial_list = sorted(
         [h for h, c in node_categories.items() if c == 'provincial-router']
     )
     for i, hostname in enumerate(provincial_list):
-        hub = wan_hub_ids[i % len(wan_hub_ids)] if wan_hub_ids else None
-        if hub:
-            add_link(hub, hostname, 'wan', 'WAN')
+        if hostname not in tunnel_connected:
+            # No tunnel links found - add fallback WAN link to hub
+            hub = wan_hub_ids[i % len(wan_hub_ids)] if wan_hub_ids else None
+            if hub:
+                add_link(hub, hostname, 'wan', 'WAN')
 
-    # 2) Core switches → connect to their province's router (by abbreviation)
-    # Build province → provincial router lookup
+    # ═══════════════════════════════════════════════════
+    # STEP 3: Core switches → province router (LAN)
+    # ═══════════════════════════════════════════════════
     prov_to_router = {}
     for hostname, category in node_categories.items():
         if category == 'provincial-router':
             abbr = _abbr_from_hostname(hostname)
             if abbr and abbr in PROVINCE_INFO:
                 prov_to_router[abbr] = hostname
+            # Also check aliases
+            resolved = PROVINCE_ALIASES.get(abbr)
+            if resolved and resolved in PROVINCE_INFO:
+                prov_to_router[resolved] = hostname
 
     for hostname, category in node_categories.items():
         if category == 'core-switch':
-            prov = _extract_province_from_name(hostname)
-            matched_router = prov_to_router.get(prov) if prov else None
-            if matched_router:
-                add_link(matched_router, hostname, 'lan', 'LAN')
-            elif primary_hub:
-                add_link(primary_hub, hostname, 'lan', 'LAN')
+            if hostname not in tunnel_connected:
+                prov = _extract_province_from_name(hostname)
+                matched_router = prov_to_router.get(prov) if prov else None
+                if matched_router:
+                    add_link(matched_router, hostname, 'lan', 'LAN')
+                elif primary_hub:
+                    add_link(primary_hub, hostname, 'lan', 'LAN')
 
-    # 3) Other core routers → connect to primary WAN hub
+    # ═══════════════════════════════════════════════════
+    # STEP 4: Core routers → primary WAN hub (if no tunnel links)
+    # ═══════════════════════════════════════════════════
     if primary_hub:
         for hostname in sorted(core_router_set):
-            if hostname not in wan_hub_ids:
+            if hostname not in wan_hub_ids and hostname not in tunnel_connected:
                 add_link(primary_hub, hostname, 'core', 'Core')
 
-    # 4) WAN hubs interconnect
+    # ═══════════════════════════════════════════════════
+    # STEP 5: WAN hubs interconnect (backbone)
+    # ═══════════════════════════════════════════════════
     for i in range(len(wan_hub_ids)):
         for j in range(i + 1, len(wan_hub_ids)):
-            add_link(wan_hub_ids[i], wan_hub_ids[j], 'core', 'WAN Backbone')
+            add_link(wan_hub_ids[i], wan_hub_ids[j], 'backbone', 'WAN Backbone')
+
+    # ═══════════════════════════════════════════════════
+    # STEP 6: Ensure every node has at least one link
+    # ═══════════════════════════════════════════════════
+    linked_nodes = set()
+    for l in links:
+        linked_nodes.add(l['source'])
+        linked_nodes.add(l['target'])
+    for n in nodes:
+        if n['id'] not in linked_nodes and primary_hub:
+            cat = node_categories.get(n['id'], '')
+            lt = 'core' if cat == 'core-router' else 'lan' if cat == 'core-switch' else 'wan'
+            add_link(primary_hub, n['id'], lt, lt.upper())
+
+    # Count link types
+    link_type_counts = {}
+    for l in links:
+        lt = l['type']
+        link_type_counts[lt] = link_type_counts.get(lt, 0) + 1
 
     core_count = sum(1 for n in nodes if n['category'] == 'core-router')
     switch_count = sum(1 for n in nodes if n['category'] == 'core-switch')
@@ -424,5 +551,6 @@ def get_topology():
         'core_count': core_count,
         'switch_count': switch_count,
         'provincial_count': provincial_count,
-        '_version': 'v5-hub-spoke-fixed',
+        'link_types': link_type_counts,
+        '_version': 'v7-tunnel-accurate',
     })
