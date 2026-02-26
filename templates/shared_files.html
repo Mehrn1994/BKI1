@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>فضای اشتراکی فایل</title>
+<style>
+:root {
+    --bg-primary: #0a0e1a;
+    --bg-secondary: #111827;
+    --bg-card: rgba(17, 24, 39, 0.85);
+    --text-primary: #e2e8f0;
+    --text-secondary: #94a3b8;
+    --text-muted: #64748b;
+    --border-color: rgba(255, 255, 255, 0.08);
+    --input-bg: rgba(15, 23, 42, 0.8);
+    --input-border: rgba(255, 255, 255, 0.2);
+    --accent-blue: #3b82f6;
+    --accent-green: #10b981;
+    --accent-red: #ef4444;
+    --accent-purple: #8b5cf6;
+    --accent-orange: #f59e0b;
+}
+[data-theme="light"] {
+    --bg-primary: #f1f5f9; --bg-secondary: #e2e8f0; --bg-card: #ffffff;
+    --text-primary: #0f172a; --text-secondary: #334155; --text-muted: #475569;
+    --border-color: rgba(0,0,0,0.12); --input-bg: #fff; --input-border: rgba(0,0,0,0.2);
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+    font-family: 'Segoe UI', Tahoma, sans-serif;
+    background: linear-gradient(135deg, var(--bg-primary), var(--bg-secondary));
+    color: var(--text-primary);
+    min-height: 100vh;
+    direction: rtl;
+}
+.header {
+    background: rgba(10,14,26,0.95);
+    backdrop-filter: blur(20px);
+    border-bottom: 1px solid var(--border-color);
+    padding: 12px 24px;
+    display: flex; align-items: center; justify-content: space-between;
+}
+.header h1 { font-size: 18px; display: flex; align-items: center; gap: 10px; }
+.back-btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 8px 16px; border-radius: 8px; text-decoration: none;
+    background: rgba(255,255,255,0.06); color: var(--text-primary);
+    font-size: 13px; border: 1px solid var(--border-color); transition: all 0.2s;
+}
+.back-btn:hover { background: rgba(255,255,255,0.12); }
+.container { max-width: 1100px; margin: 24px auto; padding: 0 20px; }
+.card {
+    background: var(--bg-card); border: 1px solid var(--border-color);
+    border-radius: 16px; padding: 24px; margin-bottom: 20px;
+    backdrop-filter: blur(10px);
+}
+.card-title { font-size: 16px; font-weight: 700; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
+.upload-zone {
+    border: 2px dashed rgba(59,130,246,0.4); border-radius: 12px;
+    padding: 40px 20px; text-align: center; cursor: pointer;
+    transition: all 0.3s; background: rgba(59,130,246,0.03);
+}
+.upload-zone:hover, .upload-zone.dragover {
+    border-color: var(--accent-blue); background: rgba(59,130,246,0.08);
+}
+.upload-zone .icon { font-size: 48px; margin-bottom: 12px; }
+.upload-zone .text { font-size: 14px; color: var(--text-secondary); }
+.upload-zone .hint { font-size: 12px; color: var(--text-muted); margin-top: 8px; }
+.upload-progress {
+    display: none; margin-top: 16px; padding: 12px; border-radius: 8px;
+    background: rgba(59,130,246,0.08); border: 1px solid rgba(59,130,246,0.2);
+}
+.progress-bar {
+    height: 6px; background: rgba(255,255,255,0.1); border-radius: 3px;
+    overflow: hidden; margin-top: 8px;
+}
+.progress-bar-fill {
+    height: 100%; background: var(--accent-blue); border-radius: 3px;
+    transition: width 0.3s;
+}
+.file-input { display: none; }
+.files-grid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 12px;
+}
+.file-card {
+    background: rgba(255,255,255,0.03); border: 1px solid var(--border-color);
+    border-radius: 12px; padding: 16px; transition: all 0.2s; position: relative;
+}
+.file-card:hover { background: rgba(255,255,255,0.06); border-color: rgba(59,130,246,0.3); }
+.file-icon { font-size: 36px; margin-bottom: 8px; }
+.file-name {
+    font-size: 13px; font-weight: 600; color: var(--text-primary);
+    word-break: break-all; margin-bottom: 6px; line-height: 1.4;
+}
+.file-meta { font-size: 11px; color: var(--text-muted); display: flex; flex-direction: column; gap: 3px; }
+.file-actions {
+    display: flex; gap: 6px; margin-top: 10px; padding-top: 10px;
+    border-top: 1px solid var(--border-color);
+}
+.btn-sm {
+    padding: 6px 12px; border-radius: 6px; border: none; cursor: pointer;
+    font-size: 12px; font-weight: 600; transition: all 0.2s;
+    display: inline-flex; align-items: center; gap: 4px;
+}
+.btn-download { background: rgba(16,185,129,0.15); color: #10b981; }
+.btn-download:hover { background: rgba(16,185,129,0.3); }
+.btn-delete { background: rgba(239,68,68,0.15); color: #ef4444; }
+.btn-delete:hover { background: rgba(239,68,68,0.3); }
+.empty-state { text-align: center; padding: 40px; color: var(--text-muted); font-size: 14px; }
+.stats-bar {
+    display: flex; gap: 16px; margin-bottom: 16px; flex-wrap: wrap;
+}
+.stat-item {
+    background: rgba(255,255,255,0.04); border: 1px solid var(--border-color);
+    border-radius: 10px; padding: 12px 16px; font-size: 13px;
+    display: flex; align-items: center; gap: 8px;
+}
+.stat-num { font-weight: 700; color: var(--accent-blue); }
+.search-box {
+    width: 100%; padding: 10px 14px; border-radius: 10px; border: 1px solid var(--input-border);
+    background: var(--input-bg); color: var(--text-primary); font-size: 13px;
+    margin-bottom: 16px;
+}
+.search-box::placeholder { color: var(--text-muted); }
+.theme-toggle {
+    background: none; border: 1px solid var(--border-color); color: var(--text-primary);
+    padding: 6px 12px; border-radius: 8px; cursor: pointer; font-size: 14px;
+}
+</style>
+</head>
+<body>
+<div class="header">
+    <h1>&#9729; فضای اشتراکی فایل</h1>
+    <div style="display:flex; align-items:center; gap:10px;">
+        <span id="userDisplay" style="font-size:13px; color:var(--text-secondary);"></span>
+        <button class="theme-toggle" onclick="toggleTheme()">&#127763;</button>
+        <a href="/" class="back-btn">&#8592; صفحه اصلی</a>
+    </div>
+</div>
+
+<div class="container">
+    <!-- Upload Card -->
+    <div class="card">
+        <div class="card-title">&#128228; آپلود فایل جدید</div>
+        <div class="upload-zone" id="uploadZone" onclick="document.getElementById('fileInput').click()">
+            <div class="icon">&#128193;</div>
+            <div class="text">فایل را اینجا بکشید و رها کنید یا کلیک کنید</div>
+            <div class="hint">حداکثر حجم: 100MB | فرمت‌ها: PDF, Excel, Word, IOS, تصاویر, Config و ...</div>
+        </div>
+        <input type="file" class="file-input" id="fileInput" multiple>
+        <div class="upload-progress" id="uploadProgress">
+            <div style="font-size:13px;color:var(--text-secondary);" id="uploadStatus">در حال آپلود...</div>
+            <div class="progress-bar"><div class="progress-bar-fill" id="progressFill" style="width:0%"></div></div>
+        </div>
+    </div>
+
+    <!-- Files List Card -->
+    <div class="card">
+        <div class="card-title">&#128194; فایل‌های اشتراکی</div>
+        <div class="stats-bar" id="statsBar">
+            <div class="stat-item">&#128196; تعداد: <span class="stat-num" id="fileCount">0</span></div>
+            <div class="stat-item">&#128190; حجم کل: <span class="stat-num" id="totalSize">0</span></div>
+        </div>
+        <input type="text" class="search-box" id="searchBox" placeholder="&#128269; جستجوی فایل..." oninput="filterFiles()">
+        <div id="filesContainer">
+            <div class="empty-state">در حال بارگذاری...</div>
+        </div>
+    </div>
+</div>
+
+<script>
+let currentUser = 'unknown';
+let allFiles = [];
+
+// Theme
+function toggleTheme() {
+    const current = document.documentElement.getAttribute('data-theme');
+    document.documentElement.setAttribute('data-theme', current === 'light' ? '' : 'light');
+    localStorage.setItem('theme', current === 'light' ? 'dark' : 'light');
+}
+(function() {
+    const t = localStorage.getItem('theme');
+    if (t === 'light') document.documentElement.setAttribute('data-theme', 'light');
+})();
+
+// User
+(function() {
+    const u = localStorage.getItem('bki_username') || 'unknown';
+    currentUser = u;
+    document.getElementById('userDisplay').textContent = u;
+})();
+
+// Format file size
+function formatSize(bytes) {
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1024*1024) return (bytes/1024).toFixed(1) + ' KB';
+    if (bytes < 1024*1024*1024) return (bytes/1024/1024).toFixed(1) + ' MB';
+    return (bytes/1024/1024/1024).toFixed(1) + ' GB';
+}
+
+// File icon by extension
+function getFileIcon(ext) {
+    const icons = {
+        pdf: '&#128211;', doc: '&#128196;', docx: '&#128196;', xls: '&#128202;', xlsx: '&#128202;',
+        ppt: '&#128218;', pptx: '&#128218;', txt: '&#128221;', csv: '&#128202;',
+        zip: '&#128230;', rar: '&#128230;', '7z': '&#128230;', tar: '&#128230;', gz: '&#128230;',
+        png: '&#127912;', jpg: '&#127912;', jpeg: '&#127912;', gif: '&#127912;', svg: '&#127912;',
+        bin: '&#128190;', ios: '&#128190;', img: '&#128190;', conf: '&#9881;', cfg: '&#9881;', log: '&#128220;',
+        py: '&#128187;', sh: '&#128187;', json: '&#128187;', xml: '&#128187;', yaml: '&#128187;', yml: '&#128187;'
+    };
+    return icons[ext] || '&#128196;';
+}
+
+// Drag & drop
+const uploadZone = document.getElementById('uploadZone');
+['dragenter','dragover'].forEach(e => uploadZone.addEventListener(e, ev => { ev.preventDefault(); uploadZone.classList.add('dragover'); }));
+['dragleave','drop'].forEach(e => uploadZone.addEventListener(e, ev => { ev.preventDefault(); uploadZone.classList.remove('dragover'); }));
+uploadZone.addEventListener('drop', ev => { if (ev.dataTransfer.files.length) uploadFiles(ev.dataTransfer.files); });
+document.getElementById('fileInput').addEventListener('change', ev => { if (ev.target.files.length) uploadFiles(ev.target.files); });
+
+async function uploadFiles(files) {
+    const progress = document.getElementById('uploadProgress');
+    const statusEl = document.getElementById('uploadStatus');
+    const fill = document.getElementById('progressFill');
+    progress.style.display = 'block';
+
+    for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        statusEl.textContent = `در حال آپلود ${file.name} (${i+1}/${files.length})...`;
+        fill.style.width = '30%';
+
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('username', currentUser);
+
+        try {
+            const res = await fetch('/api/shared-files/upload', { method: 'POST', body: formData });
+            const result = await res.json();
+            fill.style.width = `${((i+1)/files.length)*100}%`;
+            if (result.status !== 'ok') {
+                statusEl.textContent = `خطا: ${result.error}`;
+                statusEl.style.color = '#ef4444';
+            }
+        } catch (err) {
+            statusEl.textContent = `خطا: ${err.message}`;
+            statusEl.style.color = '#ef4444';
+        }
+    }
+
+    statusEl.textContent = `${files.length} فایل آپلود شد`;
+    statusEl.style.color = '#10b981';
+    fill.style.width = '100%';
+    setTimeout(() => { progress.style.display = 'none'; statusEl.style.color = ''; }, 2000);
+    document.getElementById('fileInput').value = '';
+    loadFiles();
+}
+
+async function loadFiles() {
+    try {
+        const res = await fetch('/api/shared-files');
+        const data = await res.json();
+        allFiles = data.files || [];
+        renderFiles(allFiles);
+        document.getElementById('fileCount').textContent = allFiles.length;
+        const total = allFiles.reduce((s, f) => s + f.size, 0);
+        document.getElementById('totalSize').textContent = formatSize(total);
+    } catch (err) {
+        document.getElementById('filesContainer').innerHTML = '<div class="empty-state">خطا در بارگذاری فایل‌ها</div>';
+    }
+}
+
+function filterFiles() {
+    const q = document.getElementById('searchBox').value.trim().toLowerCase();
+    const filtered = q ? allFiles.filter(f => f.name.toLowerCase().includes(q)) : allFiles;
+    renderFiles(filtered);
+}
+
+function renderFiles(files) {
+    const container = document.getElementById('filesContainer');
+    if (files.length === 0) {
+        container.innerHTML = '<div class="empty-state">&#128193; هیچ فایلی وجود ندارد</div>';
+        return;
+    }
+    container.innerHTML = '<div class="files-grid">' + files.map(f => `
+        <div class="file-card">
+            <div class="file-icon">${getFileIcon(f.ext)}</div>
+            <div class="file-name">${escHtml(f.name)}</div>
+            <div class="file-meta">
+                <span>${formatSize(f.size)}</span>
+                <span>${f.modified}</span>
+            </div>
+            <div class="file-actions">
+                <button class="btn-sm btn-download" onclick="downloadFile('${escAttr(f.name)}')">&#11015; دانلود</button>
+                <button class="btn-sm btn-delete" onclick="deleteFile('${escAttr(f.name)}')">&#128465; حذف</button>
+            </div>
+        </div>
+    `).join('') + '</div>';
+}
+
+function downloadFile(name) {
+    window.open('/api/shared-files/download/' + encodeURIComponent(name), '_blank');
+}
+
+async function deleteFile(name) {
+    if (!confirm(`آیا از حذف فایل "${name}" اطمینان دارید؟`)) return;
+    try {
+        const res = await fetch('/api/shared-files/delete', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ filename: name, username: currentUser })
+        });
+        const result = await res.json();
+        if (result.status === 'ok') loadFiles();
+        else alert(result.error);
+    } catch (err) { alert(err.message); }
+}
+
+function escHtml(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+function escAttr(s) { return s.replace(/'/g, "\\'").replace(/"/g, '&quot;'); }
+
+loadFiles();
+</script>
+</body>
+</html>

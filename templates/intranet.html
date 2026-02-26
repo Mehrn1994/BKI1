@@ -1,0 +1,2547 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Router Config Generator</title>
+    <style>
+/* ========== THEME SYSTEM ========== */
+:root {
+    --bg-primary: #0f172a;
+    --bg-secondary: #1e293b;
+    --bg-card: rgba(30, 41, 59, 0.8);
+    --bg-header: rgba(30, 41, 59, 0.9);
+    --text-primary: #e2e8f0;
+    --text-secondary: #94a3b8;
+    --text-muted: #64748b;
+    --border-color: rgba(255, 255, 255, 0.1);
+    --shadow-color: rgba(0, 0, 0, 0.3);
+    --input-bg: rgba(15, 23, 42, 0.8);
+    --input-border: rgba(255, 255, 255, 0.2);
+    --card-hover: rgba(255, 255, 255, 0.05);
+}
+
+
+[data-theme="light"] {
+    --bg-primary: #f8fafc;
+    --bg-secondary: #f1f5f9;
+    --bg-card: #ffffff;
+    --bg-header: #ffffff;
+    --text-primary: #0f172a;
+    --text-secondary: #334155;
+    --text-muted: #475569;
+    --border-color: rgba(0, 0, 0, 0.15);
+    --shadow-color: rgba(0, 0, 0, 0.1);
+    --input-bg: #ffffff;
+    --input-border: rgba(0, 0, 0, 0.2);
+    --card-hover: rgba(0, 0, 0, 0.05);
+}
+
+body { transition: background 0.3s ease, color 0.3s ease; }
+
+[data-theme="light"] body {
+    background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 100%) !important;
+    color: var(--text-primary) !important;
+}
+
+[data-theme="light"] .header, [data-theme="light"] header,
+[data-theme="light"] .top-bar, [data-theme="light"] .navbar {
+    background: var(--bg-header) !important;
+    border-color: var(--border-color) !important;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08) !important;
+}
+
+[data-theme="light"] .card, [data-theme="light"] .form-section,
+[data-theme="light"] .config-section, [data-theme="light"] .result-section,
+[data-theme="light"] .section, [data-theme="light"] .panel,
+[data-theme="light"] .main-card, [data-theme="light"] .box {
+    background: var(--bg-card) !important;
+    border-color: var(--border-color) !important;
+    color: var(--text-primary) !important;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.06) !important;
+}
+
+[data-theme="light"] input, [data-theme="light"] select, [data-theme="light"] textarea {
+    background: var(--input-bg) !important;
+    border: 1px solid var(--input-border) !important;
+    color: #0f172a !important;
+}
+
+[data-theme="light"] input::placeholder { color: #64748b !important; }
+[data-theme="light"] select option { background: #fff; color: #0f172a; }
+
+[data-theme="light"] label, [data-theme="light"] .form-label,
+[data-theme="light"] h1, [data-theme="light"] h2, [data-theme="light"] h3, [data-theme="light"] h4,
+[data-theme="light"] .section-title, [data-theme="light"] .title,
+[data-theme="light"] .app-title h1, [data-theme="light"] .app-title p {
+    color: #0f172a !important;
+}
+
+[data-theme="light"] p, [data-theme="light"] span:not(.badge):not(.tag), 
+[data-theme="light"] div:not(.btn):not(.badge) {
+    color: inherit;
+}
+
+[data-theme="light"] .hint, [data-theme="light"] .info-text, [data-theme="light"] small,
+[data-theme="light"] .description, [data-theme="light"] .help-text,
+[data-theme="light"] .form-hint, [data-theme="light"] .note {
+    color: #334155 !important;
+}
+
+[data-theme="light"] .user-display, [data-theme="light"] .user-info,
+[data-theme="light"] .user-name, [data-theme="light"] #currentUser {
+    color: #0f172a !important;
+}
+
+[data-theme="light"] .badge, [data-theme="light"] .tag, [data-theme="light"] .count {
+    color: #fff !important;
+}
+
+[data-theme="light"] a:not(.btn):not(button):not(.back-btn):not(.logout-link) {
+    color: #2563eb !important;
+}
+
+[data-theme="light"] .back-btn, [data-theme="light"] .logout-link {
+    color: #dc2626 !important;
+}
+
+[data-theme="light"] pre, [data-theme="light"] code, [data-theme="light"] .config-output,
+[data-theme="light"] .output-box, [data-theme="light"] .code-block {
+    background: #1e293b !important;
+    color: #e2e8f0 !important;
+}
+
+[data-theme="light"] table { border-color: var(--border-color) !important; }
+[data-theme="light"] th, [data-theme="light"] td { 
+    border-color: var(--border-color) !important;
+    color: #0f172a !important;
+}
+[data-theme="light"] th { background: #f1f5f9 !important; color: #0f172a !important; }
+[data-theme="light"] tr:hover { background: #f8fafc !important; }
+
+[data-theme="light"] .success, [data-theme="light"] .alert-success,
+[data-theme="light"] .success-box, [data-theme="light"] .ip-reserved {
+    background: #dcfce7 !important;
+    color: #166534 !important;
+    border-color: #86efac !important;
+}
+
+[data-theme="light"] .error, [data-theme="light"] .alert-error,
+[data-theme="light"] .error-box {
+    background: #fee2e2 !important;
+    color: #991b1b !important;
+    border-color: #fca5a5 !important;
+}
+
+[data-theme="light"] .warning, [data-theme="light"] .alert-warning {
+    background: #fef3c7 !important;
+    color: #92400e !important;
+    border-color: #fcd34d !important;
+}
+
+[data-theme="light"] .info-box, [data-theme="light"] .notice,
+[data-theme="light"] .auto-ip-info {
+    background: #eff6ff !important;
+    color: #1e40af !important;
+    border-color: #93c5fd !important;
+}
+
+[data-theme="light"] .btn-primary, [data-theme="light"] button[type="submit"] {
+    background: #2563eb !important;
+    color: #fff !important;
+}
+
+[data-theme="light"] .btn-secondary {
+    background: #64748b !important;
+    color: #fff !important;
+}
+
+[data-theme="light"] .free-count { color: #059669 !important; font-weight: bold; }
+[data-theme="light"] .used-count { color: #dc2626 !important; font-weight: bold; }
+
+/* Router boxes for intranet */
+[data-theme="light"] .router-box, [data-theme="light"] .device-box {
+    background: #fff !important;
+    border: 1px solid #e2e8f0 !important;
+    color: #0f172a !important;
+}
+
+[data-theme="light"] .router-header, [data-theme="light"] .device-box-header {
+    color: #0f172a !important;
+}
+
+/* Stats cards */
+[data-theme="light"] .stat-card {
+    background: #fff !important;
+    border: 1px solid #e2e8f0 !important;
+}
+
+[data-theme="light"] .stat-card .value {
+    color: #2563eb !important;
+}
+
+[data-theme="light"] .stat-card .label {
+    color: #475569 !important;
+}
+
+.theme-toggle {
+    background: var(--bg-card, rgba(30,41,59,0.8));
+    border: 1px solid var(--border-color, rgba(255,255,255,0.1));
+    border-radius: 50%;
+    width: 36px;
+    height: 36px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
+    transition: all 0.3s ease;
+    margin-left: 10px;
+}
+.theme-toggle:hover { transform: scale(1.1); }
+
+/* ========== DARK THEME EXPLICIT OVERRIDES ========== */
+/* Default is dark theme - ensure all text is bright and readable */
+:root body {
+    background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+    color: #e2e8f0;
+}
+:root .card {
+    background: rgba(30, 41, 59, 0.8);
+    border-color: rgba(255, 255, 255, 0.1);
+    color: #e2e8f0;
+}
+:root h1, :root h2, :root h3, :root h4 {
+    color: #f1f5f9;
+}
+:root label {
+    color: #cbd5e1;
+}
+:root .device-title {
+    color: #f1f5f9;
+}
+:root input, :root select, :root textarea {
+    background: rgba(15, 23, 42, 0.8);
+    border-color: rgba(255, 255, 255, 0.2);
+    color: #e2e8f0;
+}
+:root input::placeholder {
+    color: #64748b;
+}
+:root pre, :root textarea {
+    background: rgba(15, 23, 42, 0.8);
+    border-color: rgba(255, 255, 255, 0.15);
+    color: #e2e8f0;
+}
+
+/* Force dark theme on inline-styled elements */
+[data-theme="dark"] label,
+[data-theme="dark"] .form-label {
+    color: #cbd5e1 !important;
+}
+[data-theme="dark"] h1,
+[data-theme="dark"] h2,
+[data-theme="dark"] h3,
+[data-theme="dark"] h4 {
+    color: #f1f5f9 !important;
+}
+[data-theme="dark"] span {
+    color: inherit;
+}
+[data-theme="dark"] .card {
+    background: rgba(30, 41, 59, 0.85) !important;
+    border-color: rgba(255, 255, 255, 0.12) !important;
+    color: #e2e8f0 !important;
+}
+[data-theme="dark"] input,
+[data-theme="dark"] select,
+[data-theme="dark"] textarea {
+    background: rgba(15, 23, 42, 0.9) !important;
+    border: 1px solid rgba(255, 255, 255, 0.2) !important;
+    color: #f1f5f9 !important;
+}
+[data-theme="dark"] input::placeholder {
+    color: #64748b !important;
+}
+[data-theme="dark"] select option {
+    background: #1e293b;
+    color: #e2e8f0;
+}
+[data-theme="dark"] .device-title {
+    color: #f1f5f9 !important;
+}
+[data-theme="dark"] .device-box-header {
+    color: #f1f5f9 !important;
+}
+[data-theme="dark"] .user-info {
+    background: rgba(59, 130, 246, 0.15) !important;
+    color: #93c5fd !important;
+}
+[data-theme="dark"] .tunnel-info {
+    background: rgba(245, 158, 11, 0.12) !important;
+    color: #fcd34d !important;
+}
+[data-theme="dark"] .status-success {
+    background: rgba(16, 185, 129, 0.15) !important;
+    color: #6ee7b7 !important;
+    border-color: rgba(16, 185, 129, 0.3) !important;
+}
+[data-theme="dark"] .status-error {
+    background: rgba(239, 68, 68, 0.15) !important;
+    color: #fca5a5 !important;
+    border-color: rgba(239, 68, 68, 0.3) !important;
+}
+[data-theme="dark"] pre,
+[data-theme="dark"] textarea {
+    background: rgba(15, 23, 42, 0.9) !important;
+    border-color: rgba(255, 255, 255, 0.15) !important;
+    color: #e2e8f0 !important;
+}
+/* Auto-filled fields in dark mode */
+[data-theme="dark"] .auto-field-item {
+    background: rgba(59, 130, 246, 0.08) !important;
+    border-color: rgba(59, 130, 246, 0.2) !important;
+}
+[data-theme="dark"] .auto-field-label {
+    color: #94a3b8 !important;
+}
+[data-theme="dark"] .auto-field-value {
+    color: #f1f5f9 !important;
+}
+/* ========== END DARK THEME ========== */
+
+/* ========== END THEME ========== */
+
+/* Auto-fill fields styling */
+.auto-fields-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+}
+.auto-field-item {
+    background: #f0f7ff;
+    border: 1px solid #bfdbfe;
+    border-radius: 8px;
+    padding: 8px 12px;
+}
+.auto-field-label {
+    display: block;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: #64748b;
+    font-weight: 600;
+    margin-bottom: 3px;
+}
+.auto-field-value {
+    display: block;
+    font-size: 14px;
+    font-weight: 700;
+    color: #0f172a;
+    font-family: 'Consolas', 'JetBrains Mono', monospace;
+}
+
+        body {
+            font-family: monospace;
+            background: var(--bg-primary, #f5faff);
+            color: var(--text-primary, #1e293b);
+            margin: 0;
+        }
+        header {
+            padding: 0;
+            margin: 0;
+        }
+        h1 {
+            margin: 0;
+            font-size: 20px;
+            font-weight: bold;
+            color: var(--text-primary, #0f172a);
+        }
+        h2 {
+            color: var(--text-primary, #0f172a);
+        }
+        .ascii-banner {
+            text-align: center;
+            font-size: 14px;
+            line-height: 1.2;
+            white-space: pre;
+            color: #0284c7;
+            margin: 12px 0;
+            font-family: monospace;
+        }
+        main {
+            display: grid;
+            grid-template-columns: 380px 1fr;
+            gap: 16px;
+            padding: 16px;
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+        .card {
+            background: var(--bg-card, #ffffff);
+            border: 1px solid var(--border-color, #cbd5e1);
+            border-radius: 10px;
+            padding: 16px;
+            color: var(--text-primary, #0f172a);
+        }
+        label {
+            display: block;
+            margin-top: 10px;
+            font-size: 12px;
+            font-weight: bold;
+            color: var(--text-secondary, #334155);
+        }
+        input, select {
+            width: 100%;
+            padding: 8px;
+            margin-top: 4px;
+            border-radius: 6px;
+            border: 1px solid var(--input-border, #94a3b8);
+            background: var(--input-bg, #f1f5f9);
+            color: var(--text-primary, #0f172a);
+            box-sizing: border-box;
+        }
+        button {
+            margin-top: 12px;
+            padding: 10px;
+            border-radius: 8px;
+            border: none;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        button.primary {
+            background: #0284c7;
+            color: #fff;
+        }
+        button.primary:hover {
+            background: #0369a1;
+        }
+        button.primary:disabled {
+            background: #94a3b8;
+            cursor: not-allowed;
+        }
+        .reload-btn {
+            background: #64748b;
+            color: #fff;
+            padding: 6px 12px;
+            font-size: 11px;
+        }
+        pre, textarea {
+            background: var(--input-bg, #f8fafc);
+            border: 1px dashed var(--border-color, #94a3b8);
+            border-radius: 8px;
+            padding: 14px;
+            white-space: pre;
+            overflow-x: auto;
+            max-height: 60vh;
+            font-size: 12px;
+            color: var(--text-primary, #1e293b);
+            width: 100%;
+            box-sizing: border-box;
+            font-family: Consolas, monospace;
+        }
+        textarea {
+            resize: vertical;
+            min-height: 500px;
+        }
+        .status-message {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 6px;
+            font-size: 13px;
+        }
+        .status-success {
+            background: #d1fae5;
+            color: #065f46;
+            border: 1px solid #10b981;
+        }
+        .status-error {
+            background: #fee2e2;
+            color: #991b1b;
+            border: 1px solid #ef4444;
+        }
+        .user-info {
+            background: #dbeafe;
+            padding: 8px;
+            border-radius: 6px;
+            margin-bottom: 12px;
+            font-size: 12px;
+            color: #1e40af;
+            font-weight: bold;
+        }
+        .tunnel-info {
+            background: #fef3c7;
+            padding: 8px;
+            border-radius: 6px;
+            margin-top: 8px;
+            font-size: 11px;
+            color: #92400e;
+        }
+        .device-box {
+            margin-bottom: 20px;
+        }
+        .device-box-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 6px;
+        }
+        .device-title {
+            font-size: 13px;
+            font-weight: bold;
+            color: var(--text-primary, #0f172a);
+        }
+        .copy-btn {
+            background: #10b981;
+            color: #ecfdf5;
+            border-radius: 6px;
+            padding: 4px 10px;
+            font-size: 11px;
+            margin-top: 0;
+        }
+        .copy-btn:hover {
+            background: #059669;
+        }
+    
+
+
+    
+/* ========== BETTER FONTS ========== */
+body {
+    font-size: 16px !important;
+    line-height: 1.6 !important;
+}
+
+h1 { font-size: 1.8rem !important; font-weight: 700 !important; }
+h2 { font-size: 1.4rem !important; font-weight: 700 !important; }
+h3 { font-size: 1.2rem !important; font-weight: 600 !important; }
+h4 { font-size: 1.1rem !important; font-weight: 600 !important; }
+
+label, .form-label {
+    font-size: 15px !important;
+    font-weight: 600 !important;
+    color: var(--text-primary, inherit) !important;
+}
+
+input, select, textarea {
+    font-size: 15px !important;
+    padding: 12px 14px !important;
+}
+
+.section-title, .title {
+    font-size: 1.15rem !important;
+    font-weight: 700 !important;
+}
+
+.hint, .info-text, .help-text, .form-hint, small, .note, .description {
+    font-size: 14px !important;
+    font-weight: 500 !important;
+}
+
+.btn, button:not(.theme-toggle) {
+    font-size: 15px !important;
+    font-weight: 600 !important;
+}
+
+table { font-size: 15px !important; }
+th { font-weight: 700 !important; }
+th, td { padding: 12px 14px !important; }
+
+.info-box, .notice, .alert, .success-box, .error-box, .auto-ip-info, .ip-reserved {
+    font-size: 15px !important;
+    font-weight: 500 !important;
+    padding: 14px 18px !important;
+}
+
+.badge, .tag, .count {
+    font-size: 13px !important;
+    font-weight: 600 !important;
+    padding: 5px 12px !important;
+}
+
+.user-display, .user-info, .user-name {
+    font-size: 15px !important;
+    font-weight: 600 !important;
+}
+
+pre, code, .config-output, .output-box {
+    font-size: 14px !important;
+    line-height: 1.5 !important;
+}
+
+.app-title h1 { font-size: 1.8rem !important; font-weight: 700 !important; }
+.app-title p { font-size: 15px !important; font-weight: 500 !important; }
+
+/* Light theme text improvements */
+[data-theme="light"] label, 
+[data-theme="light"] .form-label,
+[data-theme="light"] .section-title, 
+[data-theme="light"] .title,
+[data-theme="light"] h1, 
+[data-theme="light"] h2, 
+[data-theme="light"] h3 {
+    color: #0f172a !important;
+}
+
+[data-theme="light"] .hint, 
+[data-theme="light"] small,
+[data-theme="light"] .info-text, 
+[data-theme="light"] .description,
+[data-theme="light"] .help-text {
+    color: #334155 !important;
+}
+
+[data-theme="light"] input,
+[data-theme="light"] select,
+[data-theme="light"] textarea {
+    color: #0f172a !important;
+    background: #fff !important;
+    border: 1px solid rgba(0,0,0,0.2) !important;
+}
+
+[data-theme="light"] input::placeholder {
+    color: #64748b !important;
+}
+/* ========== END BETTER FONTS ========== */
+
+    </style>
+
+<script>
+// Theme System - runs immediately
+(function() {
+    var theme = localStorage.getItem('theme') || 'dark';
+    document.documentElement.setAttribute('data-theme', theme);
+})();
+
+function toggleTheme() {
+    var current = document.documentElement.getAttribute('data-theme') || 'dark';
+    var next = current === 'dark' ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', next);
+    localStorage.setItem('theme', next);
+    var icon = document.getElementById('themeIcon');
+    if (icon) icon.textContent = next === 'dark' ? '🌙' : '☀️';
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    var icon = document.getElementById('themeIcon');
+    if (icon) {
+        var theme = localStorage.getItem('theme') || 'dark';
+        icon.textContent = theme === 'dark' ? '🌙' : '☀️';
+    }
+});
+</script>
+</head>
+<body>
+    <header>
+        <!-- Top bar with user info and return button -->
+        <div style="
+            max-width:1200px;
+            margin:0 auto;
+            padding:10px 16px;
+            display:flex;
+            justify-content:space-between;
+            align-items:center;
+            background:var(--bg-header, #e2e8f0);
+            border-bottom:1px solid var(--border-color, #cbd5e1);
+        ">
+            <div>
+                <span style="font-size:14px; color:var(--text-secondary, #475569);">👤 User: </span>
+                <span id="currentUser" style="font-size:14px; font-weight:bold; color:var(--text-primary, #0f172a);">Loading...</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <button class="theme-toggle" onclick="toggleTheme()" title="تغییر تم"><span id="themeIcon">🌙</span></button>
+                <a href="/config-wizard"
+                   style="padding:6px 14px; border-radius:6px; background:#3b82f6; color:#ffffff; text-decoration:none; font-size:13px; font-weight:bold;"
+                   onmouseover="this.style.background='#2563eb'"
+                   onmouseout="this.style.background='#3b82f6'">
+                  &#8594; بازگشت به ویزارد
+                </a>
+                <a href="/"
+                   style="padding:6px 14px; border-radius:6px; background:#ef4444; color:#ffffff; text-decoration:none; font-size:13px; font-weight:bold;"
+                   onmouseover="this.style.background='#dc2626'"
+                   onmouseout="this.style.background='#ef4444'">
+                  ← بازگشت به منوی اصلی
+                </a>
+            </div>
+        </div>
+
+        <!-- Title section -->
+        <div style="text-align:center; padding:10px 16px; background:var(--bg-header, #e2e8f0);">
+            <h1 style="color:var(--text-primary, inherit);">Intranet Config Generator</h1>
+            <div class="ascii-banner">
+                <pre>Keshavarzi Bank Network - WAN</pre>
+            </div>
+        </div>
+    </header>
+
+    <main>
+        <section class="card">
+            <h2>Inputs</h2>
+
+            <div class="user-info" id="userInfo" style="display:none;">
+                👤 User: <span id="currentUser2">Loading...</span>
+            </div>
+
+            <!-- ===== RE-CONFIG MODE (Top of page) ===== -->
+            <div style="margin:0 0 14px 0; padding:14px 16px; background:linear-gradient(135deg,rgba(245,158,11,0.1),rgba(251,146,60,0.06)); border:2px solid rgba(245,158,11,0.4); border-radius:12px;">
+                <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:15px;font-weight:700;color:#fbbf24;margin:0;">
+                    <input type="checkbox" id="reconfigMode" style="width:20px;height:20px;accent-color:#f59e0b;cursor:pointer;" onchange="toggleReconfigMode()">
+                    <span>&#128260; دریافت پیکربندی مجدد (Re-Config)</span>
+                </label>
+                <div style="font-size:12px; color:var(--text-secondary,#94a3b8); margin-top:6px; padding-right:36px;">برای دیوایس‌هایی که عوض شده‌اند و نیاز به دریافت مجدد کانفیگ با همان IP های قبلی دارند</div>
+            </div>
+
+            <!-- Re-config panel (hidden by default) -->
+            <div id="reconfigPanel" style="display:none; margin:0 0 16px 0; padding:16px; background:rgba(245,158,11,0.05); border:1px solid rgba(245,158,11,0.2); border-radius:12px;">
+                <label style="font-weight:700; color:#f59e0b; margin-bottom:8px; display:block;">&#128269; جستجو و انتخاب نقطه ثبت‌شده</label>
+                <div style="display:flex; gap:8px; margin-bottom:10px;">
+                    <input type="text" id="reconfigSearch" placeholder="جستجو بر اساس نام، استان، IP ..." style="flex:1;" oninput="searchReconfig()">
+                </div>
+                <select id="reconfigSelect" size="6" style="width:100%; padding:8px; font-size:13px; cursor:pointer; background:var(--input-bg); color:var(--text-primary); border:1px solid var(--input-border); border-radius:8px;" onchange="selectReconfigPoint()">
+                    <option value="" disabled selected>لطفا یک نقطه از لیست انتخاب کنید...</option>
+                </select>
+                <div id="reconfigInfo" style="display:none; margin-top:12px; padding:12px; background:rgba(16,185,129,0.06); border:1px solid rgba(16,185,129,0.2); border-radius:8px;">
+                    <div style="font-size:11px; text-transform:uppercase; letter-spacing:0.5px; color:#10b981; font-weight:700; margin-bottom:8px;">&#9989; اطلاعات نقطه انتخاب‌شده</div>
+                    <div id="reconfigDetails" style="font-size:13px; line-height:2;"></div>
+                </div>
+                <button type="button" id="reconfigGenerateBtn" style="display:none; margin-top:12px; padding:12px 28px; background:linear-gradient(135deg,#f59e0b,#d97706); color:#fff; border:none; border-radius:10px; font-size:14px; font-weight:700; cursor:pointer; font-family:inherit;" onclick="generateReconfig()">&#128260; دریافت کانفیگ مجدد</button>
+            </div>
+
+            <!-- ===== CONFIG OPTIONS (Top checkboxes) ===== -->
+            <!-- Intranet-only config -->
+            <div id="intranetOnlyBox" style="margin:0 0 10px 0; padding:12px 16px; background:rgba(56,189,248,0.06); border:1.5px solid rgba(56,189,248,0.25); border-radius:10px;">
+                <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:14px;font-weight:600;color:var(--text-primary,#e2e8f0);margin:0;">
+                    <input type="checkbox" id="intranetOnlyConfig" style="width:18px;height:18px;accent-color:#38bdf8;cursor:pointer;" onchange="toggleIntranetOnly()">
+                    <span>فقط تنظیمات Intranet (بدون کانفیگ اینترفیس فیزیکی)</span>
+                </label>
+                <div style="font-size:12px; color:var(--text-secondary,#94a3b8); margin-top:5px; padding-right:34px;">برای نقاطی که قبلا اینترفیس تنظیم شده و فقط کانفیگ Intranet (Tunnel, OSPF, NAT, Crypto) نیاز دارند</div>
+            </div>
+
+            <!-- Base Config Checkbox -->
+            <div id="baseConfigBox" style="margin:0 0 14px 0; padding:12px 16px; background:linear-gradient(135deg,rgba(16,185,129,0.08),rgba(6,182,212,0.04)); border:1.5px solid rgba(16,185,129,0.3); border-radius:10px;">
+                <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:14px;font-weight:600;color:var(--text-primary,#e2e8f0);margin:0;">
+                    <input type="checkbox" id="includeBaseConfig" style="width:18px;height:18px;accent-color:#10b981;cursor:pointer;">
+                    <span style="color:#10b981;">پیکربندی اولیه (Base Config)</span>
+                </label>
+                <div style="font-size:12px; color:var(--text-secondary,#94a3b8); margin-top:5px; padding-right:34px;">شامل: AAA/TACACS, SSH, SNMP, Access-Lists, Banner, NTP و سایر تنظیمات پایه</div>
+            </div>
+
+            <!-- ===== NORMAL CONFIG FORM (hidden in reconfig mode) ===== -->
+            <div id="normalConfigForm">
+
+            <!-- Branch Selection -->
+            <label>Select Branch</label>
+            <input id="branchName" type="text" list="branchList"
+                   placeholder="Type branch name or select from list..."
+                   autocomplete="off">
+            <datalist id="branchList"></datalist>
+
+            <!-- Management Point Checkbox -->
+            <div style="margin:14px 0; padding:12px 16px; background:linear-gradient(135deg,rgba(99,102,241,0.08),rgba(139,92,246,0.06)); border:1.5px solid rgba(99,102,241,0.3); border-radius:10px;">
+                <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:15px;font-weight:600;color:var(--text-primary,#e2e8f0);margin:0;">
+                    <input type="checkbox" id="isManagementPoint" style="width:18px;height:18px;accent-color:#6366f1;cursor:pointer;">
+                    <span style="display:flex;align-items:center;gap:6px;">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#818cf8" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                        این نقطه مدیریت است
+                    </span>
+                </label>
+                <div style="font-size:13px; color:var(--text-secondary,#94a3b8); margin-top:6px; padding-right:34px;">در صورت فعال بودن، ACL محدودکننده OSPF (NewINTACL) به کانفیگ اضافه می‌شود</div>
+            </div>
+
+            <!-- Auto-filled fields panel -->
+            <div id="autoFieldsPanel" style="display:none; margin:12px 0 16px 0; background:rgba(59,130,246,0.06); border:1px solid rgba(59,130,246,0.2); border-radius:10px; padding:14px 16px;">
+                <div style="font-size:11px; text-transform:uppercase; letter-spacing:0.5px; color:#3b82f6; font-weight:700; margin-bottom:10px;">Auto-filled from branch</div>
+                <div class="auto-fields-grid">
+                    <div class="auto-field-item">
+                        <span class="auto-field-label">Province</span>
+                        <span class="auto-field-value" id="autoProvince">-</span>
+                    </div>
+                    <div class="auto-field-item">
+                        <span class="auto-field-label">Loopback IP (Branch)</span>
+                        <span class="auto-field-value" id="autoLoopback">-</span>
+                    </div>
+                    <div class="auto-field-item">
+                        <span class="auto-field-label">intnat Subnet</span>
+                        <span class="auto-field-value" id="autoIntnat">-</span>
+                    </div>
+                    <div class="auto-field-item">
+                        <span class="auto-field-label">Branch OSPF Area</span>
+                        <span class="auto-field-value" id="autoOspf">-</span>
+                    </div>
+                    <div class="auto-field-item" id="tunnelNameField">
+                        <span class="auto-field-label">WAN-INTR Tunnel Name</span>
+                        <span class="auto-field-value" id="autoTunnelName">-</span>
+                    </div>
+                </div>
+                <!-- Tunnel name duplicate warning -->
+                <div id="tunnelDuplicateWarning" style="display:none; margin-top:10px; background:#fef3c7; border:1px solid #f59e0b; border-radius:8px; padding:10px 14px;">
+                    <div style="font-size:12px; font-weight:700; color:#92400e; margin-bottom:6px;">
+                        ⚠ Tunnel name already used!
+                    </div>
+                    <div id="tunnelDuplicateInfo" style="font-size:11px; color:#78350f; margin-bottom:8px;"></div>
+                    <label style="font-size:11px; font-weight:600; color:#92400e; margin:0 0 4px 0;">Enter a custom Tunnel Name:</label>
+                    <input type="text" id="manualTunnelName" placeholder="e.g. Tunnel1317"
+                           oninput="onManualTunnelName()"
+                           style="background:#fff; border:1px solid #f59e0b; color:#0f172a; padding:7px 10px; font-size:13px; font-weight:600; font-family:Consolas,monospace; margin-top:0;">
+                </div>
+            </div>
+            <!-- Hidden inputs to keep same IDs for config generation -->
+            <input type="hidden" id="loopbackip">
+            <input type="hidden" id="intnatsubnet">
+            <input type="hidden" id="ospfareabranch">
+            <input type="hidden" id="wantunnelname">
+            <input type="hidden" id="province">
+
+            <label>Choose a FREE /31 range</label>
+            <select id="tunnelSelect"></select>
+            <div class="tunnel-info">
+                ✓ First free tunnel auto-selected
+            </div>
+            <button class="reload-btn" onclick="loadTunnels()">🔄 Reload list</button>
+
+            <label>Branch Tunnel Source (IP Intranet)</label>
+            <input type="text" id="tunnelsourcebranch" placeholder="e.g. 10.126.5.125">
+
+            <label>Subnet Mask اینترفیس Intranet</label>
+            <select id="intranetSubnetMask">
+              <option value="255.255.255.248">/29 - 255.255.255.248 (پیش‌فرض)</option>
+              <option value="255.255.255.252">/30 - 255.255.255.252</option>
+              <option value="255.255.255.240">/28 - 255.255.255.240</option>
+              <option value="255.255.255.224">/27 - 255.255.255.224</option>
+              <option value="255.255.255.192">/26 - 255.255.255.192</option>
+              <option value="255.255.255.128">/25 - 255.255.255.128</option>
+              <option value="255.255.255.0">/24 - 255.255.255.0</option>
+            </select>
+
+            <!-- Connection Type Selection -->
+            <div id="connectionTypeBox" style="margin:16px 0; background:rgba(245,158,11,0.06); border:1px solid rgba(245,158,11,0.25); border-radius:10px; padding:14px;">
+              <label style="font-weight:700; color:#f59e0b; margin-bottom:8px; display:block;">&#128268; نوع اتصال اینترنت به روتر</label>
+              <div id="wizardHint" style="display:none; font-size:12px; color:#38bdf8; margin-bottom:10px; padding:8px 12px; background:rgba(56,189,248,0.08); border:1px solid rgba(56,189,248,0.2); border-radius:8px;"></div>
+              <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:10px;">
+                <label style="display:flex; align-items:center; gap:6px; padding:10px 14px; border:2px solid #374151; border-radius:8px; cursor:pointer; transition:all 0.3s; font-size:13px;" id="connDirect" onclick="selectConnectionType('direct')">
+                  <input type="radio" name="connectionType" value="direct" checked style="accent-color:#f59e0b;">
+                  <span style="font-weight:600;">مودم مستقیم به پورت روتر</span>
+                </label>
+                <label style="display:flex; align-items:center; gap:6px; padding:10px 14px; border:2px solid #374151; border-radius:8px; cursor:pointer; transition:all 0.3s; font-size:13px;" id="conn4esw" onclick="selectConnectionType('4esw')">
+                  <input type="radio" name="connectionType" value="4esw" style="accent-color:#f59e0b;">
+                  <span style="font-weight:600;">مودم به ماژول 4ESW</span>
+                </label>
+                <label style="display:flex; align-items:center; gap:6px; padding:10px 14px; border:2px solid #374151; border-radius:8px; cursor:pointer; transition:all 0.3s; font-size:13px;" id="connGshdsl" onclick="selectConnectionType('gshdsl')">
+                  <input type="radio" name="connectionType" value="gshdsl" style="accent-color:#10b981;">
+                  <span style="font-weight:600;">ماژول G.SHDSL (ATM+BVI)</span>
+                </label>
+                <label style="display:flex; align-items:center; gap:6px; padding:10px 14px; border:2px solid #374151; border-radius:8px; cursor:pointer; transition:all 0.3s; font-size:13px;" id="connAdsl" onclick="selectConnectionType('adsl')">
+                  <input type="radio" name="connectionType" value="adsl" style="accent-color:#8b5cf6;">
+                  <span style="font-weight:600;">ماژول 1ADSL (ATM+BVI)</span>
+                </label>
+              </div>
+
+              <!-- Direct Port Options -->
+              <div id="directPortOptions">
+                <label style="font-size:13px;">&#128204; نام پورت روتر (WAN Interface)</label>
+                <input type="text" id="directPortName" placeholder="مثال: FastEthernet0/1 یا GigabitEthernet0/0" value="FastEthernet0/1">
+                <div style="font-size:11px; color:#94a3b8; margin-top:3px;">پورت فیزیکی که مودم به آن متصل است</div>
+              </div>
+
+              <!-- 4ESW Module Options -->
+              <div id="eswOptions" style="display:none;">
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+                  <div>
+                    <label style="font-size:13px;">&#127760; شماره VLAN</label>
+                    <input type="number" id="eswVlan" placeholder="مثال: 100" min="2" max="4094">
+                  </div>
+                  <div>
+                    <label style="font-size:13px;">&#128204; پورت ماژول 4ESW</label>
+                    <input type="text" id="eswPort" placeholder="مثال: FastEthernet0/0/0">
+                  </div>
+                </div>
+                <div style="font-size:11px; color:#94a3b8; margin-top:3px;">پورت ماژول اکسس این VLAN می‌شود و interface vlan ساخته می‌شود</div>
+              </div>
+
+              <!-- G.SHDSL Module Options -->
+              <div id="gshdslOptions" style="display:none;">
+                <div style="padding:8px 12px; background:rgba(16,185,129,0.06); border:1px solid rgba(16,185,129,0.2); border-radius:8px; margin-bottom:10px;">
+                  <div style="font-size:12px; color:#10b981; font-weight:600; margin-bottom:4px;">ماژول G.SHDSL - اتصال ATM به BVI</div>
+                  <div style="font-size:11px; color:#94a3b8;">کانفیگ controller DSL + ATM interface + bridge-group + BVI تولید می‌شود</div>
+                </div>
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+                  <div>
+                    <label style="font-size:13px;">اسلات ماژول G.SHDSL</label>
+                    <select id="gshdslSlot">
+                      <option value="0/0/0">Slot 0 (DSL 0/0/0 → ATM0/0/0)</option>
+                      <option value="0/1/0">Slot 1 (DSL 0/1/0 → ATM0/1/0)</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label style="font-size:13px;">شماره Bridge-Group</label>
+                    <input type="number" id="gshdslBridgeGroup" placeholder="مثال: 1 یا 2" value="1" min="1" max="10">
+                  </div>
+                </div>
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:8px;">
+                  <div>
+                    <label style="font-size:13px;">PVC (VPI/VCI)</label>
+                    <input type="text" id="gshdslPvc" placeholder="مثال: 0/35" value="0/35">
+                  </div>
+                  <div>
+                    <label style="font-size:13px;">Bandwidth (CBR)</label>
+                    <input type="text" id="gshdslCbr" placeholder="مثال: 512" value="512">
+                  </div>
+                </div>
+              </div>
+
+              <!-- 1ADSL Module Options -->
+              <div id="adslOptions" style="display:none;">
+                <div style="padding:8px 12px; background:rgba(139,92,246,0.06); border:1px solid rgba(139,92,246,0.2); border-radius:8px; margin-bottom:10px;">
+                  <div style="font-size:12px; color:#8b5cf6; font-weight:600; margin-bottom:4px;">ماژول 1ADSL - اتصال ATM به BVI</div>
+                  <div style="font-size:11px; color:#94a3b8;">کانفیگ ATM interface + bridge-group + BVI تولید می‌شود</div>
+                </div>
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+                  <div>
+                    <label style="font-size:13px;">اسلات ماژول 1ADSL</label>
+                    <select id="adslSlot">
+                      <option value="0/0/0">Slot 0 (ATM0/0/0)</option>
+                      <option value="0/1/0">Slot 1 (ATM0/1/0)</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label style="font-size:13px;">شماره Bridge-Group</label>
+                    <input type="number" id="adslBridgeGroup" placeholder="مثال: 1 یا 2" value="1" min="1" max="10">
+                  </div>
+                </div>
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:8px;">
+                  <div>
+                    <label style="font-size:13px;">PVC (VPI/VCI)</label>
+                    <input type="text" id="adslPvc" placeholder="مثال: 0/35" value="0/35">
+                  </div>
+                  <div>
+                    <label style="font-size:13px;">Encapsulation</label>
+                    <select id="adslEncap">
+                      <option value="aal5snap">AAL5SNAP</option>
+                      <option value="aal5mux">AAL5MUX PPPoE</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Shared: Current NAT Interface (for removal - all connection types) -->
+              <div style="margin-top:12px; padding:10px 12px; background:rgba(239,68,68,0.06); border:1px solid rgba(239,68,68,0.2); border-radius:8px;">
+                <label style="font-size:13px; color:#f87171; font-weight:600;">&#128465; اینترفیس فعلی NAT (برای حذف - اختیاری)</label>
+                <input type="text" id="currentNatInterface" placeholder="مثال: Loopback2000 یا BVI1" value="">
+                <div style="font-size:11px; color:var(--text-muted,#94a3b8); margin-top:3px;">اگر NAT قبلی باید حذف شود، اینترفیس فعلی را وارد کنید (دستور no ip nat... تولید می‌شود)</div>
+              </div>
+            </div>
+
+            <!-- Branch name in English for tunnel description -->
+            <label>Branch Name (English)</label>
+            <input type="text" id="branchNameEn" placeholder="e.g. KhomeyniShahr" oninput="updateTunnelDesc()">
+            <div id="autoDescPanel" style="display:none; margin:8px 0 16px 0; background:rgba(139,92,246,0.06); border:1px solid rgba(139,92,246,0.2); border-radius:10px; padding:12px 16px;">
+                <div style="font-size:11px; text-transform:uppercase; letter-spacing:0.5px; color:#8b5cf6; font-weight:700; margin-bottom:6px;">WAN-INTR Tunnel Description</div>
+                <span class="auto-field-value" id="autoTunnelDesc" style="color:#5b21b6;">-</span>
+            </div>
+            <input type="hidden" id="wantunneldesc">
+
+            <div id="statusMessage"></div>
+
+            <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-top:6px;">
+              <button class="primary" id="generateBtn">Generate Configs</button>
+              <div style="width:1px; height:28px; background:var(--border-color, rgba(255,255,255,0.15)); margin:0 4px;"></div>
+              <button type="button" onclick="openRemoteModal('ssh')" style="background:linear-gradient(135deg,#3b82f6,#2563eb); color:#fff; border:none; border-radius:8px; padding:8px 14px; font-size:12px; font-weight:600; cursor:pointer; display:flex; align-items:center; gap:5px; font-family:inherit;">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>
+                SSH / Telnet
+              </button>
+              <button type="button" onclick="openRemoteModal('rdp')" style="background:linear-gradient(135deg,#8b5cf6,#7c3aed); color:#fff; border:none; border-radius:8px; padding:8px 14px; font-size:12px; font-weight:600; cursor:pointer; display:flex; align-items:center; gap:5px; font-family:inherit;">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+                RDP
+              </button>
+            </div>
+            </div><!-- END normalConfigForm -->
+        </section>
+
+        <!-- Deploy Config to Device Panel -->
+        <div id="deployPanel" style="display:none; margin-top:20px; background:linear-gradient(135deg,rgba(59,130,246,0.08),rgba(99,102,241,0.05)); border:1px solid rgba(59,130,246,0.3); border-radius:14px; padding:18px 20px;">
+          <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:14px;">
+            <div style="display:flex; align-items:center; gap:8px; color:#3b82f6; font-weight:700; font-size:15px;">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1"/></svg>
+              Deploy Config to Device
+            </div>
+            <span id="deployStatus" style="font-size:12px; color:#94a3b8;">Terminal not connected</span>
+          </div>
+          <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
+            <select id="configSelect" style="flex:1; min-width:200px; padding:9px 12px; background:#020617; border:1px solid #374151; border-radius:8px; color:#e5e7eb; font-size:13px;">
+              <option value="">-- Select Config --</option>
+              <option value="branchConfig">Branch Router</option>
+              <option value="wan1Config">WAN-INTR1 Router</option>
+              <option value="wan2Config">WAN-INTR2 Router</option>
+            </select>
+            <button type="button" onclick="sendConfigToTerminal()" style="background:linear-gradient(135deg,#3b82f6,#2563eb); color:#fff; border:none; border-radius:999px; padding:10px 20px; display:flex; align-items:center; gap:6px; font-weight:600; cursor:pointer; font-family:inherit;">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+              Send to Device
+            </button>
+          </div>
+        </div>
+
+        <section class="card">
+            <h2>Generated Config</h2>
+
+            <div class="device-box">
+                <div class="device-box-header">
+                    <span class="device-title">Branch Router</span>
+                    <button class="copy-btn" onclick="copyConfig('branchConfig')">Copy</button>
+                </div>
+                <textarea id="branchConfig" readonly>Branch configuration will appear here...</textarea>
+            </div>
+
+            <div class="device-box">
+                <div class="device-box-header">
+                    <span class="device-title">WAN-INTR1 Router</span>
+                    <button class="copy-btn" onclick="copyConfig('wan1Config')">Copy</button>
+                </div>
+                <textarea id="wan1Config" readonly>WAN-INTR1 configuration will appear here...</textarea>
+            </div>
+
+            <div class="device-box">
+                <div class="device-box-header">
+                    <span class="device-title">WAN-INTR2 Router</span>
+                    <button class="copy-btn" onclick="copyConfig('wan2Config')">Copy</button>
+                </div>
+                <textarea id="wan2Config" readonly>WAN-INTR2 configuration will appear here...</textarea>
+            </div>
+        </section>
+    </main>
+
+    <script>
+        // Session timeout: 8 hours
+        const SESSION_TIMEOUT = 8 * 60 * 60 * 1000;
+        (function() {
+            const sessionStart = localStorage.getItem('sessionStart');
+            if (sessionStart && (Date.now() - parseInt(sessionStart)) > SESSION_TIMEOUT) {
+                localStorage.clear(); sessionStorage.clear();
+                alert('جلسه شما منقضی شده است. لطفاً دوباره وارد شوید.');
+                location.href = '/login';
+            }
+        })();
+
+        // Get username from storage
+        let currentUsername = localStorage.getItem('currentUser') ||
+                              localStorage.getItem('username') ||
+                              sessionStorage.getItem('username') ||
+                              'unknown';
+
+        document.getElementById('currentUser').textContent = currentUsername;
+
+        if (currentUsername === 'unknown') {
+            console.warn('No username found in storage. User may need to login again.');
+            location.href = '/login';
+        }
+
+        function copyConfig(id) {
+            const el = document.getElementById(id);
+            el.select();
+            document.execCommand('copy');
+        }
+
+        // Show status message
+        function showStatus(message, isError = false) {
+            const statusDiv = document.getElementById('statusMessage');
+            statusDiv.className = 'status-message ' + (isError ? 'status-error' : 'status-success');
+            statusDiv.textContent = message;
+            setTimeout(() => {
+                statusDiv.textContent = '';
+                statusDiv.className = '';
+            }, 5000);
+        }
+
+        // Load free tunnels
+        async function loadTunnels() {
+            try {
+                let res = await fetch('/tunnels');
+                let data = await res.json();
+                let sel = document.getElementById('tunnelSelect');
+                sel.innerHTML = '';
+
+                if (data.length === 0) {
+                    sel.innerHTML += '<option value="">⚠ No free tunnels available</option>';
+                    showStatus('No free tunnels available!', true);
+                    return;
+                }
+
+                data.forEach((r, index) => {
+                    let o = document.createElement('option');
+                    o.value = JSON.stringify(r);
+                    o.text = `${r['IP Address']} ${index === 0 ? '← Selected' : ''}`;
+                    sel.add(o);
+                });
+
+                if (data.length > 0) {
+                    sel.selectedIndex = 0;
+                    console.log(`✓ Auto-selected first tunnel: ${data[0]['IP Address']}`);
+                }
+
+                console.log(`✓ Loaded ${data.length} free tunnels`);
+            } catch (err) {
+                console.error('Error loading tunnels:', err);
+                showStatus('Failed to load tunnels: ' + err.message, true);
+            }
+        }
+
+        // ==================== PROVINCE MAPPING ====================
+        const provinceMapping = {
+            'تهران بزرگ': { en: 'Tehran', abbr: 'TEHB' },
+            'تهران': { en: 'Tehran', abbr: 'TEH' },
+            'البرز': { en: 'Alborz', abbr: 'KRJ' },
+            'آذربایجان شرقی': { en: 'East Azerbaijan', abbr: 'AZSH' },
+            'آذربایجان غربی': { en: 'West Azerbaijan', abbr: 'AZGH' },
+            'کردستان': { en: 'Kurdistan', abbr: 'KRD' },
+            'اصفهان': { en: 'Isfahan', abbr: 'ESF' },
+            'خراسان رضوی': { en: 'Razavi Khorasan', abbr: 'KHR' },
+            'فارس': { en: 'Fars', abbr: 'FRS' },
+            'کرمان': { en: 'Kerman', abbr: 'KRM' },
+            'خوزستان': { en: 'Khuzestan', abbr: 'KHZ' },
+            'لرستان': { en: 'Lorestan', abbr: 'LOR' },
+            'گیلان': { en: 'Gilan', abbr: 'GIL' },
+            'گلستان': { en: 'Golestan', abbr: 'GLS' },
+            'مازندران': { en: 'Mazandaran', abbr: 'MAZ' },
+            'سیستان و بلوچستان': { en: 'Sistan and Baluchestan', abbr: 'SNB' },
+            'یزد': { en: 'Yazd', abbr: 'YZD' },
+            'زنجان': { en: 'Zanjan', abbr: 'ZNJ' },
+            'سمنان': { en: 'Semnan', abbr: 'SMN' },
+            'مرکزی': { en: 'Markazi', abbr: 'MRZ' },
+            'همدان': { en: 'Hamadan', abbr: 'HMD' },
+            'قزوین': { en: 'Qazvin', abbr: 'QZV' },
+            'قم': { en: 'Qom', abbr: 'QOM' },
+            'اردبیل': { en: 'Ardabil', abbr: 'ARD' },
+            'ایلام': { en: 'Ilam', abbr: 'ILM' },
+            'بوشهر': { en: 'Bushehr', abbr: 'BSH' },
+            'چهارمحال و بختیاری': { en: 'Chaharmahal and Bakhtiari', abbr: 'CHB' },
+            'هرمزگان': { en: 'Hormozgan', abbr: 'HMZ' },
+            'کرمانشاه': { en: 'Kermanshah', abbr: 'KRMSH' },
+            'کهگیلویه و بویراحمد': { en: 'Kohgiluyeh and Boyer-Ahmad', abbr: 'KHB' },
+            'خراسان شمالی': { en: 'North Khorasan', abbr: 'KHSH' },
+            'خراسان جنوبی': { en: 'South Khorasan', abbr: 'KHRJ' }
+        };
+
+        // Selected branch data
+        let selectedBranchData = null;
+
+        // ==================== LOAD BRANCHES ====================
+        async function loadBranches() {
+            try {
+                const res = await fetch('/api/branches');
+                const branches = await res.json();
+                const datalist = document.getElementById('branchList');
+                datalist.innerHTML = '';
+                branches.forEach(b => {
+                    const opt = document.createElement('option');
+                    opt.value = `${b.name} - [${b.province}] (10.${b.x}.${b.y}.0)`;
+                    opt.setAttribute('data-x', b.x);
+                    opt.setAttribute('data-y', b.y);
+                    opt.setAttribute('data-province', b.province);
+                    opt.setAttribute('data-name', b.name);
+                    datalist.appendChild(opt);
+                });
+                console.log(`✓ Loaded ${branches.length} branches`);
+            } catch (err) {
+                console.error('Error loading branches:', err);
+            }
+        }
+
+        // ==================== BRANCH SELECTION HANDLER ====================
+        document.getElementById('branchName').addEventListener('input', function() {
+            const val = this.value.trim();
+            // Match pattern: NAME - [PROVINCE] (10.X.Y.0)
+            const match = val.match(/\[([^\]]+)\]\s*\(10\.(\d+)\.(\d+)\.0\)/);
+            if (match) {
+                const provincePersian = match[1];
+                const x = match[2];
+                const y = match[3];
+
+                const prov = provinceMapping[provincePersian] || { en: provincePersian, abbr: provincePersian };
+
+                selectedBranchData = { x, y, provincePersian, provinceEn: prov.en, provinceAbbr: prov.abbr };
+
+                // Auto-fill values
+                const loopback = `10.210.${x}.${y}`;
+                const intnat = `10.${x}.${y}.0`;
+                const ospfArea = x;
+                // Pad Y with leading zero if single digit (e.g. X=3,Y=6 → Tunnel306)
+                const yPadded = parseInt(y) < 10 ? '0' + y : y;
+                const tunnelName = `Tunnel${x}${yPadded}`;
+
+                // Set hidden inputs (same IDs used by config generation)
+                document.getElementById('loopbackip').value = loopback;
+                document.getElementById('intnatsubnet').value = intnat;
+                document.getElementById('ospfareabranch').value = ospfArea;
+                document.getElementById('wantunnelname').value = tunnelName;
+                document.getElementById('province').value = prov.en;
+
+                // Display auto-filled values
+                document.getElementById('autoProvince').textContent = prov.en + ' (' + prov.abbr + ')';
+                document.getElementById('autoLoopback').textContent = loopback;
+                document.getElementById('autoIntnat').textContent = intnat;
+                document.getElementById('autoOspf').textContent = ospfArea;
+                document.getElementById('autoTunnelName').textContent = tunnelName;
+
+                // Show panel
+                document.getElementById('autoFieldsPanel').style.display = 'block';
+
+                // Reset manual override
+                document.getElementById('tunnelDuplicateWarning').style.display = 'none';
+                document.getElementById('manualTunnelName').value = '';
+
+                // Check if tunnel name already exists in DB
+                checkTunnelName(tunnelName);
+
+                // Update tunnel description if branch name is already entered
+                updateTunnelDesc();
+            }
+        });
+
+        // ==================== TUNNEL NAME DUPLICATE CHECK ====================
+        async function checkTunnelName(tunnelName) {
+            try {
+                const res = await fetch('/api/check-tunnel-name', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({tunnel_name: tunnelName})
+                });
+                const data = await res.json();
+                const warningDiv = document.getElementById('tunnelDuplicateWarning');
+                const tunnelField = document.getElementById('tunnelNameField');
+
+                if (data.exists) {
+                    // Show warning
+                    let info = `"${tunnelName}" is already reserved`;
+                    if (data.description) info += ` — ${data.description}`;
+                    if (data.province) info += ` (${data.province})`;
+                    if (data.reserved_by) info += ` by ${data.reserved_by}`;
+                    document.getElementById('tunnelDuplicateInfo').textContent = info;
+                    warningDiv.style.display = 'block';
+                    tunnelField.style.borderColor = '#f59e0b';
+                    tunnelField.style.background = '#fffbeb';
+                } else {
+                    warningDiv.style.display = 'none';
+                    tunnelField.style.borderColor = '';
+                    tunnelField.style.background = '';
+                }
+            } catch (e) {
+                console.error('Tunnel check error:', e);
+            }
+        }
+
+        function onManualTunnelName() {
+            const manual = document.getElementById('manualTunnelName').value.trim();
+            if (manual) {
+                document.getElementById('wantunnelname').value = manual;
+                document.getElementById('autoTunnelName').textContent = manual + ' (manual)';
+                // Check DB for manual name
+                checkTunnelName(manual);
+            } else if (selectedBranchData) {
+                // Restore auto-generated name
+                const yPad = parseInt(selectedBranchData.y) < 10 ? '0' + selectedBranchData.y : selectedBranchData.y;
+                const autoName = `Tunnel${selectedBranchData.x}${yPad}`;
+                document.getElementById('wantunnelname').value = autoName;
+                document.getElementById('autoTunnelName').textContent = autoName;
+                // Check DB for restored auto name
+                checkTunnelName(autoName);
+            }
+        }
+
+        // ==================== TUNNEL DESCRIPTION ====================
+        function updateTunnelDesc() {
+            const branchNameEn = document.getElementById('branchNameEn').value.trim();
+            if (!selectedBranchData || !branchNameEn) {
+                document.getElementById('autoDescPanel').style.display = 'none';
+                document.getElementById('wantunneldesc').value = '';
+                return;
+            }
+
+            const desc = `** ${selectedBranchData.provinceAbbr}-${branchNameEn} **`;
+            document.getElementById('wantunneldesc').value = desc;
+            document.getElementById('autoTunnelDesc').textContent = desc;
+            document.getElementById('autoDescPanel').style.display = 'block';
+        }
+
+        // Connection type handler
+        function selectConnectionType(type) {
+            document.getElementById('directPortOptions').style.display = type === 'direct' ? 'block' : 'none';
+            document.getElementById('eswOptions').style.display = type === '4esw' ? 'block' : 'none';
+            document.getElementById('gshdslOptions').style.display = type === 'gshdsl' ? 'block' : 'none';
+            document.getElementById('adslOptions').style.display = type === 'adsl' ? 'block' : 'none';
+
+            const types = {direct: '#f59e0b', '4esw': '#f59e0b', gshdsl: '#10b981', adsl: '#8b5cf6'};
+            ['connDirect', 'conn4esw', 'connGshdsl', 'connAdsl'].forEach(id => {
+                const el = document.getElementById(id);
+                const t = el.querySelector('input[type=radio]').value;
+                el.style.borderColor = t === type ? (types[type] || '#f59e0b') : '#374151';
+                el.style.background = t === type ? `rgba(${type === 'gshdsl' ? '16,185,129' : type === 'adsl' ? '139,92,246' : '245,158,11'},0.08)` : '';
+                el.querySelector('input[type=radio]').checked = t === type;
+            });
+        }
+
+        // Read wizard config from localStorage - pre-select and hide other connection types
+        (function readWizardConfig() {
+            function hideOtherConnTypes(activeType) {
+                const typeToId = {direct: 'connDirect', '4esw': 'conn4esw', gshdsl: 'connGshdsl', adsl: 'connAdsl'};
+                Object.entries(typeToId).forEach(([t, id]) => {
+                    const el = document.getElementById(id);
+                    if (el) el.style.display = (t === activeType) ? 'flex' : 'none';
+                });
+            }
+            try {
+                const wc = JSON.parse(localStorage.getItem('wizardConfig') || '{}');
+                const connType = wc.copper_connection;
+                const moduleType = wc.copper_module_type;
+                const modemType = wc.copper_modem_type;
+                const hint = document.getElementById('wizardHint');
+
+                if (connType === 'Module') {
+                    if (moduleType === 'G.SHDSL') {
+                        selectConnectionType('gshdsl');
+                        hideOtherConnTypes('gshdsl');
+                        if (hint) { hint.style.display = 'block'; hint.textContent = 'ویزارد: ماژول G.SHDSL انتخاب شده - کانفیگ ATM + BVI'; }
+                        return;
+                    } else if (moduleType === '1ADSL') {
+                        selectConnectionType('adsl');
+                        hideOtherConnTypes('adsl');
+                        if (hint) { hint.style.display = 'block'; hint.textContent = 'ویزارد: ماژول 1ADSL انتخاب شده - کانفیگ ATM + BVI'; }
+                        return;
+                    } else if (moduleType === '4ESW') {
+                        selectConnectionType('4esw');
+                        hideOtherConnTypes('4esw');
+                        if (hint) { hint.style.display = 'block'; hint.textContent = 'ویزارد: ماژول 4ESW انتخاب شده - کانفیگ VLAN'; }
+                        return;
+                    }
+                } else if (connType === 'Modem') {
+                    if (modemType === '4ESW_VLAN') {
+                        selectConnectionType('4esw');
+                        hideOtherConnTypes('4esw');
+                        if (hint) { hint.style.display = 'block'; hint.textContent = 'ویزارد: مودم به 4ESW - کانفیگ VLAN'; }
+                        return;
+                    } else if (modemType === 'Direct_Port') {
+                        selectConnectionType('direct');
+                        hideOtherConnTypes('direct');
+                        if (hint) { hint.style.display = 'block'; hint.textContent = 'ویزارد: مودم مستقیم به پورت روتر'; }
+                        return;
+                    }
+                }
+            } catch (e) { /* no wizard data */ }
+            // Default
+            selectConnectionType('direct');
+        })();
+
+        // ==================== RE-CONFIG MODE ====================
+        let reconfigData = []; // cached reserved tunnels
+        let selectedReconfig = null;
+
+        function toggleReconfigMode() {
+            const checked = document.getElementById('reconfigMode').checked;
+            document.getElementById('reconfigPanel').style.display = checked ? 'block' : 'none';
+            document.getElementById('normalConfigForm').style.display = checked ? 'none' : 'block';
+            document.getElementById('intranetOnlyBox').style.display = checked ? 'none' : 'block';
+            document.getElementById('baseConfigBox').style.display = checked ? 'none' : 'block';
+            if (checked) {
+                loadReconfigList();
+            }
+        }
+
+        async function loadReconfigList(query) {
+            const select = document.getElementById('reconfigSelect');
+            select.innerHTML = '<option value="" disabled>در حال بارگذاری...</option>';
+            try {
+                let url = '/api/reserved-intranet';
+                if (query) url += '?q=' + encodeURIComponent(query);
+                const res = await fetch(url);
+                reconfigData = await res.json();
+                select.innerHTML = '';
+                if (reconfigData.length === 0) {
+                    select.innerHTML = '<option value="" disabled>هیچ نقطه ثبت‌شده‌ای یافت نشد</option>';
+                    return;
+                }
+                reconfigData.forEach(function(t, i) {
+                    const opt = document.createElement('option');
+                    opt.value = i;
+                    opt.textContent = (t.description || t.tunnel_name || '') + ' | ' + (t.province || '') + ' | IP: ' + t.ip_address + ' | LAN: ' + (t.ip_lan || '-');
+                    select.appendChild(opt);
+                });
+            } catch(e) {
+                select.innerHTML = '<option value="" disabled>خطا در بارگذاری</option>';
+            }
+        }
+
+        let searchTimeout;
+        function searchReconfig() {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(function() {
+                const q = document.getElementById('reconfigSearch').value.trim();
+                loadReconfigList(q || undefined);
+            }, 400);
+        }
+
+        function selectReconfigPoint() {
+            const idx = document.getElementById('reconfigSelect').value;
+            if (idx === '' || idx === undefined) return;
+            selectedReconfig = reconfigData[parseInt(idx)];
+            if (!selectedReconfig) return;
+
+            const t = selectedReconfig;
+            document.getElementById('reconfigInfo').style.display = 'block';
+            document.getElementById('reconfigGenerateBtn').style.display = 'inline-block';
+
+            // Parse loopback and area from ip_lan
+            let loopback = '-', area = '-', intnat = '-';
+            if (t.ip_lan) {
+                const parts = t.ip_lan.split('.');
+                if (parts.length >= 3) {
+                    const x = parts[1], y = parts[2];
+                    loopback = '10.210.' + x + '.' + y;
+                    area = x;
+                    intnat = '10.' + x + '.' + y + '.0';
+                }
+            }
+
+            document.getElementById('reconfigDetails').innerHTML =
+                '<b>Tunnel:</b> ' + (t.tunnel_name || '-') +
+                ' &nbsp;|&nbsp; <b>Description:</b> ' + (t.description || '-') +
+                '<br><b>IP Tunnel:</b> <span style="direction:ltr;display:inline-block;color:#06b6d4;">' + t.ip_address + '</span>' +
+                ' &nbsp;|&nbsp; <b>IP LAN:</b> <span style="direction:ltr;display:inline-block;color:#06b6d4;">' + (t.ip_lan || '-') + '</span>' +
+                ' &nbsp;|&nbsp; <b>IP Intranet:</b> <span style="direction:ltr;display:inline-block;color:#06b6d4;">' + (t.ip_intranet || '-') + '</span>' +
+                '<br><b>Province:</b> ' + (t.province || '-') +
+                ' &nbsp;|&nbsp; <b>Loopback:</b> <span style="direction:ltr;display:inline-block;color:#10b981;">' + loopback + '</span>' +
+                ' &nbsp;|&nbsp; <b>Area:</b> ' + area +
+                '<br><b>Reserved by:</b> ' + (t.reserved_by || '-') + ' &nbsp;|&nbsp; <b>Date:</b> ' + (t.reserved_at || '-');
+        }
+
+        function generateReconfig() {
+            if (!selectedReconfig) return;
+            const t = selectedReconfig;
+
+            // Extract all needed values from the existing reservation
+            let wanIp = t.ip_address.split('/')[0];
+            let srcBranch = t.ip_intranet || '';
+            let loopback = '', intnat = '', area = '';
+
+            if (t.ip_lan) {
+                const parts = t.ip_lan.split('.');
+                if (parts.length >= 3) {
+                    const x = parts[1], y = parts[2];
+                    loopback = '10.210.' + x + '.' + y;
+                    area = x;
+                    intnat = '10.' + x + '.' + y + '.0';
+                }
+            }
+
+            if (!srcBranch) {
+                alert('IP Intranet (Tunnel Source) برای این نقطه ثبت نشده. لطفا از حالت عادی استفاده کنید.');
+                return;
+            }
+            if (!loopback || !area) {
+                alert('IP LAN برای این نقطه ثبت نشده. لطفا از حالت عادی استفاده کنید.');
+                return;
+            }
+
+            let mask = '255.255.255.254';
+
+            function mirror200to201(ip) {
+                let p = ip.split('.');
+                if (p[0] === '10' && p[1] === '200') p[1] = '201';
+                return p.join('.');
+            }
+
+            let t200wan = wanIp;
+            let t201wan = mirror200to201(wanIp);
+
+            let base = wanIp.split('.');
+            base[3] = (parseInt(base[3]) + 1).toString();
+            let t200br = base.join('.');
+            let t201br = mirror200to201(t200br);
+
+            let wanName = t.tunnel_name || ('Tunnel-' + area);
+            let wanDesc = t.description || '';
+
+            // Generate same config as normal mode
+            let branchCfg = `
+crypto isakmp policy 102
+ encryption aes
+ hash sha
+ authentication pre-share
+ group 2
+crypto isakmp key N3w1ntr@n3t address 10.30.42.200
+crypto isakmp key N3w1ntr@n3t address 10.30.42.201
+!
+crypto ipsec transform-set BK!-TR esp-aes 256 esp-sha-hmac
+!
+crypto ipsec transform-set INTR1 esp-aes 256 esp-sha-hmac
+ mode tunnel
+crypto ipsec transform-set INTR2 esp-aes 256 esp-sha-hmac
+ mode tunnel
+!
+ip access-list extended INTR1ACL
+ permit gre host ${srcBranch} host 10.30.42.200
+ip access-list extended INTR2ACL
+ permit gre host ${srcBranch} host 10.30.42.201
+!
+crypto map BKI-MAP-INT 1 ipsec-isakmp
+ set peer 10.30.42.2
+ set transform-set BK!-TR
+ match address INTRANET-CRYPTO
+!
+crypto map BKI-MAP-INT 2 ipsec-isakmp
+ set peer 10.30.42.200
+ set transform-set INTR1
+ match address INTR1ACL
+crypto map BKI-MAP-INT 3 ipsec-isakmp
+ set peer 10.30.42.201
+ set transform-set INTR2
+ match address INTR2ACL
+!
+interface Loopback2
+ ip address ${loopback} 255.255.255.255
+!
+interface Tunnel200
+ description Intranet - R1
+ bandwidth 2000
+ ip address ${t200br} ${mask}
+ ip mtu 1360
+ ip nat outside
+ ip virtual-reassembly
+ ip tcp adjust-mss 1320
+ ip ospf cost 200
+ keepalive 10 3
+ tunnel source ${srcBranch}
+ tunnel destination 10.30.42.200
+!
+interface Tunnel201
+ description Intranet - R2
+ bandwidth 2000
+ ip address ${t201br} ${mask}
+ ip mtu 1360
+ ip nat outside
+ ip virtual-reassembly
+ ip tcp adjust-mss 1320
+ ip ospf cost 400
+ keepalive 10 3
+ tunnel source ${srcBranch}
+ tunnel destination 10.30.42.201
+!
+router ospf 200
+ router-id ${loopback}
+ network ${t200br} 0.0.0.0 area ${area}
+ network ${t201br} 0.0.0.0 area ${area}
+ network ${loopback} 0.0.0.0 area ${area}
+!
+ip access-list extended intnat
+ permit ip ${intnat} 0.0.0.255 10.0.0.0 0.0.255.255
+!
+ip nat inside source list intnat interface Loopback2 overload
+!
+do wr`.trim();
+
+            // WAN configs
+            let wan1Cfg = `!
+! ===== WAN-INTR1 (10.30.42.200) =====
+!
+interface ${wanName}
+ description ${wanDesc}
+ ip address ${t200wan} ${mask}
+ ip mtu 1360
+ ip tcp adjust-mss 1320
+ keepalive 10 3
+ tunnel source 10.30.42.200
+ tunnel destination ${srcBranch}
+!
+router ospf 200
+ network ${t200wan} 0.0.0.0 area ${area}
+!
+do wr`.trim();
+
+            let wan2Cfg = `!
+! ===== WAN-INTR2 (10.30.42.201) =====
+!
+interface ${wanName}
+ description ${wanDesc}
+ ip address ${t201wan} ${mask}
+ ip mtu 1360
+ ip tcp adjust-mss 1320
+ keepalive 10 3
+ tunnel source 10.30.42.201
+ tunnel destination ${srcBranch}
+!
+router ospf 200
+ network ${t201wan} 0.0.0.0 area ${area}
+!
+do wr`.trim();
+
+            document.getElementById('branchConfig').textContent = branchCfg;
+            document.getElementById('wan1Config').textContent = wan1Cfg;
+            document.getElementById('wan2Config').textContent = wan2Cfg;
+            document.querySelector('.results').style.display = 'block';
+            document.querySelector('.results').scrollIntoView({ behavior: 'smooth' });
+
+            showStatus('کانفیگ مجدد با IP های قبلی تولید شد (بدون رزرو جدید)');
+        }
+
+        // Toggle intranet-only mode (hides physical interface section)
+        function toggleIntranetOnly() {
+            const checked = document.getElementById('intranetOnlyConfig').checked;
+            const connBox = document.getElementById('connectionTypeBox');
+            if (connBox) {
+                connBox.style.display = checked ? 'none' : '';
+            }
+        }
+
+        // Generate config button handler
+        document.getElementById('generateBtn').addEventListener('click', async () => {
+            const generateBtn = document.getElementById('generateBtn');
+
+            const tunnelSelectValue = document.getElementById('tunnelSelect').value;
+            if (!tunnelSelectValue) {
+                showStatus('⚠ Please select a tunnel first!', true);
+                return;
+            }
+
+            let tunnelData;
+            try {
+                tunnelData = JSON.parse(tunnelSelectValue);
+            } catch (e) {
+                showStatus('⚠ Invalid tunnel selection!', true);
+                return;
+            }
+
+            let loopback = document.getElementById('loopbackip').value.trim();
+            let srcBranch = document.getElementById('tunnelsourcebranch').value.trim();
+            let intSubnetMask = document.getElementById('intranetSubnetMask').value;
+            let intnat = document.getElementById('intnatsubnet').value.trim();
+            let area = document.getElementById('ospfareabranch').value.trim();
+            let wanName = document.getElementById('wantunnelname').value.trim();
+            let wanDesc = document.getElementById('wantunneldesc').value.trim();
+            let province = document.getElementById('province').value;
+
+            if (!loopback || !intnat || !area || !wanName || !province) {
+                showStatus('⚠ Please select a branch first!', true);
+                return;
+            }
+            if (!srcBranch) {
+                showStatus('⚠ Please enter Branch Tunnel Source!', true);
+                return;
+            }
+            if (!wanDesc) {
+                showStatus('⚠ Please enter Branch Name (English) for tunnel description!', true);
+                return;
+            }
+
+            if (currentUsername === 'unknown') {
+                showStatus('⚠ Please login first!', true);
+                setTimeout(() => {
+                    window.location.href = '/login';
+                }, 2000);
+                return;
+            }
+
+            generateBtn.disabled = true;
+            generateBtn.textContent = '⏳ Reserving tunnel...';
+
+            try {
+                console.log('Reserving tunnel:', tunnelData['IP Address']);
+
+                const response = await fetch('/reserve', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        'IP Address': tunnelData['IP Address'],
+                        'Tunnel Name': wanName,
+                        'IP LAN': intnat,
+                        'IP Intranet': srcBranch,
+                        'Description': wanDesc,
+                        'Province': province,
+                        'by': currentUsername
+                    })
+                });
+
+                const result = await response.json();
+
+                if (result.status === 'ok') {
+                    showStatus(`✅ Tunnel ${tunnelData['IP Address']} reserved successfully by ${currentUsername}!`);
+                    console.log('✓ Tunnel reserved successfully');
+                    await loadTunnels();
+                } else {
+                    showStatus(`❌ Failed to reserve: ${result.error || 'Unknown error'}`, true);
+                    generateBtn.disabled = false;
+                    generateBtn.textContent = 'Generate Configs';
+                    return;
+                }
+
+            } catch (err) {
+                showStatus(`❌ Error: ${err.message}`, true);
+                console.error('Reservation error:', err);
+                generateBtn.disabled = false;
+                generateBtn.textContent = 'Generate Configs';
+                return;
+            }
+
+            let wanIp = tunnelData['IP Address'].split('/')[0];
+            let mask = '255.255.255.254';
+
+            function mirror200to201(ip) {
+                let p = ip.split('.');
+                if (p[0] === '10' && p[1] === '200') p[1] = '201';
+                return p.join('.');
+            }
+
+            let t200wan = wanIp;
+            let t201wan = mirror200to201(wanIp);
+
+            let base = wanIp.split('.');
+            base[3] = (parseInt(base[3]) + 1).toString();
+            let t200br = base.join('.');
+            let t201br = mirror200to201(t200br);
+
+            // Branch Router Config
+            let branchCfg = `
+crypto isakmp policy 102
+ encryption aes
+ hash sha
+ authentication pre-share
+ group 2
+crypto isakmp key N3w1ntr@n3t address 10.30.42.200
+crypto isakmp key N3w1ntr@n3t address 10.30.42.201
+!
+crypto ipsec transform-set BK!-TR esp-aes 256 esp-sha-hmac
+!
+crypto ipsec transform-set INTR1 esp-aes 256 esp-sha-hmac 
+ mode tunnel
+crypto ipsec transform-set INTR2 esp-aes 256 esp-sha-hmac 
+ mode tunnel
+!
+ip access-list extended INTR1ACL
+ permit gre host ${srcBranch} host 10.30.42.200
+ip access-list extended INTR2ACL
+ permit gre host ${srcBranch} host 10.30.42.201
+!
+crypto map BKI-MAP-INT 1 ipsec-isakmp
+ set peer 10.30.42.2
+ set transform-set BK!-TR
+ match address INTRANET-CRYPTO
+!
+crypto map BKI-MAP-INT 2 ipsec-isakmp
+ set peer 10.30.42.200
+ set transform-set INTR1
+ match address INTR1ACL
+crypto map BKI-MAP-INT 3 ipsec-isakmp
+ set peer 10.30.42.201
+ set transform-set INTR2
+ match address INTR2ACL
+!
+interface Loopback2
+ ip address ${loopback} 255.255.255.255
+!
+interface Tunnel200
+ description Intranet - R1
+ bandwidth 2000
+ ip address ${t200br} ${mask}
+ ip mtu 1360
+ ip nat outside
+ ip virtual-reassembly
+ ip tcp adjust-mss 1320
+ ip ospf cost 200
+ keepalive 10 3
+ tunnel source ${srcBranch}
+ tunnel destination 10.30.42.200
+!
+interface Tunnel201
+ description Intranet - R2
+ bandwidth 2000
+ ip address ${t201br} ${mask}
+ ip mtu 1360
+ ip nat outside
+ ip virtual-reassembly
+ ip tcp adjust-mss 1320
+ ip ospf cost 400
+ keepalive 10 3
+ tunnel source ${srcBranch}
+ tunnel destination 10.30.42.201
+!
+router ospf 200
+ router-id ${loopback}
+ network ${t200br} 0.0.0.0 area ${area}
+ network ${t201br} 0.0.0.0 area ${area}
+ network ${loopback} 0.0.0.0 area ${area}
+!
+ip access-list extended intnat
+ permit ip ${intnat} 0.0.0.255 10.0.0.0 0.0.255.255
+!
+ip nat inside source list intnat interface Loopback2 overload
+!
+do wr
+`.trim();
+
+            // Shared: NAT removal for all connection types
+            const currentNatIface = document.getElementById('currentNatInterface').value.trim();
+            let natRemoveCmd = '';
+            if (currentNatIface) {
+                natRemoveCmd = `!
+! ===== حذف NAT قبلی از اینترفیس ${currentNatIface} =====
+! توجه: دستور زیر تایید yes/no نیاز دارد
+no ip nat inside source list natlist interface ${currentNatIface} overload
+yes
+!`;
+            }
+
+            // Check intranet-only mode
+            const intranetOnly = document.getElementById('intranetOnlyConfig').checked;
+
+            // Add connection type interface config
+            const connType = document.querySelector('input[name="connectionType"]:checked').value;
+            let ifaceConfig = '';
+
+            if (!intranetOnly) {
+            if (connType === 'direct') {
+                const portName = document.getElementById('directPortName').value.trim() || 'FastEthernet0/1';
+                ifaceConfig = `
+!
+! ===== WAN Interface (اتصال مستقیم - ${portName}) =====
+!
+interface ${portName}
+ description ** 2nd Network-Intranet **
+ ip address ${srcBranch} ${intSubnetMask}
+ ip access-group INTR@NET in
+ ip virtual-reassembly
+ ip policy route-map nachi-worm
+ duplex auto
+ speed auto
+ crypto map BKI-MAP-INT
+ no ip nat outside
+!`.trim();
+            } else if (connType === '4esw') {
+                const vlanNum = document.getElementById('eswVlan').value.trim();
+                const eswPort = document.getElementById('eswPort').value.trim() || 'FastEthernet0/0/0';
+
+                if (!vlanNum) {
+                    showStatus('⚠ لطفاً شماره VLAN را وارد کنید', true);
+                    generateBtn.disabled = false;
+                    generateBtn.textContent = 'Generate Configs';
+                    return;
+                }
+
+                ifaceConfig = `
+!
+! ===== 4ESW Module + VLAN (VLAN ${vlanNum} - ${eswPort}) =====
+!
+! ===== ابتدا VLAN را بسازید (در 1841 از vlan database استفاده کنید) =====
+! exit از conf t:
+end
+!
+vlan database
+vlan ${vlanNum}
+exit
+!
+! بازگشت به conf t:
+conf t
+!
+interface ${eswPort}
+ switchport access vlan ${vlanNum}
+!
+interface Vlan${vlanNum}
+ description ** 2nd Network-Intranet **
+ ip address ${srcBranch} ${intSubnetMask}
+ ip access-group INTR@NET in
+ ip virtual-reassembly
+ ip policy route-map nachi-worm
+ crypto map BKI-MAP-INT
+ no ip nat outside
+ no shutdown
+!`.trim();
+            } else if (connType === 'gshdsl') {
+                // G.SHDSL Module: controller DSL + ATM + bridge-group + BVI
+                const slot = document.getElementById('gshdslSlot').value;
+                const bg = document.getElementById('gshdslBridgeGroup').value.trim() || '1';
+                const pvc = document.getElementById('gshdslPvc').value.trim() || '0/35';
+                const cbr = document.getElementById('gshdslCbr').value.trim() || '512';
+                const atmIface = `ATM${slot}`;
+                const pvcParts = pvc.split('/');
+                const pvcVpi = pvcParts[0] || '0';
+                const pvcVci = pvcParts[1] || '35';
+
+                ifaceConfig = `
+!
+! ===== G.SHDSL Module (${slot}) - ATM + Bridge-Group ${bg} + BVI${bg} =====
+!
+controller DSL ${slot}
+ mode atm
+ line-term cpe
+ line-mode 2-wire line-zero
+ dsl-mode shdsl symmetric annex B
+ line-rate auto
+!
+interface ${atmIface}
+ description ** Intranet **
+ no ip address
+ no atm ilmi-keepalive
+ bridge-group ${bg}
+ bridge-group ${bg} spanning-disabled
+ pvc ${pvcVpi}/${pvcVci}
+  cbr ${cbr}
+  encapsulation aal5snap
+ !
+!
+bridge irb
+bridge ${bg} protocol ieee
+bridge ${bg} route ip
+!
+interface BVI${bg}
+ description ** 2nd Network-Intranet **
+ ip address ${srcBranch} ${intSubnetMask}
+ ip access-group INTR@NET in
+ ip nat outside
+ ip virtual-reassembly
+ ip policy route-map nachi-worm
+ crypto map BKI-MAP-INT
+!`.trim();
+
+                // NAT always stays on Loopback2 regardless of connection type
+            } else if (connType === 'adsl') {
+                // 1ADSL Module: ATM + bridge-group + BVI
+                const slot = document.getElementById('adslSlot').value;
+                const bg = document.getElementById('adslBridgeGroup').value.trim() || '1';
+                const pvc = document.getElementById('adslPvc').value.trim() || '0/35';
+                const encap = document.getElementById('adslEncap').value;
+                const atmIface = `ATM${slot}`;
+                const pvcParts = pvc.split('/');
+                const pvcVpi = pvcParts[0] || '0';
+                const pvcVci = pvcParts[1] || '35';
+
+                ifaceConfig = `
+!
+! ===== 1ADSL Module (${slot}) - ATM + Bridge-Group ${bg} + BVI${bg} =====
+!
+interface ${atmIface}
+ description ** Intranet **
+ no ip address
+ no atm ilmi-keepalive
+ bridge-group ${bg}
+ bridge-group ${bg} spanning-disabled
+ pvc ${pvcVpi}/${pvcVci}
+  encapsulation ${encap}
+ !
+!
+bridge irb
+bridge ${bg} protocol ieee
+bridge ${bg} route ip
+!
+interface BVI${bg}
+ description ** 2nd Network-Intranet **
+ ip address ${srcBranch} ${intSubnetMask}
+ ip access-group INTR@NET in
+ ip nat outside
+ ip virtual-reassembly
+ ip policy route-map nachi-worm
+ crypto map BKI-MAP-INT
+!`.trim();
+
+                // NAT always stays on Loopback2 regardless of connection type
+            }
+
+            } // end if (!intranetOnly)
+
+            // Build ACLs using X and Y from branch data
+            let aclConfig = '';
+            if (selectedBranchData && !intranetOnly) {
+                const bx = selectedBranchData.x;
+                const by = selectedBranchData.y;
+                aclConfig = `
+!
+! ===== Access Lists =====
+!
+ip access-list extended INTR@NET
+ permit icmp any any
+ deny   udp any any eq tftp
+ deny   udp any any eq 135
+ deny   udp any any eq netbios-ns
+ deny   udp any any eq netbios-dgm
+ deny   udp any any eq netbios-ss
+ deny   udp any any eq snmp
+ deny   udp any any eq snmptrap
+ deny   udp any any eq 18999
+ deny   tcp any any eq 135
+ deny   tcp any any eq 139
+ deny   tcp any any eq 445
+ deny   tcp any any eq 593
+ deny   tcp any any eq 4444
+ deny   tcp any any eq 1433
+ deny   tcp any any eq 4786
+ permit ip 10.30.42.0 0.0.0.255 any
+ permit ip host 91.240.180.40 any
+ permit ip host 91.240.181.1 any
+!
+ip access-list extended ETHERNET_IN
+ deny   tcp any any range 135 139
+ deny   tcp any any eq 445
+ deny   udp any any range 135 netbios-ss
+ deny   udp any any eq 1434
+ deny   udp any any eq 1433
+ deny   tcp any any eq 1026
+ deny   tcp any any eq 4444
+ deny   udp any any eq 445
+ permit ip 10.${bx}.${by}.0 0.0.0.255 192.168.65.0 0.0.0.255
+ permit ip 10.${bx}.${by}.0 0.0.0.255 192.168.72.0 0.0.0.255
+ permit udp 10.${bx}.${by}.0 0.0.0.255 224.0.0.0 0.0.0.255
+ permit ip 10.${bx}.${by}.0 0.0.0.255 10.${bx}.${by}.0 0.0.0.255
+ permit ip 10.${bx}.${by}.0 0.0.0.255 10.${bx}.0.0 0.0.7.255
+ permit ip 10.${bx}.${by}.0 0.0.0.255 10.0.0.0 0.0.255.255
+ permit ip 10.${bx}.${by}.0 0.0.0.255 10.30.42.0 0.0.0.255
+ permit ip 10.${bx}.${by}.0 0.0.0.255 host 91.240.180.40
+ permit ip 10.${bx}.${by}.0 0.0.0.255 host 91.240.181.1
+!`;
+            }
+
+            // Build final branch config: NAT removal → Interface → ACLs → Intranet (crypto/tunnel/ospf)
+            let finalBranchCfg = '';
+            // 1. NAT removal (if any)
+            if (natRemoveCmd) finalBranchCfg += natRemoveCmd + '\n';
+            // 2. Interface config (if not intranet-only)
+            if (ifaceConfig) finalBranchCfg += ifaceConfig + '\n!\n';
+            // 3. ACLs
+            if (aclConfig) finalBranchCfg += aclConfig + '\n';
+            // 4. Intranet config (crypto, tunnels, ospf, nat)
+            finalBranchCfg += branchCfg;
+
+            branchCfg = finalBranchCfg;
+
+            // WAN-INTR1 Config
+            const wan1Cfg = `
+interface ${wanName}
+ description ${wanDesc}
+ ip address ${t200wan} ${mask}
+ ip mtu 1360
+ ip nat inside
+ ip tcp adjust-mss 1320
+ keepalive 10 3
+ tunnel source 10.30.42.200
+ tunnel destination ${srcBranch}
+!
+router ospf 200
+ network ${t200wan} 0.0.0.0 area ${area}
+!
+do wr
+`.trim();
+
+            // WAN-INTR2 Config
+            const wan2Cfg = `
+interface ${wanName}
+ description ${wanDesc}
+ ip address ${t201wan} ${mask}
+ ip mtu 1360
+ ip nat inside
+ ip tcp adjust-mss 1320
+ keepalive 10 3
+ tunnel source 10.30.42.201
+ tunnel destination ${srcBranch}
+!
+router ospf 200
+ network ${t201wan} 0.0.0.0 area ${area}
+!
+do wr
+`.trim();
+
+            // If management point checkbox is checked, append ACL config before do wr
+            if (document.getElementById('isManagementPoint').checked) {
+                branchCfg = branchCfg.replace(/\n?do wr$/, '');
+                branchCfg += `
+!
+ip access-list standard NewINTACL
+ deny   10.0.76.91
+ deny   10.0.68.223
+ deny   10.0.68.150
+ deny   10.0.68.187
+ permit any
+!
+router ospf 200
+ distribute-list NewINTACL in
+!
+do wr`;
+            }
+
+            // Base config (if checkbox checked)
+            if (document.getElementById('includeBaseConfig').checked && selectedBranchData) {
+                const bx = selectedBranchData.x;
+                const by = selectedBranchData.y;
+                const baseConfig = `!
+! ===== Base Config (تنظیمات پایه) =====
+!
+service timestamps debug datetime msec localtime
+service timestamps log datetime msec localtime
+service password-encryption
+!
+aaa new-model
+aaa authentication login CACS group tacacs+ local
+aaa authentication enable default group tacacs+ enable
+aaa authorization console
+aaa authorization config-commands
+aaa authorization exec CACS group tacacs+ local
+aaa authorization commands 0 CACS group tacacs+ local
+aaa authorization commands 1 CACS group tacacs+ local
+aaa authorization commands 2 CACS group tacacs+ local
+aaa authorization commands 3 CACS group tacacs+ local
+aaa authorization commands 15 CACS group tacacs+ local
+aaa accounting exec CACS start-stop group tacacs+
+aaa accounting commands 0 CACS start-stop group tacacs+
+aaa accounting commands 1 CACS start-stop group tacacs+
+aaa accounting commands 2 CACS start-stop group tacacs+
+aaa accounting commands 3 CACS start-stop group tacacs+
+aaa accounting commands 15 CACS start-stop group tacacs+
+!
+clock timezone Tehran 3 30
+ip cef
+no ip domain lookup
+ip domain name agri-bank.com
+!
+username bkiadmin privilege 15 secret 0 BKI@dmin#2024
+username wanuser privilege 3 secret 0 W@nUs3r#2024
+!
+ip ssh authentication-retries 2
+ip ssh version 2
+!
+track 5 ip route 10.0.0.0 255.255.0.0 reachability
+!
+ip access-list standard SNMP-READ
+ permit 10.0.50.0 0.0.1.255
+ip access-list standard SNMP-WRITE
+ permit host 10.0.51.48
+ permit host 10.0.51.49
+ip access-list standard TELNET_ACCESS
+ permit 10.${bx}.254.1
+ permit 10.${bx}.251.1
+ permit 10.${bx}.12.6 0.0.0.1
+ permit 10.0.50.0 0.0.1.255
+ permit 10.30.42.0 0.0.0.255
+!
+logging 10.0.51.63
+access-list 199 permit icmp any any echo
+access-list 199 permit icmp any any echo-reply
+snmp-server group NMS v3 priv access SNMP-READ
+snmp-server user nms-net NMS v3 auth md5 auth-agrinms2011 priv des priv-agrinms1390 access SNMP-READ
+!
+snmp-server group LMS v3 priv read myview write myview access SNMP-WRITE
+snmp-server user lms-net LMS v3 auth md5 Auth-P@S$-2011 priv des PriV-p@$S-1390 access SNMP-WRITE
+!
+snmp-server view myview mib-2 included
+snmp-server view myview cisco included
+snmp-server view myview system included
+snmp-server ifindex persist
+!
+route-map nachi-worm permit 10
+ match ip address 199
+ match length 92 92
+ set interface Null0
+!
+tacacs-server host 10.0.51.56
+tacacs-server host 10.0.51.57
+tacacs-server directed-request
+tacacs-server key 7 08005F0046485647
+!
+banner motd ^C
+        ===
+       -+ +-
+       | | |
+    <--\\ | /-->
+   ##| ||||| |##
+  ###| |+++| |###
+ /____\\\\ | //____\\ ********************************************************
+   <###\\|||/###>                  Keshavarzi Bank Network
+    +====+====+     WARNING: Access is restricted to authorized users only.
+    | WAN-BKI |     Unauthorized access is a violation of state , civil and
+    +===+=+===+                       criminal laws.
+        +=+        ********************************************************
+^C
+!
+privilege interface level 3 shutdown
+privilege interface level 3 no shutdown
+privilege interface level 3 no
+privilege configure level 3 interface
+privilege exec level 3 traceroute
+privilege exec level 3 ping
+privilege exec level 3 configure terminal
+privilege exec level 3 configure
+privilege exec level 3 reload
+privilege exec level 3 terminal monitor
+privilege exec level 3 terminal
+privilege exec all level 3 show running-config
+privilege exec level 3 show
+!
+line con 0
+ authorization exec CACS
+ login authentication CACS
+line aux 0
+ no exec
+line vty 0 4
+ access-class TELNET_ACCESS in
+ privilege level 15
+ authorization exec CACS
+ login authentication CACS
+ transport input ssh
+ transport output ssh
+line vty 5 15
+ access-class TELNET_ACCESS in
+ privilege level 15
+ authorization exec CACS
+ login authentication CACS
+ transport input ssh
+ transport output ssh
+!
+scheduler allocate 20000 1000
+ntp authentication-key 1 md5 070E265E47441B041919 7
+ntp authenticate
+ntp trusted-key 1
+ntp source Loopback0
+ntp master 5
+ntp update-calendar
+ntp server 10.0.51.27
+!
+! ===== پایان تنظیمات پایه =====
+!`;
+                branchCfg = baseConfig + '\n' + branchCfg;
+            }
+
+            // Put configs into three separate boxes
+            document.getElementById('branchConfig').value = branchCfg;
+            document.getElementById('wan1Config').value   = wan1Cfg;
+            document.getElementById('wan2Config').value   = wan2Cfg;
+
+            generateBtn.disabled = false;
+            generateBtn.textContent = 'Generate Configs';
+
+            console.log('✓ Configuration generated successfully');
+        });
+
+        // Load tunnels and branches on page load
+        loadTunnels();
+        loadBranches();
+
+        // Warn before leaving page with unsaved form data
+        let formModified = false;
+        document.querySelectorAll('input, select, textarea').forEach(el => {
+            el.addEventListener('change', () => { formModified = true; });
+            el.addEventListener('input', () => { formModified = true; });
+        });
+        window.addEventListener('beforeunload', function(e) {
+            if (formModified) {
+                e.preventDefault();
+                e.returnValue = '';
+            }
+        });
+    </script>
+
+<!-- ========== REMOTE CONNECTION MODAL ========== -->
+<style>
+.rc-overlay {
+    position:fixed; inset:0; z-index:9999;
+    background:rgba(0,0,0,0.6); backdrop-filter:blur(6px);
+    display:none; align-items:center; justify-content:center;
+}
+.rc-overlay.show { display:flex; }
+.rc-modal {
+    background:var(--bg-card, #111827); border:1px solid var(--border-color, rgba(255,255,255,0.1));
+    border-radius:16px; padding:28px; width:90%; max-width:420px;
+    box-shadow:0 25px 60px rgba(0,0,0,0.5);
+}
+.rc-modal h3 {
+    font-size:18px; font-weight:700; margin-bottom:4px;
+    display:flex; align-items:center; gap:8px;
+}
+.rc-modal h3.ssh-title { color:#3b82f6; }
+.rc-modal h3.rdp-title { color:#8b5cf6; }
+.rc-modal .rc-sub { font-size:12px; color:var(--text-muted,#64748b); margin-bottom:20px; }
+.rc-row { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+.rc-group { margin-bottom:14px; }
+.rc-group label { display:block; font-size:11px; font-weight:600; color:var(--text-muted,#64748b); margin-bottom:5px; text-transform:uppercase; letter-spacing:0.5px; }
+.rc-group input, .rc-group select {
+    width:100%; padding:9px 12px; background:var(--input-bg,#0f172a);
+    border:1px solid var(--input-border,rgba(255,255,255,0.2)); border-radius:8px;
+    color:var(--text-primary,#e2e8f0); font-size:13px; font-family:'JetBrains Mono',monospace; outline:none;
+}
+.rc-group input:focus, .rc-group select:focus {
+    border-color:#3b82f6; box-shadow:0 0 0 2px rgba(59,130,246,0.15);
+}
+.rc-group select { cursor:pointer; }
+.rc-btns { display:flex; gap:10px; margin-top:6px; }
+.rc-btn-connect {
+    flex:1; padding:10px; border:none; border-radius:10px; font-size:13px;
+    font-weight:600; cursor:pointer; font-family:inherit; color:#fff;
+    display:flex; align-items:center; justify-content:center; gap:6px;
+}
+.rc-btn-connect.ssh-btn { background:linear-gradient(135deg,#3b82f6,#2563eb); }
+.rc-btn-connect.rdp-btn { background:linear-gradient(135deg,#8b5cf6,#7c3aed); }
+.rc-btn-connect:hover { filter:brightness(1.1); transform:translateY(-1px); }
+.rc-btn-cancel {
+    padding:10px 18px; background:transparent; border:1px solid var(--border-color,rgba(255,255,255,0.1));
+    border-radius:10px; color:var(--text-secondary,#94a3b8); font-size:13px;
+    cursor:pointer; font-family:inherit;
+}
+.rc-btn-cancel:hover { background:rgba(255,255,255,0.05); }
+.rc-ping-btn {
+    padding:7px 14px; background:rgba(16,185,129,0.15); border:1px solid rgba(16,185,129,0.3);
+    border-radius:8px; color:#34d399; font-size:12px; font-weight:600; cursor:pointer;
+    font-family:inherit; display:flex; align-items:center; gap:5px;
+}
+.rc-ping-btn:hover { background:rgba(16,185,129,0.25); }
+.rc-ping-result {
+    margin-top:-4px; margin-bottom:14px; padding:8px 12px; border-radius:8px; font-size:12px; display:none;
+}
+.rc-ping-result.show { display:flex; align-items:center; gap:8px; }
+.rc-ping-result.ok { background:rgba(16,185,129,0.12); color:#6ee7b7; border:1px solid rgba(16,185,129,0.2); }
+.rc-ping-result.fail { background:rgba(239,68,68,0.12); color:#fca5a5; border:1px solid rgba(239,68,68,0.2); }
+.rc-ping-result.loading { background:rgba(251,191,36,0.1); color:#fcd34d; border:1px solid rgba(251,191,36,0.2); }
+</style>
+
+<div class="rc-overlay" id="rcOverlay" onclick="if(event.target===this)closeRemoteModal()">
+  <div class="rc-modal">
+    <div id="rcSSH" style="display:none">
+      <h3 class="ssh-title">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>
+        SSH / Telnet Terminal
+      </h3>
+      <p class="rc-sub">Connect to a network device via SSH or Telnet</p>
+      <div class="rc-row">
+        <div class="rc-group">
+          <label>Protocol</label>
+          <select id="rcProtocol" onchange="document.getElementById('rcPort').value=this.value==='ssh'?'22':'23'">
+            <option value="ssh">SSH</option>
+            <option value="telnet">Telnet</option>
+          </select>
+        </div>
+        <div class="rc-group">
+          <label>Port</label>
+          <input type="number" id="rcPort" value="22">
+        </div>
+      </div>
+      <div class="rc-group">
+        <label>Host / IP Address</label>
+        <div style="display:flex; gap:8px;">
+          <input type="text" id="rcHost" placeholder="e.g. 10.250.1.1" style="flex:1;">
+          <button type="button" class="rc-ping-btn" onclick="pingHost('rcHost','sshPingResult')">📡 Ping</button>
+        </div>
+      </div>
+      <div class="rc-ping-result" id="sshPingResult"></div>
+      <div class="rc-row">
+        <div class="rc-group">
+          <label>Username</label>
+          <input type="text" id="rcUser" placeholder="admin">
+        </div>
+        <div class="rc-group">
+          <label>Password</label>
+          <input type="password" id="rcPass" placeholder="Password">
+        </div>
+      </div>
+      <div class="rc-btns">
+        <button class="rc-btn-connect ssh-btn" onclick="connectSSH()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>
+          Connect
+        </button>
+        <button class="rc-btn-cancel" onclick="closeRemoteModal()">Cancel</button>
+      </div>
+    </div>
+    <div id="rcRDP" style="display:none">
+      <h3 class="rdp-title">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+        Remote Desktop (RDP)
+      </h3>
+      <p class="rc-sub">Generate and download an .rdp file to connect via Windows Remote Desktop</p>
+      <div class="rc-group">
+        <label>Host / IP Address</label>
+        <div style="display:flex; gap:8px;">
+          <input type="text" id="rdpHost" placeholder="e.g. 192.168.1.100" style="flex:1;">
+          <button type="button" class="rc-ping-btn" onclick="pingHost('rdpHost','rdpPingResult')">📡 Ping</button>
+        </div>
+      </div>
+      <div class="rc-ping-result" id="rdpPingResult"></div>
+      <div class="rc-row">
+        <div class="rc-group">
+          <label>Username (optional)</label>
+          <input type="text" id="rdpUser" placeholder="Administrator">
+        </div>
+        <div class="rc-group">
+          <label>Port</label>
+          <input type="number" id="rdpPort" value="3389">
+        </div>
+      </div>
+      <div class="rc-group">
+        <label>Domain (optional)</label>
+        <input type="text" id="rdpDomain" placeholder="DOMAIN">
+      </div>
+      <div class="rc-btns">
+        <button class="rc-btn-connect rdp-btn" onclick="connectRDP()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+          Download .rdp
+        </button>
+        <button class="rc-btn-cancel" onclick="closeRemoteModal()">Cancel</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+let terminalWindow = null;
+let terminalConnected = false;
+
+function openRemoteModal(type) {
+    document.getElementById('rcOverlay').classList.add('show');
+    document.getElementById('rcSSH').style.display = type === 'ssh' ? 'block' : 'none';
+    document.getElementById('rcRDP').style.display = type === 'rdp' ? 'block' : 'none';
+    if (type === 'ssh') document.getElementById('rcHost').focus();
+    else document.getElementById('rdpHost').focus();
+}
+function closeRemoteModal() {
+    document.getElementById('rcOverlay').classList.remove('show');
+}
+
+// Ping
+async function pingHost(inputId, resultId) {
+    const host = document.getElementById(inputId).value.trim();
+    if (!host) { document.getElementById(inputId).focus(); return; }
+    const el = document.getElementById(resultId);
+    el.className = 'rc-ping-result show loading';
+    el.innerHTML = '⏳ Pinging ' + host + '...';
+    try {
+        const res = await fetch('/api/ping', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({host: host})
+        });
+        const data = await res.json();
+        if (data.reachable) {
+            el.className = 'rc-ping-result show ok';
+            el.innerHTML = '✅ ' + host + ' is reachable' + (data.avg_ms ? ' (avg: ' + data.avg_ms + 'ms)' : '');
+        } else {
+            el.className = 'rc-ping-result show fail';
+            el.innerHTML = '❌ ' + host + ' is unreachable';
+        }
+    } catch (e) {
+        el.className = 'rc-ping-result show fail';
+        el.innerHTML = '❌ Ping failed: ' + e.message;
+    }
+}
+
+async function connectSSH() {
+    const host = document.getElementById('rcHost').value.trim();
+    if (!host) { document.getElementById('rcHost').focus(); return; }
+    const params = {
+        host: host,
+        port: parseInt(document.getElementById('rcPort').value) || 22,
+        protocol: document.getElementById('rcProtocol').value,
+        username: document.getElementById('rcUser').value.trim(),
+        password: document.getElementById('rcPass').value
+    };
+    try {
+        const res = await fetch('/api/remote/session', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(params)
+        });
+        if (!res.ok) {
+            alert('SSH/Telnet module is not available on the server.\nInstall: python -m pip install flask-socketio paramiko eventlet');
+            return;
+        }
+        const data = await res.json();
+        if (data.token) {
+            terminalWindow = window.open('/terminal?token=' + data.token, 'terminalWindow',
+                'width=1000,height=600,menubar=no,toolbar=no,location=no,status=no');
+            closeRemoteModal();
+            showDeployPanel();
+        } else if (data.error) {
+            alert('Error: ' + data.error);
+        }
+    } catch (e) { alert('Error: ' + e.message); }
+}
+
+async function connectRDP() {
+    const host = document.getElementById('rdpHost').value.trim();
+    if (!host) { document.getElementById('rdpHost').focus(); return; }
+    try {
+        const res = await fetch('/api/remote/rdp', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                host: host,
+                port: parseInt(document.getElementById('rdpPort').value) || 3389,
+                username: document.getElementById('rdpUser').value.trim(),
+                domain: document.getElementById('rdpDomain').value.trim()
+            })
+        });
+        if (!res.ok) {
+            alert('RDP module is not available on the server.\nInstall: python -m pip install flask-socketio paramiko eventlet');
+            return;
+        }
+        const blob = await res.blob();
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = host.replace(/:/g, '_') + '.rdp';
+        a.click();
+        URL.revokeObjectURL(url);
+        closeRemoteModal();
+    } catch (e) { alert('Error: ' + e.message); }
+}
+
+// Deploy panel
+function showDeployPanel() {
+    document.getElementById('deployPanel').style.display = 'block';
+    updateDeployStatus();
+}
+
+function updateDeployStatus() {
+    const el = document.getElementById('deployStatus');
+    if (terminalWindow && !terminalWindow.closed) {
+        el.innerHTML = '<span style="color:#10b981;">● Terminal open</span>';
+    } else {
+        el.innerHTML = '<span style="color:#94a3b8;">○ Terminal not connected</span>';
+        terminalConnected = false;
+    }
+}
+
+// Listen for terminal state messages
+window.addEventListener('message', function(event) {
+    if (event.data && event.data.type === 'terminal_state') {
+        terminalConnected = event.data.state === 'connected';
+        updateDeployStatus();
+    }
+});
+
+function sendConfigToTerminal() {
+    const selectEl = document.getElementById('configSelect');
+    const configId = selectEl.value;
+    if (!configId) { alert('Please select a config to send'); return; }
+    if (!terminalWindow || terminalWindow.closed) {
+        alert('Terminal is not open. Please connect via SSH/Telnet first.');
+        return;
+    }
+    const configEl = document.getElementById(configId);
+    if (!configEl) return;
+    const text = configEl.value || configEl.textContent || configEl.innerText;
+    if (!text || text.trim() === '' || text.trim() === 'Branch configuration will appear here...' || text.trim() === 'WAN-INTR1 configuration will appear here...' || text.trim() === 'WAN-INTR2 configuration will appear here...') {
+        alert('Config is empty. Generate config first.');
+        return;
+    }
+    const title = selectEl.options[selectEl.selectedIndex].text;
+    terminalWindow.postMessage({ type: 'paste_config', text: text, title: title }, '*');
+    terminalWindow.focus();
+}
+
+// Periodically check terminal window status
+setInterval(updateDeployStatus, 3000);
+
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape' && document.getElementById('rcOverlay').classList.contains('show')) {
+        closeRemoteModal();
+    }
+});
+document.querySelectorAll('#rcSSH input').forEach(el => {
+    el.addEventListener('keypress', function(e) { if (e.key === 'Enter') connectSSH(); });
+});
+document.querySelectorAll('#rcRDP input').forEach(el => {
+    el.addEventListener('keypress', function(e) { if (e.key === 'Enter') connectRDP(); });
+});
+</script>
+
+{% include 'chat_widget.html' %}
+</body>
+</html>

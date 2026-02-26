@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>مدیریت سرویس نقاط</title>
+<style>
+:root {
+    --bg-primary: #0a0e1a;
+    --bg-secondary: #111827;
+    --bg-card: rgba(17, 24, 39, 0.85);
+    --bg-header: rgba(10, 14, 26, 0.95);
+    --text-primary: #e2e8f0;
+    --text-secondary: #94a3b8;
+    --text-muted: #64748b;
+    --border-color: rgba(255, 255, 255, 0.08);
+    --shadow-color: rgba(0, 0, 0, 0.4);
+    --accent-green: #10b981;
+    --accent-blue: #3b82f6;
+    --accent-purple: #8b5cf6;
+    --accent-orange: #f59e0b;
+    --accent-red: #ef4444;
+    --accent-cyan: #06b6d4;
+    --card-hover: rgba(255, 255, 255, 0.04);
+    --input-bg: rgba(15, 23, 42, 0.8);
+    --input-border: rgba(255, 255, 255, 0.2);
+}
+[data-theme="light"] {
+    --bg-primary: #f1f5f9;
+    --bg-secondary: #e2e8f0;
+    --bg-card: rgba(255, 255, 255, 0.9);
+    --bg-header: rgba(255, 255, 255, 0.95);
+    --text-primary: #0f172a;
+    --text-secondary: #1e293b;
+    --text-muted: #334155;
+    --border-color: rgba(0, 0, 0, 0.1);
+    --shadow-color: rgba(0, 0, 0, 0.08);
+    --accent-green: #059669;
+    --accent-blue: #2563eb;
+    --accent-purple: #7c3aed;
+    --accent-orange: #d97706;
+    --accent-red: #dc2626;
+    --accent-cyan: #0891b2;
+    --card-hover: rgba(0, 0, 0, 0.03);
+    --input-bg: #ffffff;
+    --input-border: rgba(0, 0, 0, 0.2);
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+    font-family: 'Segoe UI', Tahoma, sans-serif;
+    background: var(--bg-primary);
+    min-height: 100vh;
+    color: var(--text-primary);
+    font-size: 16px;
+    line-height: 1.6;
+}
+
+.bg-animation { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1; overflow: hidden; }
+.bg-animation::before { content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-image: url('/static/background.jpg'); background-size: cover; background-position: center; opacity: 0.3; }
+.bg-animation::after { content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(180deg, rgba(10,14,26,0.7) 0%, rgba(17,24,39,0.9) 100%); }
+[data-theme="light"] .bg-animation::before { opacity: 0.4; }
+[data-theme="light"] .bg-animation::after { background: linear-gradient(180deg, rgba(241,245,249,0.8) 0%, rgba(226,232,240,0.9) 100%); }
+
+.orb { position: fixed; border-radius: 50%; filter: blur(80px); opacity: 0.15; pointer-events: none; z-index: -1; }
+.orb-1 { width: 600px; height: 600px; background: radial-gradient(circle, #ef4444, transparent 70%); top: -200px; right: -100px; animation: orbFloat1 20s ease-in-out infinite; }
+.orb-2 { width: 500px; height: 500px; background: radial-gradient(circle, #f59e0b, transparent 70%); bottom: -150px; left: -100px; animation: orbFloat2 25s ease-in-out infinite; }
+[data-theme="light"] .orb { opacity: 0.08; }
+@keyframes orbFloat1 { 0%,100%{transform:translate(0,0) scale(1);} 33%{transform:translate(-80px,60px) scale(1.1);} 66%{transform:translate(40px,-40px) scale(0.9);} }
+@keyframes orbFloat2 { 0%,100%{transform:translate(0,0) scale(1);} 33%{transform:translate(60px,-80px) scale(1.15);} 66%{transform:translate(-50px,30px) scale(0.85);} }
+
+.header {
+    background: var(--bg-header);
+    backdrop-filter: blur(24px);
+    padding: 12px 32px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid var(--border-color);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    box-shadow: 0 4px 40px rgba(0,0,0,0.2);
+}
+[data-theme="light"] .header { box-shadow: 0 4px 20px rgba(0,0,0,0.06); }
+.logo { display: flex; align-items: center; gap: 12px; }
+.logo h1 { font-size: 1.4rem; font-weight: 700; }
+.header-actions { display: flex; align-items: center; gap: 12px; }
+.theme-toggle { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 50%; width: 40px; height: 40px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; transition: all 0.3s ease; }
+.theme-toggle:hover { transform: scale(1.1) rotate(15deg); }
+.user-info { display: flex; align-items: center; gap: 8px; padding: 8px 16px; background: rgba(59, 130, 246, 0.1); border-radius: 25px; font-size: 14px; font-weight: 600; }
+.back-btn { padding: 8px 18px; background: linear-gradient(135deg, #3b82f6, #2563eb); color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: 600; text-decoration: none; transition: all 0.3s ease; }
+.back-btn:hover { transform: translateY(-2px); box-shadow: 0 4px 16px rgba(59, 130, 246, 0.4); }
+
+.container { max-width: 1200px; margin: 0 auto; padding: 32px 24px; }
+
+.page-title { text-align: center; margin-bottom: 32px; }
+.page-title h2 { font-size: 1.8rem; font-weight: 800; background: linear-gradient(135deg, var(--accent-red), var(--accent-orange)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; margin-bottom: 8px; }
+.page-title p { color: var(--text-secondary); font-size: 15px; }
+
+.search-card {
+    background: var(--bg-card);
+    backdrop-filter: blur(20px);
+    border-radius: 20px;
+    border: 1px solid var(--border-color);
+    padding: 24px;
+    margin-bottom: 24px;
+    box-shadow: 0 10px 40px var(--shadow-color);
+}
+[data-theme="light"] .search-card { box-shadow: 0 4px 24px rgba(0,0,0,0.06); }
+
+.filter-row {
+    display: flex;
+    gap: 12px;
+    align-items: flex-end;
+    flex-wrap: wrap;
+    margin-bottom: 16px;
+}
+.filter-group { flex: 1; min-width: 180px; }
+.filter-group label { display: block; font-size: 13px; font-weight: 600; color: var(--text-secondary); margin-bottom: 6px; }
+.filter-group select, .filter-group input {
+    width: 100%;
+    padding: 10px 14px;
+    border: 1px solid var(--input-border);
+    border-radius: 10px;
+    background: var(--input-bg);
+    color: var(--text-primary);
+    font-size: 14px;
+    font-family: inherit;
+    transition: all 0.3s ease;
+}
+.filter-group select:focus, .filter-group input:focus {
+    outline: none;
+    border-color: var(--accent-blue);
+    box-shadow: 0 0 0 3px rgba(59,130,246,0.1);
+}
+.btn-search {
+    padding: 10px 24px;
+    background: linear-gradient(135deg, var(--accent-blue), #2563eb);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 600;
+    font-family: inherit;
+    transition: all 0.3s ease;
+    white-space: nowrap;
+}
+.btn-search:hover { transform: translateY(-2px); box-shadow: 0 4px 16px rgba(59,130,246,0.4); }
+
+.results-card {
+    background: var(--bg-card);
+    backdrop-filter: blur(20px);
+    border-radius: 20px;
+    border: 1px solid var(--border-color);
+    overflow: hidden;
+    box-shadow: 0 10px 40px var(--shadow-color);
+}
+[data-theme="light"] .results-card { box-shadow: 0 4px 24px rgba(0,0,0,0.06); }
+
+.results-header {
+    padding: 18px 24px;
+    border-bottom: 1px solid var(--border-color);
+    background: rgba(255,255,255,0.015);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+.results-header h3 { font-size: 1.05rem; font-weight: 700; display: flex; align-items: center; gap: 10px; }
+.result-count { font-size: 13px; color: var(--text-muted); font-weight: 600; }
+
+.results-body { padding: 0; }
+
+.results-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+.results-table th {
+    padding: 12px 16px;
+    text-align: right;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border-bottom: 1px solid var(--border-color);
+    background: rgba(255,255,255,0.02);
+}
+.results-table td {
+    padding: 12px 16px;
+    font-size: 13px;
+    border-bottom: 1px solid var(--border-color);
+    color: var(--text-primary);
+}
+.results-table tr:hover { background: var(--card-hover); }
+.results-table tr:last-child td { border-bottom: none; }
+
+.service-badge {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 700;
+}
+.badge-lan { background: rgba(245,158,11,0.15); color: var(--accent-orange); }
+.badge-mali { background: rgba(16,185,129,0.15); color: var(--accent-green); }
+.badge-int { background: rgba(139,92,246,0.15); color: var(--accent-purple); }
+.badge-intranet { background: rgba(59,130,246,0.15); color: var(--accent-blue); }
+.badge-vpls { background: rgba(6,182,212,0.15); color: var(--accent-cyan); }
+.badge-tunnel { background: rgba(245,158,11,0.15); color: var(--accent-orange); }
+.badge-ptmp { background: rgba(236,72,153,0.15); color: #ec4899; }
+
+.btn-delete {
+    padding: 5px 14px;
+    background: linear-gradient(135deg, #ef4444, #dc2626);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 600;
+    font-family: inherit;
+    transition: all 0.3s ease;
+}
+.btn-delete:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(239,68,68,0.4); }
+
+.ip-text { direction: ltr; display: inline-block; font-family: 'Courier New', monospace; font-weight: 600; color: var(--accent-cyan); }
+
+.empty-state {
+    text-align: center;
+    padding: 60px 24px;
+    color: var(--text-muted);
+}
+.empty-state .icon { font-size: 3rem; margin-bottom: 12px; opacity: 0.5; }
+.empty-state .msg { font-size: 15px; font-weight: 600; }
+.empty-state .sub { font-size: 13px; margin-top: 6px; }
+
+.alert {
+    padding: 12px 18px;
+    border-radius: 12px;
+    margin-bottom: 16px;
+    font-size: 14px;
+    font-weight: 600;
+    display: none;
+    align-items: center;
+    gap: 8px;
+}
+.alert.success { background: rgba(16,185,129,0.1); border: 1px solid rgba(16,185,129,0.3); color: var(--accent-green); }
+.alert.error { background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.3); color: var(--accent-red); }
+
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 3px; }
+</style>
+<script>
+(function(){var t=localStorage.getItem('theme')||'dark';document.documentElement.setAttribute('data-theme',t);})();
+</script>
+</head>
+<body>
+<div class="bg-animation"></div>
+<div class="orb orb-1"></div>
+<div class="orb orb-2"></div>
+
+<header class="header">
+    <div class="logo">
+        <img src="/static/logo.png" alt="Logo" style="height: 48px; margin-left: 10px;">
+        <h1>مدیریت سرویس نقاط</h1>
+    </div>
+    <div class="header-actions">
+        <button class="theme-toggle" onclick="toggleTheme()" title="تغییر تم"><span id="themeIcon">&#127769;</span></button>
+        <div class="user-info"><span>&#128100;</span> <span id="currentUser">کاربر</span></div>
+        <a href="/" class="back-btn">بازگشت به داشبورد</a>
+    </div>
+</header>
+
+<div class="container">
+    <div class="page-title">
+        <h2>مدیریت سرویس نقاط شبکه</h2>
+        <p>جستجو، مشاهده و حذف سرویس‌های فعال برای هر نقطه (شعبه/باجه/خودپرداز)</p>
+    </div>
+
+    <div id="alertBox" class="alert"></div>
+
+    <div class="search-card">
+        <div class="filter-row">
+            <div class="filter-group" style="min-width:160px; flex:0.6;">
+                <label>نوع جستجو</label>
+                <select id="searchType">
+                    <option value="branch_name">نام شعبه / نقطه</option>
+                    <option value="ip_apn_mali">IP APN WAN مالی</option>
+                    <option value="ip_apn_int">IP APN WAN غیرمالی</option>
+                    <option value="ip_lan">IP LAN</option>
+                    <option value="ip_intranet">IP Intranet</option>
+                    <option value="ip_vpls">IP MPLS / VPLS</option>
+                    <option value="ip_ptmp">PTMP سریال</option>
+                </select>
+            </div>
+            <div class="filter-group" style="flex:1.5;">
+                <label>عبارت جستجو</label>
+                <input type="text" id="searchQuery" placeholder="نام شعبه یا آدرس IP را وارد کنید..." autocomplete="off">
+            </div>
+            <button class="btn-search" onclick="doSearch()">جستجو</button>
+            <button class="btn-search" style="background:linear-gradient(135deg,var(--accent-green),#059669);" onclick="showAddTranslation()">+ ترجمه جدید</button>
+        </div>
+    </div>
+
+    <!-- Add Translation Modal -->
+    <div id="translateModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:200; align-items:center; justify-content:center;">
+        <div style="background:var(--bg-card); border:1px solid var(--border-color); border-radius:16px; padding:28px; width:420px; max-width:90vw; backdrop-filter:blur(20px);">
+            <h3 style="margin-bottom:16px; font-size:1.1rem;">➕ افزودن ترجمه فینگلیش ← فارسی</h3>
+            <p style="font-size:12px; color:var(--text-muted); margin-bottom:16px;">برای نقاطی که اسم انگلیسی دارند، معادل فارسی اضافه کنید</p>
+            <div style="margin-bottom:12px;">
+                <label style="font-size:13px; font-weight:600; display:block; margin-bottom:4px;">نام انگلیسی (فینگلیش)</label>
+                <input type="text" id="trNameEn" placeholder="مثال: OloumPezeshki" style="width:100%; padding:10px; border:1px solid var(--input-border); border-radius:8px; background:var(--input-bg); color:var(--text-primary); font-size:14px; direction:ltr;">
+            </div>
+            <div style="margin-bottom:16px;">
+                <label style="font-size:13px; font-weight:600; display:block; margin-bottom:4px;">معادل فارسی</label>
+                <input type="text" id="trNameFa" placeholder="مثال: علوم پزشکی" style="width:100%; padding:10px; border:1px solid var(--input-border); border-radius:8px; background:var(--input-bg); color:var(--text-primary); font-size:14px;">
+            </div>
+            <div style="display:flex; gap:10px; justify-content:flex-end;">
+                <button onclick="closeTranslateModal()" style="padding:8px 20px; border:1px solid var(--border-color); border-radius:8px; background:transparent; color:var(--text-primary); cursor:pointer; font-family:inherit;">انصراف</button>
+                <button onclick="saveTranslation()" style="padding:8px 20px; background:linear-gradient(135deg,var(--accent-green),#059669); color:white; border:none; border-radius:8px; cursor:pointer; font-weight:600; font-family:inherit;">ذخیره</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="results-card">
+        <div class="results-header">
+            <h3>نتایج جستجو</h3>
+            <span class="result-count" id="resultCount"></span>
+        </div>
+        <div class="results-body" id="resultsBody">
+            <div class="empty-state">
+                <div class="icon">&#128269;</div>
+                <div class="msg">نام شعبه یا IP را جستجو کنید</div>
+                <div class="sub">تمام سرویس‌های فعال آن نقطه از کلیه دیتابیس‌ها نمایش داده می‌شود</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function toggleTheme() {
+    var c = document.documentElement.getAttribute('data-theme') || 'dark';
+    var n = c === 'dark' ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', n);
+    localStorage.setItem('theme', n);
+    document.getElementById('themeIcon').textContent = n === 'dark' ? '\u{1F319}' : '\u{2600}\u{FE0F}';
+}
+document.addEventListener('DOMContentLoaded', function() {
+    var t = localStorage.getItem('theme') || 'dark';
+    document.getElementById('themeIcon').textContent = t === 'dark' ? '\u{1F319}' : '\u{2600}\u{FE0F}';
+});
+
+// Auth check
+(function() {
+    var s = localStorage.getItem('sessionStart');
+    if (s && (Date.now() - parseInt(s)) > 8*3600000) { localStorage.clear(); location.href = '/login'; }
+    var u = localStorage.getItem('currentUser') || localStorage.getItem('username') || sessionStorage.getItem('username');
+    if (!u) { location.href = '/login'; return; }
+    document.getElementById('currentUser').textContent = u;
+})();
+
+function showAlert(type, msg) {
+    var el = document.getElementById('alertBox');
+    el.className = 'alert ' + type;
+    el.textContent = msg;
+    el.style.display = 'flex';
+    setTimeout(function() { el.style.display = 'none'; }, 5000);
+}
+
+function getBadgeClass(table) {
+    switch(table) {
+        case 'lan_ips': return 'badge-lan';
+        case 'apn_mali': case 'tunnel_mali': return 'badge-mali';
+        case 'apn_ips': case 'tunnel200_ips': return 'badge-int';
+        case 'intranet_tunnels': return 'badge-intranet';
+        case 'vpls_tunnels': return 'badge-vpls';
+        case 'ptmp_connections': return 'badge-ptmp';
+        default: return 'badge-tunnel';
+    }
+}
+
+// Search on Enter
+document.getElementById('searchQuery').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') doSearch();
+});
+
+async function doSearch() {
+    var q = document.getElementById('searchQuery').value.trim();
+    var type = document.getElementById('searchType').value;
+    var body = document.getElementById('resultsBody');
+    var countEl = document.getElementById('resultCount');
+
+    if (!q || q.length < 2) {
+        showAlert('error', 'لطفا حداقل ۲ کاراکتر وارد کنید');
+        return;
+    }
+
+    body.innerHTML = '<div style="text-align:center; padding:40px; color:var(--text-muted);">در حال جستجو...</div>';
+    countEl.textContent = '';
+
+    try {
+        var res = await fetch('/api/search-services?q=' + encodeURIComponent(q) + '&type=' + encodeURIComponent(type));
+        var results = await res.json();
+
+        if (results.length === 0) {
+            body.innerHTML = '<div class="empty-state"><div class="icon">&#128533;</div><div class="msg">هیچ سرویس فعالی یافت نشد</div><div class="sub">عبارت جستجو یا نوع فیلتر را تغییر دهید</div></div>';
+            countEl.textContent = '0 نتیجه';
+            return;
+        }
+
+        countEl.textContent = results.length + ' سرویس یافت شد';
+
+        var html = '<table class="results-table"><thead><tr>';
+        html += '<th>سرویس</th><th>نام شعبه</th><th>استان</th><th>IP سرویس</th><th>IP LAN</th><th>کاربر</th><th>تاریخ</th><th>عملیات</th>';
+        html += '</tr></thead><tbody>';
+
+        results.forEach(function(r) {
+            var badge = getBadgeClass(r.table);
+            html += '<tr>';
+            html += '<td><span class="service-badge ' + badge + '">' + escHtml(r.service) + '</span></td>';
+            html += '<td style="font-weight:600;">' + escHtml(r.branch_name || '-') + (r.branch_name_fa ? '<br><small style="color:#2563eb;font-weight:normal;">(' + escHtml(r.branch_name_fa) + ')</small>' : '') + '</td>';
+            html += '<td>' + escHtml(r.province || '-') + '</td>';
+            html += '<td><span class="ip-text">' + escHtml(r.ip || '-') + '</span></td>';
+            html += '<td><span class="ip-text">' + escHtml(r.lan_ip || '-') + '</span></td>';
+            html += '<td>' + escHtml(r.username || '-') + '</td>';
+            html += '<td style="font-size:12px; color:var(--text-muted);">' + escHtml(r.date || '-') + '</td>';
+            html += '<td><button class="btn-delete" onclick="deleteService(\'' + escJs(r.table) + '\',' + parseInt(r.id) + ',\'' + escJs(r.branch_name) + '\',\'' + escJs(r.service) + '\')">حذف</button></td>';
+            html += '</tr>';
+        });
+
+        html += '</tbody></table>';
+        body.innerHTML = html;
+    } catch(e) {
+        body.innerHTML = '<div class="empty-state"><div class="icon">&#10060;</div><div class="msg">خطا در جستجو</div><div class="sub">' + escHtml(e.message) + '</div></div>';
+        countEl.textContent = '';
+    }
+}
+
+function escHtml(s) {
+    if (!s) return '';
+    return String(s)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
+function escJs(s) {
+    if (!s) return '';
+    return String(s).replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/"/g, '\\"');
+}
+
+async function deleteService(table, id, branchName, serviceName) {
+    if (!confirm('آیا مطمئنید می‌خواهید سرویس "' + serviceName + '" شعبه "' + branchName + '" را حذف کنید؟\n\nاین عملیات IP مربوطه را آزاد می‌کند.')) {
+        return;
+    }
+
+    var username = document.getElementById('currentUser').textContent;
+    try {
+        var res = await fetch('/api/delete-service', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ table: table, id: id, username: username })
+        });
+        var data = await res.json();
+        if (data.status === 'ok') {
+            showAlert('success', 'سرویس ' + serviceName + ' شعبه ' + branchName + ' با موفقیت حذف شد');
+            doSearch(); // Refresh results
+        } else {
+            showAlert('error', 'خطا: ' + (data.error || 'نامشخص'));
+        }
+    } catch(e) {
+        showAlert('error', 'خطا در اتصال به سرور: ' + e.message);
+    }
+}
+
+// Translation Modal
+function showAddTranslation() {
+    document.getElementById('translateModal').style.display = 'flex';
+    document.getElementById('trNameEn').value = '';
+    document.getElementById('trNameFa').value = '';
+    document.getElementById('trNameEn').focus();
+}
+function closeTranslateModal() {
+    document.getElementById('translateModal').style.display = 'none';
+}
+async function saveTranslation() {
+    var en = document.getElementById('trNameEn').value.trim();
+    var fa = document.getElementById('trNameFa').value.trim();
+    var username = document.getElementById('currentUser').textContent;
+    if (!en || !fa) { showAlert('error', 'هر دو فیلد الزامی است'); return; }
+    try {
+        var res = await fetch('/api/translations', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ name_en: en, name_fa: fa, username: username })
+        });
+        var data = await res.json();
+        if (data.status === 'ok') {
+            showAlert('success', data.message);
+            closeTranslateModal();
+        } else {
+            showAlert('error', data.error || 'خطا');
+        }
+    } catch(e) { showAlert('error', e.message); }
+}
+// Close modal on backdrop click
+document.getElementById('translateModal').addEventListener('click', function(e) {
+    if (e.target === this) closeTranslateModal();
+});
+</script>
+
+{% include 'chat_widget.html' %}
+</body>
+</html>

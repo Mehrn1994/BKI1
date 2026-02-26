@@ -1,0 +1,2016 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <title>APN مالی Config Generator</title>
+  <style>
+/* ========== THEME SYSTEM ========== */
+:root {
+    --bg-primary: #0f172a;
+    --bg-secondary: #1e293b;
+    --bg-card: rgba(30, 41, 59, 0.8);
+    --bg-header: rgba(30, 41, 59, 0.9);
+    --text-primary: #e2e8f0;
+    --text-secondary: #94a3b8;
+    --text-muted: #64748b;
+    --border-color: rgba(255, 255, 255, 0.1);
+    --shadow-color: rgba(0, 0, 0, 0.3);
+    --input-bg: rgba(15, 23, 42, 0.8);
+    --input-border: rgba(255, 255, 255, 0.2);
+    --card-hover: rgba(255, 255, 255, 0.05);
+}
+
+
+[data-theme="light"] {
+    --bg-primary: #f8fafc;
+    --bg-secondary: #f1f5f9;
+    --bg-card: #ffffff;
+    --bg-header: #ffffff;
+    --text-primary: #0f172a;
+    --text-secondary: #334155;
+    --text-muted: #475569;
+    --border-color: rgba(0, 0, 0, 0.15);
+    --shadow-color: rgba(0, 0, 0, 0.1);
+    --input-bg: #ffffff;
+    --input-border: rgba(0, 0, 0, 0.2);
+    --card-hover: rgba(0, 0, 0, 0.05);
+}
+
+body { transition: background 0.3s ease, color 0.3s ease; }
+
+[data-theme="light"] body {
+    background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 100%) !important;
+    color: var(--text-primary) !important;
+}
+
+[data-theme="light"] .header, [data-theme="light"] header,
+[data-theme="light"] .top-bar, [data-theme="light"] .navbar {
+    background: var(--bg-header) !important;
+    border-color: var(--border-color) !important;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08) !important;
+}
+
+[data-theme="light"] .card, [data-theme="light"] .form-section,
+[data-theme="light"] .config-section, [data-theme="light"] .result-section,
+[data-theme="light"] .section, [data-theme="light"] .panel,
+[data-theme="light"] .main-card, [data-theme="light"] .box {
+    background: var(--bg-card) !important;
+    border-color: var(--border-color) !important;
+    color: var(--text-primary) !important;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.06) !important;
+}
+
+[data-theme="light"] input, [data-theme="light"] select, [data-theme="light"] textarea {
+    background: var(--input-bg) !important;
+    border: 1px solid var(--input-border) !important;
+    color: #0f172a !important;
+}
+
+[data-theme="light"] input::placeholder { color: #64748b !important; }
+[data-theme="light"] select option { background: #fff; color: #0f172a; }
+
+[data-theme="light"] label, [data-theme="light"] .form-label,
+[data-theme="light"] h1, [data-theme="light"] h2, [data-theme="light"] h3, [data-theme="light"] h4,
+[data-theme="light"] .section-title, [data-theme="light"] .title,
+[data-theme="light"] .app-title h1, [data-theme="light"] .app-title p {
+    color: #0f172a !important;
+}
+
+[data-theme="light"] p, [data-theme="light"] span:not(.badge):not(.tag), 
+[data-theme="light"] div:not(.btn):not(.badge) {
+    color: inherit;
+}
+
+[data-theme="light"] .hint, [data-theme="light"] .info-text, [data-theme="light"] small,
+[data-theme="light"] .description, [data-theme="light"] .help-text,
+[data-theme="light"] .form-hint, [data-theme="light"] .note {
+    color: #334155 !important;
+}
+
+[data-theme="light"] .user-display, [data-theme="light"] .user-info,
+[data-theme="light"] .user-name, [data-theme="light"] #currentUser {
+    color: #0f172a !important;
+}
+
+[data-theme="light"] .badge, [data-theme="light"] .tag, [data-theme="light"] .count {
+    color: #fff !important;
+}
+
+[data-theme="light"] a:not(.btn):not(button):not(.back-btn):not(.logout-link) {
+    color: #2563eb !important;
+}
+
+[data-theme="light"] .back-btn, [data-theme="light"] .logout-link {
+    color: #dc2626 !important;
+}
+
+[data-theme="light"] pre, [data-theme="light"] code, [data-theme="light"] .config-output,
+[data-theme="light"] .output-box, [data-theme="light"] .code-block {
+    background: #1e293b !important;
+    color: #e2e8f0 !important;
+}
+
+[data-theme="light"] table { border-color: var(--border-color) !important; }
+[data-theme="light"] th, [data-theme="light"] td { 
+    border-color: var(--border-color) !important;
+    color: #0f172a !important;
+}
+[data-theme="light"] th { background: #f1f5f9 !important; color: #0f172a !important; }
+[data-theme="light"] tr:hover { background: #f8fafc !important; }
+
+[data-theme="light"] .success, [data-theme="light"] .alert-success,
+[data-theme="light"] .success-box, [data-theme="light"] .ip-reserved {
+    background: #dcfce7 !important;
+    color: #166534 !important;
+    border-color: #86efac !important;
+}
+
+[data-theme="light"] .error, [data-theme="light"] .alert-error,
+[data-theme="light"] .error-box {
+    background: #fee2e2 !important;
+    color: #991b1b !important;
+    border-color: #fca5a5 !important;
+}
+
+[data-theme="light"] .warning, [data-theme="light"] .alert-warning {
+    background: #fef3c7 !important;
+    color: #92400e !important;
+    border-color: #fcd34d !important;
+}
+
+[data-theme="light"] .info-box, [data-theme="light"] .notice,
+[data-theme="light"] .auto-ip-info {
+    background: #eff6ff !important;
+    color: #1e40af !important;
+    border-color: #93c5fd !important;
+}
+
+[data-theme="light"] .btn-primary, [data-theme="light"] button[type="submit"] {
+    background: #2563eb !important;
+    color: #fff !important;
+}
+
+[data-theme="light"] .btn-secondary {
+    background: #64748b !important;
+    color: #fff !important;
+}
+
+[data-theme="light"] .free-count { color: #059669 !important; font-weight: bold; }
+[data-theme="light"] .used-count { color: #dc2626 !important; font-weight: bold; }
+
+/* Router boxes for intranet */
+[data-theme="light"] .router-box, [data-theme="light"] .device-box {
+    background: #fff !important;
+    border: 1px solid #e2e8f0 !important;
+    color: #0f172a !important;
+}
+
+[data-theme="light"] .router-header, [data-theme="light"] .device-box-header {
+    color: #0f172a !important;
+}
+
+/* Stats cards */
+[data-theme="light"] .stat-card {
+    background: #fff !important;
+    border: 1px solid #e2e8f0 !important;
+}
+
+[data-theme="light"] .stat-card .value {
+    color: #2563eb !important;
+}
+
+[data-theme="light"] .stat-card .label {
+    color: #475569 !important;
+}
+
+.theme-toggle {
+    background: var(--bg-card, rgba(30,41,59,0.8));
+    border: 1px solid var(--border-color, rgba(255,255,255,0.1));
+    border-radius: 50%;
+    width: 36px;
+    height: 36px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
+    transition: all 0.3s ease;
+    margin-left: 10px;
+}
+.theme-toggle:hover { transform: scale(1.1); }
+/* ========== END THEME ========== */
+
+    body { font-family: sans-serif; background:#0f172a; padding:30px; color:#e2e8f0; }
+
+    .top-bar {
+      max-width:1200px; margin:0 auto 16px auto;
+      display:flex; justify-content:space-between; align-items:center;
+      background:#020617; padding:12px 20px; border-radius:12px;
+      border:1px solid #1f2937;
+    }
+    .user-display {
+      font-size:14px; color:#a0aec0;
+    }
+    .user-name {
+      color:#38bdf8; font-weight:600; font-size:15px;
+    }
+    .logout-link {
+      color:#f97373; text-decoration:none; font-size:13px;
+    }
+    .logout-link:hover { text-decoration:underline; }
+
+    .app-title { max-width:1200px; margin:0 auto 20px auto; text-align:center; }
+    .app-title h1 { font-size:26px; margin-bottom:6px; color:#10b981; }
+    .app-title p { font-size:14px; color:#a0aec0; }
+
+    .card { max-width:1200px; margin:0 auto; background:#020617;
+            border-radius:16px; padding:24px 24px 28px 24px;
+            box-shadow:0 25px 60px rgba(0,0,0,0.65);
+            border:1px solid #1f2937; }
+
+    .section-title { font-size:18px; margin-bottom:12px; color:#10b981; }
+
+    .form-group { margin-bottom:18px; }
+    label { font-size:14px; display:block; margin-bottom:6px; color:#e5e7eb; }
+    .required { color:#f97373; }
+
+    input, select {
+      width:100%; padding:10px 12px; font-size:14px;
+      border-radius:10px; border:1px solid #374151;
+      background:#020617; color:#e5e7eb; box-sizing:border-box;
+      outline:none; transition:all .2s ease;
+    }
+    input:focus, select:focus { border-color:#10b981; box-shadow:0 0 0 1px #10b981; }
+
+    .auto-assigned {
+      background:#065f46 !important;
+      border-color:#10b981 !important;
+      cursor: not-allowed;
+      color:#6ee7b7 !important;
+      font-weight:600;
+    }
+
+    .row { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+    @media (max-width: 900px) { .row { grid-template-columns:1fr; } }
+
+    .btns { margin-top:10px; display:flex; gap:12px; flex-wrap:wrap; }
+    button { padding:10px 18px; border:none; border-radius:999px; cursor:pointer;
+             font-size:14px; font-weight:600; }
+    .btn-generate { background:linear-gradient(135deg,#10b981,#059669); color:#fff; }
+    .btn-reset { background:#111827; color:#e5e7eb; border:1px solid #374151; }
+
+    .outputs-wrapper { margin-top:26px; display:grid; grid-template-columns:1fr; gap:18px; }
+    @media (min-width: 960px) { .outputs-wrapper { grid-template-columns:repeat(2,1fr); } }
+
+    .router-card {
+      background:radial-gradient(circle at top,#1f2937 0,#020617 55%);
+      border-radius:16px; padding:14px 14px 18px 14px;
+      border:1px solid #10b981;
+      box-shadow:0 20px 45px rgba(15,23,42,0.9);
+      position:relative; overflow:hidden;
+    }
+
+    .router-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:6px; }
+    .router-title { font-size:15px; font-weight:700; color:#10b981; }
+    .router-tag { font-size:11px; padding:2px 8px; border-radius:999px; border:1px solid #10b981; color:#d1fae5; }
+
+    .output {
+      background:#020617; border-radius:10px; border:1px solid #111827;
+      padding:10px 12px; white-space:pre; font-family:"Fira Code",monospace;
+      font-size:12px; line-height:1.55; color:#bbf7d0;
+      max-height:420px; overflow:auto; direction:ltr; text-align:left;
+    }
+
+    .copy-btn { position:absolute; top:10px; left:12px; font-size:11px;
+                padding:4px 10px; border-radius:999px; border:1px solid #4b5563;
+                background:#020617; color:#e5e7eb; cursor:pointer; z-index:2; }
+
+    .info-badge {
+      display:inline-block;
+      background:#065f46;
+      color:#6ee7b7;
+      padding:2px 8px;
+      border-radius:6px;
+      font-size:11px;
+      margin-right:8px;
+      font-weight:600;
+    }
+
+    .auto-badge {
+      background:#10b981;
+      color:#fff;
+      padding:2px 8px;
+      border-radius:999px;
+      font-size:11px;
+      margin-right:6px;
+      font-weight:700;
+    }
+
+    .help-text {
+      font-size:12px;
+      color:#94a3b8;
+      margin-top:4px;
+    }
+
+    .section-divider {
+      height:1px;
+      background:linear-gradient(90deg, transparent, #374151, transparent);
+      margin:24px 0;
+    }
+
+    .mali-badge {
+      background:#065f46;
+      color:#6ee7b7;
+      padding:4px 12px;
+      border-radius:999px;
+      font-size:11px;
+      font-weight:600;
+    }
+
+    .info-box {
+      background:#0f172a;
+      border:1px solid #10b981;
+      border-radius:8px;
+      padding:12px 16px;
+      margin-bottom:20px;
+      font-size:13px;
+      color:#6ee7b7;
+    }
+  
+
+
+    
+/* ========== BETTER FONTS ========== */
+body {
+    font-size: 16px !important;
+    line-height: 1.6 !important;
+}
+
+h1 { font-size: 1.8rem !important; font-weight: 700 !important; }
+h2 { font-size: 1.4rem !important; font-weight: 700 !important; }
+h3 { font-size: 1.2rem !important; font-weight: 600 !important; }
+h4 { font-size: 1.1rem !important; font-weight: 600 !important; }
+
+label, .form-label {
+    font-size: 15px !important;
+    font-weight: 600 !important;
+    color: var(--text-primary, inherit) !important;
+}
+
+input, select, textarea {
+    font-size: 15px !important;
+    padding: 12px 14px !important;
+}
+
+.section-title, .title {
+    font-size: 1.15rem !important;
+    font-weight: 700 !important;
+}
+
+.hint, .info-text, .help-text, .form-hint, small, .note, .description {
+    font-size: 14px !important;
+    font-weight: 500 !important;
+}
+
+.btn, button:not(.theme-toggle) {
+    font-size: 15px !important;
+    font-weight: 600 !important;
+}
+
+table { font-size: 15px !important; }
+th { font-weight: 700 !important; }
+th, td { padding: 12px 14px !important; }
+
+.info-box, .notice, .alert, .success-box, .error-box, .auto-ip-info, .ip-reserved {
+    font-size: 15px !important;
+    font-weight: 500 !important;
+    padding: 14px 18px !important;
+}
+
+.badge, .tag, .count {
+    font-size: 13px !important;
+    font-weight: 600 !important;
+    padding: 5px 12px !important;
+}
+
+.user-display, .user-info, .user-name {
+    font-size: 15px !important;
+    font-weight: 600 !important;
+}
+
+pre, code, .config-output, .output-box {
+    font-size: 14px !important;
+    line-height: 1.5 !important;
+}
+
+.app-title h1 { font-size: 1.8rem !important; font-weight: 700 !important; }
+.app-title p { font-size: 15px !important; font-weight: 500 !important; }
+
+/* Light theme text improvements */
+[data-theme="light"] label, 
+[data-theme="light"] .form-label,
+[data-theme="light"] .section-title, 
+[data-theme="light"] .title,
+[data-theme="light"] h1, 
+[data-theme="light"] h2, 
+[data-theme="light"] h3 {
+    color: #0f172a !important;
+}
+
+[data-theme="light"] .hint, 
+[data-theme="light"] small,
+[data-theme="light"] .info-text, 
+[data-theme="light"] .description,
+[data-theme="light"] .help-text {
+    color: #334155 !important;
+}
+
+[data-theme="light"] input,
+[data-theme="light"] select,
+[data-theme="light"] textarea {
+    color: #0f172a !important;
+    background: #fff !important;
+    border: 1px solid rgba(0,0,0,0.2) !important;
+}
+
+[data-theme="light"] input::placeholder {
+    color: #64748b !important;
+}
+/* ========== END BETTER FONTS ========== */
+
+    </style>
+
+<script>
+// Theme System - runs immediately
+(function() {
+    var theme = localStorage.getItem('theme') || 'dark';
+    document.documentElement.setAttribute('data-theme', theme);
+})();
+
+function toggleTheme() {
+    var current = document.documentElement.getAttribute('data-theme') || 'dark';
+    var next = current === 'dark' ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', next);
+    localStorage.setItem('theme', next);
+    var icon = document.getElementById('themeIcon');
+    if (icon) icon.textContent = next === 'dark' ? '🌙' : '☀️';
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    var icon = document.getElementById('themeIcon');
+    if (icon) {
+        var theme = localStorage.getItem('theme') || 'dark';
+        icon.textContent = theme === 'dark' ? '🌙' : '☀️';
+    }
+});
+</script>
+</head>
+<body>
+
+<!-- Background Image -->
+<div class="page-background"></div>
+<style>
+.page-background {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: -1;
+    overflow: hidden;
+}
+.page-background::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-image: url('/static/background.jpg');
+    background-size: cover;
+    background-position: center;
+    opacity: 0.5;
+}
+.page-background::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(135deg, rgba(15, 23, 42, 0.45) 0%, rgba(30, 41, 59, 0.55) 100%);
+}
+[data-theme="light"] .page-background::before {
+    opacity: 0.45;
+}
+[data-theme="light"] .page-background::after {
+    background: linear-gradient(135deg, rgba(248, 250, 252, 0.55) 0%, rgba(241, 245, 249, 0.6) 100%);
+}
+</style>
+
+<div class="top-bar">
+  <div style="display:flex; align-items:center; gap:16px;">
+    <a href="/config-wizard" style="background:#3b82f6; color:white; padding:8px 16px; border-radius:8px; text-decoration:none; font-size:13px; font-weight:600;">
+      &#8594; بازگشت به ویزارد
+    </a>
+    <a href="/" style="background:#10b981; color:white; padding:8px 16px; border-radius:8px; text-decoration:none; font-size:13px; font-weight:600;">
+      بازگشت به منو اصلی
+    </a>
+    <img src="/static/logo.png" alt="Logo" style="height: 56px;">
+    <div class="user-display">
+      👤 کاربر فعال: <span class="user-name" id="currentUser">...</span>
+    </div>
+  </div>
+  <div style="display:flex; align-items:center; gap:8px;">
+    <button class="theme-toggle" onclick="toggleTheme()" title="تغییر تم"><span id="themeIcon">🌙</span></button>
+    <a href="/login" class="logout-link" onclick="localStorage.clear(); sessionStorage.clear();">خروج</a>
+  </div>
+</div>
+
+<div class="app-title">
+  <h1>APN مالی <span class="mali-badge">Financial</span></h1>
+  <p>تولید خودکار پیکربندی شعبه + HUB (ISR-APN-RO)</p>
+</div>
+
+<div class="card">
+  <!-- ========== EXISTING POINTS PANEL ========== -->
+  <div id="existingPointsPanel" style="margin-bottom:20px;">
+    <div onclick="toggleExistingPanel()" style="cursor:pointer; display:flex; align-items:center; justify-content:space-between; background:linear-gradient(135deg, rgba(239,68,68,0.08), rgba(220,38,38,0.04)); border:1px solid rgba(239,68,68,0.25); border-radius:12px; padding:14px 18px;">
+      <div style="display:flex; align-items:center; gap:10px;">
+        <span style="font-size:18px;">&#128203;</span>
+        <span style="font-weight:700; font-size:15px; color:#f87171;">نقاط موجود APN مالی</span>
+        <span id="existingMaliCount" style="background:#dc2626; color:#fff; padding:2px 10px; border-radius:999px; font-size:12px; font-weight:700;">0</span>
+      </div>
+      <span id="existingPanelArrow" style="font-size:14px; color:#f87171; transition:transform 0.3s;">&#9660;</span>
+    </div>
+    <div id="existingPanelBody" style="display:none; border:1px solid rgba(239,68,68,0.15); border-top:none; border-radius:0 0 12px 12px; padding:14px 18px; background:rgba(15,23,42,0.5);">
+      <div style="display:flex; gap:10px; margin-bottom:12px; flex-wrap:wrap;">
+        <input id="existingSearch" type="text" placeholder="&#128269; جستجو نام شعبه، استان، IP..." style="flex:1; min-width:200px; padding:8px 12px; border-radius:8px; border:1px solid #374151; background:#020617; color:#e5e7eb; font-size:13px;" oninput="filterExistingPoints()">
+      </div>
+      <div id="existingPointsList" style="max-height:350px; overflow-y:auto;">
+        <div style="text-align:center; color:#64748b; padding:20px;">در حال بارگذاری...</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="info-box">
+    ⚡ <strong>تخصیص خودکار IP:</strong> IP های APN و Tunnel به صورت خودکار انتخاب می‌شوند (اولین IP آزاد)
+  </div>
+
+  <!-- Base Config Checkbox -->
+  <div class="base-config-option" style="background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(6, 182, 212, 0.05)); border: 2px solid rgba(16, 185, 129, 0.3); border-radius: 12px; padding: 16px 20px; margin-bottom: 20px;">
+    <label style="display: flex; align-items: center; gap: 12px; cursor: pointer; font-size: 15px;">
+      <input type="checkbox" id="includeBaseConfig" style="width: 20px; height: 20px; cursor: pointer; accent-color: #10b981;">
+      <span style="color: #10b981; font-weight: 700;">🆕 پیکربندی اولیه (Base Config)</span>
+      <span style="color: #94a3b8; font-size: 12px;">- برای روترهایی که اولین بار پیکربندی می‌شوند</span>
+    </label>
+    <div style="margin-top: 8px; margin-right: 32px; font-size: 12px; color: #64748b;">
+      شامل: AAA/TACACS, SSH, SNMP, Access-Lists, Banner, NTP و سایر تنظیمات پایه
+    </div>
+  </div>
+
+  <div class="section-title">ورودی‌ها</div>
+
+  <form id="configForm">
+
+    <!-- Branch Selection -->
+    <div class="row">
+      <div class="form-group">
+        <label for="branchName">
+          <span class="info-badge">📍 شعبه</span>
+          نام شعبه (فارسی) - اختیاری
+        </label>
+        <input id="branchName" type="text" list="branchList" placeholder="برای شعبه موجود انتخاب کنید (اختیاری)" autocomplete="off">
+        <datalist id="branchList">
+          <option value="">در حال بارگذاری...</option>
+        </datalist>
+        <div class="help-text">💡 فقط برای شعبه‌های موجود: انتخاب از لیست برای پر شدن خودکار LAN IP | برای روتر جدید: خالی بگذارید</div>
+      </div>
+
+      <div class="form-group">
+        <label for="branchNameEn">
+          <span class="info-badge">🔤 HUB</span>
+          نام شعبه (انگلیسی) <span class="required">*</span>
+        </label>
+        <input id="branchNameEn" type="text" placeholder="مثال: TEH-Branch-Vanak" required>
+        <div class="help-text">⚠️ برای HUB Description - فقط حروف انگلیسی و اعداد</div>
+      </div>
+      
+      <!-- Node Type Selection - removed: user selects type in wizard -->
+      <input type="hidden" id="nodeType" value="شعبه">
+    </div>
+
+    <!-- Hostname for Base Config (shown when checkbox is checked) -->
+    <div class="form-group" id="hostnameGroup" style="display: none; background: rgba(16, 185, 129, 0.05); padding: 12px; border-radius: 10px; border: 1px dashed rgba(16, 185, 129, 0.3);">
+      <label for="routerHostname">
+        <span style="background: #10b981; color: white; padding: 2px 8px; border-radius: 4px; font-size: 11px;">Base Config</span>
+        Hostname روتر <span class="required">*</span>
+      </label>
+      <input id="routerHostname" type="text" placeholder="مثال: GLS-Kiosk-Behshadafarin">
+      <div class="help-text">💡 نام روتر که در hostname تنظیم می‌شود - فقط حروف انگلیسی، اعداد و خط تیره</div>
+    </div>
+
+    <div class="section-divider"></div>
+
+    <!-- LAN IP Selection -->
+    <div class="section-title">انتخاب IP LAN (برای محاسبه OSPF Area و Router-ID)</div>
+
+    <div class="row">
+      <div class="form-group">
+        <label for="lanProvinceFilter">
+          <span class="info-badge">🗺️ استان</span>
+          انتخاب استان
+        </label>
+        <select id="lanProvinceFilter" required>
+          <option value="">انتخاب کنید...</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label for="freeLanIp">
+          <span class="info-badge" id="lanFreeCount">0 آزاد</span>
+          IP LAN <span class="required">*</span>
+        </label>
+        <select id="freeLanIp" disabled required>
+          <option value="">ابتدا استان را انتخاب کنید</option>
+        </select>
+        <div class="help-text">🎯 برای محاسبه OSPF Area و Router-ID</div>
+      </div>
+    </div>
+
+    <div class="section-divider"></div>
+
+    <!-- AUTO-ASSIGNED APN IP -->
+    <div class="section-title">
+      <span class="auto-badge">خودکار</span> IP APN WAN (محدوده: 10.250.45.0/21)
+    </div>
+
+    <div class="form-group">
+      <label for="apnIpBranch">
+        <span class="info-badge" id="maliFreeCount">0 آزاد</span>
+        IP APN (Tunnel Source) - انتخاب خودکار
+      </label>
+      <input id="apnIpBranch" type="text" class="auto-assigned" readonly placeholder="در حال انتخاب خودکار..." required>
+      <div class="help-text">⚡ اولین IP آزاد از محدوده 10.250.45.0/21 به صورت خودکار انتخاب می‌شود</div>
+    </div>
+
+    <div class="section-divider"></div>
+
+    <!-- AUTO-ASSIGNED Tunnel Pair -->
+    <div class="section-title">
+      <span class="auto-badge">خودکار</span> Tunnel IPs (/31 Pair)
+    </div>
+
+    <div class="form-group">
+      <label for="tunnelPairDisplay">
+        <span class="info-badge" id="tunnelFreeCount">0 آزاد</span>
+        Tunnel IP Pair - انتخاب خودکار
+      </label>
+      <input id="tunnelPairDisplay" type="text" class="auto-assigned" readonly placeholder="در حال انتخاب خودکار..." required>
+      <div class="help-text">🔄 اولین Tunnel IP Pair آزاد به صورت خودکار انتخاب می‌شود</div>
+    </div>
+
+    <!-- Manual HUB Tunnel Interface (BLANK - user must fill) -->
+    <div class="form-group" style="margin-top:16px;">
+      <label for="hubTunnelNumber">
+        <span class="info-badge">🔧 HUB</span>
+        شماره Interface Tunnel برای HUB <span class="required">*</span>
+      </label>
+      <div style="display: flex; align-items: center; gap: 0;">
+        <span style="background: linear-gradient(135deg, #374151, #1f2937); color: #10b981; padding: 12px 16px; border-radius: 12px 0 0 12px; border: 1px solid rgba(16, 185, 129, 0.3); border-right: none; font-family: 'Courier New', monospace; font-weight: bold; font-size: 1rem;">Tunnel</span>
+        <input id="hubTunnelNumber" type="text" placeholder="Auto: XY (e.g. 3014)" required style="border-radius: 0 12px 12px 0; flex: 1; direction: ltr; text-align: left;">
+      </div>
+      <div class="help-text">&#9889; با انتخاب LAN IP خودکار پر می‌شود (XY) - می‌توانید دستی تغییر دهید</div>
+    </div>
+
+    <!-- Hidden fields -->
+    <input id="hubTunnelInterface" type="hidden">
+    <input id="tunnelIpBranch" type="hidden" required>
+    <input id="tunnelIpHub" type="hidden" required>
+    <input id="tunnelNumber" type="hidden" required>
+    <input id="ospfArea" type="hidden" value="">
+
+    <div class="section-divider"></div>
+
+    <!-- WAN Interface -->
+    <div class="form-group">
+      <label for="wanIface">نام اینترفیس WAN روی شعبه <span class="required">*</span></label>
+      <input id="wanIface" type="text" value="FastEthernet0/1" required>
+    </div>
+
+    <!-- NEW: Base Config Checkbox -->
+    <div class="section-divider"></div>
+    
+    <div class="form-group" style="background: linear-gradient(135deg, rgba(245, 158, 11, 0.1), rgba(251, 146, 60, 0.05)); padding: 16px; border-radius: 12px; border: 1px solid rgba(245, 158, 11, 0.3);">
+      <label style="display: flex; align-items: center; gap: 12px; cursor: pointer; font-size: 15px;">
+        <input type="checkbox" id="includeBaseConfig" style="width: 20px; height: 20px; cursor: pointer;">
+        <span style="color: #fbbf24; font-weight: 600;">🆕 پیکربندی اولیه (First Time Setup)</span>
+      </label>
+      <div class="help-text" style="margin-top: 8px; color: #d97706;">
+        ⚠️ این گزینه را فقط برای روترهای جدید که برای <strong>اولین بار</strong> پیکربندی می‌شوند فعال کنید.
+        <br>شامل: AAA, TACACS+, SSH, Access-Lists, SNMP, NTP, Banner و سایر تنظیمات پایه
+      </div>
+    </div>
+    
+    <!-- Hostname for Base Config (shown only when checkbox is checked) -->
+    <div id="hostnameSection" class="form-group" style="display: none; margin-top: 12px;">
+      <label for="routerHostname">
+        <span class="info-badge">🏷️ Hostname</span>
+        نام روتر (Hostname) <span class="required">*</span>
+      </label>
+      <input id="routerHostname" type="text" placeholder="مثال: GLS-Kiosk-Behshadafarin">
+      <div class="help-text">💡 نام روتر که در prompt نمایش داده می‌شود</div>
+    </div>
+
+    <div class="btns">
+      <button type="submit" class="btn-generate"> تولید پیکربندی مالی و رزرو IP</button>
+      <button type="reset" class="btn-reset">🔄 پاک کردن</button>
+      <span style="border-left:1px solid #374151; height:24px; margin:0 4px;"></span>
+      <button type="button" onclick="openRemoteModal('ssh')" style="background:linear-gradient(135deg,#3b82f6,#2563eb); color:#fff; border-radius:999px; display:flex; align-items:center; gap:6px;">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>
+        SSH / Telnet
+      </button>
+      <button type="button" onclick="openRemoteModal('rdp')" style="background:linear-gradient(135deg,#8b5cf6,#7c3aed); color:#fff; border-radius:999px; display:flex; align-items:center; gap:6px;">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+        RDP
+      </button>
+    </div>
+  </form>
+
+  <!-- Deploy Config to Device Panel -->
+  <div id="deployPanel" style="display:none; margin-top:20px; background:linear-gradient(135deg,rgba(16,185,129,0.08),rgba(59,130,246,0.05)); border:1px solid rgba(16,185,129,0.3); border-radius:14px; padding:18px 20px;">
+    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:14px;">
+      <div style="display:flex; align-items:center; gap:8px; color:#10b981; font-weight:700; font-size:15px;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1"/></svg>
+        Deploy Config to Device
+      </div>
+      <span id="deployStatus" style="font-size:12px; color:#94a3b8;">Terminal not connected</span>
+    </div>
+    <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
+      <select id="configSelect" style="flex:1; min-width:200px; padding:9px 12px; background:#020617; border:1px solid #374151; border-radius:8px; color:#e5e7eb; font-size:13px;">
+        <option value="">-- Select Config --</option>
+        <option value="branchOut">Branch Router (مالی)</option>
+        <option value="hubOut">ISR-APN-RO (HUB)</option>
+      </select>
+      <button type="button" onclick="sendConfigToTerminal()" style="background:linear-gradient(135deg,#10b981,#059669); color:#fff; border-radius:999px; padding:10px 20px; display:flex; align-items:center; gap:6px; font-weight:600;">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+        Send to Device
+      </button>
+    </div>
+  </div>
+
+  <div id="outputs" class="outputs-wrapper" style="display:none;">
+    <div class="router-card">
+      <div style="position:relative;">
+        <div class="router-header">
+          <div class="router-title">Branch Router (مالی)</div>
+          <div class="router-tag">Spoke</div>
+        </div>
+        <button class="copy-btn" type="button" onclick="copyText('branchOut')">Copy</button>
+        <div id="branchOut" class="output"></div>
+      </div>
+    </div>
+
+    <div class="router-card">
+      <div style="position:relative;">
+        <div class="router-header">
+          <div class="router-title">ISR-APN-RO (HUB)</div>
+          <div class="router-tag">Hub</div>
+        </div>
+        <button class="copy-btn" type="button" onclick="copyText('hubOut')">Copy</button>
+        <div id="hubOut" class="output"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// Session timeout: 8 hours
+const SESSION_TIMEOUT = 8 * 60 * 60 * 1000;
+(function() {
+    const sessionStart = localStorage.getItem('sessionStart');
+    if (sessionStart && (Date.now() - parseInt(sessionStart)) > SESSION_TIMEOUT) {
+        localStorage.clear(); sessionStorage.clear();
+        alert('جلسه شما منقضی شده است. لطفاً دوباره وارد شوید.');
+        location.href = '/login';
+    }
+})();
+
+// Auto-login check
+const currentUsername = localStorage.getItem('currentUser') ||
+localStorage.getItem('username') || sessionStorage.getItem('username');
+if (!currentUsername) {
+  alert('لطفاً ابتدا وارد سیستم شوید');
+  window.location.href = '/login';
+} else {
+  document.getElementById('currentUser').textContent = currentUsername;
+
+// Toggle hostname field visibility based on checkbox
+document.getElementById('includeBaseConfig').addEventListener('change', function() {
+  const hostnameGroup = document.getElementById('hostnameGroup');
+  const hostnameInput = document.getElementById('routerHostname');
+  
+  if (this.checked) {
+    hostnameGroup.style.display = 'block';
+    hostnameInput.required = true;
+  } else {
+    hostnameGroup.style.display = 'none';
+    hostnameInput.required = false;
+    hostnameInput.value = '';
+  }
+});
+}
+
+// Fixed values for مالی
+const FIXED_HUB_IP = '10.250.46.1';
+const CRYPTO_KEY = 'G!l@n3tAcc3ss';
+const OSPF_PROCESS = '2';
+
+// Store all data
+let allMaliBranches = [];
+let autoAssignedTunnel = null;
+
+// Load branches
+async function loadBranches() {
+  try {
+    const res = await fetch('/api/mali-branches');
+    const branches = await res.json();
+
+    allMaliBranches = branches;
+
+    const datalist = document.getElementById('branchList');
+    datalist.innerHTML = '';
+
+    branches.forEach(b => {
+      const opt = document.createElement('option');
+      opt.value = `${b.name}|${b.province}|${b.lan_ip}`;
+      datalist.appendChild(opt);
+    });
+
+    console.log(`✓ Loaded ${branches.length} branches`);
+  } catch (err) {
+    console.error('Failed to load branches:', err);
+  }
+}
+
+// Load provinces
+async function loadProvinces() {
+  try {
+    const res = await fetch('/api/provinces');
+    const provinces = await res.json();
+
+    const sel = document.getElementById('lanProvinceFilter');
+    sel.innerHTML = '<option value="">انتخاب کنید...</option>';
+
+    provinces.forEach(p => {
+      const opt = document.createElement('option');
+      opt.value = p;
+      opt.textContent = p;
+      sel.appendChild(opt);
+    });
+  } catch (err) {
+    console.error('Failed to load provinces:', err);
+  }
+}
+
+// Load free LAN IPs
+async function loadFreeLanIps(province) {
+  const sel = document.getElementById('freeLanIp');
+  const counter = document.getElementById('lanFreeCount');
+
+  if (!province) {
+    sel.innerHTML = '<option value="">ابتدا استان را انتخاب کنید</option>';
+    sel.disabled = true;
+    counter.textContent = '0 آزاد';
+    return;
+  }
+
+  try {
+    sel.innerHTML = '<option value="">در حال بارگذاری...</option>';
+    sel.disabled = true;
+
+    const res = await fetch(`/api/free-lan-ips?province=${encodeURIComponent(province)}`);
+    const ips = await res.json();
+
+    sel.innerHTML = '<option value="">-- انتخاب کنید --</option>';
+
+    ips.forEach(ip => {
+      const opt = document.createElement('option');
+      opt.value = ip.ip;
+      opt.textContent = ip.ip;
+      sel.appendChild(opt);
+    });
+
+    sel.disabled = false;
+    counter.textContent = `${ips.length} آزاد`;
+  } catch (err) {
+    console.error('Failed to load LAN IPs:', err);
+    sel.innerHTML = '<option value="">خطا در بارگذاری</option>';
+  }
+}
+
+// AUTO-ASSIGN APN IP
+async function autoAssignApnIp() {
+  const field = document.getElementById('apnIpBranch');
+  const counter = document.getElementById('maliFreeCount');
+
+  try {
+    field.value = '⏳ در حال بارگذاری...';
+
+    const res = await fetch('/api/mali-free-ips');
+    const ips = await res.json();
+
+    counter.textContent = `${ips.length} آزاد`;
+
+    if (ips.length > 0) {
+      const firstIp = ips[0].ip;
+      field.value = `✅ ${firstIp} (خودکار)`;
+      field.dataset.actualIp = firstIp;
+      console.log(`✓ Auto-assigned APN IP: ${firstIp}`);
+    } else {
+      field.value = '❌ هیچ IP آزادی موجود نیست';
+      counter.textContent = '0 آزاد';
+    }
+  } catch (err) {
+    console.error('Failed to auto-assign APN IP:', err);
+    field.value = '❌ خطا در بارگذاری';
+  }
+}
+
+// AUTO-ASSIGN Tunnel Pair (NO PRE-FILL for HUB Interface)
+async function autoAssignTunnelPair() {
+  const field = document.getElementById('tunnelPairDisplay');
+  const counter = document.getElementById('tunnelFreeCount');
+
+  try {
+    field.value = '⏳ در حال بارگذاری...';
+
+    const res = await fetch('/api/free-tunnel-pairs');
+    const tunnels = await res.json();
+
+    counter.textContent = `${tunnels.length} آزاد`;
+
+    if (tunnels.length > 0) {
+      const firstTunnel = tunnels[0];
+      autoAssignedTunnel = firstTunnel;  // Save to global variable
+
+      field.value = `✅ Tunnel ${firstTunnel.tunnel_number} - Branch: ${firstTunnel.tunnel_ip_branch} ↔ HUB: ${firstTunnel.tunnel_ip_hub}`;
+
+      document.getElementById('tunnelIpBranch').value = firstTunnel.tunnel_ip_branch;
+      document.getElementById('tunnelIpHub').value = firstTunnel.tunnel_ip_hub;
+      document.getElementById('tunnelNumber').value = firstTunnel.tunnel_number;
+
+      // DO NOT pre-fill HUB interface - leave it BLANK for user to fill
+      console.log(`✓ Auto-assigned Tunnel: ${firstTunnel.tunnel_number}`);
+      console.log(`⚠️ HUB Interface must be filled by user`);
+    } else {
+      field.value = '❌ هیچ Tunnel آزادی موجود نیست';
+      counter.textContent = '0 آزاد';
+    }
+  } catch (err) {
+    console.error('Failed to auto-assign Tunnel:', err);
+    field.value = '❌ خطا در بارگذاری';
+  }
+}
+
+// Auto-fill when existing branch is selected
+document.getElementById('branchName').addEventListener('input', async function() {
+  const inputValue = this.value.trim();
+
+  if (inputValue.includes('|')) {
+    const parts = inputValue.split('|');
+    const branchName = parts[0];
+    const province = parts[1];
+    const lanIp = parts[2];
+
+    this.value = branchName;
+
+    try {
+      const provinceSelect = document.getElementById('lanProvinceFilter');
+      
+      // Check if province exists in options, if not add it
+      let provinceExists = false;
+      for (let i = 0; i < provinceSelect.options.length; i++) {
+        if (provinceSelect.options[i].value === province) {
+          provinceExists = true;
+          break;
+        }
+      }
+      
+      if (!provinceExists && province) {
+        const newOpt = document.createElement('option');
+        newOpt.value = province;
+        newOpt.textContent = province;
+        provinceSelect.appendChild(newOpt);
+      }
+      
+      provinceSelect.value = province;
+
+      await loadFreeLanIps(province);
+
+      const lanSelect = document.getElementById('freeLanIp');
+
+      let optionExists = false;
+      for (let i = 0; i < lanSelect.options.length; i++) {
+        if (lanSelect.options[i].value === lanIp) {
+          optionExists = true;
+          lanSelect.value = lanIp;
+          break;
+        }
+      }
+
+      if (!optionExists) {
+        const existingOpt = document.createElement('option');
+        existingOpt.value = lanIp;
+        existingOpt.textContent = `${lanIp} (شعبه موجود: ${branchName})`;
+        existingOpt.style.color = '#fbbf24';
+        existingOpt.style.fontWeight = '600';
+        lanSelect.insertBefore(existingOpt, lanSelect.firstChild.nextSibling);
+        lanSelect.value = lanIp;
+      }
+
+      const lanParts = lanIp.split('.');
+      if (lanParts.length >= 2) {
+        const ospfArea = lanParts[1];
+        document.getElementById('ospfArea').value = ospfArea;
+      }
+
+      lanSelect.disabled = false;
+
+    } catch (err) {
+      console.error('Error loading branch data:', err);
+      alert('خطا در بارگذاری اطلاعات شعبه');
+    }
+  }
+});
+
+// Auto-calculate OSPF Area + Tunnel Number from LAN IP
+document.getElementById('freeLanIp').addEventListener('change', function() {
+  const lanIp = this.value;
+
+  if (lanIp) {
+    const parts = lanIp.split('.');
+    if (parts.length >= 3) {
+      const x = parts[1];
+      const y = parts[2];
+      const ospfArea = x;
+      document.getElementById('ospfArea').value = ospfArea;
+
+      // Auto-fill tunnel number: XY (pad Y to 2 digits if needed)
+      const yPad = parseInt(y) < 10 ? '0' + y : y;
+      const autoTunNum = x + yPad;
+      const tunnelField = document.getElementById('hubTunnelNumber');
+      if (!tunnelField.dataset.manual) {
+        tunnelField.value = autoTunNum;
+        tunnelField.style.borderColor = 'rgba(16, 185, 129, 0.4)';
+      }
+      console.log(`✓ OSPF Area: ${ospfArea}, Auto Tunnel: ${autoTunNum}`);
+    }
+  }
+});
+
+// Allow manual override of tunnel number
+document.getElementById('hubTunnelNumber').addEventListener('input', function() {
+  this.dataset.manual = 'true';
+  this.style.borderColor = 'rgba(245, 158, 11, 0.4)';
+});
+
+document.getElementById('lanProvinceFilter').addEventListener('change', function() {
+  loadFreeLanIps(this.value);
+});
+
+// Generate configs
+document.getElementById('configForm').addEventListener('submit', async function(e) {
+  e.preventDefault();
+
+  const branchNameInput = document.getElementById('branchName').value.trim();
+  const branchNameEn = document.getElementById('branchNameEn').value.trim();
+  const branchName = branchNameInput || branchNameEn; // Use English name if Persian is empty
+
+  // Base Config checkbox
+  const includeBaseConfig = document.getElementById('includeBaseConfig').checked;
+  const routerHostname = document.getElementById('routerHostname').value.trim();
+
+  // Validate hostname if base config is selected
+  if (includeBaseConfig && !routerHostname) {
+    alert('❌ لطفاً Hostname روتر را وارد کنید (برای Base Config)');
+    document.getElementById('routerHostname').focus();
+    return;
+  }
+
+  const lanIp = document.getElementById('freeLanIp').value;
+  const apnIpField = document.getElementById('apnIpBranch');
+  const apnIpBranch = apnIpField.dataset.actualIp || apnIpField.value.replace('✅ ', '').replace(' (خودکار)', '').trim();
+  const tunnelIpBranch = document.getElementById('tunnelIpBranch').value.trim();
+  const tunnelIpHub = document.getElementById('tunnelIpHub').value.trim();
+  const hubTunnelNumber = document.getElementById('hubTunnelNumber').value.trim();
+  const hubTunnelInterface = 'Tunnel' + hubTunnelNumber;
+  const wanIface = document.getElementById('wanIface').value.trim();
+  const ospfArea = document.getElementById('ospfArea').value;
+
+  if (!ospfArea) {
+    alert('لطفاً ابتدا IP LAN را انتخاب کنید (برای محاسبه OSPF Area)');
+    return;
+  }
+
+  if (!branchNameEn) {
+    alert('لطفاً نام انگلیسی شعبه را وارد کنید');
+    return;
+  }
+
+  if (!hubTunnelNumber) {
+    alert('❌ لطفاً شماره Interface Tunnel برای HUB را وارد کنید\n\nمثال: 10158100170');
+    return;
+  }
+
+  // Validate that it's only numbers
+  if (!/^\d+$/.test(hubTunnelNumber)) {
+    alert('❌ شماره Tunnel باید فقط عدد باشد\n\nمثال صحیح: 10158100170');
+    return;
+  }
+  
+  const tunnelNumber = hubTunnelNumber;
+
+  // Update hidden fields
+  document.getElementById('tunnelNumber').value = tunnelNumber;
+  document.getElementById('hubTunnelInterface').value = hubTunnelInterface;
+
+  console.log(`✓ Tunnel Number: ${tunnelNumber}, Interface: ${hubTunnelInterface}`);
+
+  if (!tunnelIpBranch || !tunnelIpHub) {
+    alert('لطفاً صفحه را مجدداً بارگذاری کنید (Tunnel IP به درستی انتخاب نشده)');
+    return;
+  }
+
+  const lanParts = lanIp.split('.');
+  const x = lanParts[1];
+  const y = lanParts[2];
+
+  const tunnelParts = tunnelIpBranch.split('.');
+  const tunnelSecondOctet = tunnelParts[1];
+
+  const routerId = `10.${tunnelSecondOctet}.${x}.${y}`;
+
+  const data = {
+    branchName,
+    branchNameEn,
+    lanIp,
+    x, y,
+    apnIpBranch,
+    tunnelIpBranch,
+    tunnelIpHub,
+    tunnelNumber,
+    hubTunnelInterface,
+    wanIface,
+    ospfArea,
+    routerId,
+    hubIp: FIXED_HUB_IP,
+    cryptoKey: CRYPTO_KEY,
+    ospfProcess: OSPF_PROCESS,
+    includeBaseConfig,
+    routerHostname
+  };
+
+  generateMaliConfigs(data);
+
+  try {
+    // Reserve tunnel with ALL fields
+    const tunnelRes = await fetch('/api/reserve-tunnel', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({
+        tunnel_number: tunnelNumber,
+        branch_name: branchName,
+        username: currentUsername,
+        interface_name: hubTunnelInterface,
+        description: `Gilanet-${branchNameEn}`,
+        hub_ip: tunnelIpHub,
+        branch_ip: tunnelIpBranch,
+        destination_ip: apnIpBranch
+      })
+    });
+
+    const tunnelResult = await tunnelRes.json();
+    console.log('Tunnel reservation:', tunnelResult);
+
+    // Reserve APN IP
+    const nodeType = document.getElementById('nodeType').value;
+    
+    const reserveRes = await fetch('/api/reserve-mali-ips', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({
+        branchName: branchName,
+        apnIp: apnIpBranch,
+        tunnelId: autoAssignedTunnel?.id,
+        tunnelIpBranch: tunnelIpBranch,
+        tunnelIpHub: tunnelIpHub,
+        tunnelNumber: tunnelNumber,
+        interfaceName: `Tunnel${tunnelNumber}`,
+        description: `Gilanet-${branchNameEn}`,
+        province: document.getElementById('lanProvinceFilter')?.value || '',
+        lanIp: document.getElementById('freeLanIp')?.value || '',
+        type: nodeType,
+        username: currentUsername
+      })
+    });
+
+    const result = await reserveRes.json();
+
+    if (result.status === 'ok') {
+      alert('✅ پیکربندی تولید شد و IP ها رزرو شدند!\n\n' + result.message);
+
+      // Reload auto-assigned IPs
+      await autoAssignApnIp();
+      await autoAssignTunnelPair();
+
+      // Clear HUB Tunnel Interface for next use
+      document.getElementById('hubTunnelNumber').value = '';
+      document.getElementById('hubTunnelInterface').value = '';
+    } else {
+      alert('⚠️ پیکربندی تولید شد اما خطا در رزرو IP:\n\n' + result.error);
+    }
+  } catch (err) {
+    console.error('Error reserving IPs:', err);
+    alert('⚠️ پیکربندی تولید شد اما خطا در اتصال به سرور');
+  }
+});
+
+function generateMaliConfigs(d) {
+  // Check if base config should be included
+  const includeBase = document.getElementById('includeBaseConfig').checked;
+  const hostname = document.getElementById('routerHostname').value.trim() || d.branchNameEn;
+  
+  let branchCfg = '';
+  
+  // Generate Base Config if checkbox is checked
+  if (includeBase) {
+    branchCfg = `!
+! ========================================================
+! ===== BASE CONFIGURATION - First Time Setup =====
+! ========================================================
+!
+service timestamps debug datetime msec
+service timestamps log datetime msec
+no service password-encryption
+!
+hostname ${hostname}
+!
+boot-start-marker
+boot-end-marker
+!
+enable secret 5 $1$1kQA$TOB1eE4SmnYjXXjtxUXus0
+!
+aaa new-model
+!
+aaa authentication login CACS group tacacs+ local
+aaa authentication enable default group tacacs+ enable
+aaa authorization console
+aaa authorization config-commands
+aaa authorization exec CACS group tacacs+ local 
+aaa authorization commands 0 CACS group tacacs+ local 
+aaa authorization commands 1 CACS group tacacs+ local 
+aaa authorization commands 2 CACS group tacacs+ local 
+aaa authorization commands 3 CACS group tacacs+ local 
+aaa authorization commands 15 CACS group tacacs+ local 
+aaa accounting exec CACS start-stop group tacacs+
+aaa accounting commands 0 CACS start-stop group tacacs+
+aaa accounting commands 1 CACS start-stop group tacacs+
+aaa accounting commands 2 CACS start-stop group tacacs+
+aaa accounting commands 3 CACS start-stop group tacacs+
+aaa accounting commands 15 CACS start-stop group tacacs+
+!
+aaa session-id common
+clock timezone Tehran 3 30
+ip cef
+!
+no ip domain lookup
+ip domain name agri-bank.com
+ip ssh time-out 120
+ip ssh version 2
+ip ssh port 2001 rotary 1
+crypto key generate rsa
+768
+!
+ip ssh authentication-retries 2
+!
+!
+username bkiadmin privilege 15 secret 5 $1$y/X2$m2zhThmBZUcxNZ56uEQvA1
+!
+track 5 ip route 10.0.0.0 255.255.0.0 reachability
+!
+`;
+  }
+  
+  // APN مالی Config (always included)
+  branchCfg += `!
+! ===== Branch Router (${d.branchName}) - APN مالی =====
+!
+crypto isakmp policy 10
+ encr aes
+ authentication pre-share
+ group 2
+crypto isakmp key ${d.cryptoKey} address ${d.hubIp}
+crypto isakmp invalid-spi-recovery
+!
+crypto ipsec transform-set GILANETTS esp-aes esp-sha-hmac
+!
+crypto map GILANET 10 ipsec-isakmp
+ set peer ${d.hubIp}
+ set transform-set GILANETTS
+ match address GILANET-ACL
+!
+interface Loopback0
+ ip address 10.${d.x}.254.${d.y} 255.255.255.255
+!
+interface Tunnel156
+ description ** Gilanet **
+ ip address ${d.tunnelIpBranch} 255.255.255.254
+ ip ospf hello-interval 100
+ ip ospf dead-interval 300
+ ip ospf priority 0
+ tunnel source ${d.apnIpBranch}
+ tunnel destination ${d.hubIp}
+!`;
+  
+  // Add FastEthernet0/0 with HSRP if base config is included
+  if (includeBase) {
+    branchCfg += `
+!
+interface FastEthernet0/0
+ description ** LAN **
+ ip address 10.${d.x}.${d.y}.5 255.255.255.0
+ ip access-group ETHERNET_IN in
+ duplex auto
+ speed auto
+ standby 1 ip 10.${d.x}.${d.y}.1
+ standby 1 timers 1 3
+ standby 1 preempt
+ standby 1 track 5 decrement 25
+!`;
+  }
+  
+  // WAN Interface
+  branchCfg += `
+interface ${d.wanIface}
+ description ** Gilanet **
+ ip address ${d.apnIpBranch} 255.255.248.0
+ duplex auto
+ speed auto
+ crypto map GILANET
+!
+router ospf ${d.ospfProcess}
+ router-id ${d.routerId}
+ log-adjacency-changes
+ passive-interface default
+ no passive-interface Tunnel156
+ network 10.${d.x}.${d.y}.5 0.0.0.0 area ${d.ospfArea}
+ network 10.${d.x}.254.${d.y} 0.0.0.0 area ${d.ospfArea}
+ network ${d.tunnelIpBranch} 0.0.0.0 area ${d.ospfArea}
+ distribute-list OSPF-PERMIT in
+!`;
+  
+  // Add full access-lists and remaining config if base config is included
+  if (includeBase) {
+    branchCfg += `
+ip forward-protocol nd
+!
+no ip http server
+no ip http secure-server
+ip tacacs source-interface Loopback0
+!
+ip access-list standard OSPF-PERMIT
+ permit 10.0.0.0 0.0.255.255
+ip access-list standard SNMP-READ
+ permit 10.0.50.0 0.0.1.255
+ip access-list standard SNMP-WRITE
+ permit host 10.0.51.48
+ permit host 10.0.51.49
+ip access-list standard TELNET_ACCESS
+ permit 10.250.46.1
+ permit 10.0.50.0 0.0.1.255
+ permit 10.${d.x}.${d.y}.6 0.0.0.1
+!
+ip access-list extended ETHERNET_IN
+ deny   tcp any any range 135 139
+ deny   tcp any any eq 445
+ deny   udp any any range 135 netbios-ss
+ deny   udp any any eq 1434
+ deny   udp any any eq 1433
+ deny   tcp any any eq 1026
+ deny   tcp any any eq 4444
+ deny   udp any any eq 445
+ permit ip 10.${d.x}.${d.y}.0 0.0.0.255 192.168.65.0 0.0.0.255
+ permit ip 10.${d.x}.${d.y}.0 0.0.0.255 192.168.72.0 0.0.0.255
+ permit udp 10.${d.x}.${d.y}.0 0.0.0.255 224.0.0.0 0.0.0.255
+ permit ip 10.${d.x}.${d.y}.0 0.0.0.255 10.${d.x}.${d.y}.0 0.0.0.255
+ permit ip 10.${d.x}.${d.y}.0 0.0.0.255 10.0.0.0 0.0.255.255
+ permit ip 10.${d.x}.${d.y}.0 0.0.0.255 10.${d.x}.0.0 0.0.7.255
+ip access-list extended GILANET-ACL
+ permit gre host ${d.apnIpBranch} host ${d.hubIp}
+!
+logging 10.0.51.63
+snmp-server group NMS v3 priv access SNMP-READ
+snmp-server user nms-net NMS v3 auth md5 auth-agrinms2011 priv des priv-agrinms1390 access SNMP-READ
+!
+snmp-server group LMS v3 priv read myview write myview access SNMP-WRITE
+snmp-server user lms-net LMS v3 auth md5 Auth-P@S$-2011 priv des PriV-p@$S-1390 access SNMP-WRITE
+!
+snmp-server view myview mib-2 included
+snmp-server view myview cisco included
+snmp-server view myview system included
+snmp-server ifindex persist
+!
+tacacs-server host 10.0.51.56
+tacacs-server host 10.0.51.57
+tacacs-server directed-request
+tacacs-server key 7 1324045C445D577A
+!
+control-plane
+!
+banner motd ^C
+        ===
+       -+ +-
+       | | |
+    <--\\ | /-->
+   ##| ||||| |##
+  ###| |+++| |###
+ /____\\\\ | //____\\ ********************************************************
+   <###\\|||/###>                  Keshavarzi Bank Network
+    +====+====+     WARNING: Access is restricted to authorized users only.
+    | WAN-BKI |     Unauthorized access is a violation of state , civil and
+    +===+=+===+                       criminal laws.
+        +=+        ********************************************************
+^C
+privilege interface level 3 shutdown
+privilege interface level 3 no shutdown
+privilege interface level 3 no
+privilege configure level 3 interface
+privilege exec level 3 traceroute
+privilege exec level 3 ping
+privilege exec level 3 configure terminal
+privilege exec level 3 configure
+privilege exec level 3 reload
+privilege exec level 3 terminal monitor
+privilege exec level 3 terminal
+privilege exec all level 3 show running-config
+privilege exec level 3 show
+!
+line con 0
+ authorization exec CACS
+ login authentication CACS
+line aux 0
+ no exec
+line vty 0 4
+ privilege level 15
+ authorization exec CACS
+ accounting exec CACS
+ login authentication CACS
+ transport input ssh
+ transport output ssh
+line vty 5 15
+ privilege level 15
+ authorization exec CACS
+ accounting exec CACS
+ login authentication CACS
+ transport input ssh
+ transport output ssh
+!
+scheduler allocate 20000 1000
+ntp authenticate
+ntp trusted-key 1
+ntp clock-period 17178037
+ntp source Loopback0
+ntp update-calendar
+ntp server 10.0.51.27
+!
+end`;
+  } else {
+    // Simple ending for APN-only config
+    branchCfg += `
+ip access-list standard OSPF-PERMIT
+ permit 10.0.0.0 0.0.255.255
+!
+ip access-list extended GILANET-ACL
+ permit gre host ${d.apnIpBranch} host ${d.hubIp}
+!
+end`;
+  }
+
+  const hubCfg = `!
+! ===== ISR-APN-RO (HUB) - ${d.branchNameEn} =====
+!
+interface ${d.hubTunnelInterface}
+ description ** Gilanet-${d.branchNameEn} **
+ ip address ${d.tunnelIpHub} 255.255.255.254
+ ip ospf dead-interval 300
+ ip ospf hello-interval 100
+ tunnel source ${d.hubIp}
+ tunnel destination ${d.apnIpBranch}
+!
+router ospf ${d.ospfProcess}
+ network ${d.tunnelIpHub} 0.0.0.0 area ${d.ospfArea}
+!
+end`;
+
+  document.getElementById('branchOut').textContent = branchCfg;
+  document.getElementById('hubOut').textContent = hubCfg;
+  document.getElementById('outputs').style.display = 'grid';
+
+  document.getElementById('outputs').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+function copyText(elementId) {
+  const el = document.getElementById(elementId);
+  if (!el) {
+    alert('❌ خطا: عنصر پیدا نشد');
+    return;
+  }
+  
+  const text = el.textContent || el.innerText;
+  
+  if (!text || text.trim() === '') {
+    alert('❌ خطا: متنی برای کپی وجود ندارد');
+    return;
+  }
+  
+  // Try modern clipboard API first
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(() => {
+      // Find the button and show success
+      const btn = el.parentElement.querySelector('.copy-btn');
+      if (btn) {
+        const originalText = btn.textContent;
+        btn.textContent = '✅ کپی شد!';
+        btn.style.background = '#10b981';
+        setTimeout(() => {
+          btn.textContent = originalText;
+          btn.style.background = '';
+        }, 2000);
+      } else {
+        alert('✅ کپی شد!');
+      }
+    }).catch(err => {
+      console.error('Clipboard write failed:', err);
+      fallbackCopyMali(text);
+    });
+  } else {
+    fallbackCopyMali(text);
+  }
+}
+
+// Fallback copy method for older browsers
+function fallbackCopyMali(text) {
+  const textArea = document.createElement('textarea');
+  textArea.value = text;
+  textArea.style.position = 'fixed';
+  textArea.style.left = '-9999px';
+  textArea.style.top = '0';
+  document.body.appendChild(textArea);
+  textArea.focus();
+  textArea.select();
+  
+  try {
+    const successful = document.execCommand('copy');
+    if (successful) {
+      alert('✅ کپی شد!');
+    } else {
+      alert('❌ خطا در کپی کردن');
+    }
+  } catch (err) {
+    console.error('Fallback copy failed:', err);
+    alert('❌ خطا در کپی کردن. لطفاً متن را به صورت دستی انتخاب و کپی کنید.');
+  }
+  
+  document.body.removeChild(textArea);
+}
+
+// ========== EXISTING POINTS PANEL ==========
+let allExistingMaliPoints = [];
+
+function toggleExistingPanel() {
+    var body = document.getElementById('existingPanelBody');
+    var arrow = document.getElementById('existingPanelArrow');
+    if (body.style.display === 'none') {
+        body.style.display = 'block';
+        arrow.style.transform = 'rotate(180deg)';
+        if (allExistingMaliPoints.length === 0) loadExistingMaliPoints();
+    } else {
+        body.style.display = 'none';
+        arrow.style.transform = '';
+    }
+}
+
+async function loadExistingMaliPoints() {
+    try {
+        var res = await fetch('/api/mali-reserved-points');
+        allExistingMaliPoints = await res.json();
+        document.getElementById('existingMaliCount').textContent = allExistingMaliPoints.length;
+        renderExistingPoints(allExistingMaliPoints);
+    } catch (e) {
+        document.getElementById('existingPointsList').innerHTML = '<div style="color:#f87171; padding:10px;">خطا در بارگذاری</div>';
+    }
+}
+
+function filterExistingPoints() {
+    var q = document.getElementById('existingSearch').value.trim().toLowerCase();
+    if (!q) { renderExistingPoints(allExistingMaliPoints); return; }
+    var filtered = allExistingMaliPoints.filter(function(p) {
+        return (p.branch_name && p.branch_name.toLowerCase().includes(q)) ||
+               (p.province && p.province.toLowerCase().includes(q)) ||
+               (p.ip_wan && p.ip_wan.includes(q)) ||
+               (p.lan_ip && p.lan_ip.includes(q)) ||
+               (p.username && p.username.toLowerCase().includes(q));
+    });
+    renderExistingPoints(filtered);
+}
+
+function renderExistingPoints(points) {
+    var container = document.getElementById('existingPointsList');
+    if (points.length === 0) {
+        container.innerHTML = '<div style="text-align:center; color:#64748b; padding:20px;">هیچ نقطه رزرو شده‌ای یافت نشد</div>';
+        return;
+    }
+    var html = '<table style="width:100%; border-collapse:collapse; font-size:13px;">';
+    html += '<thead><tr style="background:#111827; color:#94a3b8;">';
+    html += '<th style="padding:8px; text-align:right; border-bottom:1px solid #1f2937;">شعبه</th>';
+    html += '<th style="padding:8px; text-align:right; border-bottom:1px solid #1f2937;">استان</th>';
+    html += '<th style="padding:8px; text-align:right; border-bottom:1px solid #1f2937;">IP APN</th>';
+    html += '<th style="padding:8px; text-align:right; border-bottom:1px solid #1f2937;">LAN</th>';
+    html += '<th style="padding:8px; text-align:right; border-bottom:1px solid #1f2937;">کاربر</th>';
+    html += '<th style="padding:8px; text-align:right; border-bottom:1px solid #1f2937;">تاریخ</th>';
+    html += '<th style="padding:8px; text-align:center; border-bottom:1px solid #1f2937;">عملیات</th>';
+    html += '</tr></thead><tbody>';
+    points.forEach(function(p) {
+        html += '<tr style="border-bottom:1px solid #1f2937;">';
+        html += '<td style="padding:8px; color:#e5e7eb;">' + (p.branch_name || '-') + '</td>';
+        html += '<td style="padding:8px; color:#94a3b8;">' + (p.province || '-') + '</td>';
+        html += '<td style="padding:8px; color:#60a5fa; font-family:monospace;">' + (p.ip_wan || '-') + '</td>';
+        html += '<td style="padding:8px; color:#94a3b8; font-family:monospace;">' + (p.lan_ip || '-') + '</td>';
+        html += '<td style="padding:8px; color:#94a3b8;">' + (p.username || '-') + '</td>';
+        html += '<td style="padding:8px; color:#64748b; font-size:11px;">' + (p.reservation_date || '-') + '</td>';
+        html += '<td style="padding:8px; text-align:center;">';
+        html += '<button onclick="freeMaliPoint(' + p.id + ', \'' + (p.branch_name || '').replace(/'/g, "\\'") + '\', \'' + (p.ip_wan || '') + '\')" style="background:#7f1d1d; color:#fca5a5; border:1px solid #991b1b; border-radius:6px; padding:4px 12px; cursor:pointer; font-size:11px; font-weight:600;">حذف و آزادسازی</button>';
+        html += '</td></tr>';
+    });
+    html += '</tbody></table>';
+    container.innerHTML = html;
+}
+
+async function freeMaliPoint(id, name, ip) {
+    if (!confirm('آیا مطمئنید می‌خواهید APN مالی نقطه "' + name + '" (IP: ' + ip + ') را حذف و IP را آزاد کنید؟\n\nاین عملیات قابل بازگشت نیست!')) return;
+    var username = localStorage.getItem('currentUser') || localStorage.getItem('username') || '';
+    try {
+        var res = await fetch('/api/free-mali-point', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({id: id, username: username})
+        });
+        var result = await res.json();
+        if (result.status === 'ok') {
+            alert('✅ ' + result.message + '\n\n' + result.updates.join('\n'));
+            loadExistingMaliPoints();
+            autoAssignApnIp();
+            autoAssignTunnelPair();
+        } else {
+            alert('❌ خطا: ' + result.error);
+        }
+    } catch (e) { alert('❌ خطا: ' + e.message); }
+}
+
+// Init on page load - AUTO-ASSIGN IPs
+loadBranches();
+loadProvinces();
+autoAssignApnIp();
+autoAssignTunnelPair();
+loadExistingMaliPoints();
+
+// Warn before leaving page with unsaved form data
+let formModified = false;
+document.querySelectorAll('input, select, textarea').forEach(el => {
+    el.addEventListener('change', () => { formModified = true; });
+    el.addEventListener('input', () => { formModified = true; });
+});
+window.addEventListener('beforeunload', function(e) {
+    if (formModified) {
+        e.preventDefault();
+        e.returnValue = '';
+    }
+});
+</script>
+
+<!-- ========== REMOTE CONNECTION MODAL ========== -->
+<style>
+.rc-overlay {
+    position:fixed; inset:0; z-index:9999;
+    background:rgba(0,0,0,0.6); backdrop-filter:blur(6px);
+    display:none; align-items:center; justify-content:center;
+}
+.rc-overlay.show { display:flex; }
+.rc-modal {
+    background:var(--bg-card, #111827); border:1px solid var(--border-color, rgba(255,255,255,0.1));
+    border-radius:16px; padding:28px; width:90%; max-width:420px;
+    box-shadow:0 25px 60px rgba(0,0,0,0.5);
+}
+.rc-modal h3 {
+    font-size:18px; font-weight:700; margin-bottom:4px;
+    display:flex; align-items:center; gap:8px;
+}
+.rc-modal h3.ssh-title { color:#3b82f6; }
+.rc-modal h3.rdp-title { color:#8b5cf6; }
+.rc-modal .rc-sub { font-size:12px; color:var(--text-muted,#64748b); margin-bottom:20px; }
+.rc-row { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+.rc-group { margin-bottom:14px; }
+.rc-group label { display:block; font-size:11px; font-weight:600; color:var(--text-muted,#64748b); margin-bottom:5px; text-transform:uppercase; letter-spacing:0.5px; }
+.rc-group input, .rc-group select {
+    width:100%; padding:9px 12px; background:var(--input-bg,#0f172a);
+    border:1px solid var(--input-border,rgba(255,255,255,0.2)); border-radius:8px;
+    color:var(--text-primary,#e2e8f0); font-size:13px; font-family:'JetBrains Mono',monospace; outline:none;
+}
+.rc-group input:focus, .rc-group select:focus {
+    border-color:#3b82f6; box-shadow:0 0 0 2px rgba(59,130,246,0.15);
+}
+.rc-group select { cursor:pointer; }
+.rc-btns { display:flex; gap:10px; margin-top:6px; }
+.rc-btn-connect {
+    flex:1; padding:10px; border:none; border-radius:10px; font-size:13px;
+    font-weight:600; cursor:pointer; font-family:inherit; color:#fff;
+    display:flex; align-items:center; justify-content:center; gap:6px;
+}
+.rc-btn-connect.ssh-btn { background:linear-gradient(135deg,#3b82f6,#2563eb); }
+.rc-btn-connect.rdp-btn { background:linear-gradient(135deg,#8b5cf6,#7c3aed); }
+.rc-btn-connect:hover { filter:brightness(1.1); transform:translateY(-1px); }
+.rc-btn-cancel {
+    padding:10px 18px; background:transparent; border:1px solid var(--border-color,rgba(255,255,255,0.1));
+    border-radius:10px; color:var(--text-secondary,#94a3b8); font-size:13px;
+    cursor:pointer; font-family:inherit;
+}
+.rc-btn-cancel:hover { background:rgba(255,255,255,0.05); }
+.rc-ping-btn {
+    padding:7px 14px; background:rgba(16,185,129,0.15); border:1px solid rgba(16,185,129,0.3);
+    border-radius:8px; color:#34d399; font-size:12px; font-weight:600; cursor:pointer;
+    font-family:inherit; display:flex; align-items:center; gap:5px; transition:all 0.2s;
+}
+.rc-ping-btn:hover { background:rgba(16,185,129,0.25); }
+.rc-ping-result {
+    margin-top:-4px; margin-bottom:14px; padding:8px 12px; border-radius:8px;
+    font-size:12px; display:none;
+}
+.rc-ping-result.show { display:flex; align-items:center; gap:8px; }
+.rc-ping-result.ok { background:rgba(16,185,129,0.12); color:#6ee7b7; border:1px solid rgba(16,185,129,0.2); }
+.rc-ping-result.fail { background:rgba(239,68,68,0.12); color:#fca5a5; border:1px solid rgba(239,68,68,0.2); }
+.rc-ping-result.loading { background:rgba(251,191,36,0.1); color:#fcd34d; border:1px solid rgba(251,191,36,0.2); }
+</style>
+
+<div class="rc-overlay" id="rcOverlay" onclick="if(event.target===this)closeRemoteModal()">
+  <div class="rc-modal">
+    <!-- SSH/Telnet Form -->
+    <div id="rcSSH" style="display:none">
+      <h3 class="ssh-title">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>
+        SSH / Telnet Terminal
+      </h3>
+      <p class="rc-sub">Connect to a network device via SSH or Telnet</p>
+      <div class="rc-row">
+        <div class="rc-group">
+          <label>Protocol</label>
+          <select id="rcProtocol" onchange="document.getElementById('rcPort').value=this.value==='ssh'?'22':'23'">
+            <option value="ssh">SSH</option>
+            <option value="telnet">Telnet</option>
+          </select>
+        </div>
+        <div class="rc-group">
+          <label>Port</label>
+          <input type="number" id="rcPort" value="22">
+        </div>
+      </div>
+      <div class="rc-group">
+        <label>Host / IP Address</label>
+        <div style="display:flex; gap:8px;">
+          <input type="text" id="rcHost" placeholder="e.g. 10.250.1.1" style="flex:1;">
+          <button type="button" class="rc-ping-btn" onclick="pingHost('rcHost','sshPingResult')">📡 Ping</button>
+        </div>
+      </div>
+      <div class="rc-ping-result" id="sshPingResult"></div>
+      <div class="rc-row">
+        <div class="rc-group">
+          <label>Username</label>
+          <input type="text" id="rcUser" placeholder="admin">
+        </div>
+        <div class="rc-group">
+          <label>Password</label>
+          <input type="password" id="rcPass" placeholder="Password">
+        </div>
+      </div>
+      <div class="rc-btns">
+        <button class="rc-btn-connect ssh-btn" onclick="connectSSH()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>
+          Connect
+        </button>
+        <button class="rc-btn-cancel" onclick="closeRemoteModal()">Cancel</button>
+      </div>
+    </div>
+
+    <!-- RDP Form -->
+    <div id="rcRDP" style="display:none">
+      <h3 class="rdp-title">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+        Remote Desktop (RDP)
+      </h3>
+      <p class="rc-sub">Generate and download an .rdp file to connect via Windows Remote Desktop</p>
+      <div class="rc-group">
+        <label>Host / IP Address</label>
+        <div style="display:flex; gap:8px;">
+          <input type="text" id="rdpHost" placeholder="e.g. 192.168.1.100" style="flex:1;">
+          <button type="button" class="rc-ping-btn" onclick="pingHost('rdpHost','rdpPingResult')">📡 Ping</button>
+        </div>
+      </div>
+      <div class="rc-ping-result" id="rdpPingResult"></div>
+      <div class="rc-row">
+        <div class="rc-group">
+          <label>Username (optional)</label>
+          <input type="text" id="rdpUser" placeholder="Administrator">
+        </div>
+        <div class="rc-group">
+          <label>Port</label>
+          <input type="number" id="rdpPort" value="3389">
+        </div>
+      </div>
+      <div class="rc-group">
+        <label>Domain (optional)</label>
+        <input type="text" id="rdpDomain" placeholder="DOMAIN">
+      </div>
+      <div class="rc-btns">
+        <button class="rc-btn-connect rdp-btn" onclick="connectRDP()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+          Download .rdp
+        </button>
+        <button class="rc-btn-cancel" onclick="closeRemoteModal()">Cancel</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+let terminalWindow = null;
+let terminalConnected = false;
+
+function openRemoteModal(type) {
+    document.getElementById('rcOverlay').classList.add('show');
+    document.getElementById('rcSSH').style.display = type === 'ssh' ? 'block' : 'none';
+    document.getElementById('rcRDP').style.display = type === 'rdp' ? 'block' : 'none';
+    if (type === 'ssh') document.getElementById('rcHost').focus();
+    else document.getElementById('rdpHost').focus();
+}
+function closeRemoteModal() {
+    document.getElementById('rcOverlay').classList.remove('show');
+}
+
+// Ping
+async function pingHost(inputId, resultId) {
+    const host = document.getElementById(inputId).value.trim();
+    if (!host) { document.getElementById(inputId).focus(); return; }
+    const el = document.getElementById(resultId);
+    el.className = 'rc-ping-result show loading';
+    el.innerHTML = '⏳ Pinging ' + host + '...';
+    try {
+        const res = await fetch('/api/ping', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({host: host})
+        });
+        const data = await res.json();
+        if (data.reachable) {
+            el.className = 'rc-ping-result show ok';
+            el.innerHTML = '✅ ' + host + ' is reachable' + (data.avg_ms ? ' (avg: ' + data.avg_ms + 'ms)' : '');
+        } else {
+            el.className = 'rc-ping-result show fail';
+            el.innerHTML = '❌ ' + host + ' is unreachable';
+        }
+    } catch (e) {
+        el.className = 'rc-ping-result show fail';
+        el.innerHTML = '❌ Ping failed: ' + e.message;
+    }
+}
+
+async function connectSSH() {
+    const host = document.getElementById('rcHost').value.trim();
+    if (!host) { document.getElementById('rcHost').focus(); return; }
+    const params = {
+        host: host,
+        port: parseInt(document.getElementById('rcPort').value) || 22,
+        protocol: document.getElementById('rcProtocol').value,
+        username: document.getElementById('rcUser').value.trim(),
+        password: document.getElementById('rcPass').value
+    };
+    try {
+        const res = await fetch('/api/remote/session', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(params)
+        });
+        if (!res.ok) {
+            alert('ماژول SSH/Telnet روی سرور فعال نیست.\nنصب کنید: python -m pip install flask-socketio paramiko eventlet');
+            return;
+        }
+        const data = await res.json();
+        if (data.token) {
+            terminalWindow = window.open('/terminal?token=' + data.token, 'terminalWindow',
+                'width=1000,height=600,menubar=no,toolbar=no,location=no,status=no');
+            closeRemoteModal();
+            showDeployPanel();
+        } else if (data.error) {
+            alert('خطا: ' + data.error);
+        }
+    } catch (e) { alert('خطا: ' + e.message); }
+}
+
+async function connectRDP() {
+    const host = document.getElementById('rdpHost').value.trim();
+    if (!host) { document.getElementById('rdpHost').focus(); return; }
+    try {
+        const res = await fetch('/api/remote/rdp', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                host: host,
+                port: parseInt(document.getElementById('rdpPort').value) || 3389,
+                username: document.getElementById('rdpUser').value.trim(),
+                domain: document.getElementById('rdpDomain').value.trim()
+            })
+        });
+        if (!res.ok) {
+            alert('ماژول RDP روی سرور فعال نیست.\nنصب کنید: python -m pip install flask-socketio paramiko eventlet');
+            return;
+        }
+        const blob = await res.blob();
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = host.replace(/:/g, '_') + '.rdp';
+        a.click();
+        URL.revokeObjectURL(url);
+        closeRemoteModal();
+    } catch (e) { alert('خطا: ' + e.message); }
+}
+
+// Deploy panel
+function showDeployPanel() {
+    document.getElementById('deployPanel').style.display = 'block';
+    updateDeployStatus();
+}
+
+function updateDeployStatus() {
+    const el = document.getElementById('deployStatus');
+    if (terminalWindow && !terminalWindow.closed) {
+        el.innerHTML = '<span style="color:#10b981;">● Terminal open</span>';
+    } else {
+        el.innerHTML = '<span style="color:#94a3b8;">○ Terminal not connected</span>';
+        terminalConnected = false;
+    }
+}
+
+// Listen for terminal state messages
+window.addEventListener('message', function(event) {
+    if (event.data && event.data.type === 'terminal_state') {
+        terminalConnected = event.data.state === 'connected';
+        updateDeployStatus();
+    }
+});
+
+function sendConfigToTerminal() {
+    const selectEl = document.getElementById('configSelect');
+    const configId = selectEl.value;
+    if (!configId) { alert('لطفاً کانفیگ مورد نظر را انتخاب کنید'); return; }
+    if (!terminalWindow || terminalWindow.closed) {
+        alert('Terminal is not open. Please connect via SSH/Telnet first.');
+        return;
+    }
+    const configEl = document.getElementById(configId);
+    if (!configEl) return;
+    const text = configEl.textContent || configEl.innerText;
+    if (!text || text.trim() === '') { alert('Config is empty. Generate config first.'); return; }
+    const title = selectEl.options[selectEl.selectedIndex].text;
+    terminalWindow.postMessage({ type: 'paste_config', text: text, title: title }, '*');
+    terminalWindow.focus();
+}
+
+// Periodically check terminal window status
+setInterval(updateDeployStatus, 3000);
+
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape' && document.getElementById('rcOverlay').classList.contains('show')) {
+        closeRemoteModal();
+    }
+});
+document.querySelectorAll('#rcSSH input').forEach(el => {
+    el.addEventListener('keypress', function(e) { if (e.key === 'Enter') connectSSH(); });
+});
+document.querySelectorAll('#rcRDP input').forEach(el => {
+    el.addEventListener('keypress', function(e) { if (e.key === 'Enter') connectRDP(); });
+});
+</script>
+
+{% include 'chat_widget.html' %}
+</body>
+</html>
