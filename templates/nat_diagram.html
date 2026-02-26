@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>نمودار NAT شبکه BKI</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+:root{
+  --bg:#080c18;--surface:rgba(12,18,36,0.85);--surface2:rgba(16,24,48,0.7);
+  --text:#e2e8f0;--t2:#94a3b8;--t3:#64748b;
+  --brd:rgba(100,116,139,0.12);--brd2:rgba(100,116,139,0.22);
+  --green:#34d399;--green-bg:rgba(52,211,153,0.08);--green-brd:rgba(52,211,153,0.25);
+  --red:#f472b6;--red-bg:rgba(244,114,182,0.08);--red-brd:rgba(244,114,182,0.25);
+  --blue:#60a5fa;--blue-bg:rgba(96,165,250,0.08);--blue-brd:rgba(96,165,250,0.25);
+  --amber:#fbbf24;--amber-bg:rgba(251,191,36,0.08);--amber-brd:rgba(251,191,36,0.25);
+  --purple:#a78bfa;--purple-bg:rgba(167,139,250,0.08);--purple-brd:rgba(167,139,250,0.25);
+  --cyan:#22d3ee;--cyan-bg:rgba(34,211,238,0.08);--cyan-brd:rgba(34,211,238,0.25);
+  --accent1:#22d3ee;--accent2:#818cf8;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;direction:rtl}
+
+/* Header */
+.hdr{position:sticky;top:0;z-index:100;background:rgba(8,12,24,0.92);backdrop-filter:blur(24px);
+  border-bottom:1px solid var(--brd2);padding:0 24px;height:56px;display:flex;align-items:center;gap:16px}
+.hdr h1{font-size:18px;font-weight:700;background:linear-gradient(135deg,#22d3ee,#818cf8);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.hdr .subtitle{font-size:12px;color:var(--t3);margin-right:4px}
+.hdr-right{margin-right:auto;display:flex;align-items:center;gap:12px}
+.stat-pill{display:flex;align-items:center;gap:6px;background:var(--surface);border:1px solid var(--brd2);
+  border-radius:20px;padding:4px 12px;font-size:12px;font-weight:600}
+.stat-pill .dot{width:8px;height:8px;border-radius:50%}
+.btn{padding:6px 14px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;
+  border:1px solid var(--brd2);background:var(--surface);color:var(--text);
+  text-decoration:none;display:inline-flex;align-items:center;gap:6px;transition:all .18s}
+.btn:hover{background:rgba(255,255,255,0.06);border-color:var(--accent1)}
+.btn-back{font-size:11px;padding:5px 12px}
+
+/* Toolbar */
+.toolbar{padding:12px 24px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+  border-bottom:1px solid var(--brd);background:rgba(8,12,24,0.5)}
+.filter-label{font-size:11px;color:var(--t3);font-weight:700;text-transform:uppercase;letter-spacing:.5px}
+.ft{padding:5px 14px;border-radius:20px;font-size:11px;font-weight:600;cursor:pointer;
+  border:1px solid var(--brd2);background:transparent;color:var(--t2);transition:all .2s}
+.ft.on{background:rgba(34,211,238,0.1);border-color:rgba(34,211,238,0.4);color:var(--accent1)}
+.search-wrap{margin-right:auto;position:relative}
+.search-wrap input{background:rgba(255,255,255,0.04);border:1px solid var(--brd2);
+  border-radius:8px;padding:6px 12px 6px 30px;color:var(--text);font-size:12px;
+  width:220px;outline:none;font-family:inherit;direction:ltr;text-align:left}
+.search-wrap input:focus{border-color:rgba(34,211,238,0.4)}
+.search-icon{position:absolute;left:8px;top:50%;transform:translateY(-50%);color:var(--t3);font-size:14px}
+
+/* Content */
+.content{padding:24px;display:flex;flex-direction:column;gap:20px}
+.loading{display:flex;align-items:center;justify-content:center;flex-direction:column;gap:12px;
+  padding:80px 0;color:var(--t3)}
+.spinner{width:36px;height:36px;border:2px solid var(--brd);border-top-color:var(--accent1);
+  border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* Device card */
+.device-card{background:var(--surface);border:1px solid var(--brd2);border-radius:14px;overflow:hidden;
+  transition:border-color .2s}
+.device-card:hover{border-color:rgba(34,211,238,0.25)}
+.device-header{padding:14px 18px;display:flex;align-items:center;gap:12px;cursor:pointer;
+  border-bottom:1px solid var(--brd);background:rgba(0,0,0,0.15)}
+.device-icon{width:38px;height:38px;border-radius:10px;display:flex;align-items:center;
+  justify-content:center;font-size:18px;flex-shrink:0}
+.device-icon.core{background:rgba(96,165,250,0.12);border:1px solid rgba(96,165,250,0.25)}
+.device-icon.prov{background:rgba(34,211,238,0.12);border:1px solid rgba(34,211,238,0.25)}
+.device-icon.sw{background:rgba(167,139,250,0.12);border:1px solid rgba(167,139,250,0.25)}
+.device-info{flex:1}
+.device-name{font-size:14px;font-weight:700;letter-spacing:.3px;direction:ltr;text-align:left}
+.device-label{font-size:11px;color:var(--t2);margin-top:2px}
+.device-badges{display:flex;gap:6px;margin-right:auto}
+.badge{display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:6px;font-size:10px;font-weight:700}
+.badge-nat{background:rgba(251,191,36,0.1);color:#fbbf24;border:1px solid rgba(251,191,36,0.25)}
+.badge-pool{background:rgba(167,139,250,0.1);color:#a78bfa;border:1px solid rgba(167,139,250,0.25)}
+.badge-static{background:rgba(244,114,182,0.1);color:#f472b6;border:1px solid rgba(244,114,182,0.25)}
+.device-chevron{color:var(--t3);font-size:16px;transition:transform .25s}
+.device-card.expanded .device-chevron{transform:rotate(180deg)}
+
+.device-body{display:none;padding:16px 18px}
+.device-card.expanded .device-body{display:block}
+
+/* NAT Flow diagram */
+.nat-flows{display:flex;flex-direction:column;gap:16px}
+.flow-rule{background:rgba(255,255,255,0.015);border:1px solid var(--brd);border-radius:12px;padding:16px;
+  display:flex;align-items:stretch;gap:0;flex-wrap:wrap;position:relative}
+.flow-rule::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;border-radius:2px 2px 0 0;
+  background:linear-gradient(90deg,var(--green),var(--cyan),var(--amber),var(--red))}
+
+/* Flow columns */
+.flow-col{display:flex;flex-direction:column;gap:8px;min-width:0}
+.flow-col.col-src{flex:2;min-width:160px}
+.flow-col.col-arrow{flex:0 0 36px;display:flex;align-items:center;justify-content:center}
+.flow-col.col-inside{flex:2;min-width:140px}
+.flow-col.col-nat{flex:3;min-width:200px}
+.flow-col.col-outside{flex:2;min-width:140px}
+.flow-col.col-dst{flex:2;min-width:140px}
+
+.flow-arrow{display:flex;flex-direction:column;align-items:center;gap:0;width:100%;height:100%;
+  justify-content:center}
+.arrow-line{flex:1;width:2px;background:linear-gradient(180deg,rgba(34,211,238,0.1),rgba(34,211,238,0.5),rgba(34,211,238,0.1));
+  min-height:20px;position:relative}
+.arrow-head{color:var(--cyan);font-size:14px;line-height:1;transform:rotate(90deg)}
+
+/* Column headers */
+.col-header{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;
+  color:var(--t3);padding:4px 0;border-bottom:1px solid var(--brd);margin-bottom:4px}
+
+/* Interface boxes */
+.intf-box{background:var(--green-bg);border:1px solid var(--green-brd);border-radius:8px;padding:8px 10px}
+.intf-box.outside{background:var(--red-bg);border-color:var(--red-brd)}
+.intf-name{font-size:10px;font-weight:700;direction:ltr;color:var(--green)}
+.intf-box.outside .intf-name{color:var(--red)}
+.intf-ip{font-size:9px;font-family:Consolas,monospace;color:var(--t2);margin-top:2px;direction:ltr}
+.intf-desc{font-size:8px;color:var(--t3);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.intf-badge{display:inline-block;font-size:7px;font-weight:700;padding:1px 5px;border-radius:4px;margin-top:3px}
+.intf-badge.in{background:rgba(52,211,153,0.1);color:var(--green);border:1px solid var(--green-brd)}
+.intf-badge.out{background:rgba(244,114,182,0.1);color:var(--red);border:1px solid var(--red-brd)}
+
+/* NAT Rule box */
+.nat-box{background:var(--amber-bg);border:1px solid var(--amber-brd);border-radius:10px;padding:10px 12px}
+.nat-type-row{display:flex;align-items:center;gap:6px;margin-bottom:6px}
+.nat-type-label{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.6px}
+.nat-type-label.dynamic{color:var(--amber)}
+.nat-type-label.static{color:var(--red)}
+.pat-badge{font-size:7px;font-weight:700;padding:1px 6px;border-radius:4px;
+  background:rgba(34,211,238,0.1);color:var(--cyan);border:1px solid rgba(34,211,238,0.25)}
+.nat-acl-row{display:flex;align-items:center;gap:4px;margin-bottom:4px}
+.nat-acl-label{font-size:8px;color:var(--t3);font-weight:600;white-space:nowrap}
+.nat-acl-val{font-size:9px;font-weight:700;color:var(--amber);direction:ltr;font-family:Consolas,monospace}
+.nat-to-row{display:flex;align-items:center;gap:4px;margin-top:4px}
+.nat-to-label{font-size:8px;color:var(--t3);font-weight:600}
+.nat-to-val{font-size:9px;color:var(--blue);font-family:Consolas,monospace;direction:ltr}
+
+/* ACL entries */
+.acl-entries{margin-top:8px;background:rgba(0,0,0,0.2);border-radius:6px;padding:6px 8px;
+  border:1px solid rgba(255,255,255,0.04)}
+.acl-title{font-size:8px;color:var(--t3);font-weight:700;text-transform:uppercase;
+  letter-spacing:.5px;margin-bottom:4px}
+.acl-entry{display:flex;align-items:center;gap:4px;padding:2px 0;font-size:8px;direction:ltr}
+.acl-action{font-weight:700;min-width:36px}
+.acl-action.permit{color:var(--green)}
+.acl-action.deny{color:var(--red)}
+.acl-net{color:var(--t2);font-family:Consolas,monospace}
+.acl-more{font-size:7px;color:var(--t3);text-align:center;padding-top:3px;font-style:italic}
+
+/* Source networks */
+.src-box{background:rgba(52,211,153,0.04);border:1px solid rgba(52,211,153,0.12);
+  border-radius:8px;padding:8px 10px}
+.src-title{font-size:9px;color:var(--t3);font-weight:700;text-transform:uppercase;margin-bottom:4px}
+.src-net{font-size:9px;font-family:Consolas,monospace;color:var(--green);padding:2px 0;direction:ltr}
+
+/* Static NAT */
+.static-flow{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.static-ip{font-size:11px;font-weight:700;font-family:Consolas,monospace;direction:ltr;
+  padding:4px 10px;border-radius:6px}
+.static-ip.inside{background:var(--green-bg);color:var(--green);border:1px solid var(--green-brd)}
+.static-ip.outside{background:var(--red-bg);color:var(--red);border:1px solid var(--red-brd)}
+.static-port{font-size:9px;color:var(--t3)}
+.static-arrow{color:var(--cyan);font-size:16px;font-weight:700}
+
+/* Pool boxes */
+.pools-section{margin-top:12px;padding-top:12px;border-top:1px solid var(--brd)}
+.pools-title{font-size:10px;color:var(--t3);font-weight:700;text-transform:uppercase;margin-bottom:8px}
+.pool-box{display:inline-flex;align-items:center;gap:8px;background:var(--purple-bg);
+  border:1px solid var(--purple-brd);border-radius:8px;padding:6px 10px;margin-right:6px;margin-bottom:6px}
+.pool-name{font-size:10px;font-weight:700;color:var(--purple)}
+.pool-range{font-size:9px;font-family:Consolas,monospace;color:var(--t2);direction:ltr}
+
+/* No NAT */
+.empty-msg{text-align:center;padding:40px;color:var(--t3);font-size:13px}
+.section-divider{height:1px;background:var(--brd);margin:16px 0}
+
+/* Legend */
+.legend-bar{display:flex;align-items:center;gap:16px;padding:8px 24px;
+  border-bottom:1px solid var(--brd);background:rgba(8,12,24,0.4);flex-wrap:wrap}
+.legend-item{display:flex;align-items:center;gap:6px;font-size:10px;color:var(--t2)}
+.legend-dot{width:10px;height:10px;border-radius:3px}
+
+/* Responsive */
+@media(max-width:700px){.flow-rule{flex-direction:column}.flow-col.col-arrow{transform:rotate(90deg);height:30px}}
+
+/* Scrollbar */
+::-webkit-scrollbar{width:4px}::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:rgba(148,163,184,0.15);border-radius:4px}
+</style>
+</head>
+<body>
+
+<div class="hdr">
+  <a href="/network-map" class="btn btn-back">&#8594; نقشه شبکه</a>
+  <h1>نمودار NAT شبکه</h1>
+  <span class="subtitle">BKI Network NAT Diagram</span>
+  <div class="hdr-right">
+    <div class="stat-pill"><div class="dot" style="background:var(--amber)"></div><span id="statDevices">0</span> دستگاه</div>
+    <div class="stat-pill"><div class="dot" style="background:var(--cyan)"></div><span id="statRules">0</span> قانون NAT</div>
+  </div>
+</div>
+
+<div class="legend-bar">
+  <span class="legend-item"><div class="legend-dot" style="background:var(--green)"></div>Inside Interface (ورودی)</span>
+  <span class="legend-item"><div class="legend-dot" style="background:var(--red)"></div>Outside Interface (خروجی)</span>
+  <span class="legend-item"><div class="legend-dot" style="background:var(--amber)"></div>NAT Rule / قانون ترجمه</span>
+  <span class="legend-item"><div class="legend-dot" style="background:var(--cyan)"></div>PAT / Overload</span>
+  <span class="legend-item"><div class="legend-dot" style="background:var(--purple)"></div>NAT Pool</span>
+  <span class="legend-item"><div class="legend-dot" style="background:rgba(244,114,182,0.8)"></div>Static NAT</span>
+</div>
+
+<div class="toolbar">
+  <span class="filter-label">دسته‌بندی:</span>
+  <button class="ft on" data-cat="all" onclick="filterCat('all',this)">همه</button>
+  <button class="ft" data-cat="core-router" onclick="filterCat('core-router',this)">Core Router</button>
+  <button class="ft" data-cat="provincial-router" onclick="filterCat('provincial-router',this)">Provincial Router</button>
+  <button class="ft" data-cat="core-switch" onclick="filterCat('core-switch',this)">Core Switch</button>
+  <div class="search-wrap">
+    <span class="search-icon">🔍</span>
+    <input type="text" id="searchBox" placeholder="جستجو: hostname، IP، ACL..." oninput="doSearch(this.value)">
+  </div>
+</div>
+
+<div class="content" id="content">
+  <div class="loading" id="loading">
+    <div class="spinner"></div>
+    <span>در حال بارگذاری اطلاعات NAT...</span>
+  </div>
+</div>
+
+<script>
+let allDevices = [];
+let currentCat = 'all';
+let currentSearch = '';
+
+async function load() {
+  try {
+    const r = await fetch('/api/network-map/nat-diagram?_t=' + Date.now());
+    const d = await r.json();
+    allDevices = d.devices || [];
+    document.getElementById('statDevices').textContent = d.total || 0;
+    document.getElementById('statRules').textContent = d.total_rules || 0;
+    render();
+  } catch(e) {
+    document.getElementById('content').innerHTML = '<div class="empty-msg">خطا در بارگذاری داده‌ها: ' + e.message + '</div>';
+  }
+}
+
+function filterCat(cat, el) {
+  currentCat = cat;
+  document.querySelectorAll('.ft').forEach(f => f.classList.remove('on'));
+  el.classList.add('on');
+  render();
+}
+
+function doSearch(q) {
+  currentSearch = q.toLowerCase().trim();
+  render();
+}
+
+function render() {
+  const loading = document.getElementById('loading');
+  if(loading) loading.remove();
+
+  let filtered = allDevices;
+  if(currentCat !== 'all') filtered = filtered.filter(d => d.category === currentCat);
+  if(currentSearch) {
+    filtered = filtered.filter(d => {
+      const s = (d.hostname + d.label + d.abbr + JSON.stringify(d.nat_rules) +
+                 JSON.stringify(d.inside_interfaces) + JSON.stringify(d.outside_interfaces)).toLowerCase();
+      return s.includes(currentSearch);
+    });
+  }
+
+  const content = document.getElementById('content');
+  if(!filtered.length) {
+    content.innerHTML = '<div class="empty-msg">دستگاهی با مشخصات مورد نظر یافت نشد</div>';
+    return;
+  }
+
+  content.innerHTML = filtered.map(dev => buildDeviceCard(dev)).join('');
+}
+
+function catIcon(cat) {
+  if(cat === 'core-router') return '🔷';
+  if(cat === 'core-switch') return '🔀';
+  return '📡';
+}
+function catClass(cat) {
+  if(cat === 'core-router') return 'core';
+  if(cat === 'core-switch') return 'sw';
+  return 'prov';
+}
+
+function buildDeviceCard(dev) {
+  const dynRules = dev.nat_rules.filter(r => r.type === 'dynamic');
+  const staticRules = dev.nat_rules.filter(r => r.type === 'static');
+  const pools = dev.nat_pools || [];
+
+  let badges = '';
+  if(dynRules.length) badges += `<span class="badge badge-nat">NAT/PAT ×${dynRules.length}</span>`;
+  if(staticRules.length) badges += `<span class="badge badge-static">Static ×${staticRules.length}</span>`;
+  if(pools.length) badges += `<span class="badge badge-pool">Pool ×${pools.length}</span>`;
+
+  let bodyHtml = '<div class="nat-flows">';
+
+  // Dynamic NAT rules
+  dynRules.forEach((rule, idx) => {
+    bodyHtml += buildDynFlow(rule, dev, idx);
+  });
+
+  // Static NAT rules
+  if(staticRules.length) {
+    bodyHtml += buildStaticSection(staticRules);
+  }
+
+  // NAT Pools
+  if(pools.length) {
+    bodyHtml += `<div class="pools-section"><div class="pools-title">NAT Pools تعریف شده</div>`;
+    pools.forEach(p => {
+      bodyHtml += `<div class="pool-box">
+        <span class="pool-name">${p.name}</span>
+        <span class="pool-range">${p.start_ip} → ${p.end_ip}</span>
+        ${p.netmask ? `<span style="font-size:8px;color:var(--t3)">${p.netmask}</span>` : ''}
+      </div>`;
+    });
+    bodyHtml += '</div>';
+  }
+
+  bodyHtml += '</div>';
+
+  const cardId = 'card-' + dev.hostname.replace(/[^a-zA-Z0-9]/g,'_');
+
+  return `
+  <div class="device-card" id="${cardId}">
+    <div class="device-header" onclick="toggleCard('${cardId}')">
+      <div class="device-icon ${catClass(dev.category)}">${catIcon(dev.category)}</div>
+      <div class="device-info">
+        <div class="device-name">${dev.hostname}</div>
+        <div class="device-label">${dev.label || dev.abbr || ''} &nbsp;·&nbsp; ${dev.category} &nbsp;·&nbsp; <span style="direction:ltr">${dev.source_file}</span></div>
+      </div>
+      <div class="device-badges">${badges}</div>
+      <span class="device-chevron">⌄</span>
+    </div>
+    <div class="device-body">${bodyHtml}</div>
+  </div>`;
+}
+
+function buildDynFlow(rule, dev, idx) {
+  // Find matching inside interfaces
+  const insideIntfs = dev.inside_interfaces;
+  const outsideIntf = dev.outside_interfaces.find(o => o.name === rule.overload_intf);
+  const allOutside = dev.outside_interfaces;
+
+  // Source networks from ACL
+  const aclEntries = rule.acl_entries || [];
+  const permitEntries = aclEntries.filter(e => e.action === 'permit').slice(0, 8);
+
+  // Build source col
+  let srcHtml = '';
+  if(permitEntries.length) {
+    srcHtml += `<div class="src-box"><div class="src-title">شبکه‌های مبدا (ACL: ${escH(rule.acl || '?')})</div>`;
+    permitEntries.forEach(e => {
+      let net = escH(e.src || 'any');
+      if(e.src_wild && e.src_wild !== '0.0.0.0' && e.src_wild !== '') net += `<span style="color:var(--t3)"> / ${escH(e.src_wild)}</span>`;
+      srcHtml += `<div class="src-net">${net}</div>`;
+    });
+    if(aclEntries.length > 8) srcHtml += `<div class="acl-more">+${aclEntries.length - 8} مورد دیگر</div>`;
+    srcHtml += '</div>';
+  } else {
+    srcHtml = `<div class="src-box"><div class="src-title">ACL: ${escH(rule.acl || '?')}</div><div class="src-net" style="color:var(--t3)">محتوای ACL یافت نشد</div></div>`;
+  }
+
+  // Build inside col
+  let insideHtml = '';
+  insideIntfs.slice(0, 4).forEach(i => {
+    insideHtml += `<div class="intf-box">
+      <div class="intf-name">${escH(i.name)}</div>
+      ${i.ip ? `<div class="intf-ip">${escH(i.ip)}${i.mask ? ` / ${escH(i.mask)}` : ''}</div>` : ''}
+      ${i.description ? `<div class="intf-desc">${escH(i.description)}</div>` : ''}
+      <span class="intf-badge in">INSIDE</span>
+    </div>`;
+  });
+  if(insideIntfs.length > 4) insideHtml += `<div style="font-size:8px;color:var(--t3);padding:4px 0">+${insideIntfs.length-4} بیشتر</div>`;
+
+  // Build NAT box
+  let natHtml = `<div class="nat-box">
+    <div class="nat-type-row">
+      <span class="nat-type-label dynamic">Dynamic NAT</span>
+      ${rule.pat ? '<span class="pat-badge">PAT/Overload</span>' : ''}
+    </div>`;
+
+  if(rule.acl) {
+    natHtml += `<div class="nat-acl-row">
+      <span class="nat-acl-label">ACL:</span>
+      <span class="nat-acl-val">${escH(rule.acl)}</span>
+    </div>`;
+
+    // Show ACL entries inline
+    if(aclEntries.length) {
+      natHtml += `<div class="acl-entries"><div class="acl-title">محتوای Access List</div>`;
+      aclEntries.slice(0, 6).forEach(e => {
+        let net = escH(e.src || 'any');
+        let dst = escH(e.dst || 'any');
+        natHtml += `<div class="acl-entry">
+          <span class="acl-action ${e.action}">${escH(e.action)}</span>
+          <span class="acl-net">${net}</span>
+          ${e.src_wild ? `<span style="color:var(--t3)">${escH(e.src_wild)}</span>` : ''}
+          <span style="color:var(--t3)">→</span>
+          <span class="acl-net">${dst}</span>
+        </div>`;
+      });
+      if(aclEntries.length > 6) natHtml += `<div class="acl-more">+${aclEntries.length - 6} قانون دیگر</div>`;
+      natHtml += '</div>';
+    }
+  }
+
+  if(rule.pool) natHtml += `<div class="nat-to-row"><span class="nat-to-label">Pool:</span><span class="nat-to-val">${escH(rule.pool)}</span></div>`;
+  if(rule.overload_intf) natHtml += `<div class="nat-to-row"><span class="nat-to-label">Overload Interface:</span><span class="nat-to-val">${escH(rule.overload_intf)}</span></div>`;
+  if(rule.overload_ip) natHtml += `<div class="nat-to-row"><span class="nat-to-label">NAT IP:</span><span class="nat-to-val" style="color:var(--red)">${escH(rule.overload_ip)}</span></div>`;
+
+  natHtml += '</div>';
+
+  // Build outside col
+  let outsideHtml = '';
+  if(outsideIntf) {
+    outsideHtml += `<div class="intf-box outside">
+      <div class="intf-name">${escH(outsideIntf.name)}</div>
+      ${outsideIntf.ip ? `<div class="intf-ip">${escH(outsideIntf.ip)}${outsideIntf.mask ? ` / ${escH(outsideIntf.mask)}` : ''}</div>` : ''}
+      ${outsideIntf.description ? `<div class="intf-desc">${escH(outsideIntf.description)}</div>` : ''}
+      <span class="intf-badge out">OUTSIDE</span>
+    </div>`;
+  } else {
+    allOutside.slice(0, 2).forEach(o => {
+      outsideHtml += `<div class="intf-box outside">
+        <div class="intf-name">${escH(o.name)}</div>
+        ${o.ip ? `<div class="intf-ip">${escH(o.ip)}</div>` : ''}
+        ${o.description ? `<div class="intf-desc">${escH(o.description)}</div>` : ''}
+        <span class="intf-badge out">OUTSIDE</span>
+      </div>`;
+    });
+  }
+
+  return `<div class="flow-rule">
+    <div class="flow-col col-src">
+      <div class="col-header">شبکه مبدا (Source)</div>
+      ${srcHtml}
+    </div>
+    <div class="flow-col col-arrow"><div class="flow-arrow">
+      <div class="arrow-line"></div><div class="arrow-head">▶</div><div class="arrow-line"></div>
+    </div></div>
+    <div class="flow-col col-inside">
+      <div class="col-header">اینترفیس داخلی (Inside)</div>
+      ${insideHtml || '<div style="color:var(--t3);font-size:10px">یافت نشد</div>'}
+    </div>
+    <div class="flow-col col-arrow"><div class="flow-arrow">
+      <div class="arrow-line"></div><div class="arrow-head">▶</div><div class="arrow-line"></div>
+    </div></div>
+    <div class="flow-col col-nat">
+      <div class="col-header">قانون NAT (Rule)</div>
+      ${natHtml}
+    </div>
+    <div class="flow-col col-arrow"><div class="flow-arrow">
+      <div class="arrow-line"></div><div class="arrow-head">▶</div><div class="arrow-line"></div>
+    </div></div>
+    <div class="flow-col col-outside">
+      <div class="col-header">اینترفیس خارجی (Outside)</div>
+      ${outsideHtml || '<div style="color:var(--t3);font-size:10px">یافت نشد</div>'}
+    </div>
+    <div class="flow-col col-arrow"><div class="flow-arrow">
+      <div class="arrow-line"></div><div class="arrow-head">▶</div><div class="arrow-line"></div>
+    </div></div>
+    <div class="flow-col col-dst">
+      <div class="col-header">مقصد (Destination)</div>
+      <div style="padding:6px 0;font-size:10px;color:var(--t2)">
+        ${rule.overload_ip ? `<div style="color:var(--red);font-family:Consolas;direction:ltr">${escH(rule.overload_ip)}</div>` : ''}
+        <div style="color:var(--t3);font-size:9px;margin-top:4px">اینترنت / شبکه خارجی</div>
+        <div style="margin-top:6px;font-size:8px;color:var(--t3)">
+          ${rule.pat ? '📌 PAT: همه ترافیک با یک IP خروجی NAT می‌شود' : ''}
+        </div>
+      </div>
+    </div>
+  </div>`;
+}
+
+function buildStaticSection(staticRules) {
+  let h = `<div style="background:rgba(244,114,182,0.04);border:1px solid rgba(244,114,182,0.2);border-radius:10px;padding:12px 14px">
+    <div style="font-size:10px;font-weight:700;color:var(--red);text-transform:uppercase;margin-bottom:10px">Static NAT Rules</div>`;
+
+  staticRules.forEach(r => {
+    h += `<div class="static-flow" style="padding:6px 0;border-bottom:1px solid rgba(255,255,255,0.04)">`;
+    if(r.protocol) {
+      h += `<span class="badge badge-static" style="font-size:8px">${escH(r.protocol.toUpperCase())}</span>`;
+    }
+    if(r.inside_ip) {
+      let insideLabel = r.inside_ip;
+      if(r.inside_port) insideLabel += ':' + r.inside_port;
+      h += `<span class="static-ip inside">${escH(insideLabel)}</span>`;
+    }
+    h += `<span class="static-arrow">→</span>`;
+    if(r.outside_ip) {
+      let outsideLabel = r.outside_ip;
+      if(r.outside_port) outsideLabel += ':' + r.outside_port;
+      h += `<span class="static-ip outside">${escH(outsideLabel)}</span>`;
+    }
+    h += '</div>';
+  });
+
+  h += '</div>';
+  return h;
+}
+
+function toggleCard(id) {
+  const card = document.getElementById(id);
+  if(card) card.classList.toggle('expanded');
+}
+
+function escH(s) {
+  if(!s) return '';
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+window.addEventListener('DOMContentLoaded', load);
+</script>
+</body>
+</html>

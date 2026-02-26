@@ -265,6 +265,250 @@ def _scan_directory(dirpath, category):
     return results
 
 
+def _parse_nat_full(filepath):
+    """Deep parse of a single router config for complete NAT flow data."""
+    try:
+        with open(filepath, 'r', encoding='utf-8', errors='ignore') as f:
+            content = f.read()
+    except Exception:
+        return None
+
+    result = {
+        'hostname': '',
+        'inside_interfaces': [],   # {name, ip, mask, description}
+        'outside_interfaces': [],  # {name, ip, mask, description}
+        'nat_rules': [],           # {type, acl, pool, overload_intf, inside_ip, outside_ip, overload}
+        'nat_pools': [],           # {name, start_ip, end_ip, netmask, prefix}
+        'acl_content': {},         # {acl_name: [{action, network, wildcard, description}]}
+    }
+
+    m = re.search(r'^hostname\s+(.+)', content, re.MULTILINE)
+    if m:
+        result['hostname'] = m.group(1).strip()
+
+    # ── Parse all interface blocks ──────────────────────────────────────────
+    iface_pattern = re.compile(
+        r'^interface\s+(\S+)(.*?)(?=^interface\s|\Z)',
+        re.MULTILINE | re.DOTALL
+    )
+    for im in iface_pattern.finditer(content):
+        iface_name = im.group(1)
+        block = im.group(2)
+
+        nat_side = re.search(r'ip nat\s+(inside|outside)', block)
+        if not nat_side:
+            continue
+
+        ip_m = re.search(r'ip address\s+(\S+)\s+(\S+)', block)
+        desc_m = re.search(r'description\s+(.+)', block)
+
+        entry = {
+            'name': iface_name,
+            'ip': ip_m.group(1) if ip_m else '',
+            'mask': ip_m.group(2) if ip_m else '',
+            'description': desc_m.group(1).strip().strip('"') if desc_m else '',
+        }
+        side = nat_side.group(1)
+        if side == 'inside':
+            result['inside_interfaces'].append(entry)
+        else:
+            result['outside_interfaces'].append(entry)
+
+    # ── Parse NAT rules ─────────────────────────────────────────────────────
+    for nm in re.finditer(r'^ip nat\s+(?:inside|outside)\s+source\s+(.+)', content, re.MULTILINE):
+        rule_text = nm.group(1).strip()
+        if 'static' in rule_text:
+            parts = rule_text.split()
+            # static tcp/udp port forwarding or simple static
+            rule = {'type': 'static'}
+            idx = 1  # skip 'static'
+            if parts[0] == 'static' and len(parts) >= 3:
+                # ip nat inside source static <inside_ip> <outside_ip>
+                # ip nat inside source static tcp <inside_ip> <port> <outside_ip> <port>
+                if parts[idx] in ('tcp', 'udp'):
+                    rule['protocol'] = parts[idx]
+                    rule['inside_ip'] = parts[idx + 1] if len(parts) > idx + 1 else ''
+                    rule['inside_port'] = parts[idx + 2] if len(parts) > idx + 2 else ''
+                    rule['outside_ip'] = parts[idx + 3] if len(parts) > idx + 3 else ''
+                    rule['outside_port'] = parts[idx + 4] if len(parts) > idx + 4 else ''
+                else:
+                    rule['inside_ip'] = parts[idx] if len(parts) > idx else ''
+                    rule['outside_ip'] = parts[idx + 1] if len(parts) > idx + 1 else ''
+        else:
+            rule = {'type': 'dynamic'}
+            acl_m = re.search(r'list\s+(\S+)', rule_text)
+            pool_m = re.search(r'pool\s+(\S+)', rule_text)
+            iface_m = re.search(r'interface\s+(\S+)', rule_text)
+            rule['acl'] = acl_m.group(1) if acl_m else ''
+            rule['pool'] = pool_m.group(1) if pool_m else ''
+            rule['overload_intf'] = iface_m.group(1) if iface_m else ''
+            rule['overload'] = 'overload' in rule_text
+            rule['pat'] = rule['overload']
+
+        result['nat_rules'].append(rule)
+
+    # ── Parse NAT pools ─────────────────────────────────────────────────────
+    for pm in re.finditer(
+        r'^ip nat pool\s+(\S+)\s+(\S+)\s+(\S+)\s+(?:netmask\s+(\S+)|prefix-length\s+(\S+))',
+        content, re.MULTILINE
+    ):
+        result['nat_pools'].append({
+            'name': pm.group(1),
+            'start_ip': pm.group(2),
+            'end_ip': pm.group(3),
+            'netmask': pm.group(4) or '',
+            'prefix': pm.group(5) or '',
+        })
+
+    # ── Parse extended and standard ACLs ────────────────────────────────────
+    # Extended ACLs: "ip access-list extended <name>"
+    ext_acl_pattern = re.compile(
+        r'^ip access-list extended\s+(\S+)\s*\n(.*?)(?=^ip access-list\s|^router\s|^!\s*\n!\s*\n|^ip nat\s|\Z)',
+        re.MULTILINE | re.DOTALL
+    )
+    for am in ext_acl_pattern.finditer(content):
+        acl_name = am.group(1)
+        acl_block = am.group(2)
+        entries = []
+        for em in re.finditer(
+            r'^\s*(permit|deny)\s+(ip|tcp|udp|icmp|any)\s+(\S+)(?:\s+(\S+))?(?:\s+(\S+))?(?:\s+(\S+))?',
+            acl_block, re.MULTILINE
+        ):
+            entries.append({
+                'action': em.group(1),
+                'proto': em.group(2),
+                'src': em.group(3),
+                'src_wild': em.group(4) or '',
+                'dst': em.group(5) or '',
+                'dst_wild': em.group(6) or '',
+            })
+        if entries:
+            result['acl_content'][acl_name] = entries
+
+    # Standard ACLs: "ip access-list standard <name>"
+    std_acl_pattern = re.compile(
+        r'^ip access-list standard\s+(\S+)\s*\n(.*?)(?=^ip access-list\s|^router\s|^!\s*\n!\s*\n|\Z)',
+        re.MULTILINE | re.DOTALL
+    )
+    for am in std_acl_pattern.finditer(content):
+        acl_name = am.group(1)
+        acl_block = am.group(2)
+        entries = []
+        for em in re.finditer(
+            r'^\s*(permit|deny)\s+(\S+)(?:\s+(\S+))?',
+            acl_block, re.MULTILINE
+        ):
+            src = em.group(2)
+            if src in ('any', 'host'):
+                src = f"{src} {em.group(3) or ''}".strip()
+            entries.append({
+                'action': em.group(1),
+                'proto': 'ip',
+                'src': src,
+                'src_wild': em.group(3) or '' if em.group(2) not in ('any', 'host') else '',
+                'dst': 'any',
+                'dst_wild': '',
+            })
+        if entries:
+            result['acl_content'][acl_name] = entries
+
+    # Numbered ACLs: "access-list <num> permit/deny ..."
+    for am in re.finditer(r'^access-list\s+(\S+)\s+(permit|deny)\s+(.+)', content, re.MULTILINE):
+        acl_name = am.group(1)
+        rule_parts = am.group(3).strip().split()
+        if acl_name not in result['acl_content']:
+            result['acl_content'][acl_name] = []
+        result['acl_content'][acl_name].append({
+            'action': am.group(2),
+            'proto': 'ip',
+            'src': rule_parts[0] if rule_parts else '',
+            'src_wild': rule_parts[1] if len(rule_parts) > 1 else '',
+            'dst': rule_parts[2] if len(rule_parts) > 2 else 'any',
+            'dst_wild': rule_parts[3] if len(rule_parts) > 3 else '',
+        })
+
+    return result
+
+
+def _scan_all_router_dirs():
+    """Scan all router directories (flat + subdirs) and return (filepath, fname, category) tuples."""
+    results = []
+    # Provincial routers (top-level files only)
+    if os.path.exists(ROUTER_DIR):
+        for fname in sorted(os.listdir(ROUTER_DIR)):
+            fpath = os.path.join(ROUTER_DIR, fname)
+            if os.path.isfile(fpath) and os.path.getsize(fpath) >= 100:
+                results.append((fpath, fname, 'provincial-router'))
+    # Core Routers
+    if os.path.exists(CORE_ROUTER_DIR):
+        for fname in sorted(os.listdir(CORE_ROUTER_DIR)):
+            fpath = os.path.join(CORE_ROUTER_DIR, fname)
+            if os.path.isfile(fpath) and os.path.getsize(fpath) >= 100:
+                results.append((fpath, fname, 'core-router'))
+    # Core Switches
+    if os.path.exists(CORE_SWITCH_DIR):
+        for fname in sorted(os.listdir(CORE_SWITCH_DIR)):
+            fpath = os.path.join(CORE_SWITCH_DIR, fname)
+            if os.path.isfile(fpath) and os.path.getsize(fpath) >= 100:
+                results.append((fpath, fname, 'core-switch'))
+    return results
+
+
+@network_map_bp.route('/api/network-map/nat-diagram', methods=['GET'])
+def get_nat_diagram():
+    """Parse all router/switch configs and return full NAT flow data for visualization."""
+    devices = []
+    all_files = _scan_all_router_dirs()
+
+    for filepath, fname, category in all_files:
+        data = _parse_nat_full(filepath)
+        if not data:
+            continue
+        # Only include devices that have NAT configured
+        if not data['nat_rules']:
+            continue
+
+        # Enrich each NAT rule with its ACL source networks
+        for rule in data['nat_rules']:
+            if rule.get('type') == 'dynamic' and rule.get('acl'):
+                acl_name = rule['acl']
+                rule['acl_entries'] = data['acl_content'].get(acl_name, [])
+                # Get overload interface IP
+                ov_intf = rule.get('overload_intf', '')
+                rule['overload_ip'] = ''
+                if ov_intf:
+                    for oi in data['outside_interfaces']:
+                        if oi['name'] == ov_intf:
+                            rule['overload_ip'] = oi['ip']
+                            break
+
+        # Get province info for label
+        abbr = _abbr_from_hostname(data['hostname'])
+        pinfo = PROVINCE_INFO.get(abbr, {})
+
+        devices.append({
+            'hostname': data['hostname'],
+            'label': pinfo.get('fa', data['hostname']),
+            'abbr': abbr,
+            'category': category,
+            'source_file': fname,
+            'inside_interfaces': data['inside_interfaces'],
+            'outside_interfaces': data['outside_interfaces'],
+            'nat_rules': data['nat_rules'],
+            'nat_pools': data['nat_pools'],
+        })
+
+    # Sort: core first, then provincial, then switches
+    order = {'core-router': 0, 'provincial-router': 1, 'core-switch': 2}
+    devices.sort(key=lambda d: (order.get(d['category'], 3), d['hostname']))
+
+    return jsonify({
+        'devices': devices,
+        'total': len(devices),
+        'total_rules': sum(len(d['nat_rules']) for d in devices),
+    })
+
+
 @network_map_bp.route('/api/network-map/topology', methods=['GET'])
 def get_topology():
     """Parse all router configs and return topology data."""

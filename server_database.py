@@ -838,11 +838,10 @@ FINGLISH_DICT = {
     'shahrivar': 'شهریور', 'Shahrivar': 'شهریور',
     'bahman': 'بهمن', 'Bahman': 'بهمن',
     'khordad': 'خرداد', 'Khordad': 'خرداد',
-    'imam': 'امام', 'reza': 'رضا', 'Reza': 'رضا',
+    'reza': 'رضا', 'Reza': 'رضا',
     'hossein': 'حسین', 'Hossein': 'حسین',
     'ali': 'علی', 'Ali': 'علی',
     'amuzesh': 'آموزش', 'Amuzesh': 'آموزش',
-    'QalehRaeisi': 'قلعه رئیسی',
     'ArioBarzan': 'آریوبرزن', 'Dehdasht': 'دهدشت',
     'NakhlTaqi': 'نخل تقی',
     'DowlatAbad': 'دولت‌آباد',
@@ -854,7 +853,6 @@ FINGLISH_DICT = {
     'TaqBostan': 'طاق بستان',
     'QaraZiyaDin': 'قره‌ضیاءالدین',
     'PolDasht': 'پلدشت',
-    'QalehRaeisi': 'قلعه رئیسی',
     'GolTape': 'گل تپه',
     'AbGarm': 'آبگرم',
     'ImamReza': 'امام رضا', 'ImamRez': 'امام رضا',
@@ -903,44 +901,68 @@ for en, fa in FINGLISH_DICT.items():
     PERSIAN_TO_FINGLISH[fa].append(en)
 
 def translate_finglish(name):
-    """Translate a Finglish branch name to Persian."""
+    """Translate a Finglish/English branch name to Persian.
+
+    Returns the Persian translation if any part could be translated,
+    or an empty string if no translation was found at all.
+    """
     if not name:
         return ''
-    # Direct match first
+    # Direct match first (fastest path)
     if name in FINGLISH_DICT:
         return FINGLISH_DICT[name]
+    # If already Persian (contains Persian chars), return as-is
+    import re as _re
+    if _re.search(r'[\u0600-\u06FF]', name):
+        return name
     # Remove bandwidth suffixes like -512, -448K, -1M, -512k etc.
-    import re
-    clean = re.sub(r'[-_ ]?\d+[KkMm]?(bps)?$', '', name).strip()
-    if clean in FINGLISH_DICT:
+    clean = _re.sub(r'[-_ ]?\d+[KkMm]?(bps)?$', '', name).strip()
+    if clean != name and clean in FINGLISH_DICT:
         return FINGLISH_DICT[clean]
-    # Try splitting CamelCase and hyphens
-    parts = re.split(r'[-_ ]', clean)
+    # Try splitting on hyphens/underscores/spaces first
+    parts = _re.split(r'[-_ ]', clean)
     if len(parts) == 1:
-        # Split CamelCase: "ImamReza" -> ["Imam", "Reza"]
-        parts = re.findall(r'[A-Z][a-z]*|[a-z]+|[A-Z]+', clean)
+        # Single token: try CamelCase split "ImamReza" -> ["Imam", "Reza"]
+        parts = _re.findall(r'[A-Z][a-z]*|[a-z]+|[A-Z]{2,}', clean)
+    # Filter empty parts
+    parts = [p for p in parts if p]
+    if not parts:
+        return ''
     translated = []
+    any_translated = False
     i = 0
     while i < len(parts):
         p = parts[i]
-        # Try combining 2 parts
+        # Try combining current + next token (e.g. "Imam" + "Reza" = "ImamReza")
+        matched = False
         if i + 1 < len(parts):
-            combo = p + parts[i+1]
+            combo = p + parts[i + 1]
             if combo in FINGLISH_DICT:
                 translated.append(FINGLISH_DICT[combo])
+                any_translated = True
                 i += 2
                 continue
-        if p in FINGLISH_DICT:
-            translated.append(FINGLISH_DICT[p])
-        elif p.lower() in FINGLISH_DICT:
-            translated.append(FINGLISH_DICT[p.lower()])
-        elif p.capitalize() in FINGLISH_DICT:
-            translated.append(FINGLISH_DICT[p.capitalize()])
-        else:
-            translated.append(p)
+            # Also try with capitalize/lower combo
+            combo_cap = p.capitalize() + parts[i + 1].capitalize()
+            if combo_cap in FINGLISH_DICT:
+                translated.append(FINGLISH_DICT[combo_cap])
+                any_translated = True
+                i += 2
+                continue
+        # Single token lookup (exact, lowercase, capitalize)
+        for variant in (p, p.lower(), p.capitalize(), p.upper()):
+            if variant in FINGLISH_DICT:
+                translated.append(FINGLISH_DICT[variant])
+                any_translated = True
+                matched = True
+                break
+        if not matched:
+            translated.append(p)   # keep original token
         i += 1
-    result = ' '.join(translated)
-    return result if result != name else ''
+
+    if not any_translated:
+        return ''   # nothing was translated — signal no Persian equivalent found
+    return ' '.join(translated)
 
 def get_persian_search_variants(query):
     """Get Finglish variants of a Persian search query for bidirectional search."""
@@ -4914,13 +4936,22 @@ def delete_translation(tid):
     try:
         conn = get_db()
         cursor = conn.cursor()
-        cursor.execute("SELECT name_en FROM custom_translations WHERE id = ?", (tid,))
+        cursor.execute("SELECT name_en, name_fa FROM custom_translations WHERE id = ?", (tid,))
         row = cursor.fetchone()
         if row:
             en = row['name_en']
+            fa = row['name_fa']
             cursor.execute("DELETE FROM custom_translations WHERE id = ?", (tid,))
             conn.commit()
+            # Remove from in-memory dicts
             FINGLISH_DICT.pop(en, None)
+            if fa in PERSIAN_TO_FINGLISH:
+                try:
+                    PERSIAN_TO_FINGLISH[fa].remove(en)
+                except ValueError:
+                    pass
+                if not PERSIAN_TO_FINGLISH[fa]:
+                    del PERSIAN_TO_FINGLISH[fa]
         conn.close()
         return jsonify({'status': 'ok'})
     except Exception as e:
