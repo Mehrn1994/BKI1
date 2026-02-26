@@ -77,3 +77,8 @@ def reports_page():
 @pages_bp.route('/network-map')
 def network_map_page():
     return render_template('network_map.html')
+
+
+@pages_bp.route('/nat-diagram')
+def nat_diagram_page():
+    return render_template('nat_diagram.html')

@@ -426,17 +426,24 @@ def import_serial_to_db():
     print(f"  Cleared previous imported PTMP data")
 
     now = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-    config_files = sorted(os.listdir(ROUTER_DIR))
+
+    # Collect all router config files: top-level + all subdirectories
+    all_config_pairs = []  # (filepath, filename_for_province_extraction)
+    for entry in sorted(os.listdir(ROUTER_DIR)):
+        full = os.path.join(ROUTER_DIR, entry)
+        if os.path.isfile(full) and os.path.getsize(full) >= 100:
+            all_config_pairs.append((full, entry))
+        elif os.path.isdir(full):
+            for sub in sorted(os.listdir(full)):
+                subpath = os.path.join(full, sub)
+                if os.path.isfile(subpath) and os.path.getsize(subpath) >= 100:
+                    all_config_pairs.append((subpath, sub))
+
     total = 0
     total_matched = 0
     total_branches = 0
 
-    for filename in config_files:
-        filepath = os.path.join(ROUTER_DIR, filename)
-        if os.path.isdir(filepath):
-            continue
-        if os.path.getsize(filepath) < 100:
-            continue
+    for filepath, filename in all_config_pairs:
 
         prov_abbr, prov_english = extract_province(filename)
         prov_persian = PROVINCE_PERSIAN_MAP.get(prov_abbr, '')
@@ -588,21 +595,21 @@ def main():
     all_tunnels = []  # (province_abbr, province_name, router_file, tunnel_data)
     vpls_used_ips = {}  # (province, pair_ip) -> tunnel_info (only 100.100.100.x range)
 
-    config_files = sorted(os.listdir(ROUTER_DIR))
-    print(f"\nFound {len(config_files)} router config files")
+    # Collect all config files from ROUTER_DIR and all its subdirectories
+    all_config_pairs = []  # (filepath, filename_for_province)
+    for entry in sorted(os.listdir(ROUTER_DIR)):
+        full = os.path.join(ROUTER_DIR, entry)
+        if os.path.isfile(full) and os.path.getsize(full) >= 50:
+            all_config_pairs.append((full, entry))
+        elif os.path.isdir(full):
+            for sub in sorted(os.listdir(full)):
+                subpath = os.path.join(full, sub)
+                if os.path.isfile(subpath) and os.path.getsize(subpath) >= 50:
+                    all_config_pairs.append((subpath, sub))
 
-    for filename in config_files:
-        filepath = os.path.join(ROUTER_DIR, filename)
-        if os.path.isdir(filepath):
-            # Check for files inside directories
-            for sub in os.listdir(filepath):
-                subpath = os.path.join(filepath, sub)
-                if os.path.isfile(subpath):
-                    filepath = subpath
-                    break
-            else:
-                continue
+    print(f"\nFound {len(all_config_pairs)} router/switch config files (including subdirs)")
 
+    for filepath, filename in all_config_pairs:
         prov_abbr, prov_name = extract_province(filename)
         tunnels = parse_router_config(filepath)
 
