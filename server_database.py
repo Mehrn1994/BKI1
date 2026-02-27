@@ -880,6 +880,182 @@ FINGLISH_DICT = {
     'ShahrakSan': 'شهرک صنعتی', 'BabaRashani': 'بابارشانی',
     'DehGolan': 'دهگلان', 'Pataveh': 'پاتاوه', 'Pishin': 'پیشین',
     'EnqelabSnj': 'انقلاب سنندج', 'BazarBjr': 'بازار بیجار',
+    # ── Additional cities ─────────────────────────────────────────────────────
+    'khorramabad': 'خرم‌آباد', 'Khorramabad': 'خرم‌آباد', 'Khrbd': 'خرم‌آباد',
+    'ilam': 'ایلام', 'Ilam': 'ایلام',
+    'zahedan': 'زاهدان', 'Zahedan': 'زاهدان', 'ZHD': 'زاهدان',
+    'birjand': 'بیرجند', 'Birjand': 'بیرجند',
+    'bandarabbas': 'بندرعباس', 'BandarAbbas': 'بندرعباس', 'BND': 'بندرعباس',
+    'bandar': 'بندر', 'Bandar': 'بندر',
+    'bushehr': 'بوشهر', 'Bushehr': 'بوشهر', 'BSH': 'بوشهر',
+    'shahrekord': 'شهرکرد', 'Shahrekord': 'شهرکرد', 'Shkrd': 'شهرکرد',
+    'hamadan': 'همدان', 'Hamadan': 'همدان', 'HMD': 'همدان',
+    'kermanshah': 'کرمانشاه', 'Kermanshah': 'کرمانشاه', 'KRN': 'کرمانشاه',
+    'arak': 'اراک', 'Arak': 'اراک',
+    'qazvin': 'قزوین', 'Qazvin': 'قزوین', 'Qzv': 'قزوین',
+    'ardabil': 'اردبیل', 'Ardabil': 'اردبیل', 'ARD': 'اردبیل',
+    'karaj': 'کرج', 'Karaj': 'کرج', 'KRJ': 'کرج',
+    'saveh': 'ساوه', 'Saveh': 'ساوه',
+    'boroujerd': 'بروجرد', 'Boroujerd': 'بروجرد',
+    'kuhdasht': 'کوهدشت', 'Kuhdasht': 'کوهدشت',
+    'azna': 'ازنا', 'Azna': 'ازنا',
+    'aligoudarz': 'الیگودرز', 'Aligoudarz': 'الیگودرز',
+    'poldokhtar': 'پل‌دختر', 'PolDokhtar': 'پل‌دختر',
+    'mahabad': 'مهاباد', 'Mahabad': 'مهاباد',
+    'bukan': 'بوکان', 'Bukan': 'بوکان',
+    'marivan': 'مریوان', 'Marivan': 'مریوان',
+    'kamyaran': 'کامیاران', 'Kamyaran': 'کامیاران',
+    'divandarreh': 'دیواندره', 'Divandarreh': 'دیواندره',
+    'paveh': 'پاوه', 'Paveh': 'پاوه',
+    'kangavar': 'کنگاور', 'Kangavar': 'کنگاور',
+    'sahneh': 'صحنه', 'Sahneh': 'صحنه',
+    'harsin': 'هرسین', 'Harsin': 'هرسین',
+    'nehavand': 'نهاوند', 'Nehavand': 'نهاوند',
+    'malayer': 'ملایر', 'Malayer': 'ملایر',
+    'asadabad': 'اسدآباد', 'Asadabad': 'اسدآباد',
+    'tuyserkan': 'تویسرکان', 'Tuyserkan': 'تویسرکان',
+    'bahar': 'بهار', 'Bahar': 'بهار',
+    'razan': 'رزن', 'Razan': 'رزن',
+    'kashan': 'کاشان', 'Kashan': 'کاشان', 'KSH': 'کاشان',
+    'najafabad': 'نجف‌آباد', 'Najafabad': 'نجف‌آباد',
+    'mobarakeh': 'مبارکه', 'Mobarakeh': 'مبارکه',
+    'shahreza': 'شهرضا', 'Shahreza': 'شهرضا',
+    'golpayegan': 'گلپایگان', 'Golpayegan': 'گلپایگان',
+    'khomeynishahr': 'خمینی‌شهر', 'KhomeyniShahr': 'خمینی‌شهر',
+    'kazerun': 'کازرون', 'Kazerun': 'کازرون',
+    'fasa': 'فسا', 'Fasa': 'فسا',
+    'neyriz': 'نی‌ریز', 'Neyriz': 'نی‌ریز',
+    'larestan': 'لارستان', 'Larestan': 'لارستان',
+    'jahrom': 'جهرم', 'Jahrom': 'جهرم',
+    'firoozabad': 'فیروزآباد', 'Firoozabad': 'فیروزآباد',
+    'gachsaran': 'گچساران', 'Gachsaran': 'گچساران',
+    'maragheh': 'مراغه', 'Maragheh': 'مراغه',
+    'mianeh': 'میانه', 'Mianeh': 'میانه',
+    'marand': 'مرند', 'Marand': 'مرند',
+    'khoy': 'خوی', 'Khoy': 'خوی',
+    'salmas': 'سلماس', 'Salmas': 'سلماس',
+    'piranshahr': 'پیران‌شهر', 'Piranshahr': 'پیران‌شهر',
+    'sardasht': 'سردشت', 'Sardasht': 'سردشت',
+    'naghadeh': 'نقده', 'Naghadeh': 'نقده',
+    'miandoab': 'میاندوآب', 'Miandoab': 'میاندوآب',
+    'tekab': 'تکاب', 'Tekab': 'تکاب',
+    'jolfa': 'جلفا', 'Jolfa': 'جلفا',
+    'meshginshahr': 'مشگین‌شهر', 'MeshginShahr': 'مشگین‌شهر',
+    'parsabad': 'پارس‌آباد', 'Parsabad': 'پارس‌آباد',
+    'germi': 'گرمی', 'Germi': 'گرمی',
+    'khalkhal': 'خلخال', 'Khalkhal': 'خلخال',
+    'takestan': 'تاکستان', 'Takestan': 'تاکستان',
+    'khodabandeh': 'خدابنده', 'Khodabandeh': 'خدابنده',
+    'boroujen': 'بروجن', 'Boroujen': 'بروجن',
+    'natanz': 'نطنز', 'Natanz': 'نطنز',
+    'ardestan': 'اردستان', 'Ardestan': 'اردستان',
+    'zarinshahr': 'زرین‌شهر', 'ZarinShahr': 'زرین‌شهر',
+    'lenjan': 'لنجان', 'Lenjan': 'لنجان',
+    'fereydunshahr': 'فریدون‌شهر', 'FereydunShahr': 'فریدون‌شهر',
+    'khansari': 'خوانسار', 'Khansari': 'خوانسار',
+    'khomein': 'خمین', 'Khomein': 'خمین',
+    'delijan': 'دلیجان', 'Delijan': 'دلیجان',
+    'mahalat': 'محلات', 'Mahalat': 'محلات',
+    'zarand': 'زرند', 'Zarand': 'زرند',
+    'bam': 'بم', 'Bam': 'بم',
+    'jiroft': 'جیرفت', 'Jiroft': 'جیرفت',
+    'sirjan': 'سیرجان', 'Sirjan': 'سیرجان',
+    'rafsanjan': 'رفسنجان', 'Rafsanjan': 'رفسنجان',
+    'kerman': 'کرمان', 'Kerman': 'کرمان', 'KRM': 'کرمان',
+    'ahvaz': 'اهواز', 'Ahvaz': 'اهواز', 'AHV': 'اهواز', 'AHZ': 'اهواز',
+    'sabzevar': 'سبزوار', 'Sabzevar': 'سبزوار',
+    'neyshabur': 'نیشابور', 'Neyshabur': 'نیشابور',
+    'torbatheydariyeh': 'تربت‌حیدریه', 'TorbatHeydariyeh': 'تربت‌حیدریه',
+    'kashmar': 'کاشمر', 'Kashmar': 'کاشمر',
+    'quchan': 'قوچان', 'Quchan': 'قوچان',
+    'bojnurd': 'بجنورد', 'Bojnurd': 'بجنورد',
+    'shirvan': 'شیروان', 'Shirvan': 'شیروان',
+    'zabol': 'زابل', 'Zabol': 'زابل',
+    'iranshahr': 'ایرانشهر', 'Iranshahr': 'ایرانشهر',
+    'chabahar': 'چابهار', 'Chabahar': 'چابهار',
+    'khash': 'خاش', 'Khash': 'خاش',
+    'saravan': 'سراوان', 'Saravan': 'سراوان',
+    'dezful': 'دزفول', 'Dezful': 'دزفول',
+    'andimeshk': 'اندیمشک', 'Andimeshk': 'اندیمشک',
+    'shushtar': 'شوشتر', 'Shushtar': 'شوشتر',
+    'behbahan': 'بهبهان', 'Behbahan': 'بهبهان',
+    'omidiyeh': 'امیدیه', 'Omidiyeh': 'امیدیه',
+    'izeh': 'ایذه', 'Izeh': 'ایذه',
+    'abadan': 'آبادان', 'Abadan': 'آبادان',
+    'khoramshahr': 'خرمشهر', 'Khoramshahr': 'خرمشهر',
+    'masjedsoleyman': 'مسجدسلیمان', 'MasjedSoleyman': 'مسجدسلیمان',
+    'masjed': 'مسجد', 'Masjed': 'مسجد',
+    'ramhormoz': 'رامهرمز', 'Ramhormoz': 'رامهرمز',
+    'shadegan': 'شادگان', 'Shadegan': 'شادگان',
+    # ── Banking / financial terms ─────────────────────────────────────────────
+    'markazi': 'مرکزی', 'Markazi': 'مرکزی',
+    'meli': 'ملی', 'Meli': 'ملی',
+    'mellat': 'ملت', 'Mellat': 'ملت',
+    'tejarat': 'تجارت', 'Tejarat': 'تجارت',
+    'saderat': 'صادرات', 'Saderat': 'صادرات',
+    'sepah': 'سپه', 'Sepah': 'سپه',
+    'keshavarzi': 'کشاورزی', 'Keshavarzi': 'کشاورزی',
+    'maskan': 'مسکن', 'Maskan': 'مسکن',
+    'refah': 'رفاه', 'Refah': 'رفاه',
+    'pasargad': 'پاسارگاد', 'Pasargad': 'پاسارگاد',
+    'parsian': 'پارسیان', 'Parsian': 'پارسیان',
+    'saman': 'سامان', 'Saman': 'سامان',
+    'sina': 'سینا', 'Sina': 'سینا',
+    'ayandeh': 'آینده', 'Ayandeh': 'آینده',
+    'karafarin': 'کارآفرین', 'Karafarin': 'کارآفرین',
+    'eghtesad': 'اقتصاد', 'Eghtesad': 'اقتصاد',
+    'ansar': 'انصار', 'Ansar': 'انصار',
+    'bazargani': 'بازرگانی', 'Bazargani': 'بازرگانی',
+    'sherkat': 'شرکت', 'Sherkat': 'شرکت',
+    # ── Place structure words ─────────────────────────────────────────────────
+    'meydan': 'میدان', 'Meydan': 'میدان',
+    'kheyaban': 'خیابان', 'Kheyaban': 'خیابان',
+    'shahrak': 'شهرک', 'Shahrak': 'شهرک',
+    'sanati': 'صنعتی', 'Sanati': 'صنعتی',
+    'tejari': 'تجاری', 'Tejari': 'تجاری',
+    'markaz': 'مرکز', 'Markaz': 'مرکز',
+    'shamal': 'شمال', 'Shamal': 'شمال',
+    'jonoob': 'جنوب', 'Jonoob': 'جنوب',
+    'shargh': 'شرق', 'Shargh': 'شرق',
+    'gharb': 'غرب', 'Gharb': 'غرب',
+    'kooy': 'کوی', 'Kooy': 'کوی',
+    'nabsh': 'نبش', 'Nabsh': 'نبش',
+    'bagh': 'باغ', 'Bagh': 'باغ',
+    'abad': 'آباد', 'Abad': 'آباد',
+    'shahr': 'شهر', 'Shahr': 'شهر',
+    'roosta': 'روستا', 'Roosta': 'روستا',
+    'shahrestan': 'شهرستان', 'Shahrestan': 'شهرستان',
+    'SP': 'سرپرستی', 'Sp': 'سرپرستی',
+    # ── Common personal names / titles ───────────────────────────────────────
+    'mahdi': 'مهدی', 'Mahdi': 'مهدی',
+    'javad': 'جواد', 'Javad': 'جواد',
+    'mousa': 'موسی', 'Mousa': 'موسی',
+    'karim': 'کریم', 'Karim': 'کریم',
+    'hakim': 'حکیم', 'Hakim': 'حکیم',
+    'moradi': 'مرادی', 'Moradi': 'مرادی',
+    'hosseini': 'حسینی', 'Hosseini': 'حسینی',
+    'ahmadi': 'احمدی', 'Ahmadi': 'احمدی',
+    'rezaei': 'رضایی', 'Rezaei': 'رضایی',
+    'mohammadi': 'محمدی', 'Mohammadi': 'محمدی',
+    'akbar': 'اکبر', 'Akbar': 'اکبر',
+    'asghar': 'اصغر', 'Asghar': 'اصغر',
+    'ahmad': 'احمد', 'Ahmad': 'احمد',
+    'hassan': 'حسن', 'Hassan': 'حسن',
+    'mostafa': 'مصطفی', 'Mostafa': 'مصطفی',
+    'sadegh': 'صادق', 'Sadegh': 'صادق',
+    'zeinab': 'زینب', 'Zeinab': 'زینب',
+    'fatemeh': 'فاطمه', 'Fatemeh': 'فاطمه',
+    'karbala': 'کربلا', 'Karbala': 'کربلا',
+    'najaf': 'نجف', 'Najaf': 'نجف',
+    'nouri': 'نوری', 'Nouri': 'نوری',
+    'kashani': 'کاشانی', 'Kashani': 'کاشانی',
+    'chamran': 'چمران', 'Chamran': 'چمران',
+    'resalat': 'رسالت', 'Resalat': 'رسالت',
+    'sattari': 'ستاری', 'Sattari': 'ستاری',
+    'shahid': 'شهید', 'Shahid': 'شهید',
+    'doktor': 'دکتر', 'Dr': 'دکتر',
+    'mohandas': 'مهندس', 'Mohandas': 'مهندس',
+    'ostade': 'استاد', 'Ostade': 'استاد',
 }
 
 # Load custom translations from DB at startup
@@ -913,15 +1089,20 @@ for en, fa in FINGLISH_DICT.items():
 
 import difflib as _difflib
 
+# Thread lock for all FINGLISH_DICT / PERSIAN_TO_FINGLISH mutations
+_translation_lock = threading.RLock()
+
 # Flat list of all keys for fuzzy matching — rebuilt when dict changes
 _FINGLISH_KEYS_CACHE = []
+_FINGLISH_KEYS_LOWER_MAP = {}   # {lowercase_key: original_key} — cached permanently
 
 def _rebuild_fuzzy_cache():
-    """Rebuild the flat list of dict keys used by difflib matching."""
-    global _FINGLISH_KEYS_CACHE
+    """Rebuild the key lists used by difflib matching. Call under _translation_lock."""
+    global _FINGLISH_KEYS_CACHE, _FINGLISH_KEYS_LOWER_MAP
     _FINGLISH_KEYS_CACHE = list(FINGLISH_DICT.keys())
+    _FINGLISH_KEYS_LOWER_MAP = {k.lower(): k for k in _FINGLISH_KEYS_CACHE}
 
-def _fuzzy_lookup(token, cutoff=0.78):
+def _fuzzy_lookup(token, cutoff=0.82):
     """Find the closest FINGLISH_DICT key for *token* using difflib.
 
     Returns the Persian value for the best match, or None if no match
@@ -929,7 +1110,7 @@ def _fuzzy_lookup(token, cutoff=0.78):
     Strategy:
       1. Try exact-case match first (already done by caller).
       2. Try close matches against the full key list (case-sensitive).
-      3. Retry case-insensitively against lowercase key variants.
+      3. Retry case-insensitively using the pre-built lowercase key map.
     A minimum token length of 4 is enforced to avoid false positives on
     short abbreviations.
     """
@@ -944,13 +1125,13 @@ def _fuzzy_lookup(token, cutoff=0.78):
     if matches:
         return FINGLISH_DICT[matches[0]]
 
-    # Case-insensitive pass: build a lowercase → original map on the fly
-    lower_map = {k.lower(): k for k in _FINGLISH_KEYS_CACHE}
-    ci_matches = _difflib.get_close_matches(token.lower(), list(lower_map.keys()),
+    # Case-insensitive pass — use pre-built (cached) lowercase map
+    lower_keys = list(_FINGLISH_KEYS_LOWER_MAP.keys())
+    ci_matches = _difflib.get_close_matches(token.lower(), lower_keys,
                                              n=1, cutoff=cutoff)
     if ci_matches:
-        original_key = lower_map[ci_matches[0]]
-        return FINGLISH_DICT[original_key]
+        original_key = _FINGLISH_KEYS_LOWER_MAP[ci_matches[0]]
+        return FINGLISH_DICT.get(original_key)
 
     return None
 
@@ -1040,7 +1221,7 @@ def translate_finglish(name):
         i += 1
 
     if not any_translated:
-        return ''
+        return name   # Return original if no token could be translated
     return ' '.join(translated)
 
 def get_persian_search_variants(query):
@@ -5246,13 +5427,14 @@ def add_translation():
                        (name_en, name_fa, username, now))
         conn.commit()
         conn.close()
-        # Update in-memory dicts and invalidate fuzzy cache
-        FINGLISH_DICT[name_en] = name_fa
-        if name_fa not in PERSIAN_TO_FINGLISH:
-            PERSIAN_TO_FINGLISH[name_fa] = []
-        if name_en not in PERSIAN_TO_FINGLISH[name_fa]:
-            PERSIAN_TO_FINGLISH[name_fa].append(name_en)
-        _rebuild_fuzzy_cache()   # keep fuzzy index up-to-date
+        # Update in-memory dicts and invalidate fuzzy cache (thread-safe)
+        with _translation_lock:
+            FINGLISH_DICT[name_en] = name_fa
+            if name_fa not in PERSIAN_TO_FINGLISH:
+                PERSIAN_TO_FINGLISH[name_fa] = []
+            if name_en not in PERSIAN_TO_FINGLISH[name_fa]:
+                PERSIAN_TO_FINGLISH[name_fa].append(name_en)
+            _rebuild_fuzzy_cache()   # keep fuzzy index up-to-date
         log_activity('info', 'افزودن ترجمه', f'{name_en} → {name_fa}', username)
         return jsonify({'status': 'ok', 'message': f'ترجمه "{name_en}" → "{name_fa}" اضافه شد'})
     except Exception as e:
@@ -5271,16 +5453,17 @@ def delete_translation(tid):
             fa = row['name_fa']
             cursor.execute("DELETE FROM custom_translations WHERE id = ?", (tid,))
             conn.commit()
-            # Remove from in-memory dicts and rebuild fuzzy cache
-            FINGLISH_DICT.pop(en, None)
-            if fa in PERSIAN_TO_FINGLISH:
-                try:
-                    PERSIAN_TO_FINGLISH[fa].remove(en)
-                except ValueError:
-                    pass
-                if not PERSIAN_TO_FINGLISH[fa]:
-                    del PERSIAN_TO_FINGLISH[fa]
-            _rebuild_fuzzy_cache()
+            # Remove from in-memory dicts and rebuild fuzzy cache (thread-safe)
+            with _translation_lock:
+                FINGLISH_DICT.pop(en, None)
+                if fa in PERSIAN_TO_FINGLISH:
+                    try:
+                        PERSIAN_TO_FINGLISH[fa].remove(en)
+                    except ValueError:
+                        pass
+                    if not PERSIAN_TO_FINGLISH[fa]:
+                        del PERSIAN_TO_FINGLISH[fa]
+                _rebuild_fuzzy_cache()
         conn.close()
         return jsonify({'status': 'ok'})
     except Exception as e:
