@@ -310,13 +310,24 @@ function setProto(p,el){
   el.classList.add('on');
 }
 
+function escHtml(str){
+  if(!str)return '';
+  const d=document.createElement('span');d.textContent=str;return d.innerHTML;
+}
 function ipToNum(ip){
   const p=ip.trim().split('.');
   if(p.length!==4)return NaN;
   return((+p[0]<<24)|(+p[1]<<16)|(+p[2]<<8)|(+p[3]))>>>0;
 }
 function isValidIP(ip){
-  return/^(\d{1,3}\.){3}\d{1,3}$/.test(ip.trim())&&ip.trim().split('.').every(n=>+n>=0&&+n<=255);
+  if(!ip)return false;
+  const parts=ip.trim().split('.');
+  if(parts.length!==4)return false;
+  return parts.every(part=>{
+    if(!/^\d+$/.test(part))return false;
+    const n=parseInt(part,10);
+    return n>=0&&n<=255&&String(n)===part;  // no leading zeros
+  });
 }
 function ipInNetwork(testIP,network,wildcard){
   if(!network||network==='any')return true;
@@ -391,7 +402,11 @@ function simulate(){
     resDiv.innerHTML=`<div class="empty-state"><span class="empty-icon">&#10060;</span><h3>فرمت IP نادرست</h3><p>آدرس IP باید به فرمت <strong style="direction:ltr;display:inline-block">x.x.x.x</strong> باشد</p></div>`;
     return;
   }
-  resDiv.innerHTML=`<div class="loading-state"><div class="spinner"></div><div style="color:var(--t3);font-size:13px">در حال جستجوی قوانین NAT برای <strong style="color:var(--cyan)">${srcIP}</strong>...</div></div>`;
+  if(dstIP&&!isValidIP(dstIP)){
+    resDiv.innerHTML=`<div class="empty-state"><span class="empty-icon">&#10060;</span><h3>فرمت IP مقصد نادرست</h3><p>آدرس IP مقصد باید به فرمت <strong style="direction:ltr;display:inline-block">x.x.x.x</strong> باشد یا خالی بگذارید</p></div>`;
+    return;
+  }
+  resDiv.innerHTML=`<div class="loading-state"><div class="spinner"></div><div style="color:var(--t3);font-size:13px">در حال جستجوی قوانین NAT برای <strong style="color:var(--cyan)">${escHtml(srcIP)}</strong>...</div></div>`;
 
   const btn=document.getElementById('simBtn');
   const rip=document.createElement('span');rip.className='ripple';btn.appendChild(rip);
@@ -412,10 +427,10 @@ function renderResults(matched,srcIP,dstIP){
   const resDiv=document.getElementById('results');
   const total=matched.reduce((s,r)=>s+r.matches.length,0);
   if(!total){
-    resDiv.innerHTML=`<div class="empty-state"><span class="empty-icon">&#128269;</span><h3>هیچ قانون NAT مطابقی یافت نشد</h3><p>آدرس <strong style="color:var(--cyan);direction:ltr">${srcIP}</strong> در هیچ ACL قانون NAT موجود نیست.<br>این IP ممکن است خارج از محدوده تعریف‌شده باشد.</p></div>`;
+    resDiv.innerHTML=`<div class="empty-state"><span class="empty-icon">&#128269;</span><h3>هیچ قانون NAT مطابقی یافت نشد</h3><p>آدرس <strong style="color:var(--cyan);direction:ltr">${escHtml(srcIP)}</strong> در هیچ ACL قانون NAT موجود نیست.<br>این IP ممکن است خارج از محدوده تعریف‌شده باشد.</p></div>`;
     return;
   }
-  let html=`<div class="results-header"><span class="badge-count">${total}</span><div><h3>نتایج شبیه‌سازی</h3><p>برای <strong style="color:var(--cyan);direction:ltr">${srcIP}</strong>${dstIP?' &#8594; <strong style="color:var(--green);direction:ltr">'+dstIP+'</strong>':''} در <strong>${matched.length}</strong> دستگاه</p></div></div>`;
+  let html=`<div class="results-header"><span class="badge-count">${total}</span><div><h3>نتایج شبیه‌سازی</h3><p>برای <strong style="color:var(--cyan);direction:ltr">${escHtml(srcIP)}</strong>${dstIP?' &#8594; <strong style="color:var(--green);direction:ltr">'+escHtml(dstIP)+'</strong>':''} در <strong>${matched.length}</strong> دستگاه</p></div></div>`;
   let delay=0;
   for(const{dev,matches}of matched){for(const m of matches){html+=buildCard(dev,m,srcIP,dstIP,delay);delay+=80;}}
   resDiv.innerHTML=html;
@@ -435,62 +450,63 @@ function buildCard(dev,match,srcIP,dstIP,delay){
   if(entries&&entries.length>0){
     const preview=entries.slice(0,4);
     aclHtml=`<div class="acl-entries">`+preview.map(e=>{
-      const src=e.src||'any';const wild=e.src_wild?' '+e.src_wild:'';
-      return`<div class="acl-row"><span class="acl-act ${e.action}">${e.action}</span><span class="acl-net">${src}${wild}</span></div>`;
+      const src=escHtml(e.src||'any');const wild=e.src_wild?' '+escHtml(e.src_wild):'';
+      return`<div class="acl-row"><span class="acl-act ${escHtml(e.action)}">${escHtml(e.action)}</span><span class="acl-net">${src}${wild}</span></div>`;
     }).join('')+(entries.length>4?`<div style="font-size:9px;color:var(--t3);margin-top:4px">+${entries.length-4} قانون دیگر</div>`:'')+`</div>`;
   }
 
+  const eSrc=escHtml(srcIP),eDst=escHtml(destLabel),eNat=escHtml(natIP);
   return`<div class="flow-card" style="animation-delay:${delay}ms">
   <div class="fc-head">
     <div class="fc-badge">${catIcon}</div>
-    <div class="fc-info"><h3>${dev.hostname}</h3><p>${catLabel}${dev.label&&dev.label!==dev.hostname?' · '+dev.label:''}</p></div>
+    <div class="fc-info"><h3>${escHtml(dev.hostname)}</h3><p>${escHtml(catLabel)}${dev.label&&dev.label!==dev.hostname?' · '+escHtml(dev.label):''}</p></div>
     <span class="type-badge ${typeClass}">${typeBadge}</span>
   </div>
   <div class="vflow">
-    <div class="vnode"><div class="vicon pc">&#128187;</div><div class="vnode-ip">${srcIP}</div><div class="vnode-sub">Source PC</div></div>
-    <div class="vconn"><div class="vtrack in"><div class="vpkt b"></div></div><div class="vconn-lbl">${inside.name}</div><div class="vconn-sub">${inside.ip||''}</div><div class="vconn-sub" style="color:rgba(59,130,246,0.6)">inside &#9654;</div></div>
+    <div class="vnode"><div class="vicon pc">&#128187;</div><div class="vnode-ip">${eSrc}</div><div class="vnode-sub">Source PC</div></div>
+    <div class="vconn"><div class="vtrack in"><div class="vpkt b"></div></div><div class="vconn-lbl">${escHtml(inside.name)}</div><div class="vconn-sub">${escHtml(inside.ip||'')}</div><div class="vconn-sub" style="color:rgba(59,130,246,0.6)">inside &#9654;</div></div>
     <div class="vnode">
       <div class="vicon rtr">&#128256;</div>
-      <div class="vnode-sub" style="color:var(--cyan);font-weight:600;font-size:11px">${dev.hostname}</div>
+      <div class="vnode-sub" style="color:var(--cyan);font-weight:600;font-size:11px">${escHtml(dev.hostname)}</div>
       <div class="nat-transform">
         <div class="nt-title">NAT TRANSLATION</div>
-        <div class="nt-ip" style="color:var(--blue)">${srcIP}</div>
+        <div class="nt-ip" style="color:var(--blue)">${eSrc}</div>
         <div class="nt-arrow">&#11015;</div>
-        <div class="nt-ip" style="color:var(--amber)">${natIP}</div>
-        ${rule.acl?`<div class="nt-sub">ACL: ${rule.acl}</div>`:''}
+        <div class="nt-ip" style="color:var(--amber)">${eNat}</div>
+        ${rule.acl?`<div class="nt-sub">ACL: ${escHtml(rule.acl)}</div>`:''}
         ${overloadTag}
       </div>
     </div>
-    <div class="vconn"><div class="vtrack out"><div class="vpkt g"></div></div><div class="vconn-lbl">${outside.name}</div><div class="vconn-sub">${outside.ip||''}</div><div class="vconn-sub" style="color:rgba(16,185,129,0.6)">&#9654; outside</div></div>
-    <div class="vnode"><div class="vicon inet">&#127760;</div><div class="vnode-ip" style="color:var(--green)">${natIP}</div><div class="vnode-sub">${destLabel}</div></div>
+    <div class="vconn"><div class="vtrack out"><div class="vpkt g"></div></div><div class="vconn-lbl">${escHtml(outside.name)}</div><div class="vconn-sub">${escHtml(outside.ip||'')}</div><div class="vconn-sub" style="color:rgba(16,185,129,0.6)">&#9654; outside</div></div>
+    <div class="vnode"><div class="vicon inet">&#127760;</div><div class="vnode-ip" style="color:var(--green)">${eNat}</div><div class="vnode-sub">${eDst}</div></div>
   </div>
   <div class="detail-grid">
     <div class="dbox">
       <h4><span style="color:var(--blue)">&#9679;</span> Inside Interface</h4>
-      <div class="drow"><span class="dk">Interface</span><span class="dv">${inside.name}</span></div>
-      <div class="drow"><span class="dk">IP Address</span><span class="dv">${inside.ip||'–'}</span></div>
-      <div class="drow"><span class="dk">Subnet Mask</span><span class="dv">${inside.mask||'–'}</span></div>
-      ${inside.description?`<div class="drow"><span class="dk">Description</span><span class="dv" style="font-size:10px">${inside.description}</span></div>`:''}
+      <div class="drow"><span class="dk">Interface</span><span class="dv">${escHtml(inside.name)}</span></div>
+      <div class="drow"><span class="dk">IP Address</span><span class="dv">${escHtml(inside.ip||'–')}</span></div>
+      <div class="drow"><span class="dk">Subnet Mask</span><span class="dv">${escHtml(inside.mask||'–')}</span></div>
+      ${inside.description?`<div class="drow"><span class="dk">Description</span><span class="dv" style="font-size:10px">${escHtml(inside.description)}</span></div>`:''}
     </div>
     <div class="dbox">
       <h4><span style="color:var(--amber)">&#9679;</span> قانون NAT</h4>
       <div class="drow"><span class="dk">Type</span><span class="dv"><span class="dtag ${isStatic?'pk':isPAT?'p':'c'}">${isStatic?'Static':isPAT?'PAT':'Dynamic'}</span></span></div>
-      <div class="drow"><span class="dk">Source IP</span><span class="dv" style="color:var(--blue)">${srcIP}</span></div>
-      <div class="drow"><span class="dk">Translated IP</span><span class="dv hl">${natIP}</span></div>
-      ${rule.acl?`<div class="drow"><span class="dk">ACL</span><span class="dv">${rule.acl}</span></div>`:''}
-      ${rule.pool?`<div class="drow"><span class="dk">NAT Pool</span><span class="dv">${rule.pool}</span></div>`:''}
-      ${rule.overload_intf?`<div class="drow"><span class="dk">Overload Intf</span><span class="dv">${rule.overload_intf}</span></div>`:''}
-      ${rule.inside_port?`<div class="drow"><span class="dk">Port Fwd</span><span class="dv">:${rule.inside_port} &#8594; :${rule.outside_port}</span></div>`:''}
+      <div class="drow"><span class="dk">Source IP</span><span class="dv" style="color:var(--blue)">${eSrc}</span></div>
+      <div class="drow"><span class="dk">Translated IP</span><span class="dv hl">${eNat}</span></div>
+      ${rule.acl?`<div class="drow"><span class="dk">ACL</span><span class="dv">${escHtml(rule.acl)}</span></div>`:''}
+      ${rule.pool?`<div class="drow"><span class="dk">NAT Pool</span><span class="dv">${escHtml(rule.pool)}</span></div>`:''}
+      ${rule.overload_intf?`<div class="drow"><span class="dk">Overload Intf</span><span class="dv">${escHtml(rule.overload_intf)}</span></div>`:''}
+      ${rule.inside_port?`<div class="drow"><span class="dk">Port Fwd</span><span class="dv">:${escHtml(String(rule.inside_port))} &#8594; :${escHtml(String(rule.outside_port))}</span></div>`:''}
       ${aclHtml}
     </div>
     <div class="dbox">
       <h4><span style="color:var(--green)">&#9679;</span> Outside Interface</h4>
-      <div class="drow"><span class="dk">Interface</span><span class="dv">${outside.name}</span></div>
-      <div class="drow"><span class="dk">IP Address</span><span class="dv">${outside.ip||'–'}</span></div>
-      <div class="drow"><span class="dk">Subnet Mask</span><span class="dv">${outside.mask||'–'}</span></div>
-      ${outside.description?`<div class="drow"><span class="dk">Description</span><span class="dv" style="font-size:10px">${outside.description}</span></div>`:''}
-      <div class="drow"><span class="dk">Exit IP (NAT'd)</span><span class="dv" style="color:var(--green)">${natIP}</span></div>
-      <div class="drow"><span class="dk">Destination</span><span class="dv">${destLabel}</span></div>
+      <div class="drow"><span class="dk">Interface</span><span class="dv">${escHtml(outside.name)}</span></div>
+      <div class="drow"><span class="dk">IP Address</span><span class="dv">${escHtml(outside.ip||'–')}</span></div>
+      <div class="drow"><span class="dk">Subnet Mask</span><span class="dv">${escHtml(outside.mask||'–')}</span></div>
+      ${outside.description?`<div class="drow"><span class="dk">Description</span><span class="dv" style="font-size:10px">${escHtml(outside.description)}</span></div>`:''}
+      <div class="drow"><span class="dk">Exit IP (NAT'd)</span><span class="dv" style="color:var(--green)">${eNat}</span></div>
+      <div class="drow"><span class="dk">Destination</span><span class="dv">${eDst}</span></div>
     </div>
   </div>
 </div>`;
