@@ -4945,7 +4945,10 @@ def _branch_type_br(desc):
     return 'branch'
 
 def _parse_branches_by_province(router_dir):
-    """Parse WAN-INTR1 + management router configs to extract all branch endpoints."""
+    """
+    Parse ALL router configs (WAN-INTR1/2, ISR-APN-RO, all provincial mgmt routers)
+    to extract every branch, bajeh, ATM, kiosk grouped by province code.
+    """
     import subprocess as _sp
     result = {}
 
@@ -4957,15 +4960,6 @@ def _parse_branches_by_province(router_dir):
         if name not in lst:
             lst.append(name)
 
-    def _process_desc(desc):
-        prov = _get_branch_prov_br(desc)
-        if not prov:
-            return
-        name = desc.split('-', 1)[1] if '-' in desc else desc
-        if name in ('MO', 'HQ') or desc.endswith('-MO') or desc.endswith('-HQ'):
-            return
-        _add(prov, name, _branch_type_br(desc))
-
     def _read_strings(fpath):
         try:
             return _sp.run(['strings', fpath], capture_output=True, text=True, errors='replace').stdout
@@ -4976,49 +4970,68 @@ def _parse_branches_by_province(router_dir):
             except Exception:
                 return ''
 
-    # ── Parse WAN-INTR1 ──────────────────────────────────────────────────────
-    core_dir = os.path.join(router_dir, 'Core Routers')
-    intr1_path = None
-    if os.path.exists(core_dir):
-        for fn in os.listdir(core_dir):
-            if fn.startswith('WAN-INTR1'):
-                intr1_path = os.path.join(core_dir, fn)
+    # Infrastructure keywords – descriptions containing these are skipped
+    _infra_kw = frozenset([
+        'MPLS', 'ShahinShahr', 'Intranet', 'Madar', 'PTMP', 'PDH', 'OStani',
+        'AGG', 'Saatzani', 'EDGE', 'Extranet', 'FTP-MGRE',
+        'GILANET', 'HIWEB', 'MOBINNET', 'LAN', 'APN', 'IranSolar',
+        'Amuzesh', 'Amouzesh', 'Amouz', 'Jahad', 'Modiriyat',
+        'Zirsakht', 'Backbone', 'SW-Agg', 'Iransolar', 'ETHERNET-Bashgah',
+    ])
+    _skip_names = frozenset(['MO', 'HQ', 'Jahad', 'Modiriyat', 'HQ-Tohid', 'Terminal',
+                             'Gilanet', 'ShahinShahr', 'HIWEB', 'MOBINNET'])
+    _provider_pfx = ('Gilanet-', 'MOBINNET-', 'HIWEB-', 'gilanet-', 'mobinnet-',
+                     'hiweb-', 'Shutdown-', 'SHUTDOWN-')
+
+    def _is_infra(name):
+        if not name or len(name) < 2:
+            return True
+        if name in _skip_names:
+            return True
+        if any(kw in name for kw in _infra_kw):
+            return True
+        if '->' in name or '*E1' in name:
+            return True
+        if name.isdigit():
+            return True
+        return False
+
+    def _process_desc(desc, default_prov=None):
+        """Process one tunnel description; add to result if it's a real endpoint."""
+        name = desc.strip()
+        if not name:
+            return
+        # Strip ISP/provider prefix first
+        for pfx in _provider_pfx:
+            if name.startswith(pfx):
+                name = name[len(pfx):]
                 break
-    if intr1_path:
-        out = _read_strings(intr1_path)
-        cur = None
-        for line in out.splitlines():
-            line = line.strip()
-            if line.startswith('interface Tunnel'):
-                cur = line
-            elif 'description **' in line and cur:
-                m = _re.search(r'\*\*\s*(.*?)\s*\*\*', line)
-                if m:
-                    _process_desc(m.group(1).strip())
+        if not name:
+            return
+        # Try to find a province code prefix in the (possibly stripped) name
+        prov = _get_branch_prov_br(name)
+        if prov:
+            branch_name = name.split('-', 1)[1] if '-' in name else name
+        elif default_prov:
+            prov = default_prov
+            # Strip matching province prefix if present (e.g. "KHR-Gonabad" in KHR router)
+            for code in _PROV_CODES_BR:
+                if name.startswith(code + '-'):
+                    name = name[len(code) + 1:]
+                    break
+            branch_name = name
+        else:
+            return
+        if not branch_name:
+            return
+        prov = _PROV_CANONICAL_BR.get(prov, prov)
+        if branch_name.endswith('-MO') or branch_name.endswith('-HQ'):
+            return
+        if _is_infra(branch_name):
+            return
+        _add(prov, branch_name, _branch_type_br(name))
 
-    # ── Parse management routers for provinces not covered by WAN-INTR1 ──────
-    skip_kw = ['MPLS', 'Gilanet', 'Sw-Core', 'Intranet', 'Branch', 'Madar',
-               'PTMP', 'PDH', 'OStani', '512', 'Saatzani', 'EDGE', 'AGG',
-               'To-', 'HQ', 'Amuzesh', 'Amouz']
-    mgmt_map = {
-        'SNB': '3825-SNB-18', 'ILM': '3845-ILM-7',
-        'KNB': '3825-KNB-6', 'BSH': '3825-BSH-18', 'YZD': '3845-YZD-43',
-        'CHB': '3845-CHB-24', 'HMZ': '3845-HMZ-12', 'QOM': '3825-QOM-14',
-        'KRSH': None, 'ARD': None,
-    }
-    if os.path.exists(router_dir):
-        for fn in os.listdir(router_dir):
-            if fn.startswith('ASR1002X-KRSH'):
-                mgmt_map['KRSH'] = fn
-            elif fn.startswith('ASR1002X-ARD'):
-                mgmt_map['ARD'] = fn
-
-    for prov_code, fname in mgmt_map.items():
-        if not fname:
-            continue
-        fpath = os.path.join(router_dir, fname)
-        if not os.path.exists(fpath):
-            continue
+    def _parse_tunnel_descs(fpath, default_prov=None):
         out = _read_strings(fpath)
         cur = None
         for line in out.splitlines():
@@ -5027,15 +5040,55 @@ def _parse_branches_by_province(router_dir):
                 cur = line
             elif 'description **' in line and cur:
                 m = _re.search(r'\*\*\s*(.*?)\s*\*\*', line)
-                if not m:
-                    continue
-                desc = m.group(1).strip()
-                if any(k in desc for k in skip_kw):
-                    continue
-                name = desc[len(prov_code) + 1:] if desc.startswith(prov_code + '-') else desc
-                if name in ('MO', 'HQ', 'Jahad', 'Modiriyat'):
-                    continue
-                _add(prov_code, name, _branch_type_br(desc))
+                if m:
+                    _process_desc(m.group(1).strip(), default_prov=default_prov)
+
+    core_dir = os.path.join(router_dir, 'Core Routers')
+
+    # ── 1) Core WAN/APN routers ───────────────────────────────────────────────
+    for prefix in ('WAN-INTR1', 'WAN-INTR2', 'ISR-APN-RO'):
+        if not os.path.exists(core_dir):
+            break
+        for fn in sorted(os.listdir(core_dir)):
+            if fn.startswith(prefix):
+                _parse_tunnel_descs(os.path.join(core_dir, fn))
+                break
+
+    # ── 2) ALL provincial management routers (auto-detected by filename) ─────
+    # Filename → province code mapping overrides for special cases
+    _fname_prov_override = {
+        'M1-Tehran': 'TehB', 'M2-Tehran': 'TehB', 'OSTehran': 'TehB',
+        'KhShomali': 'KHSH',
+    }
+    _valid_provs = set(_PROV_CODES_BR) | set(_PROV_CANONICAL_BR.values()) | {
+        'TehB', 'KHSH', 'KRMJ', 'JKRM',
+    }
+
+    if os.path.exists(router_dir):
+        for fname in sorted(os.listdir(router_dir)):
+            fpath = os.path.join(router_dir, fname)
+            if not os.path.isfile(fpath) or os.path.getsize(fpath) < 100:
+                continue
+            prov_code = None
+            # 3825-PROV-N  /  3845-PROV-N  (also handles M1-Tehran, M2-Tehran)
+            m = _re.match(r'^\d+-([\w]+-?(?:Tehran)?)-\d', fname)
+            if m:
+                raw = m.group(1).rstrip('-')
+                prov_code = _fname_prov_override.get(raw, raw)
+            # ASR1002X-PROV-date...
+            m2 = _re.match(r'^ASR1002X-([A-Z]+)-', fname)
+            if m2:
+                raw = m2.group(1)
+                prov_code = _fname_prov_override.get(raw, raw)
+            # Mo-KhShomali-N
+            m3 = _re.match(r'^Mo-([\w]+)-', fname)
+            if m3:
+                raw = m3.group(1)
+                prov_code = _fname_prov_override.get(raw, raw)
+            if not prov_code or prov_code not in _valid_provs:
+                continue
+            prov_code = _PROV_CANONICAL_BR.get(prov_code, prov_code)
+            _parse_tunnel_descs(fpath, default_prov=prov_code)
 
     return result
 
@@ -5130,15 +5183,16 @@ def network_map_topology():
             x, y, label = 50, 50, abbr
 
         # Attach branch/bajeh/ATM/kiosk data for provincial routers
-        prov_branches = {}
+        # Merge from ALL matching province keys (e.g. TEH+TehB both go to OSTehran)
+        prov_branches = {'branches': [], 'bajes': [], 'atms': [], 'kiosks': []}
         if category == 'provincial-router':
             for prov_key, bdata in branches_by_prov.items():
                 mapped = _PROV_TO_ROUTER_ABBR_BR.get(prov_key, prov_key)
                 if mapped == abbr or prov_key == abbr:
-                    prov_branches = bdata
-                    break
-            if not prov_branches and abbr in branches_by_prov:
-                prov_branches = branches_by_prov[abbr]
+                    for k in ('branches', 'bajes', 'atms', 'kiosks'):
+                        for item in bdata.get(k, []):
+                            if item not in prov_branches[k]:
+                                prov_branches[k].append(item)
 
         branches = prov_branches.get('branches', [])
         bajes = prov_branches.get('bajes', [])
