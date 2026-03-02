@@ -1,0 +1,1355 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BKI Network Topology - توپولوژی شبکه بانک کشاورزی</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: 'Segoe UI', Tahoma, Arial, sans-serif;
+  background: #0a0f1e;
+  color: #e0e6f0;
+  direction: rtl;
+  font-size: 13px;
+}
+
+/* ===== HEADER ===== */
+.header {
+  background: linear-gradient(135deg, #1a2a4a 0%, #0d1b3e 100%);
+  border-bottom: 2px solid #2a5298;
+  padding: 20px 30px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+}
+.header-title {
+  display: flex; align-items: center; gap: 15px;
+}
+.header-logo {
+  width: 50px; height: 50px;
+  background: linear-gradient(135deg, #2a5298, #1a3a7a);
+  border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 22px;
+  box-shadow: 0 0 15px rgba(42,82,152,0.5);
+}
+.header h1 { font-size: 22px; color: #60a3f7; font-weight: 700; }
+.header p { font-size: 12px; color: #8899bb; margin-top: 3px; }
+.header-stats {
+  display: flex; gap: 20px;
+}
+.stat-box {
+  text-align: center;
+  background: rgba(42,82,152,0.2);
+  border: 1px solid rgba(42,82,152,0.4);
+  border-radius: 8px;
+  padding: 8px 15px;
+  min-width: 90px;
+}
+.stat-num { font-size: 20px; font-weight: bold; color: #60a3f7; }
+.stat-label { font-size: 10px; color: #8899bb; margin-top: 2px; }
+
+/* ===== TABS ===== */
+.tabs {
+  display: flex;
+  background: #111927;
+  border-bottom: 2px solid #1e3a6e;
+  padding: 0 30px;
+  gap: 5px;
+  overflow-x: auto;
+}
+.tab {
+  padding: 12px 20px;
+  cursor: pointer;
+  color: #6688aa;
+  border-bottom: 3px solid transparent;
+  font-size: 13px;
+  font-weight: 500;
+  white-space: nowrap;
+  transition: all 0.2s;
+}
+.tab:hover { color: #aac8ff; }
+.tab.active { color: #60a3f7; border-bottom-color: #60a3f7; }
+
+/* ===== TOPOLOGY VIEW ===== */
+.view { display: none; }
+.view.active { display: block; }
+
+/* ===== DIAGRAM TOPOLOGY ===== */
+.topology-container {
+  overflow: auto;
+  background: #0a0f1e;
+  min-height: calc(100vh - 180px);
+}
+
+/* ===== PROVINCES GRID ===== */
+.provinces-header {
+  padding: 20px 30px 10px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.filter-bar {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.filter-btn {
+  padding: 6px 14px;
+  border-radius: 20px;
+  border: 1px solid #2a5298;
+  background: transparent;
+  color: #8899bb;
+  cursor: pointer;
+  font-size: 12px;
+  transition: all 0.2s;
+}
+.filter-btn:hover, .filter-btn.active { background: #2a5298; color: #fff; }
+.search-box {
+  padding: 6px 14px;
+  border-radius: 20px;
+  border: 1px solid #2a5298;
+  background: #111927;
+  color: #e0e6f0;
+  font-size: 12px;
+  width: 200px;
+  outline: none;
+}
+
+.provinces-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 15px;
+  padding: 10px 30px 30px;
+}
+
+.province-card {
+  background: linear-gradient(135deg, #111927 0%, #0d1520 100%);
+  border: 1px solid #1e3a6e;
+  border-radius: 12px;
+  overflow: hidden;
+  transition: all 0.3s;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+}
+.province-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 25px rgba(0,0,0,0.5);
+  border-color: var(--pcolor, #2a5298);
+}
+
+.province-header {
+  padding: 14px 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  border-bottom: 1px solid #1e3a6e;
+}
+.prov-color-dot {
+  width: 12px; height: 12px;
+  border-radius: 50%;
+  background: var(--pcolor, #2a5298);
+  box-shadow: 0 0 8px var(--pcolor, #2a5298);
+  flex-shrink: 0;
+}
+.prov-name { font-size: 14px; font-weight: 600; color: #c8d8f0; flex: 1; }
+.prov-code { font-size: 10px; color: #556688; font-family: monospace; }
+.prov-total {
+  background: rgba(42,82,152,0.3);
+  color: #60a3f7;
+  border-radius: 12px;
+  padding: 2px 10px;
+  font-size: 12px;
+  font-weight: bold;
+}
+.expand-btn {
+  color: #556688;
+  font-size: 12px;
+  transition: transform 0.2s;
+}
+.province-card.expanded .expand-btn { transform: rotate(180deg); }
+
+.prov-stats {
+  display: flex;
+  gap: 0;
+  border-bottom: 1px solid #1e3a6e;
+}
+.prov-stat {
+  flex: 1;
+  text-align: center;
+  padding: 8px 4px;
+  border-left: 1px solid #1e3a6e;
+}
+.prov-stat:last-child { border-left: none; }
+.prov-stat-num { font-size: 16px; font-weight: bold; }
+.prov-stat-label { font-size: 9px; color: #556688; margin-top: 2px; }
+.branch-color { color: #3498db; }
+.baje-color { color: #2ecc71; }
+.atm-color { color: #e67e22; }
+.kiosk-color { color: #9b59b6; }
+
+.province-body {
+  display: none;
+  padding: 12px 16px;
+  max-height: 400px;
+  overflow-y: auto;
+}
+.province-card.expanded .province-body { display: block; }
+
+.node-section {
+  margin-bottom: 12px;
+}
+.node-section-title {
+  font-size: 11px;
+  font-weight: bold;
+  margin-bottom: 8px;
+  padding: 3px 8px;
+  border-radius: 4px;
+  display: inline-block;
+}
+.branch-title { background: rgba(52,152,219,0.2); color: #3498db; }
+.baje-title { background: rgba(46,204,113,0.2); color: #2ecc71; }
+.atm-title { background: rgba(230,126,34,0.2); color: #e67e22; }
+.kiosk-title { background: rgba(155,89,182,0.2); color: #9b59b6; }
+
+.node-list {
+  display: flex; flex-wrap: wrap; gap: 4px;
+}
+.node-chip {
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 11px;
+  border: 1px solid;
+  cursor: default;
+  transition: all 0.15s;
+}
+.node-chip:hover { transform: scale(1.05); }
+.branch-chip { border-color: rgba(52,152,219,0.3); color: #7fc8f8; background: rgba(52,152,219,0.1); }
+.baje-chip { border-color: rgba(46,204,113,0.3); color: #7fe8aa; background: rgba(46,204,113,0.1); }
+.atm-chip { border-color: rgba(230,126,34,0.3); color: #f8c07f; background: rgba(230,126,34,0.1); }
+.kiosk-chip { border-color: rgba(155,89,182,0.3); color: #c87ff8; background: rgba(155,89,182,0.1); }
+
+/* ===== TOPOLOGY DIAGRAM ===== */
+.topology-diagram {
+  padding: 20px;
+  overflow: auto;
+}
+svg.main-topo {
+  width: 100%;
+  min-width: 1200px;
+}
+
+/* ===== NETWORK DIAGRAM ===== */
+.net-diagram {
+  padding: 20px 30px;
+}
+
+/* ===== LEGEND ===== */
+.legend {
+  display: flex; gap: 20px; flex-wrap: wrap;
+  margin-bottom: 15px;
+  padding: 10px 16px;
+  background: rgba(42,82,152,0.1);
+  border-radius: 8px;
+  border: 1px solid #1e3a6e;
+}
+.legend-item { display: flex; align-items: center; gap: 6px; font-size: 12px; }
+.legend-dot { width: 10px; height: 10px; border-radius: 50%; }
+
+/* ===== STATS VIEW ===== */
+.stats-view { padding: 20px 30px; }
+.stats-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 15px; }
+.stat-card {
+  background: #111927;
+  border: 1px solid #1e3a6e;
+  border-radius: 10px;
+  padding: 16px;
+}
+.stat-card-title { font-size: 12px; color: #8899bb; margin-bottom: 10px; }
+.stat-card-value { font-size: 28px; font-weight: bold; color: #60a3f7; }
+.stat-bar-row { display: flex; align-items: center; gap: 8px; margin-top: 10px; }
+.stat-bar-label { font-size: 11px; color: #8899bb; width: 120px; text-align: right; }
+.stat-bar-bg { flex: 1; height: 8px; background: #1e3a6e; border-radius: 4px; }
+.stat-bar-fill { height: 100%; border-radius: 4px; transition: width 0.8s ease; }
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: #0a0f1e; }
+::-webkit-scrollbar-thumb { background: #1e3a6e; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #2a5298; }
+
+/* Diagram SVG Styles */
+.core-box { fill: #1a2a4a; stroke: #2a5298; stroke-width: 2; rx: 8; }
+.router-box { fill: #1a2040; stroke: #4a7ac8; stroke-width: 1.5; }
+.prov-box { fill: #162030; stroke: #2a6040; stroke-width: 1.5; }
+.link-line { stroke: #2a5298; stroke-width: 1; fill: none; opacity: 0.6; }
+.link-line.mpls { stroke: #e67e22; stroke-dasharray: 5,3; }
+.link-line.gilanet { stroke: #2ecc71; stroke-dasharray: 3,2; }
+.link-line.apn { stroke: #9b59b6; stroke-dasharray: 4,3; }
+
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-title">
+    <div class="header-logo">🌐</div>
+    <div>
+      <h1>BKI Network Topology</h1>
+      <p>توپولوژی شبکه بانک کشاورزی ایران - نقشه کامل نقاط شبکه</p>
+    </div>
+  </div>
+  <div class="header-stats">
+    <div class="stat-box">
+      <div class="stat-num">33</div>
+      <div class="stat-label">استان / مدیریت</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-num" style="color:#3498db">1467</div>
+      <div class="stat-label">شعبه</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-num" style="color:#2ecc71">35</div>
+      <div class="stat-label">باجه</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-num" style="color:#e67e22">229</div>
+      <div class="stat-label">ATM / دستگاه</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-num" style="color:#9b59b6">419</div>
+      <div class="stat-label">کیوسک</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-num" style="color:#f39c12">2150</div>
+      <div class="stat-label">کل نقاط شبکه</div>
+    </div>
+  </div>
+</div>
+
+<div class="tabs">
+  <div class="tab active" onclick="showView('provinces', this)">🗺️ نقاط شبکه بر اساس استان</div>
+  <div class="tab" onclick="showView('diagram', this)">📡 دیاگرام توپولوژی</div>
+  <div class="tab" onclick="showView('stats', this)">📊 آمار و گزارش</div>
+</div>
+
+<!-- PROVINCES VIEW -->
+<div id="view-provinces" class="view active">
+  <div class="provinces-header">
+    <div style="font-size:13px; color:#8899bb;">
+      کلیک روی هر استان برای مشاهده تمام نقاط شبکه
+    </div>
+    <div class="filter-bar">
+      <input type="text" class="search-box" placeholder="جستجوی استان یا شعبه..." onkeyup="filterProvinces(this.value)" />
+      <button class="filter-btn active" onclick="filterType('all', this)">همه</button>
+      <button class="filter-btn" onclick="filterType('branch', this)">شعبه</button>
+      <button class="filter-btn" onclick="filterType('baje', this)">باجه</button>
+      <button class="filter-btn" onclick="filterType('atm', this)">ATM</button>
+      <button class="filter-btn" onclick="filterType('kiosk', this)">کیوسک</button>
+    </div>
+  </div>
+  
+  <div class="legend">
+    <div class="legend-item"><div class="legend-dot" style="background:#3498db"></div> شعبه (Branch)</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#2ecc71"></div> باجه (Sub-Branch)</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#e67e22"></div> ATM / دستگاه خودپرداز</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#9b59b6"></div> کیوسک (Kiosk)</div>
+  </div>
+  
+  <div class="provinces-grid" id="provinces-grid">
+  </div>
+</div>
+
+<!-- DIAGRAM VIEW -->
+<div id="view-diagram" class="view">
+  <div class="net-diagram">
+    <h3 style="color:#60a3f7; margin-bottom:15px;">دیاگرام توپولوژی شبکه BKI</h3>
+    
+    <div class="legend" style="margin-bottom:20px">
+      <div class="legend-item"><div class="legend-dot" style="background:#e67e22"></div> MPLS (ایران سلار / پیوند)</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#2ecc71"></div> APN/گیلانت (اینترنت)</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#9b59b6"></div> APN (IPSec Tunnel)</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#3498db"></div> اینترانت مستقیم</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#1abc9c"></div> روتر مدیریت استان</div>
+    </div>
+
+    <div style="overflow:auto; background:#080d18; border-radius:12px; border:1px solid #1e3a6e; padding:20px;">
+      <svg viewBox="0 0 1400 900" style="width:100%; min-width:1200px; font-family:sans-serif;">
+        <defs>
+          <marker id="arrowB" markerWidth="6" markerHeight="6" refX="3" refY="3" orient="auto">
+            <path d="M0,0 L0,6 L6,3 z" fill="#2a5298"/>
+          </marker>
+          <marker id="arrowG" markerWidth="6" markerHeight="6" refX="3" refY="3" orient="auto">
+            <path d="M0,0 L0,6 L6,3 z" fill="#2ecc71"/>
+          </marker>
+          <marker id="arrowO" markerWidth="6" markerHeight="6" refX="3" refY="3" orient="auto">
+            <path d="M0,0 L0,6 L6,3 z" fill="#e67e22"/>
+          </marker>
+          <filter id="glow">
+            <feGaussianBlur stdDeviation="2" result="blur"/>
+            <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+          </filter>
+        </defs>
+        
+        <!-- HQ Data Center -->
+        <rect x="500" y="20" width="400" height="70" rx="10" fill="#1a2a4a" stroke="#60a3f7" stroke-width="2" filter="url(#glow)"/>
+        <text x="700" y="45" text-anchor="middle" fill="#60a3f7" font-size="14" font-weight="bold">مرکز داده بانک کشاورزی (HQ)</text>
+        <text x="700" y="65" text-anchor="middle" fill="#8899bb" font-size="11">تهران - مرکز شبکه - دیتاسنتر اصلی و پشتیبان</text>
+
+        <!-- ISP Layer -->
+        <text x="700" y="115" text-anchor="middle" fill="#8899bb" font-size="11">لایه ISP / حامل‌های ارتباطی</text>
+        
+        <!-- MPLS Cloud -->
+        <ellipse cx="200" cy="150" rx="110" ry="35" fill="#1a1a0a" stroke="#e67e22" stroke-width="1.5" stroke-dasharray="5,3"/>
+        <text x="200" y="148" text-anchor="middle" fill="#e67e22" font-size="11" font-weight="bold">MPLS شبکه</text>
+        <text x="200" y="163" text-anchor="middle" fill="#cc8810" font-size="10">ایران‌سلار / پیوند / TIC</text>
+        
+        <!-- Gilanet -->
+        <ellipse cx="500" cy="150" rx="100" ry="35" fill="#0a1a0a" stroke="#2ecc71" stroke-width="1.5" stroke-dasharray="3,2"/>
+        <text x="500" y="148" text-anchor="middle" fill="#2ecc71" font-size="11" font-weight="bold">APN گیلانت</text>
+        <text x="500" y="163" text-anchor="middle" fill="#1a9950" font-size="10">Gilanet ISP</text>
+        
+        <!-- APN (Hamrah-Aval) -->
+        <ellipse cx="760" cy="150" rx="100" ry="35" fill="#1a0a1a" stroke="#9b59b6" stroke-width="1.5" stroke-dasharray="4,3"/>
+        <text x="760" y="148" text-anchor="middle" fill="#9b59b6" font-size="11" font-weight="bold">APN همراه‌اول</text>
+        <text x="760" y="163" text-anchor="middle" fill="#7a3996" font-size="10">MCI APN</text>
+        
+        <!-- HiWeb -->
+        <ellipse cx="1000" cy="150" rx="90" ry="35" fill="#0a0a1a" stroke="#3498db" stroke-width="1.5" stroke-dasharray="3,2"/>
+        <text x="1000" y="148" text-anchor="middle" fill="#3498db" font-size="11" font-weight="bold">هی‌وب / مبین‌نت</text>
+        <text x="1000" y="163" text-anchor="middle" fill="#2070a0" font-size="10">HiWeb / MobinNet</text>
+        
+        <!-- HQ to ISP lines -->
+        <line x1="700" y1="90" x2="200" y2="115" stroke="#e67e22" stroke-width="1" stroke-dasharray="5,3" opacity="0.5"/>
+        <line x1="700" y1="90" x2="500" y2="115" stroke="#2ecc71" stroke-width="1" stroke-dasharray="3,2" opacity="0.5"/>
+        <line x1="700" y1="90" x2="760" y2="115" stroke="#9b59b6" stroke-width="1" stroke-dasharray="4,3" opacity="0.5"/>
+        <line x1="700" y1="90" x2="1000" y2="115" stroke="#3498db" stroke-width="1" stroke-dasharray="3,2" opacity="0.5"/>
+
+        <!-- Core Routers Layer -->
+        <text x="700" y="225" text-anchor="middle" fill="#8899bb" font-size="11">لایه روترهای مرکزی (Core Routers)</text>
+        
+        <!-- ASR1006-WAN-MB -->
+        <rect x="30" y="240" width="180" height="55" rx="8" fill="#1a2040" stroke="#e67e22" stroke-width="2"/>
+        <text x="120" y="258" text-anchor="middle" fill="#e67e22" font-size="10" font-weight="bold">ASR1006-WAN-MB</text>
+        <text x="120" y="272" text-anchor="middle" fill="#8899bb" font-size="9">MPLS Hub Router</text>
+        <text x="120" y="284" text-anchor="middle" fill="#556688" font-size="9">35+ MPLS Tunnels</text>
+        
+        <!-- WAN-INTR1 -->
+        <rect x="240" y="240" width="180" height="55" rx="8" fill="#1a2040" stroke="#3498db" stroke-width="2"/>
+        <text x="330" y="258" text-anchor="middle" fill="#3498db" font-size="10" font-weight="bold">WAN-INTR1</text>
+        <text x="330" y="272" text-anchor="middle" fill="#8899bb" font-size="9">Intranet Router (Primary)</text>
+        <text x="330" y="284" text-anchor="middle" fill="#556688" font-size="9">1,200+ Tunnels</text>
+        
+        <!-- WAN-INTR2 -->
+        <rect x="450" y="240" width="180" height="55" rx="8" fill="#1a2040" stroke="#3498db" stroke-width="1.5" stroke-dasharray="4,2"/>
+        <text x="540" y="258" text-anchor="middle" fill="#3498db" font-size="10" font-weight="bold">WAN-INTR2</text>
+        <text x="540" y="272" text-anchor="middle" fill="#8899bb" font-size="9">Intranet Router (Backup)</text>
+        <text x="540" y="284" text-anchor="middle" fill="#556688" font-size="9">1,200+ Tunnels (Redundant)</text>
+        
+        <!-- ISR-APN-RO -->
+        <rect x="660" y="240" width="180" height="55" rx="8" fill="#1a2040" stroke="#2ecc71" stroke-width="2"/>
+        <text x="750" y="258" text-anchor="middle" fill="#2ecc71" font-size="10" font-weight="bold">ISR-APN-RO</text>
+        <text x="750" y="272" text-anchor="middle" fill="#8899bb" font-size="9">Gilanet/APN Router</text>
+        <text x="750" y="284" text-anchor="middle" fill="#556688" font-size="9">650+ Kiosk/ATM Tunnels</text>
+        
+        <!-- APN-INT-HUB -->
+        <rect x="870" y="240" width="180" height="55" rx="8" fill="#1a2040" stroke="#9b59b6" stroke-width="2"/>
+        <text x="960" y="258" text-anchor="middle" fill="#9b59b6" font-size="10" font-weight="bold">APN-INT-HUB</text>
+        <text x="960" y="272" text-anchor="middle" fill="#8899bb" font-size="9">APN IPSec Hub</text>
+        <text x="960" y="284" text-anchor="middle" fill="#556688" font-size="9">Internal APN Tunnels</text>
+        
+        <!-- EXT-AGG / EXT-Edge -->
+        <rect x="1080" y="240" width="180" height="55" rx="8" fill="#1a2040" stroke="#7f8c8d" stroke-width="1.5"/>
+        <text x="1170" y="258" text-anchor="middle" fill="#7f8c8d" font-size="10" font-weight="bold">EXT-AGG / EXT-Edge</text>
+        <text x="1170" y="272" text-anchor="middle" fill="#8899bb" font-size="9">External Aggregation</text>
+        <text x="1170" y="284" text-anchor="middle" fill="#556688" font-size="9">Internet Edge</text>
+
+        <!-- ISP to Core Router connections -->
+        <line x1="200" y1="185" x2="120" y2="240" stroke="#e67e22" stroke-width="1.5" stroke-dasharray="5,3"/>
+        <line x1="200" y1="185" x2="330" y2="240" stroke="#e67e22" stroke-width="1" stroke-dasharray="5,3" opacity="0.4"/>
+        <line x1="500" y1="185" x2="750" y2="240" stroke="#2ecc71" stroke-width="1.5" stroke-dasharray="3,2"/>
+        <line x1="760" y1="185" x2="960" y2="240" stroke="#9b59b6" stroke-width="1.5" stroke-dasharray="4,3"/>
+        <line x1="1000" y1="185" x2="1170" y2="240" stroke="#3498db" stroke-width="1" opacity="0.5"/>
+        <line x1="700" y1="90" x2="330" y2="240" stroke="#3498db" stroke-width="1" opacity="0.4"/>
+        <line x1="700" y1="90" x2="540" y2="240" stroke="#3498db" stroke-width="1" opacity="0.3"/>
+
+        <!-- Province Management Layer label -->
+        <text x="700" y="330" text-anchor="middle" fill="#8899bb" font-size="11">لایه روترهای مدیریت استان‌ها (33 استان / مدیریت)</text>
+        
+        <!-- Province boxes - arrange in rows -->
+
+        <rect x="20" y="345" width="155" height="55" rx="6" fill="#162030" stroke="#e74c3c" stroke-width="1.5"/>
+        <circle cx="32" cy="357" r="5" fill="#e74c3c" opacity="0.8"/>
+        <text x="42" y="361" fill="#e74c3c" font-size="9" font-weight="bold">AZSH</text>
+        <text x="97" y="375" text-anchor="middle" fill="#c8d8f0" font-size="9">آذربایجان </text>
+        <text x="97" y="387" text-anchor="middle" fill="#8899bb" font-size="8">83 نقطه</text>
+        <text x="97" y="397" text-anchor="middle" fill="#556688" font-size="7">81ش 0ب 1A 1K</text>
+<line x1="330" y1="295" x2="97" y2="345" stroke="#2a5298" stroke-width="0.5" opacity="0.2"/>
+
+        <rect x="183" y="345" width="155" height="55" rx="6" fill="#162030" stroke="#c0392b" stroke-width="1.5"/>
+        <circle cx="195" cy="357" r="5" fill="#c0392b" opacity="0.8"/>
+        <text x="205" y="361" fill="#c0392b" font-size="9" font-weight="bold">AZGH</text>
+        <text x="260" y="375" text-anchor="middle" fill="#c8d8f0" font-size="9">آذربایجان </text>
+        <text x="260" y="387" text-anchor="middle" fill="#8899bb" font-size="8">60 نقطه</text>
+        <text x="260" y="397" text-anchor="middle" fill="#556688" font-size="7">56ش 4ب 0A 0K</text>
+<line x1="330" y1="295" x2="260" y2="345" stroke="#2a5298" stroke-width="0.5" opacity="0.2"/>
+
+        <rect x="346" y="345" width="155" height="55" rx="6" fill="#162030" stroke="#2ecc71" stroke-width="1.5"/>
+        <circle cx="358" cy="357" r="5" fill="#2ecc71" opacity="0.8"/>
+        <text x="368" y="361" fill="#2ecc71" font-size="9" font-weight="bold">ARD</text>
+        <text x="423" y="375" text-anchor="middle" fill="#c8d8f0" font-size="9">اردبیل</text>
+        <text x="423" y="387" text-anchor="middle" fill="#8899bb" font-size="8">45 نقطه</text>
+        <text x="423" y="397" text-anchor="middle" fill="#556688" font-size="7">23ش 1ب 17A 4K</text>
+<line x1="330" y1="295" x2="423" y2="345" stroke="#2a5298" stroke-width="0.5" opacity="0.2"/>
+
+        <rect x="509" y="345" width="155" height="55" rx="6" fill="#162030" stroke="#9b59b6" stroke-width="1.5"/>
+        <circle cx="521" cy="357" r="5" fill="#9b59b6" opacity="0.8"/>
+        <text x="531" y="361" fill="#9b59b6" font-size="9" font-weight="bold">ESF</text>
+        <text x="586" y="375" text-anchor="middle" fill="#c8d8f0" font-size="9">اصفهان</text>
+        <text x="586" y="387" text-anchor="middle" fill="#8899bb" font-size="8">121 نقطه</text>
+        <text x="586" y="397" text-anchor="middle" fill="#556688" font-size="7">110ش 2ب 0A 9K</text>
+<line x1="330" y1="295" x2="586" y2="345" stroke="#2a5298" stroke-width="0.5" opacity="0.2"/>
+
+        <rect x="672" y="345" width="155" height="55" rx="6" fill="#162030" stroke="#3498db" stroke-width="1.5"/>
+        <circle cx="684" cy="357" r="5" fill="#3498db" opacity="0.8"/>
+        <text x="694" y="361" fill="#3498db" font-size="9" font-weight="bold">ALZ</text>
+        <text x="749" y="375" text-anchor="middle" fill="#c8d8f0" font-size="9">البرز</text>
+        <text x="749" y="387" text-anchor="middle" fill="#8899bb" font-size="8">49 نقطه</text>
+        <text x="749" y="397" text-anchor="middle" fill="#556688" font-size="7">23ش 0ب 6A 20K</text>
+<line x1="330" y1="295" x2="749" y2="345" stroke="#2a5298" stroke-width="0.5" opacity="0.2"/>
+
+        <rect x="835" y="345" width="155" height="55" rx="6" fill="#162030" stroke="#8e44ad" stroke-width="1.5"/>
+        <circle cx="847" cy="357" r="5" fill="#8e44ad" opacity="0.8"/>
+        <text x="857" y="361" fill="#8e44ad" font-size="9" font-weight="bold">ILM</text>
+        <text x="912" y="375" text-anchor="middle" fill="#c8d8f0" font-size="9">ایلام</text>
+        <text x="912" y="387" text-anchor="middle" fill="#8899bb" font-size="8">47 نقطه</text>
+        <text x="912" y="397" text-anchor="middle" fill="#556688" font-size="7">9ش 0ب 25A 13K</text>
+<line x1="330" y1="295" x2="912" y2="345" stroke="#2a5298" stroke-width="0.5" opacity="0.2"/>
+
+        <rect x="998" y="345" width="155" height="55" rx="6" fill="#162030" stroke="#f39c12" stroke-width="1.5"/>
+        <circle cx="1010" cy="357" r="5" fill="#f39c12" opacity="0.8"/>
+        <text x="1020" y="361" fill="#f39c12" font-size="9" font-weight="bold">BSH</text>
+        <text x="1075" y="375" text-anchor="middle" fill="#c8d8f0" font-size="9">بوشهر</text>
+        <text x="1075" y="387" text-anchor="middle" fill="#8899bb" font-size="8">33 نقطه</text>
+        <text x="1075" y="397" text-anchor="middle" fill="#556688" font-size="7">20ش 0ب 0A 13K</text>
+<line x1="330" y1="295" x2="1075" y2="345" stroke="#2a5298" stroke-width="0.5" opacity="0.2"/>
+
+        <rect x="1161" y="345" width="155" height="55" rx="6" fill="#162030" stroke="#1abc9c" stroke-width="1.5"/>
+        <circle cx="1173" cy="357" r="5" fill="#1abc9c" opacity="0.8"/>
+        <text x="1183" y="361" fill="#1abc9c" font-size="9" font-weight="bold">TEH</text>
+        <text x="1238" y="375" text-anchor="middle" fill="#c8d8f0" font-size="9">تهران</text>
+        <text x="1238" y="387" text-anchor="middle" fill="#8899bb" font-size="8">97 نقطه</text>
+        <text x="1238" y="397" text-anchor="middle" fill="#556688" font-size="7">54ش 3ب 4A 36K</text>
+<line x1="330" y1="295" x2="1238" y2="345" stroke="#2a5298" stroke-width="0.5" opacity="0.2"/>
+
+        <rect x="20" y="405" width="155" height="55" rx="6" fill="#162030" stroke="#16a085" stroke-width="1.5"/>
+        <circle cx="32" cy="417" r="5" fill="#16a085" opacity="0.8"/>
+        <text x="42" y="421" fill="#16a085" font-size="9" font-weight="bold">TehB</text>
+        <text x="97" y="435" text-anchor="middle" fill="#c8d8f0" font-size="9">تهران بزرگ</text>
+        <text x="97" y="447" text-anchor="middle" fill="#8899bb" font-size="8">113 نقطه</text>
+        <text x="97" y="457" text-anchor="middle" fill="#556688" font-size="7">93ش 2ب 13A 5K</text>
+<line x1="330" y1="295" x2="97" y2="405" stroke="#2a5298" stroke-width="0.5" opacity="0.2"/>
+
+        <rect x="183" y="405" width="155" height="55" rx="6" fill="#162030" stroke="#d35400" stroke-width="1.5"/>
+        <circle cx="195" cy="417" r="5" fill="#d35400" opacity="0.8"/>
+        <text x="205" y="421" fill="#d35400" font-size="9" font-weight="bold">JKRM</text>
+        <text x="260" y="435" text-anchor="middle" fill="#c8d8f0" font-size="9">جنوب کرمان</text>
+        <text x="260" y="447" text-anchor="middle" fill="#8899bb" font-size="8">21 نقطه</text>
+        <text x="260" y="457" text-anchor="middle" fill="#556688" font-size="7">18ش 0ب 0A 3K</text>
+<line x1="330" y1="295" x2="260" y2="405" stroke="#2a5298" stroke-width="0.5" opacity="0.2"/>
+
+        <rect x="346" y="405" width="155" height="55" rx="6" fill="#162030" stroke="#e67e22" stroke-width="1.5"/>
+        <circle cx="358" cy="417" r="5" fill="#e67e22" opacity="0.8"/>
+        <text x="368" y="421" fill="#e67e22" font-size="9" font-weight="bold">KHRJ</text>
+        <text x="423" y="435" text-anchor="middle" fill="#c8d8f0" font-size="9">خراسان جنو</text>
+        <text x="423" y="447" text-anchor="middle" fill="#8899bb" font-size="8">44 نقطه</text>
+        <text x="423" y="457" text-anchor="middle" fill="#556688" font-size="7">33ش 1ب 1A 9K</text>
+<line x1="330" y1="295" x2="423" y2="405" stroke="#2a5298" stroke-width="0.5" opacity="0.2"/>
+
+        <rect x="509" y="405" width="155" height="55" rx="6" fill="#162030" stroke="#d35400" stroke-width="1.5"/>
+        <circle cx="521" cy="417" r="5" fill="#d35400" opacity="0.8"/>
+        <text x="531" y="421" fill="#d35400" font-size="9" font-weight="bold">KHR</text>
+        <text x="586" y="435" text-anchor="middle" fill="#c8d8f0" font-size="9">خراسان رضو</text>
+        <text x="586" y="447" text-anchor="middle" fill="#8899bb" font-size="8">178 نقطه</text>
+        <text x="586" y="457" text-anchor="middle" fill="#556688" font-size="7">121ش 7ب 20A 30K</text>
+<line x1="330" y1="295" x2="586" y2="405" stroke="#2a5298" stroke-width="0.5" opacity="0.2"/>
+
+        <rect x="672" y="405" width="155" height="55" rx="6" fill="#162030" stroke="#e74c3c" stroke-width="1.5"/>
+        <circle cx="684" cy="417" r="5" fill="#e74c3c" opacity="0.8"/>
+        <text x="694" y="421" fill="#e74c3c" font-size="9" font-weight="bold">KHSH</text>
+        <text x="749" y="435" text-anchor="middle" fill="#c8d8f0" font-size="9">خراسان شما</text>
+        <text x="749" y="447" text-anchor="middle" fill="#8899bb" font-size="8">30 نقطه</text>
+        <text x="749" y="457" text-anchor="middle" fill="#556688" font-size="7">23ش 0ب 3A 4K</text>
+<line x1="330" y1="295" x2="749" y2="405" stroke="#2a5298" stroke-width="0.5" opacity="0.2"/>
+
+        <rect x="835" y="405" width="155" height="55" rx="6" fill="#162030" stroke="#27ae60" stroke-width="1.5"/>
+        <circle cx="847" cy="417" r="5" fill="#27ae60" opacity="0.8"/>
+        <text x="857" y="421" fill="#27ae60" font-size="9" font-weight="bold">KHZ</text>
+        <text x="912" y="435" text-anchor="middle" fill="#c8d8f0" font-size="9">خوزستان</text>
+        <text x="912" y="447" text-anchor="middle" fill="#8899bb" font-size="8">28 نقطه</text>
+        <text x="912" y="457" text-anchor="middle" fill="#556688" font-size="7">17ش 0ب 1A 10K</text>
+<line x1="330" y1="295" x2="912" y2="405" stroke="#2a5298" stroke-width="0.5" opacity="0.2"/>
+
+        <rect x="998" y="405" width="155" height="55" rx="6" fill="#162030" stroke="#8e44ad" stroke-width="1.5"/>
+        <circle cx="1010" cy="417" r="5" fill="#8e44ad" opacity="0.8"/>
+        <text x="1020" y="421" fill="#8e44ad" font-size="9" font-weight="bold">ZNJ</text>
+        <text x="1075" y="435" text-anchor="middle" fill="#c8d8f0" font-size="9">زنجان</text>
+        <text x="1075" y="447" text-anchor="middle" fill="#8899bb" font-size="8">43 نقطه</text>
+        <text x="1075" y="457" text-anchor="middle" fill="#556688" font-size="7">31ش 0ب 7A 5K</text>
+<line x1="330" y1="295" x2="1075" y2="405" stroke="#2a5298" stroke-width="0.5" opacity="0.2"/>
+
+        <rect x="1161" y="405" width="155" height="55" rx="6" fill="#162030" stroke="#2980b9" stroke-width="1.5"/>
+        <circle cx="1173" cy="417" r="5" fill="#2980b9" opacity="0.8"/>
+        <text x="1183" y="421" fill="#2980b9" font-size="9" font-weight="bold">SMN</text>
+        <text x="1238" y="435" text-anchor="middle" fill="#c8d8f0" font-size="9">سمنان</text>
+        <text x="1238" y="447" text-anchor="middle" fill="#8899bb" font-size="8">54 نقطه</text>
+        <text x="1238" y="457" text-anchor="middle" fill="#556688" font-size="7">40ش 0ب 5A 9K</text>
+<line x1="330" y1="295" x2="1238" y2="405" stroke="#2a5298" stroke-width="0.5" opacity="0.2"/>
+
+        <rect x="20" y="465" width="155" height="55" rx="6" fill="#162030" stroke="#c0392b" stroke-width="1.5"/>
+        <circle cx="32" cy="477" r="5" fill="#c0392b" opacity="0.8"/>
+        <text x="42" y="481" fill="#c0392b" font-size="9" font-weight="bold">SNB</text>
+        <text x="97" y="495" text-anchor="middle" fill="#c8d8f0" font-size="9">سیستان و ب</text>
+        <text x="97" y="507" text-anchor="middle" fill="#8899bb" font-size="8">75 نقطه</text>
+        <text x="97" y="517" text-anchor="middle" fill="#556688" font-size="7">49ش 2ب 16A 8K</text>
+<line x1="330" y1="295" x2="97" y2="465" stroke="#2a5298" stroke-width="0.5" opacity="0.2"/>
+
+        <rect x="183" y="465" width="155" height="55" rx="6" fill="#162030" stroke="#f39c12" stroke-width="1.5"/>
+        <circle cx="195" cy="477" r="5" fill="#f39c12" opacity="0.8"/>
+        <text x="205" y="481" fill="#f39c12" font-size="9" font-weight="bold">FRS</text>
+        <text x="260" y="495" text-anchor="middle" fill="#c8d8f0" font-size="9">فارس</text>
+        <text x="260" y="507" text-anchor="middle" fill="#8899bb" font-size="8">159 نقطه</text>
+        <text x="260" y="517" text-anchor="middle" fill="#556688" font-size="7">136ش 7ب 0A 16K</text>
+<line x1="330" y1="295" x2="260" y2="465" stroke="#2a5298" stroke-width="0.5" opacity="0.2"/>
+
+        <rect x="346" y="465" width="155" height="55" rx="6" fill="#162030" stroke="#16a085" stroke-width="1.5"/>
+        <circle cx="358" cy="477" r="5" fill="#16a085" opacity="0.8"/>
+        <text x="368" y="481" fill="#16a085" font-size="9" font-weight="bold">QZV</text>
+        <text x="423" y="495" text-anchor="middle" fill="#c8d8f0" font-size="9">قزوین</text>
+        <text x="423" y="507" text-anchor="middle" fill="#8899bb" font-size="8">77 نقطه</text>
+        <text x="423" y="517" text-anchor="middle" fill="#556688" font-size="7">32ش 0ب 16A 29K</text>
+<line x1="330" y1="295" x2="423" y2="465" stroke="#2a5298" stroke-width="0.5" opacity="0.2"/>
+
+        <rect x="509" y="465" width="155" height="55" rx="6" fill="#162030" stroke="#1abc9c" stroke-width="1.5"/>
+        <circle cx="521" cy="477" r="5" fill="#1abc9c" opacity="0.8"/>
+        <text x="531" y="481" fill="#1abc9c" font-size="9" font-weight="bold">QOM</text>
+        <text x="586" y="495" text-anchor="middle" fill="#c8d8f0" font-size="9">قم</text>
+        <text x="586" y="507" text-anchor="middle" fill="#8899bb" font-size="8">11 نقطه</text>
+        <text x="586" y="517" text-anchor="middle" fill="#556688" font-size="7">6ش 0ب 2A 3K</text>
+<line x1="330" y1="295" x2="586" y2="465" stroke="#2a5298" stroke-width="0.5" opacity="0.2"/>
+
+        <rect x="672" y="465" width="155" height="55" rx="6" fill="#162030" stroke="#f39c12" stroke-width="1.5"/>
+        <circle cx="684" cy="477" r="5" fill="#f39c12" opacity="0.8"/>
+        <text x="694" y="481" fill="#f39c12" font-size="9" font-weight="bold">LOR</text>
+        <text x="749" y="495" text-anchor="middle" fill="#c8d8f0" font-size="9">لرستان</text>
+        <text x="749" y="507" text-anchor="middle" fill="#8899bb" font-size="8">60 نقطه</text>
+        <text x="749" y="517" text-anchor="middle" fill="#556688" font-size="7">42ش 0ب 3A 15K</text>
+<line x1="330" y1="295" x2="749" y2="465" stroke="#2a5298" stroke-width="0.5" opacity="0.2"/>
+
+        <rect x="835" y="465" width="155" height="55" rx="6" fill="#162030" stroke="#2ecc71" stroke-width="1.5"/>
+        <circle cx="847" cy="477" r="5" fill="#2ecc71" opacity="0.8"/>
+        <text x="857" y="481" fill="#2ecc71" font-size="9" font-weight="bold">MAZ</text>
+        <text x="912" y="495" text-anchor="middle" fill="#c8d8f0" font-size="9">مازندران</text>
+        <text x="912" y="507" text-anchor="middle" fill="#8899bb" font-size="8">107 نقطه</text>
+        <text x="912" y="517" text-anchor="middle" fill="#556688" font-size="7">84ش 1ب 0A 22K</text>
+<line x1="330" y1="295" x2="912" y2="465" stroke="#2a5298" stroke-width="0.5" opacity="0.2"/>
+
+        <rect x="998" y="465" width="155" height="55" rx="6" fill="#162030" stroke="#3498db" stroke-width="1.5"/>
+        <circle cx="1010" cy="477" r="5" fill="#3498db" opacity="0.8"/>
+        <text x="1020" y="481" fill="#3498db" font-size="9" font-weight="bold">MRZ</text>
+        <text x="1075" y="495" text-anchor="middle" fill="#c8d8f0" font-size="9">مرکزی</text>
+        <text x="1075" y="507" text-anchor="middle" fill="#8899bb" font-size="8">40 نقطه</text>
+        <text x="1075" y="517" text-anchor="middle" fill="#556688" font-size="7">27ش 0ب 3A 10K</text>
+<line x1="330" y1="295" x2="1075" y2="465" stroke="#2a5298" stroke-width="0.5" opacity="0.2"/>
+
+        <rect x="1161" y="465" width="155" height="55" rx="6" fill="#162030" stroke="#e74c3c" stroke-width="1.5"/>
+        <circle cx="1173" cy="477" r="5" fill="#e74c3c" opacity="0.8"/>
+        <text x="1183" y="481" fill="#e74c3c" font-size="9" font-weight="bold">HMZ</text>
+        <text x="1238" y="495" text-anchor="middle" fill="#c8d8f0" font-size="9">هرمزگان</text>
+        <text x="1238" y="507" text-anchor="middle" fill="#8899bb" font-size="8">104 نقطه</text>
+        <text x="1238" y="517" text-anchor="middle" fill="#556688" font-size="7">27ش 0ب 38A 39K</text>
+<line x1="330" y1="295" x2="1238" y2="465" stroke="#2a5298" stroke-width="0.5" opacity="0.2"/>
+
+        <rect x="20" y="525" width="155" height="55" rx="6" fill="#162030" stroke="#9b59b6" stroke-width="1.5"/>
+        <circle cx="32" cy="537" r="5" fill="#9b59b6" opacity="0.8"/>
+        <text x="42" y="541" fill="#9b59b6" font-size="9" font-weight="bold">HMD</text>
+        <text x="97" y="555" text-anchor="middle" fill="#c8d8f0" font-size="9">همدان</text>
+        <text x="97" y="567" text-anchor="middle" fill="#8899bb" font-size="8">45 نقطه</text>
+        <text x="97" y="577" text-anchor="middle" fill="#556688" font-size="7">44ش 1ب 0A 0K</text>
+<line x1="330" y1="295" x2="97" y2="525" stroke="#2a5298" stroke-width="0.5" opacity="0.2"/>
+
+        <rect x="183" y="525" width="155" height="55" rx="6" fill="#162030" stroke="#2c3e50" stroke-width="1.5"/>
+        <circle cx="195" cy="537" r="5" fill="#2c3e50" opacity="0.8"/>
+        <text x="205" y="541" fill="#2c3e50" font-size="9" font-weight="bold">CHB</text>
+        <text x="260" y="555" text-anchor="middle" fill="#c8d8f0" font-size="9">چهارمحال و</text>
+        <text x="260" y="567" text-anchor="middle" fill="#8899bb" font-size="8">17 نقطه</text>
+        <text x="260" y="577" text-anchor="middle" fill="#556688" font-size="7">14ش 0ب 3A 0K</text>
+<line x1="330" y1="295" x2="260" y2="525" stroke="#2a5298" stroke-width="0.5" opacity="0.2"/>
+
+        <rect x="346" y="525" width="155" height="55" rx="6" fill="#162030" stroke="#27ae60" stroke-width="1.5"/>
+        <circle cx="358" cy="537" r="5" fill="#27ae60" opacity="0.8"/>
+        <text x="368" y="541" fill="#27ae60" font-size="9" font-weight="bold">KRD</text>
+        <text x="423" y="555" text-anchor="middle" fill="#c8d8f0" font-size="9">کردستان</text>
+        <text x="423" y="567" text-anchor="middle" fill="#8899bb" font-size="8">50 نقطه</text>
+        <text x="423" y="577" text-anchor="middle" fill="#556688" font-size="7">37ش 1ب 0A 12K</text>
+<line x1="330" y1="295" x2="423" y2="525" stroke="#2a5298" stroke-width="0.5" opacity="0.2"/>
+
+        <rect x="509" y="525" width="155" height="55" rx="6" fill="#162030" stroke="#e67e22" stroke-width="1.5"/>
+        <circle cx="521" cy="537" r="5" fill="#e67e22" opacity="0.8"/>
+        <text x="531" y="541" fill="#e67e22" font-size="9" font-weight="bold">KRM</text>
+        <text x="586" y="555" text-anchor="middle" fill="#c8d8f0" font-size="9">کرمان</text>
+        <text x="586" y="567" text-anchor="middle" fill="#8899bb" font-size="8">78 نقطه</text>
+        <text x="586" y="577" text-anchor="middle" fill="#556688" font-size="7">73ش 2ب 2A 1K</text>
+<line x1="330" y1="295" x2="586" y2="525" stroke="#2a5298" stroke-width="0.5" opacity="0.2"/>
+
+        <rect x="672" y="525" width="155" height="55" rx="6" fill="#162030" stroke="#8e44ad" stroke-width="1.5"/>
+        <circle cx="684" cy="537" r="5" fill="#8e44ad" opacity="0.8"/>
+        <text x="694" y="541" fill="#8e44ad" font-size="9" font-weight="bold">KRSH</text>
+        <text x="749" y="555" text-anchor="middle" fill="#c8d8f0" font-size="9">کرمانشاه</text>
+        <text x="749" y="567" text-anchor="middle" fill="#8899bb" font-size="8">22 نقطه</text>
+        <text x="749" y="577" text-anchor="middle" fill="#556688" font-size="7">9ش 0ب 11A 2K</text>
+<line x1="330" y1="295" x2="749" y2="525" stroke="#2a5298" stroke-width="0.5" opacity="0.2"/>
+
+        <rect x="835" y="525" width="155" height="55" rx="6" fill="#162030" stroke="#7f8c8d" stroke-width="1.5"/>
+        <circle cx="847" cy="537" r="5" fill="#7f8c8d" opacity="0.8"/>
+        <text x="857" y="541" fill="#7f8c8d" font-size="9" font-weight="bold">KNB</text>
+        <text x="912" y="555" text-anchor="middle" fill="#c8d8f0" font-size="9">کهگیلویه و</text>
+        <text x="912" y="567" text-anchor="middle" fill="#8899bb" font-size="8">51 نقطه</text>
+        <text x="912" y="577" text-anchor="middle" fill="#556688" font-size="7">27ش 0ب 10A 14K</text>
+<line x1="330" y1="295" x2="912" y2="525" stroke="#2a5298" stroke-width="0.5" opacity="0.2"/>
+
+        <rect x="998" y="525" width="155" height="55" rx="6" fill="#162030" stroke="#2980b9" stroke-width="1.5"/>
+        <circle cx="1010" cy="537" r="5" fill="#2980b9" opacity="0.8"/>
+        <text x="1020" y="541" fill="#2980b9" font-size="9" font-weight="bold">GLS</text>
+        <text x="1075" y="555" text-anchor="middle" fill="#c8d8f0" font-size="9">گلستان</text>
+        <text x="1075" y="567" text-anchor="middle" fill="#8899bb" font-size="8">59 نقطه</text>
+        <text x="1075" y="577" text-anchor="middle" fill="#556688" font-size="7">35ش 1ب 1A 22K</text>
+<line x1="330" y1="295" x2="1075" y2="525" stroke="#2a5298" stroke-width="0.5" opacity="0.2"/>
+
+        <rect x="1161" y="525" width="155" height="55" rx="6" fill="#162030" stroke="#27ae60" stroke-width="1.5"/>
+        <circle cx="1173" cy="537" r="5" fill="#27ae60" opacity="0.8"/>
+        <text x="1183" y="541" fill="#27ae60" font-size="9" font-weight="bold">GIL</text>
+        <text x="1238" y="555" text-anchor="middle" fill="#c8d8f0" font-size="9">گیلان</text>
+        <text x="1238" y="567" text-anchor="middle" fill="#8899bb" font-size="8">94 نقطه</text>
+        <text x="1238" y="577" text-anchor="middle" fill="#556688" font-size="7">55ش 0ب 7A 32K</text>
+<line x1="330" y1="295" x2="1238" y2="525" stroke="#2a5298" stroke-width="0.5" opacity="0.2"/>
+
+        <rect x="20" y="585" width="155" height="55" rx="6" fill="#162030" stroke="#1abc9c" stroke-width="1.5"/>
+        <circle cx="32" cy="597" r="5" fill="#1abc9c" opacity="0.8"/>
+        <text x="42" y="601" fill="#1abc9c" font-size="9" font-weight="bold">YZD</text>
+        <text x="97" y="615" text-anchor="middle" fill="#c8d8f0" font-size="9">یزد</text>
+        <text x="97" y="627" text-anchor="middle" fill="#8899bb" font-size="8">55 نقطه</text>
+        <text x="97" y="637" text-anchor="middle" fill="#556688" font-size="7">18ش 0ب 14A 23K</text>
+<line x1="330" y1="295" x2="97" y2="585" stroke="#2a5298" stroke-width="0.5" opacity="0.2"/>
+
+        <!-- Branch layer indication -->
+        <text x="700" y="665" text-anchor="middle" fill="#8899bb" font-size="11">لایه نقاط شبکه: شعبه / باجه / ATM / کیوسک (جمعاً 2150 نقطه)</text>
+        
+        <!-- Branch type indicators -->
+        <rect x="200" y="680" width="200" height="35" rx="6" fill="rgba(52,152,219,0.15)" stroke="#3498db" stroke-width="1"/>
+        <text x="300" y="695" text-anchor="middle" fill="#3498db" font-size="11" font-weight="bold">شعبه (Branch)</text>
+        <text x="300" y="708" text-anchor="middle" fill="#8899bb" font-size="10">1467 شعبه مستقیم</text>
+        
+        <rect x="450" y="680" width="200" height="35" rx="6" fill="rgba(46,204,113,0.15)" stroke="#2ecc71" stroke-width="1"/>
+        <text x="550" y="695" text-anchor="middle" fill="#2ecc71" font-size="11" font-weight="bold">باجه (Sub-Branch)</text>
+        <text x="550" y="708" text-anchor="middle" fill="#8899bb" font-size="10">35 باجه</text>
+        
+        <rect x="700" y="680" width="200" height="35" rx="6" fill="rgba(230,126,34,0.15)" stroke="#e67e22" stroke-width="1"/>
+        <text x="800" y="695" text-anchor="middle" fill="#e67e22" font-size="11" font-weight="bold">ATM / دستگاه</text>
+        <text x="800" y="708" text-anchor="middle" fill="#8899bb" font-size="10">229 دستگاه خودپرداز</text>
+        
+        <rect x="950" y="680" width="200" height="35" rx="6" fill="rgba(155,89,182,0.15)" stroke="#9b59b6" stroke-width="1"/>
+        <text x="1050" y="695" text-anchor="middle" fill="#9b59b6" font-size="11" font-weight="bold">کیوسک (Kiosk)</text>
+        <text x="1050" y="708" text-anchor="middle" fill="#8899bb" font-size="10">419 کیوسک</text>
+
+      </svg>
+    </div>
+
+    <!-- Core Router Details -->
+    <div style="display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:15px; margin-top:20px;">
+      <div style="background:#111927; border:1px solid #e67e22; border-radius:10px; padding:16px;">
+        <div style="color:#e67e22; font-size:13px; font-weight:bold; margin-bottom:8px;">🔴 ASR1006-WAN-MB</div>
+        <div style="color:#8899bb; font-size:11px; line-height:1.8">
+          <div>نوع: Cisco ASR 1006 - MPLS PE Router</div>
+          <div>نقش: هاب مرکزی MPLS برای اتصال مدیریت‌ها</div>
+          <div>تانل‌ها: 35+ تانل MPLS به مدیریت استان‌ها</div>
+          <div>بانک‌پذیر: بله - رانداپ کامل</div>
+        </div>
+      </div>
+      <div style="background:#111927; border:1px solid #3498db; border-radius:10px; padding:16px;">
+        <div style="color:#3498db; font-size:13px; font-weight:bold; margin-bottom:8px;">🔵 WAN-INTR1 / WAN-INTR2</div>
+        <div style="color:#8899bb; font-size:11px; line-height:1.8">
+          <div>نوع: روترهای اینترانت (Active/Standby)</div>
+          <div>نقش: اتصال مستقیم به تمام شعب / باجه‌ها</div>
+          <div>تانل‌ها: 1,200+ تانل اینترانت</div>
+          <div>پوشش: کلیه استان‌های کشور</div>
+        </div>
+      </div>
+      <div style="background:#111927; border:1px solid #2ecc71; border-radius:10px; padding:16px;">
+        <div style="color:#2ecc71; font-size:13px; font-weight:bold; margin-bottom:8px;">🟢 ISR-APN-RO (Gilanet)</div>
+        <div style="color:#8899bb; font-size:11px; line-height:1.8">
+          <div>نوع: Cisco ISR - APN/Gilanet Hub</div>
+          <div>نقش: اتصال کیوسک‌ها و ATMها از طریق APN</div>
+          <div>تانل‌ها: 650+ تانل کیوسک/ATM</div>
+          <div>ISP: گیلانت، مبین‌نت، هی‌وب</div>
+        </div>
+      </div>
+      <div style="background:#111927; border:1px solid #9b59b6; border-radius:10px; padding:16px;">
+        <div style="color:#9b59b6; font-size:13px; font-weight:bold; margin-bottom:8px;">🟣 APN-INT-HUB</div>
+        <div style="color:#8899bb; font-size:11px; line-height:1.8">
+          <div>نوع: Cisco - IPSec APN Hub</div>
+          <div>نقش: تانل‌های APN داخلی (IPSec)</div>
+          <div>تانل‌ها: 50+ تانل IPSec داخلی</div>
+          <div>ارتباط: باجه‌های خارج از پوشش گیلانت</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- STATS VIEW -->
+<div id="view-stats" class="view">
+  <div class="stats-view">
+    <h3 style="color:#60a3f7; margin-bottom:20px;">📊 آمار کامل شبکه BKI</h3>
+    
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-card-title">جمع کل نقاط شبکه</div>
+        <div class="stat-card-value">2,150</div>
+        <div style="color:#8899bb; font-size:11px; margin-top:8px;">نقطه شبکه فعال در سراسر کشور</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-card-title">توزیع بر اساس نوع</div>
+        <div class="stat-bar-row">
+          <div class="stat-bar-label">شعبه</div>
+          <div class="stat-bar-bg"><div class="stat-bar-fill" style="width:68%; background:#3498db"></div></div>
+          <div style="color:#3498db; font-size:11px; min-width:40px">1467</div>
+        </div>
+        <div class="stat-bar-row">
+          <div class="stat-bar-label">باجه</div>
+          <div class="stat-bar-bg"><div class="stat-bar-fill" style="width:2%; background:#2ecc71"></div></div>
+          <div style="color:#2ecc71; font-size:11px; min-width:40px">35</div>
+        </div>
+        <div class="stat-bar-row">
+          <div class="stat-bar-label">ATM/دستگاه</div>
+          <div class="stat-bar-bg"><div class="stat-bar-fill" style="width:11%; background:#e67e22"></div></div>
+          <div style="color:#e67e22; font-size:11px; min-width:40px">229</div>
+        </div>
+        <div class="stat-bar-row">
+          <div class="stat-bar-label">کیوسک</div>
+          <div class="stat-bar-bg"><div class="stat-bar-fill" style="width:19%; background:#9b59b6"></div></div>
+          <div style="color:#9b59b6; font-size:11px; min-width:40px">419</div>
+        </div>
+      </div>
+    </div>
+
+    <h4 style="color:#60a3f7; margin:25px 0 15px;">📋 جدول تفصیلی استان‌ها</h4>
+    <div style="overflow:auto; border-radius:10px; border:1px solid #1e3a6e;">
+      <table style="width:100%; border-collapse:collapse; font-size:12px;">
+        <thead>
+          <tr style="background:#1a2a4a;">
+            <th style="padding:10px; text-align:right; color:#8899bb; border-bottom:1px solid #1e3a6e;">#</th>
+            <th style="padding:10px; text-align:right; color:#8899bb; border-bottom:1px solid #1e3a6e;">استان/مدیریت</th>
+            <th style="padding:10px; text-align:right; color:#8899bb; border-bottom:1px solid #1e3a6e;">کد</th>
+            <th style="padding:10px; text-align:center; color:#3498db; border-bottom:1px solid #1e3a6e;">شعبه</th>
+            <th style="padding:10px; text-align:center; color:#2ecc71; border-bottom:1px solid #1e3a6e;">باجه</th>
+            <th style="padding:10px; text-align:center; color:#e67e22; border-bottom:1px solid #1e3a6e;">ATM</th>
+            <th style="padding:10px; text-align:center; color:#9b59b6; border-bottom:1px solid #1e3a6e;">کیوسک</th>
+            <th style="padding:10px; text-align:center; color:#60a3f7; border-bottom:1px solid #1e3a6e;">جمع</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr style="background:#0f1825; border-bottom:1px solid #1e3a6e;">
+            <td style="padding:8px 10px; color:#556688;">1</td>
+            <td style="padding:8px 10px; color:#c8d8f0; font-weight:bold;">آذربایجان شرقی</td>
+            <td style="padding:8px 10px; color:#556688; font-family:monospace;">AZSH</td>
+            <td style="padding:8px 10px; text-align:center; color:#3498db;">81</td>
+            <td style="padding:8px 10px; text-align:center; color:#2ecc71;">0</td>
+            <td style="padding:8px 10px; text-align:center; color:#e67e22;">1</td>
+            <td style="padding:8px 10px; text-align:center; color:#9b59b6;">1</td>
+            <td style="padding:8px 10px; text-align:center; color:#60a3f7; font-weight:bold;">83</td>
+          </tr>
+          <tr style="background:#111927; border-bottom:1px solid #1e3a6e;">
+            <td style="padding:8px 10px; color:#556688;">2</td>
+            <td style="padding:8px 10px; color:#c8d8f0; font-weight:bold;">آذربایجان غربی</td>
+            <td style="padding:8px 10px; color:#556688; font-family:monospace;">AZGH</td>
+            <td style="padding:8px 10px; text-align:center; color:#3498db;">56</td>
+            <td style="padding:8px 10px; text-align:center; color:#2ecc71;">4</td>
+            <td style="padding:8px 10px; text-align:center; color:#e67e22;">0</td>
+            <td style="padding:8px 10px; text-align:center; color:#9b59b6;">0</td>
+            <td style="padding:8px 10px; text-align:center; color:#60a3f7; font-weight:bold;">60</td>
+          </tr>
+          <tr style="background:#0f1825; border-bottom:1px solid #1e3a6e;">
+            <td style="padding:8px 10px; color:#556688;">3</td>
+            <td style="padding:8px 10px; color:#c8d8f0; font-weight:bold;">اردبیل</td>
+            <td style="padding:8px 10px; color:#556688; font-family:monospace;">ARD</td>
+            <td style="padding:8px 10px; text-align:center; color:#3498db;">23</td>
+            <td style="padding:8px 10px; text-align:center; color:#2ecc71;">1</td>
+            <td style="padding:8px 10px; text-align:center; color:#e67e22;">17</td>
+            <td style="padding:8px 10px; text-align:center; color:#9b59b6;">4</td>
+            <td style="padding:8px 10px; text-align:center; color:#60a3f7; font-weight:bold;">45</td>
+          </tr>
+          <tr style="background:#111927; border-bottom:1px solid #1e3a6e;">
+            <td style="padding:8px 10px; color:#556688;">4</td>
+            <td style="padding:8px 10px; color:#c8d8f0; font-weight:bold;">اصفهان</td>
+            <td style="padding:8px 10px; color:#556688; font-family:monospace;">ESF</td>
+            <td style="padding:8px 10px; text-align:center; color:#3498db;">110</td>
+            <td style="padding:8px 10px; text-align:center; color:#2ecc71;">2</td>
+            <td style="padding:8px 10px; text-align:center; color:#e67e22;">0</td>
+            <td style="padding:8px 10px; text-align:center; color:#9b59b6;">9</td>
+            <td style="padding:8px 10px; text-align:center; color:#60a3f7; font-weight:bold;">121</td>
+          </tr>
+          <tr style="background:#0f1825; border-bottom:1px solid #1e3a6e;">
+            <td style="padding:8px 10px; color:#556688;">5</td>
+            <td style="padding:8px 10px; color:#c8d8f0; font-weight:bold;">البرز</td>
+            <td style="padding:8px 10px; color:#556688; font-family:monospace;">ALZ</td>
+            <td style="padding:8px 10px; text-align:center; color:#3498db;">23</td>
+            <td style="padding:8px 10px; text-align:center; color:#2ecc71;">0</td>
+            <td style="padding:8px 10px; text-align:center; color:#e67e22;">6</td>
+            <td style="padding:8px 10px; text-align:center; color:#9b59b6;">20</td>
+            <td style="padding:8px 10px; text-align:center; color:#60a3f7; font-weight:bold;">49</td>
+          </tr>
+          <tr style="background:#111927; border-bottom:1px solid #1e3a6e;">
+            <td style="padding:8px 10px; color:#556688;">6</td>
+            <td style="padding:8px 10px; color:#c8d8f0; font-weight:bold;">ایلام</td>
+            <td style="padding:8px 10px; color:#556688; font-family:monospace;">ILM</td>
+            <td style="padding:8px 10px; text-align:center; color:#3498db;">9</td>
+            <td style="padding:8px 10px; text-align:center; color:#2ecc71;">0</td>
+            <td style="padding:8px 10px; text-align:center; color:#e67e22;">25</td>
+            <td style="padding:8px 10px; text-align:center; color:#9b59b6;">13</td>
+            <td style="padding:8px 10px; text-align:center; color:#60a3f7; font-weight:bold;">47</td>
+          </tr>
+          <tr style="background:#0f1825; border-bottom:1px solid #1e3a6e;">
+            <td style="padding:8px 10px; color:#556688;">7</td>
+            <td style="padding:8px 10px; color:#c8d8f0; font-weight:bold;">بوشهر</td>
+            <td style="padding:8px 10px; color:#556688; font-family:monospace;">BSH</td>
+            <td style="padding:8px 10px; text-align:center; color:#3498db;">20</td>
+            <td style="padding:8px 10px; text-align:center; color:#2ecc71;">0</td>
+            <td style="padding:8px 10px; text-align:center; color:#e67e22;">0</td>
+            <td style="padding:8px 10px; text-align:center; color:#9b59b6;">13</td>
+            <td style="padding:8px 10px; text-align:center; color:#60a3f7; font-weight:bold;">33</td>
+          </tr>
+          <tr style="background:#111927; border-bottom:1px solid #1e3a6e;">
+            <td style="padding:8px 10px; color:#556688;">8</td>
+            <td style="padding:8px 10px; color:#c8d8f0; font-weight:bold;">تهران</td>
+            <td style="padding:8px 10px; color:#556688; font-family:monospace;">TEH</td>
+            <td style="padding:8px 10px; text-align:center; color:#3498db;">54</td>
+            <td style="padding:8px 10px; text-align:center; color:#2ecc71;">3</td>
+            <td style="padding:8px 10px; text-align:center; color:#e67e22;">4</td>
+            <td style="padding:8px 10px; text-align:center; color:#9b59b6;">36</td>
+            <td style="padding:8px 10px; text-align:center; color:#60a3f7; font-weight:bold;">97</td>
+          </tr>
+          <tr style="background:#0f1825; border-bottom:1px solid #1e3a6e;">
+            <td style="padding:8px 10px; color:#556688;">9</td>
+            <td style="padding:8px 10px; color:#c8d8f0; font-weight:bold;">تهران بزرگ</td>
+            <td style="padding:8px 10px; color:#556688; font-family:monospace;">TehB</td>
+            <td style="padding:8px 10px; text-align:center; color:#3498db;">93</td>
+            <td style="padding:8px 10px; text-align:center; color:#2ecc71;">2</td>
+            <td style="padding:8px 10px; text-align:center; color:#e67e22;">13</td>
+            <td style="padding:8px 10px; text-align:center; color:#9b59b6;">5</td>
+            <td style="padding:8px 10px; text-align:center; color:#60a3f7; font-weight:bold;">113</td>
+          </tr>
+          <tr style="background:#111927; border-bottom:1px solid #1e3a6e;">
+            <td style="padding:8px 10px; color:#556688;">10</td>
+            <td style="padding:8px 10px; color:#c8d8f0; font-weight:bold;">جنوب کرمان</td>
+            <td style="padding:8px 10px; color:#556688; font-family:monospace;">JKRM</td>
+            <td style="padding:8px 10px; text-align:center; color:#3498db;">18</td>
+            <td style="padding:8px 10px; text-align:center; color:#2ecc71;">0</td>
+            <td style="padding:8px 10px; text-align:center; color:#e67e22;">0</td>
+            <td style="padding:8px 10px; text-align:center; color:#9b59b6;">3</td>
+            <td style="padding:8px 10px; text-align:center; color:#60a3f7; font-weight:bold;">21</td>
+          </tr>
+          <tr style="background:#0f1825; border-bottom:1px solid #1e3a6e;">
+            <td style="padding:8px 10px; color:#556688;">11</td>
+            <td style="padding:8px 10px; color:#c8d8f0; font-weight:bold;">خراسان جنوبی</td>
+            <td style="padding:8px 10px; color:#556688; font-family:monospace;">KHRJ</td>
+            <td style="padding:8px 10px; text-align:center; color:#3498db;">33</td>
+            <td style="padding:8px 10px; text-align:center; color:#2ecc71;">1</td>
+            <td style="padding:8px 10px; text-align:center; color:#e67e22;">1</td>
+            <td style="padding:8px 10px; text-align:center; color:#9b59b6;">9</td>
+            <td style="padding:8px 10px; text-align:center; color:#60a3f7; font-weight:bold;">44</td>
+          </tr>
+          <tr style="background:#111927; border-bottom:1px solid #1e3a6e;">
+            <td style="padding:8px 10px; color:#556688;">12</td>
+            <td style="padding:8px 10px; color:#c8d8f0; font-weight:bold;">خراسان رضوی</td>
+            <td style="padding:8px 10px; color:#556688; font-family:monospace;">KHR</td>
+            <td style="padding:8px 10px; text-align:center; color:#3498db;">121</td>
+            <td style="padding:8px 10px; text-align:center; color:#2ecc71;">7</td>
+            <td style="padding:8px 10px; text-align:center; color:#e67e22;">20</td>
+            <td style="padding:8px 10px; text-align:center; color:#9b59b6;">30</td>
+            <td style="padding:8px 10px; text-align:center; color:#60a3f7; font-weight:bold;">178</td>
+          </tr>
+          <tr style="background:#0f1825; border-bottom:1px solid #1e3a6e;">
+            <td style="padding:8px 10px; color:#556688;">13</td>
+            <td style="padding:8px 10px; color:#c8d8f0; font-weight:bold;">خراسان شمالی</td>
+            <td style="padding:8px 10px; color:#556688; font-family:monospace;">KHSH</td>
+            <td style="padding:8px 10px; text-align:center; color:#3498db;">23</td>
+            <td style="padding:8px 10px; text-align:center; color:#2ecc71;">0</td>
+            <td style="padding:8px 10px; text-align:center; color:#e67e22;">3</td>
+            <td style="padding:8px 10px; text-align:center; color:#9b59b6;">4</td>
+            <td style="padding:8px 10px; text-align:center; color:#60a3f7; font-weight:bold;">30</td>
+          </tr>
+          <tr style="background:#111927; border-bottom:1px solid #1e3a6e;">
+            <td style="padding:8px 10px; color:#556688;">14</td>
+            <td style="padding:8px 10px; color:#c8d8f0; font-weight:bold;">خوزستان</td>
+            <td style="padding:8px 10px; color:#556688; font-family:monospace;">KHZ</td>
+            <td style="padding:8px 10px; text-align:center; color:#3498db;">17</td>
+            <td style="padding:8px 10px; text-align:center; color:#2ecc71;">0</td>
+            <td style="padding:8px 10px; text-align:center; color:#e67e22;">1</td>
+            <td style="padding:8px 10px; text-align:center; color:#9b59b6;">10</td>
+            <td style="padding:8px 10px; text-align:center; color:#60a3f7; font-weight:bold;">28</td>
+          </tr>
+          <tr style="background:#0f1825; border-bottom:1px solid #1e3a6e;">
+            <td style="padding:8px 10px; color:#556688;">15</td>
+            <td style="padding:8px 10px; color:#c8d8f0; font-weight:bold;">زنجان</td>
+            <td style="padding:8px 10px; color:#556688; font-family:monospace;">ZNJ</td>
+            <td style="padding:8px 10px; text-align:center; color:#3498db;">31</td>
+            <td style="padding:8px 10px; text-align:center; color:#2ecc71;">0</td>
+            <td style="padding:8px 10px; text-align:center; color:#e67e22;">7</td>
+            <td style="padding:8px 10px; text-align:center; color:#9b59b6;">5</td>
+            <td style="padding:8px 10px; text-align:center; color:#60a3f7; font-weight:bold;">43</td>
+          </tr>
+          <tr style="background:#111927; border-bottom:1px solid #1e3a6e;">
+            <td style="padding:8px 10px; color:#556688;">16</td>
+            <td style="padding:8px 10px; color:#c8d8f0; font-weight:bold;">سمنان</td>
+            <td style="padding:8px 10px; color:#556688; font-family:monospace;">SMN</td>
+            <td style="padding:8px 10px; text-align:center; color:#3498db;">40</td>
+            <td style="padding:8px 10px; text-align:center; color:#2ecc71;">0</td>
+            <td style="padding:8px 10px; text-align:center; color:#e67e22;">5</td>
+            <td style="padding:8px 10px; text-align:center; color:#9b59b6;">9</td>
+            <td style="padding:8px 10px; text-align:center; color:#60a3f7; font-weight:bold;">54</td>
+          </tr>
+          <tr style="background:#0f1825; border-bottom:1px solid #1e3a6e;">
+            <td style="padding:8px 10px; color:#556688;">17</td>
+            <td style="padding:8px 10px; color:#c8d8f0; font-weight:bold;">سیستان و بلوچستان</td>
+            <td style="padding:8px 10px; color:#556688; font-family:monospace;">SNB</td>
+            <td style="padding:8px 10px; text-align:center; color:#3498db;">49</td>
+            <td style="padding:8px 10px; text-align:center; color:#2ecc71;">2</td>
+            <td style="padding:8px 10px; text-align:center; color:#e67e22;">16</td>
+            <td style="padding:8px 10px; text-align:center; color:#9b59b6;">8</td>
+            <td style="padding:8px 10px; text-align:center; color:#60a3f7; font-weight:bold;">75</td>
+          </tr>
+          <tr style="background:#111927; border-bottom:1px solid #1e3a6e;">
+            <td style="padding:8px 10px; color:#556688;">18</td>
+            <td style="padding:8px 10px; color:#c8d8f0; font-weight:bold;">فارس</td>
+            <td style="padding:8px 10px; color:#556688; font-family:monospace;">FRS</td>
+            <td style="padding:8px 10px; text-align:center; color:#3498db;">136</td>
+            <td style="padding:8px 10px; text-align:center; color:#2ecc71;">7</td>
+            <td style="padding:8px 10px; text-align:center; color:#e67e22;">0</td>
+            <td style="padding:8px 10px; text-align:center; color:#9b59b6;">16</td>
+            <td style="padding:8px 10px; text-align:center; color:#60a3f7; font-weight:bold;">159</td>
+          </tr>
+          <tr style="background:#0f1825; border-bottom:1px solid #1e3a6e;">
+            <td style="padding:8px 10px; color:#556688;">19</td>
+            <td style="padding:8px 10px; color:#c8d8f0; font-weight:bold;">قزوین</td>
+            <td style="padding:8px 10px; color:#556688; font-family:monospace;">QZV</td>
+            <td style="padding:8px 10px; text-align:center; color:#3498db;">32</td>
+            <td style="padding:8px 10px; text-align:center; color:#2ecc71;">0</td>
+            <td style="padding:8px 10px; text-align:center; color:#e67e22;">16</td>
+            <td style="padding:8px 10px; text-align:center; color:#9b59b6;">29</td>
+            <td style="padding:8px 10px; text-align:center; color:#60a3f7; font-weight:bold;">77</td>
+          </tr>
+          <tr style="background:#111927; border-bottom:1px solid #1e3a6e;">
+            <td style="padding:8px 10px; color:#556688;">20</td>
+            <td style="padding:8px 10px; color:#c8d8f0; font-weight:bold;">قم</td>
+            <td style="padding:8px 10px; color:#556688; font-family:monospace;">QOM</td>
+            <td style="padding:8px 10px; text-align:center; color:#3498db;">6</td>
+            <td style="padding:8px 10px; text-align:center; color:#2ecc71;">0</td>
+            <td style="padding:8px 10px; text-align:center; color:#e67e22;">2</td>
+            <td style="padding:8px 10px; text-align:center; color:#9b59b6;">3</td>
+            <td style="padding:8px 10px; text-align:center; color:#60a3f7; font-weight:bold;">11</td>
+          </tr>
+          <tr style="background:#0f1825; border-bottom:1px solid #1e3a6e;">
+            <td style="padding:8px 10px; color:#556688;">21</td>
+            <td style="padding:8px 10px; color:#c8d8f0; font-weight:bold;">لرستان</td>
+            <td style="padding:8px 10px; color:#556688; font-family:monospace;">LOR</td>
+            <td style="padding:8px 10px; text-align:center; color:#3498db;">42</td>
+            <td style="padding:8px 10px; text-align:center; color:#2ecc71;">0</td>
+            <td style="padding:8px 10px; text-align:center; color:#e67e22;">3</td>
+            <td style="padding:8px 10px; text-align:center; color:#9b59b6;">15</td>
+            <td style="padding:8px 10px; text-align:center; color:#60a3f7; font-weight:bold;">60</td>
+          </tr>
+          <tr style="background:#111927; border-bottom:1px solid #1e3a6e;">
+            <td style="padding:8px 10px; color:#556688;">22</td>
+            <td style="padding:8px 10px; color:#c8d8f0; font-weight:bold;">مازندران</td>
+            <td style="padding:8px 10px; color:#556688; font-family:monospace;">MAZ</td>
+            <td style="padding:8px 10px; text-align:center; color:#3498db;">84</td>
+            <td style="padding:8px 10px; text-align:center; color:#2ecc71;">1</td>
+            <td style="padding:8px 10px; text-align:center; color:#e67e22;">0</td>
+            <td style="padding:8px 10px; text-align:center; color:#9b59b6;">22</td>
+            <td style="padding:8px 10px; text-align:center; color:#60a3f7; font-weight:bold;">107</td>
+          </tr>
+          <tr style="background:#0f1825; border-bottom:1px solid #1e3a6e;">
+            <td style="padding:8px 10px; color:#556688;">23</td>
+            <td style="padding:8px 10px; color:#c8d8f0; font-weight:bold;">مرکزی</td>
+            <td style="padding:8px 10px; color:#556688; font-family:monospace;">MRZ</td>
+            <td style="padding:8px 10px; text-align:center; color:#3498db;">27</td>
+            <td style="padding:8px 10px; text-align:center; color:#2ecc71;">0</td>
+            <td style="padding:8px 10px; text-align:center; color:#e67e22;">3</td>
+            <td style="padding:8px 10px; text-align:center; color:#9b59b6;">10</td>
+            <td style="padding:8px 10px; text-align:center; color:#60a3f7; font-weight:bold;">40</td>
+          </tr>
+          <tr style="background:#111927; border-bottom:1px solid #1e3a6e;">
+            <td style="padding:8px 10px; color:#556688;">24</td>
+            <td style="padding:8px 10px; color:#c8d8f0; font-weight:bold;">هرمزگان</td>
+            <td style="padding:8px 10px; color:#556688; font-family:monospace;">HMZ</td>
+            <td style="padding:8px 10px; text-align:center; color:#3498db;">27</td>
+            <td style="padding:8px 10px; text-align:center; color:#2ecc71;">0</td>
+            <td style="padding:8px 10px; text-align:center; color:#e67e22;">38</td>
+            <td style="padding:8px 10px; text-align:center; color:#9b59b6;">39</td>
+            <td style="padding:8px 10px; text-align:center; color:#60a3f7; font-weight:bold;">104</td>
+          </tr>
+          <tr style="background:#0f1825; border-bottom:1px solid #1e3a6e;">
+            <td style="padding:8px 10px; color:#556688;">25</td>
+            <td style="padding:8px 10px; color:#c8d8f0; font-weight:bold;">همدان</td>
+            <td style="padding:8px 10px; color:#556688; font-family:monospace;">HMD</td>
+            <td style="padding:8px 10px; text-align:center; color:#3498db;">44</td>
+            <td style="padding:8px 10px; text-align:center; color:#2ecc71;">1</td>
+            <td style="padding:8px 10px; text-align:center; color:#e67e22;">0</td>
+            <td style="padding:8px 10px; text-align:center; color:#9b59b6;">0</td>
+            <td style="padding:8px 10px; text-align:center; color:#60a3f7; font-weight:bold;">45</td>
+          </tr>
+          <tr style="background:#111927; border-bottom:1px solid #1e3a6e;">
+            <td style="padding:8px 10px; color:#556688;">26</td>
+            <td style="padding:8px 10px; color:#c8d8f0; font-weight:bold;">چهارمحال و بختیاری</td>
+            <td style="padding:8px 10px; color:#556688; font-family:monospace;">CHB</td>
+            <td style="padding:8px 10px; text-align:center; color:#3498db;">14</td>
+            <td style="padding:8px 10px; text-align:center; color:#2ecc71;">0</td>
+            <td style="padding:8px 10px; text-align:center; color:#e67e22;">3</td>
+            <td style="padding:8px 10px; text-align:center; color:#9b59b6;">0</td>
+            <td style="padding:8px 10px; text-align:center; color:#60a3f7; font-weight:bold;">17</td>
+          </tr>
+          <tr style="background:#0f1825; border-bottom:1px solid #1e3a6e;">
+            <td style="padding:8px 10px; color:#556688;">27</td>
+            <td style="padding:8px 10px; color:#c8d8f0; font-weight:bold;">کردستان</td>
+            <td style="padding:8px 10px; color:#556688; font-family:monospace;">KRD</td>
+            <td style="padding:8px 10px; text-align:center; color:#3498db;">37</td>
+            <td style="padding:8px 10px; text-align:center; color:#2ecc71;">1</td>
+            <td style="padding:8px 10px; text-align:center; color:#e67e22;">0</td>
+            <td style="padding:8px 10px; text-align:center; color:#9b59b6;">12</td>
+            <td style="padding:8px 10px; text-align:center; color:#60a3f7; font-weight:bold;">50</td>
+          </tr>
+          <tr style="background:#111927; border-bottom:1px solid #1e3a6e;">
+            <td style="padding:8px 10px; color:#556688;">28</td>
+            <td style="padding:8px 10px; color:#c8d8f0; font-weight:bold;">کرمان</td>
+            <td style="padding:8px 10px; color:#556688; font-family:monospace;">KRM</td>
+            <td style="padding:8px 10px; text-align:center; color:#3498db;">73</td>
+            <td style="padding:8px 10px; text-align:center; color:#2ecc71;">2</td>
+            <td style="padding:8px 10px; text-align:center; color:#e67e22;">2</td>
+            <td style="padding:8px 10px; text-align:center; color:#9b59b6;">1</td>
+            <td style="padding:8px 10px; text-align:center; color:#60a3f7; font-weight:bold;">78</td>
+          </tr>
+          <tr style="background:#0f1825; border-bottom:1px solid #1e3a6e;">
+            <td style="padding:8px 10px; color:#556688;">29</td>
+            <td style="padding:8px 10px; color:#c8d8f0; font-weight:bold;">کرمانشاه</td>
+            <td style="padding:8px 10px; color:#556688; font-family:monospace;">KRSH</td>
+            <td style="padding:8px 10px; text-align:center; color:#3498db;">9</td>
+            <td style="padding:8px 10px; text-align:center; color:#2ecc71;">0</td>
+            <td style="padding:8px 10px; text-align:center; color:#e67e22;">11</td>
+            <td style="padding:8px 10px; text-align:center; color:#9b59b6;">2</td>
+            <td style="padding:8px 10px; text-align:center; color:#60a3f7; font-weight:bold;">22</td>
+          </tr>
+          <tr style="background:#111927; border-bottom:1px solid #1e3a6e;">
+            <td style="padding:8px 10px; color:#556688;">30</td>
+            <td style="padding:8px 10px; color:#c8d8f0; font-weight:bold;">کهگیلویه و بویراحمد</td>
+            <td style="padding:8px 10px; color:#556688; font-family:monospace;">KNB</td>
+            <td style="padding:8px 10px; text-align:center; color:#3498db;">27</td>
+            <td style="padding:8px 10px; text-align:center; color:#2ecc71;">0</td>
+            <td style="padding:8px 10px; text-align:center; color:#e67e22;">10</td>
+            <td style="padding:8px 10px; text-align:center; color:#9b59b6;">14</td>
+            <td style="padding:8px 10px; text-align:center; color:#60a3f7; font-weight:bold;">51</td>
+          </tr>
+          <tr style="background:#0f1825; border-bottom:1px solid #1e3a6e;">
+            <td style="padding:8px 10px; color:#556688;">31</td>
+            <td style="padding:8px 10px; color:#c8d8f0; font-weight:bold;">گلستان</td>
+            <td style="padding:8px 10px; color:#556688; font-family:monospace;">GLS</td>
+            <td style="padding:8px 10px; text-align:center; color:#3498db;">35</td>
+            <td style="padding:8px 10px; text-align:center; color:#2ecc71;">1</td>
+            <td style="padding:8px 10px; text-align:center; color:#e67e22;">1</td>
+            <td style="padding:8px 10px; text-align:center; color:#9b59b6;">22</td>
+            <td style="padding:8px 10px; text-align:center; color:#60a3f7; font-weight:bold;">59</td>
+          </tr>
+          <tr style="background:#111927; border-bottom:1px solid #1e3a6e;">
+            <td style="padding:8px 10px; color:#556688;">32</td>
+            <td style="padding:8px 10px; color:#c8d8f0; font-weight:bold;">گیلان</td>
+            <td style="padding:8px 10px; color:#556688; font-family:monospace;">GIL</td>
+            <td style="padding:8px 10px; text-align:center; color:#3498db;">55</td>
+            <td style="padding:8px 10px; text-align:center; color:#2ecc71;">0</td>
+            <td style="padding:8px 10px; text-align:center; color:#e67e22;">7</td>
+            <td style="padding:8px 10px; text-align:center; color:#9b59b6;">32</td>
+            <td style="padding:8px 10px; text-align:center; color:#60a3f7; font-weight:bold;">94</td>
+          </tr>
+          <tr style="background:#0f1825; border-bottom:1px solid #1e3a6e;">
+            <td style="padding:8px 10px; color:#556688;">33</td>
+            <td style="padding:8px 10px; color:#c8d8f0; font-weight:bold;">یزد</td>
+            <td style="padding:8px 10px; color:#556688; font-family:monospace;">YZD</td>
+            <td style="padding:8px 10px; text-align:center; color:#3498db;">18</td>
+            <td style="padding:8px 10px; text-align:center; color:#2ecc71;">0</td>
+            <td style="padding:8px 10px; text-align:center; color:#e67e22;">14</td>
+            <td style="padding:8px 10px; text-align:center; color:#9b59b6;">23</td>
+            <td style="padding:8px 10px; text-align:center; color:#60a3f7; font-weight:bold;">55</td>
+          </tr>
+          <tr style="background:#1a2a4a; font-weight:bold;">
+            <td colspan="3" style="padding:10px; color:#60a3f7;">جمع کل</td>
+            <td style="padding:10px; text-align:center; color:#3498db;">1467</td>
+            <td style="padding:10px; text-align:center; color:#2ecc71;">35</td>
+            <td style="padding:10px; text-align:center; color:#e67e22;">229</td>
+            <td style="padding:10px; text-align:center; color:#9b59b6;">419</td>
+            <td style="padding:10px; text-align:center; color:#f39c12; font-size:14px;">2150</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script>
+const provinceData = [{"code": "AZSH", "name": "آذربایجان شرقی", "color": "#e74c3c", "branches": ["MO", "Tabriz", "RahAhan", "AbResan", "FelezKaran", "22Bahman", "Basmenj", "Shahryar", "AzarShahr", "Ahar", "BaharAhar", "Ferdowsi", "TractorSazi", "AbuReyhan", "SahebolAmr", "Sarab", "Behraman", "FerdowsiSarab", "Hashtroud", "Shabestar", "Sufiyan", "ShendAbad", "Kaleybar", "Maraghe", "Kharaju", "AmirKabirMrq", "Marand", "Baruj", "Miane", "HadiShahr", "BazarHdShr", "Jolfa", "Bonab", "TareBarBnb", "MALEKAN", "Leylan", "Osku", "BostanAbad", "ImamBstnAbd", "QareBaba", "Heris", "Bakhshayesh", "Kolvanaq", "Varzaqan", "QareAqaj", "TorkamanChay", "KhodaAfarin", "KaqazKn", "Horand", "AjabShir", "Mehreban", "DuzDuzaan", "Kharvana", "Tasuj", "Tark", "ShPastorizeh", "AbshAhmad", "KhosroShahr", "Gugan", "BiglariAhr", "TareBar", "SabzehMeydan", "AsbFrshn", "NazarKahrizi", "SharafKhaneh", "KoshkSaray", "Yamchi", "ShohadaMrnd", "ImamMyn", "Achachi", "TazeQaleh", "ILkhchi", "TikmehDash", "KordKandi", "Khajeh", "Sharabian", "Jahad", "SardRud", "Mamaqan", "Taavon", "HQ"], "bajes": [], "atms": ["ATM-BimehSalamat"], "kiosks": ["Kiosk-SardkhaneAzarfadak"], "total": 83}, {"code": "AZGH", "name": "آذربایجان غربی", "color": "#c0392b", "branches": ["MO", "Beheshti", "Khoy", "MahalleKHoy", "Anzal", "Bakeri", "Salmas", "AZGH-Silab", "Maku", "KasebiBzrgn", "Mahabad", "MolaJamiMhb", "Mian2Ab", "HafezMnDb", "Bukaan", "AmirAbad", "Naqade", "MohammadYar", "SarDasht", "Takab", "PiranShahr", "ShahinDej", "Chaldoran", "Oshnoviyeh", "PolDasht", "QareZiyaDin", "ShowT", "Aftab", "Shohada", "NushinShahr", "DizajMaregvar", "Bazar", "TazehShahr", "QareQeshlaq", "Firuraq", "DizajDiz", "EvOqli", "Vaar-Khoy", "KhoshkBarKhoy", "BasijKhoy", "Aras", "MarganLar", "Mokriyan", "4Borj", "AZGH-Keshavarz", "AZGH-MahmudAbad", "Jahad", "TareBar", "BazarSlms", "Taleqani", "Laajan", "AZGH-SalaheDin", "Farhangian", "AZGH-ShohadaNqd", "Imam", "HQ"], "bajes": ["Bj-Avajiq", "Bj-Balanaj", "Bj-ShirPgah", "Bj-Jahad"], "atms": [], "kiosks": [], "total": 60}, {"code": "ARD", "name": "اردبیل", "color": "#2ecc71", "branches": ["MO", "SheykhSafi", "HQ", "Sabalan", "Besat", "FakhrAbad", "Namin", "Nir", "Kuraeim", "Aslandouz", "Araz", "JafarAbad", "PirAbdlMalek", "QareAqaj", "MoradLu", "AralLu", "Mobarezan", "Vahdat", "SW-Core Backup", "APN-Guilanet", "Engut - 448", "E1-ZirSakht", "E1-ZirSakht(BACKUP)"], "bajes": ["Bj-Khujin"], "atms": ["ATM-Emdad", "ATM-OloomPezeshkiUNI", "ATM-Food&drugMoavenat", "ATM-Borjesadaf-1,2", "ATM-Rahdari", "ATM-ManabeT", "ATM-JahadBilesvr", "ATM-Jahad", "ATM-Dampezeshki", "ATM-ImamhospitalParsAbad", "ATM-KeshtSanat", "ATM-AmuzshJahd", "ATM-Shilat", "ATM-Refahi-Sahar(Moradlu)", "ATM-BShohadaParsAbad", "ATM-AhmadMoeirStore", "ATM-UniOlumPezeshki"], "kiosks": ["Kiosk-TaAvoniRHirCo", "Kiosk-FarhadiStore", "kiosk-Taavoniroostae", "kiosk-Bazar-Arjagh"], "total": 45}, {"code": "ESF", "name": "اصفهان", "color": "#9b59b6", "branches": ["MO", "1000Jarib", "SheykhSaduq", "Jomhuri", "Shohada", "Ardestan", "4Baq", "Esfahan", "BustanSadi", "BazarCheNo", "AmirHamze", "KhanSaar", "Shahreza", "Faridan", "Eskandari", "Falavarjan", "Bustan", "Golpaygan", "Naein", "NajafAbad", "Natanz", "KhomeyniShahr", "Meymeh", "Semirom", "FreydunShahr", "VahdatAbad", "ZarinShahr", "Dahaqan", "Mobarakeh", "KuhPayeh", "Buein", "Manuchehri", "BaadRud", "Chadegan", "Aran", "SefidShahr", "ValiAsrAran", "DowlatAbad", "Jarquyeh", "PeykanJrqyh", "Khur", "Zavareh", "Varzaneh", "Mehrgerd", "Tiran", "Pegah", "TareBar", "Bideh", "AmirKabir", "ShahinShahr", "ImamAli", "Abar", "Kashan", "TareBarKshn", "QamSar", "Charmahin", "PayanehSharq", "Khurasgan", "Zeynabiyeh", "PirBakran", "Ziyar", "Karkavand", "DastJa", "Rahnan", "Moqar", "Mahabad", "Afus", "RahmatAbad", "Dorcheh", "Pudeh", "BaqBahadoran", "Hana", "EsfarJan", "ImamShahrza", "Damaneh", "ImanShahr", "Qahdarijan", "Taad", "AbuZeydAbad", "Raavand", "Ejeyeh", "IslamAbadKhpyh", "ImamZdHarand", "SaeidAbad", "GolShahr", "Gugad", "Talkhuncheh", "ZibaShahr", "ShahrakSan@", "NekuAbad", "Dehaq", "GolDasht", "KhaledAbad", "Rozveh", "Yazdel", "Gorgab", "DastGerd", "Gaz", "Jandaq", "HasanAbadJrqy", "NasrAbad", "Jandaan", "Kafran", "Ashkavand", "AhmadAbad", "Jahad", "ShamsAbadi", "Mahyar", "HQ", "Mobarake"], "bajes": ["Bj-PegahGlpygan", "Bj-Chupanan"], "atms": [], "kiosks": ["Kiosk-AlmaseKavir", "Kiosk-PBJandagh", "Kiosk-SonatiMallIsfahan", "Kiosk-MMtarebareEsfahan", "kiosk-Pilehvaran", "Kiosk-Damdaran", "Kiosk-ESF-Kiosk-HayperMeNeshan", "Kiosk-BaderanSHahrakSan@i", "Kiosk-EmamAliKheiriyeh"], "total": 121}, {"code": "ALZ", "name": "البرز", "color": "#3498db", "branches": ["Beheshti", "Honarmand", "RajaeiShahr des", "Karaj des", "Taleqani", "Tohid", "HaftTir des", "8Gerd des", "Taleqa des", "Eshtehard des", "SeromSazi des", "Fardis des", "DaneshAmuz", "MahDasht des", "MohammadShahr des", "MeshkinDasht des", "Baqestan des", "KamalShahr des", "Azimiyeh des", "MehrShahr des", "HQ", "MohandesiZeraei", "Tala-Javaher-Psj"], "bajes": [], "atms": ["ATM-OlumDami", "ATM-AboKhak", "ATM-PardisManabeTabiei", "ATM-SetadUniPezeshki", "ATM-EmamAliHospital", "ATM-Uni-Dental"], "kiosks": ["Kiosk-Mesbahmall", "Kiosk-Pishrokesht", "Kiosk-SAghaei", "Kiosk-TBehSotun", "Kiosk-SAliEbnATaleb", "Kiosk-EstakhrUniKeshvrzi", "Kiosk-EnghelabMall", "Kiosk-ColdHouses", "Kiosk-EmamSadeghBeheshti", "Kiosk-Gozali", "Kiosk-AnsarAlHasan", "Kiosk-NazrAbadTaha", "Kiosk-AnsarAlHasan2", "Kiosk-UOlumPezeshki", "Kiosk-SHidRajaeiHospital", "Kiosk-KosarHospital", "Kiosk-TavakoliPharmacy", "Kiosk-Keshtosanat-dam-hiv", "Kiosk-Daneshgah-Parastari-Pirapezeshki", "Kiosk-Soltanian"], "total": 49}, {"code": "ILM", "name": "ایلام", "color": "#8e44ad", "branches": ["Sivan", "HQ", "Bj-TareBar", "Bj-UNIOLMPZSHKI", "Kiyosk-Daftarkhane-Fatollahi", "MLPS-Ostani", "VSAT", "SW-CoreA", "SW-CoreB"], "bajes": [], "atms": ["ATM-HospitalMosKHomeini", "ATM-HospitalRazi", "ATM-DarreShahrHospital", "ATM-OlumPezeshki", "ATM-UNIDndanpezshki", "ATM-EmamKhomni2", "ATM-MobileCar", "ATM-AsgariStore", "ATM-JKeshvrzi1Ilam", "ATM-JKeshvrzi2Ilam", "ATM-Dampezeshki", "ATM-Mehr", "ATM-ImamAli-Hsptl-Srbl", "ATM-ShohadaHsptlDehloran", "ATM-ValiAsrHospitalDareShahr", "ATM-HosptlEmamKHomini1", "ATM-KHadamatDarmaniCenter", "ATM-HSPTALTLQANI", "ATM-EmamHasanMehran", "ATM-EmamRezaHospital", "ATM-SGoshtPazhohan", "ATM-ForoshgahMami", "ATM-RasoolHospital", "ATM-TaleqaniDarShahr", "ATM-ValiAsrAbdnn"], "kiosks": ["Kiosk-Mojtama-Salamat", "Kiosk-Uni-oloumpezeshki", "Kiosk-Atena", "Kiosk-SazmanQale", "Kiosk-Jamshidi", "Kiosk-UniMOlomPzeshki", "Kiosk-Khatammall", "kiosk-ForooshgahYaghobi", "Kiosk-UniMOlomPzeshki-Mtahghighat", "Kiosk-Tajhizat-Keshavarzi", "Kiosk-Mojtama-Reza", "Kiosk-Mojtama-Atena", "Kiosk-DashtAbas-IfelMarket"], "total": 47}, {"code": "BSH", "name": "بوشهر", "color": "#f39c12", "branches": ["Bushehr", "HQ", "TbareDavani", "NakhleTaghi", "Samal", "Bndrostami", "EmameBorazjan", "KorehBand", "Shonbe", "LAN", "InterAnet-4M", "APN", "Kelemeh - 448", "BazarBorazjan - 448", "AbPakhsh - 448", "TangeEram - 448", "Boshgan - 448", "Vahdatiyeh - 448", "BndrRig - 448", "Bordkhun  - 448"], "bajes": [], "atms": [], "kiosks": ["Kiosk-ArdKhalijFars", "Kiosk-ParvareshMeygoo", "Kiosk-Kosar", "Kiosk-BrbariSalimiPur", "Kiosk-MiladMall", "Kiosk-PashazhArghavan1", "kiosk-AbzarfrooshiHashemi", "Kiosk-Oloumpezeshki", "Kiosk-Unioloumpezeshki", "Kiosk-SazJahadBushehr", "Kiosk-Visooei", "Kiosk-Aria", "Kiosk-Petrosina"], "total": 33}, {"code": "TEH", "name": "تهران", "color": "#1abc9c", "branches": ["Damavand", "FiruzKuh", "Varamin", "RobatKarim", "PakDasht", "Razi", "Rudehen", "ShahreZiba", "HesarAmir", "IslamShahr", "Beheshti", "BazarBozorgRey", "Golestan", "BaqerShahr", "AbSard", "Jaban", "JajeRud", "Gilavand", "HasanAbadFF", "NasimShahr", "Pishva", "Qarchak", "Lavasan", "Filestan", "SharifAbd", "Payaneh", "Bumehen", "KhatunAbad", "Fasham", "TehranSar", "Aderan", "SaeidAbd", "ValiAsrShahriar", "ShahreQods", "Andisheh", "MaqadEmam", "ShahedShahrShahriyar", "Marlik", "SafaDasht", "SarAsiyab", "Shahriyar", "MiladShahrQods", "ShahreRey", "AbdolAbad", "AqaNoor", "Aqdasiyeh", "Afsariyeh", "Resalat", "Baharestan", "BaqFerdos", "HQ", "Baje-Beheshti", "SandqBimeKeshavarzi", "Pardis-Kourosh"], "bajes": ["Bj-4Dangeh", "Bj-KamundrnIslmShr", "Bj-MazMaz"], "atms": ["ATM-Kale", "ATM-SepaShahr", "ATM-EmamKhomeiniSharyarHospital", "ATM-MRomakMall"], "kiosks": ["Kiosk-Hufard", "Kiosk-NamvarMoarefCompany", "Kiosk-Behruz", "Kiosk-Finacenter", "Kiosk-AbMdniDmvnd", "Kiosk-Mekanikhamrah", "Kiosk-BasimGusht", "Kiosk-EhsanRey", "Kiosk-SHahrdarishahrghods", "Kiosk-Shabahang", "Kiosk-TarhbarNeginDamavand", "Kiosk-AzadiTaavoniRusatE", "Kiosk-IranNara", "Kiosk-MKharidAsgari", "Kiosk-SHemeShirPishva", "Kiosk-MiveTarebar-Daei", "Kiosk-NivariarAria", "Kiosk-San2qValiAsrZarkan", "Kiosk-ShabahangShahriar", "Kiosk-San2qZakhireRobatKarim", "Kiosk-MTarebarEslamshahr", "Kiosk-CoTRostaeiAzar", "kiosk-Tozi-va-Pakhsh-Vandad", "kiosk-TaavoniKereshte", "Kiosk-HayperSaeedAbsrd", "Kiosk-SarafiAmirTojar", "kiosk-Bazar-Sarasiab", "kiosk-PishkhaDowlat", "kiosk-Sandogh-Hejrat", "kiosk-ShahrdariSalehieh", "kiosk-TareBarSharyar", "kiosk-Khadamat-Entezami", "kiosk-ImenTak-Pishro", "kiosk-Dr.hoseni", "kiosk-Asgarabad2", "kiosk-TarebarPishva"], "total": 97}, {"code": "TehB", "name": "تهران بزرگ", "color": "#16a085", "branches": ["ImamAli", "ParvinBlvd", "ValiAsr", "Ozgol", "Shahran", "Elahie", "Mofateh", "ShariatiTalqani", "Ekhtiarie", "30Tir", "Esteqlal", "Gorgan", "TehB-ShariatiMalek", "Marzdaran", "TehranPars", "Afriqa", "Punak", "Delavran", "Seydkhandan", "KhorasanSQ", "Dowlat", "Zafar", "Nafisi", "Dardasht", "Gandi", "Sabalan", "Zafaraniyeh", "SepahbodQarani", "Pasdaran", "Bazaar", "BazaarFarsh", "ShamsAbad", "BursKala", "Qeytariyeh", "7Tir", "SohrevardSH", "QanatEKowsar", "MirDamdad", "Vanak", "Piruzi", "NiruHavaei", "FerdosiSHomali", "NoBonyad", "AhmadQasir", "Niavaran", "Narmak", "Palizi", "Ferdowsi", "JanatAbad", "BlvdKeshavarz", "SHirPastorizeh", "Dadman", "Tohid", "TareBar", "SeyedJamal", "AmirAkram", "Vesal", "Tajrish", "Ekbatan", "Rudaki", "Moqadam", "Sadeqiyeh", "Fatemi", "ParkSaei", "NaziAbad", "KargarShomali", "SatarKHan", "SHadMehr", "MoghdsArdbili", "VezaratJahad", "ShahrAra", "2RahiQapan", "MTGolestan", "AmirBahador", "Jomhuri", "BrazilSh", "Jeyhun", "Enqelab", "Javadiyeh", "BuAli", "ParkLale", "MolaSadra", "Narenjestan", "YaftAbad", "Velenjak", "ShrkRahAhan", "ParkDaneshju", "KhajeNasir", "SaadatAbd", "Kashani", "KhTaleqani", "QaemMaqam", "Baje-BimeSalamatIran"], "bajes": ["Bj-Shilat", "Bj-ToloAfteb"], "atms": ["ATM-Orkideh", "ATM-BeheshtiUni", "ATM-G3-Building", "ATM-MojtamaQazaeiKourosh", "ATM-DandanPezeshki", "ATM-Firoozgar", "ATM-Royal", "ATM-Daneshgah-Jame-Salamat-Tavanbakhshi", "ATM-Rasoolakram", "ATM-Darmangah-Lolagar", "ATM-Charou", "ATM-STehInternationalEx", "ATM-HospitalErfan"], "kiosks": ["kiosk-Ekbatan", "kiosk-AryanGelare", "Kiosk-Faradis", "Kiosk-Sepidar", "Kiosk-NegineSarv"], "total": 113}, {"code": "JKRM", "name": "جنوب کرمان", "color": "#d35400", "branches": ["Kahnuj", "JahadJ", "BolookJiroft", "MO", "Sardueiyeh", "Manujan", "Bachgan", "AnbarAbad", "HalilRud", "IslamAbad", "Faryab", "QaleGanj", "ImamKahnuj", "NoDej", "TaavonJ", "JebalBarez", "AzadiKhnj", "Jazmurian"], "bajes": [], "atms": [], "kiosks": ["Kiosk-BarbariDkhilAbsiReisi", "kiosk-Sardkhane-mahdi-mood", "kiosk-BaskulNozari"], "total": 21}, {"code": "KHRJ", "name": "خراسان جنوبی", "color": "#e67e22", "branches": ["MO", "Jahad", "Birjand", "Ferdows", "Mofateh", "3QaleSryn", "Taqab", "Qaen", "Boshruyeh", "Sarayan", "Darmiyan", "Khezri", "NimBoluk", "Sarbisheh", "Asadiyeh", "Nehbandan", "Khusf", "Qahestan", "HajiAbad", "TabasMesina", "Taleqani", "MeydanAzadi", "Ayask", "AryanShahr", "Shusf", "Mud", "AmirAbad", "Modares", "Korit", "JoKhah", "EshqAbad", "Tabas", "HQ"], "bajes": ["Bj-JahadQn"], "atms": ["ATM-AmuzeshJahad"], "kiosks": ["Kiosk-BimeSalamt", "Kiosk-PasajQaem", "Kiosk-MGhazaee-AliMohammadi", "Kiosk-FMJafarEbrahimi", "Kiosk-FBrandViyan", "Kiosk-JavadiGoldJewelry", "Kiosk-Iranmehr-Hospital", "Kiosk-Namayeshgah-Irankamiyon", "Kiosk-Bonesabz"], "total": 44}, {"code": "KHR", "name": "خراسان رضوی", "color": "#d35400", "branches": ["MO", "Modares", "Rahnamaei", "Terminal", "AhmadAbad", "ImamReza", "4RahHejab", "Gonabad", "IrajMirza", "Sabzevar", "Kashmar", "4RahGas", "4RahLashgar", "AbuTaleb", "Jahad", "TorbatH", "Emamat", "Hafez", "Mosala", "VakilAbad", "ManabeT", "Torqabeh", "Sarakhs", "IsarGaran", "Fariman", "TorbatJaam", "Bakharz", "SahebTorbat", "GoharShad", "DarGaz", "Quchan", "DrHesabi", "Neyshabur", "Joqtay", "Kalat", "Khaaf", "Ashayeri", "TayBad", "Chenaran", "Bajestan", "Neqab", "RobatSang", "Bardeskan", "SareVelayat", "DowlatAbad", "SalehAbad", "FeyzAbad", "Kakhk", "Tus", "Davarzan", "SoltanAbad", "LotfAbad", "Shashtemad", "Shandiz", "QadamGah", "KheruQdm", "FiruzehN", "RoshtKhaar", "KhalilAbad", "Kondor", "AbuzarT", "17Shahrivar", "RudAb", "NasrAbad", "ShRazavi", "Kariz", "MshdRizeh", "HafezJaam", "ImamJaam", "Bayg", "KarizNo", "AzadVar", "Rivadeh", "Gaft", "GolMakan", "15Khordad", "MydnHonarestan", "QasemAbad", "Rivand", "SafiAbad", "TapehSalaam", "JahadGnabd", "KarizakNghni", "Tollab", "Jabuz", "DuqAbad", "ShirSan@i", "ImamNshbr", "MBRazavi", "BazrNahal", "Fadak", "Motahari", "Shari@iBlv", "MoalemTs", "Kadkan", "Jangal", "AtaMalek", "Beyhaqi", "RobatJaz", "QalandarAbad", "FarhadGerd", "ShadMehr", "AbdolAbad", "HokmAbad", "EshqAbad", "TaleqaniN", "Anabad", "Rivash", "ModaresKshmr", "Bey2kht", "Roshnavand", "Seno", "QaemNuqab", "HQ", "ShirPastorizeh", "MoallemToos", "Robatjaz", "Madinah-Al-Reza", "Dehyari-Veyrani", "Shahan-Lavazemyadaki", "ShTRostaiEshghAbad"], "bajes": ["BJ-RaziNeqab", "Bj-Salaami", "BJH-NilShahr", "BJH-ChamanAbad", "Bj-Nashtifan", "BJ-LayenNo", "Bj-Bezangan"], "atms": ["ATM-Terminal-Gon", "ATM-HyperAli", "ATM-Mobile-Part", "ATM-SHiriniKamal", "ATM-MTShahrdari-Taibad", "ATM-Sobhan", "ATM-KohsarSaz", "ATM-EnteghalGaz", "ATM-Arad", "ATM-HyperAzhdar", "ATM-KouroshComplex", "ATM-EqtesadiSarakhs", "ATM-AmoozeshJahad", "ATM-BaqAsia", "ATM-SarakhsFreeTradeZone", "ATM-MondGonabad", "ATM-Mojtama-Amir", "ATM-Tak", "ATM-MojtamaTak2", "ATM-Anahid"], "kiosks": ["Kiosk-Mojtama-Pezeshkan-Zakaria", "Kiosk-Iran-Gosht", "kiosk-KHodrotoos", "kiosk-PoushakAtashin", "Kiosk-ClinicIRMehr", "Kiosk- Tolidi Pishro", "Kiosk-TaavoniDargaz", "kiosk-Samin", "Kiosk-HeyatMotevaslinHZahra", "Kiosk-HOTELAZIN", "Kiosk-KHoneBeKHoneGonaAbad", "Kiosk-SandoghValiasr", "Kiosk-BimehSalamat", "Kiosk-MGHazaeiSadeghi", "Kiosk-SanayeQazaeiMoeinpour", "Kiosk-SherkatBatsam", "Kiosk-Azadi", "Kiosk-SGHShidBeheshtiKhalilAbad", "Kiosk-FAzelKarizno", "Kiosk-BazarSangAhmadabad", "kiosk-Ahangari", "Kiosk-PatologyLab", "kiosk-Ghanadi-madar", "Kiosk-ScaniaYadakCo", "Kiosk-ClinicVenos", "kiosk--PompBenzinAnab", "kiosk-MojtamaPezeshkanSedaghat", "kiosk-Hotel-Javaheri", "kiosk-noorpardazanNovin", "Kiosk-TohideKhaf"], "total": 178}, {"code": "KHSH", "name": "خراسان شمالی", "color": "#e74c3c", "branches": ["MO", "Bojnurd", "Esfarayen", "ImamRezaSh", "TermnlEsfrn", "Jahad", "TlghniBjnrd", "Bostan", "Shirvan", "Jajarm", "Garmeh", "AshKhaneh", "Ghazi", "Faruj", "RazJrgln", "SafiAbad", "BamSafiAbad", "SanKhast", "TitkanLu", "PishQale", "17Shahrivar", "YekeSoud", "HQ"], "bajes": [], "atms": ["ATM-JahadGarden", "ATM-SandghKshvr", "ATM-ClinicSHafa"], "kiosks": ["Kiosk-FLvazenKhangiAyham", "Kiosk-FMorghNorano", "kiosk-DamdaranOmid", "kiosk-DehyariRoueen"], "total": 30}, {"code": "KHZ", "name": "خوزستان", "color": "#27ae60", "branches": ["Izeh", "KHZ-Shadegan", "Shush", "KHZ-HaftGel", "KHZ-ImamRmHrmz", "QaleLor", "KHZ-ValiAsrAndika", "Aqili", "MO", "KianPars", "Gotvand", "ImamIzeh", "Bostan", "3RahKhoramShr", "HQ", "KeshtoSanatKaroun", "Ghizaniyeh"], "bajes": [], "atms": ["ATM-SayareArbaein"], "kiosks": ["Kiosk-SherkateMaroon", "Kiosk-SandoghTHKeshavrzi", "kiosk-Newfood", "Kiosk-Kesht&San@Karun", "Kiosk-Pakchob", "Kiosk-San2qSeydShohadaDez", "Kiosk-Roustaye-Radesadat", "Kiosk-TeractorsaziNem", "Kiosk-Foroushgah-Jalali", "Kiosk-GHirNeyshekarKaron"], "total": 28}, {"code": "ZNJ", "name": "زنجان", "color": "#8e44ad", "branches": ["MO", "Modiriyat", "Taavon", "Jahad", "Zanjan", "Abhar", "SaeinQale", "KhoramShr", "IslamAbad", "MoalemQydr", "Qeydar", "Tarom", "MahNeshan", "Soltaniyeh", "Garmab", "KhoramDrh", "ZarinRud", "Halab", "Hidaj", "ImamAbhr", "Sojas", "Gilvan", "Dastjerd", "ZarinAbad", "Dandi", "15Khordad", "Pari", "Sohrevard", "Chavarzaq", "HQ", "Bargh"], "bajes": [], "atms": ["ATM-OtaghAsnfKeshvrziKhodbnde", "ATM-DehyariViyar", "ATM-DehyariSohrin", "ATM-frushgahAbbasi", "ATM-Sherkat-Gaz", "ATM-2Tappe", "ATM-Nobahar"], "kiosks": ["Kiosk-Tarebar", "kiosk-ForshgahDastgozar", "kiosk-MTarebarGhadim", "kiosk-Taavoni-Roustaye-Dizaj", "kiosk-Sabamorgh"], "total": 43}, {"code": "SMN", "name": "سمنان", "color": "#2980b9", "branches": ["MO", "Jahad", "Kalateh", "Forsat", "Semnan", "17Shrivar", "ShahRud", "ToRud", "JomhuriSh", "Mayamey", "MahdiShahr", "Shahmirzad", "SMN-Bastaam", "Biarjmand", "AmirAbad", "Aradaan", "Mojen", "Eyvanake", "Rezvan", "Nardeyn", "Sorkheh", "GarmSar", "DavarAbad", "HosseinAbdKrdHa", "KalatehKhi", "SMN-Meyqan", "QaleNo", "SMN-MehmanDust", "BeheshtiD", "ImamReza", "Royan", "Dizaj", "MotahariG", "Bekran", "TareBarSh", "Dibaj", "Dulab", "HoseinAbdKlPush", "Damqan", "HQ"], "bajes": [], "atms": ["ATM-Koloran", "ATM-Koloran2", "ATM-JahadKeshavarziShahrood", "ATM-OloomPezeshkiUNI", "ATM-Hospital15khordad"], "kiosks": ["Kiosk-KosarHospital", "Kiosk-HospitalAmiralmonin", "Kiosk-HospitalVelayat", "Kiosk-GarmsarMotamediHospital", "Kiosk-SCUni", "Kiosk-SAmozshiUniShahrod", "Kiosk-AzimaHospital", "kiosk-MarkazBehdashtTadayyon", "Kiosk-Dehyari-Dastjerd"], "total": 54}, {"code": "SNB", "name": "سیستان و بلوچستان", "color": "#c0392b", "branches": ["Branch-Pishin", "HQ", "Zahedan", "NasirAbad", "Emam", "Jakigor", "Zaboli", "Nobandian", "Konarak", "ShilatChabahar", "Taftan", "Khash", "3RahDanesh", "Shariati", "4Rahrasouli", "MBIranShr", "Chabahar", "Zabol", "4RahZahak", "Mirjaveh", "Saravan", "Nasir Abad", "Fanuj", "QasreQand", "Sarbuk", "Pishin", "JakiGur", "Paroud", "Jalegh", "TareBarSrvn", "Bonjar - 448", "Hamun", "Jazinak", "Shilat-Chbhr", "BazarZbl", "MAChabahar", "Adimi - 448", "Zibashahr", "Jahad", "Bj-SalehYar", "Bj-Ashar", "InterAnet-4M", "APN", "SW-Core-A", "SW-Core-B", "Sarbaz - 448", "Taftan - 448", "Spakeh - 448", "BazarChbr - 448"], "bajes": ["Bj-HamonSmar", "Bj-Ashar"], "atms": ["ATM-Jahad-Zahedan", "ATM-Tahqiqatzabol", "ATM-JahadSrvn", "ATM-Jahad", "ATM-Jahadbampor", "ATM-SistanUniv", "ATM-JahadZabol", "ATM-JahadChabahar", "ATM-TaavoniRoustaei", "ATM-Chabahr-FreeZone", "ATM-EdarehShilat", "ATM-MostafaKhomeini", "ATM-OmoorArazi", "ATM-Sina", "ATM-KosarIranshr", "ATM-JahadIrnShr"], "kiosks": ["kiosk-NamayandegiSaipa", "Kiosk-SeydSantiChabahar", "kiosk-P.Bahar", "Kiosk-NodratZehi", "Kiosk-M724ShariyatiZahedan", "kiosk-Sa@Rado", "Kiosk-Tarebar", "kiosk-MOJTAMA-Tohid"], "total": 75}, {"code": "FRS", "name": "فارس", "color": "#f39c12", "branches": ["MO", "Shurideh", "SzmnKShvrzi", "AfifAbad", "Shiraz", "AmirKabir", "Abadeh", "IzadKhast", "Estahban", "MirzaShirazi", "Jahrom", "AndishehJhrm", "Darab", "Fasa", "FiruzAbd", "Meymand", "Kazerun", "NurAbad", "NeyRiz", "Lar", "AradLar", "MarvDasht", "Eqlid", "HasanAbd-Eqld", "ImamEqlid", "Khonjesht", "Sepidan", "Arsanjan", "DehBid", "Sarvestan", "FarashBand", "Karzin", "Bavanat", "AlqadirBlv", "Jyan", "HajiAbad", "Lamerd", "Mohr", "AlaMarvDasht", "Ashkanan", "Khonj", "Khafr", "Khavaran", "Juyom", "Kharameh", "AbadehTashk", "Beyza", "KonarTakhteh", "SaadatShahr", "Kavar", "Sadeh", "AsPas", "Masiri", "BaalaaDeh", "Zarqan", "KhaanZenyan", "Rostagh", "6Deh", "ZahedShahr", "ImamMrvDsht", "Dariyun", "SarChahan", "RaamJerd", "Khosuyeh", "Qaemiyeh", "QaderAbad", "Khesht", "JahadKeshavarzi", "Forg", "Soqaad", "Bahman", "Roniz", "EagEstahban", "QotbAbad", "FasaRud", "22bahmanDrb", "BidZard", "GolstanBlv", "Shari@i", "ShahrakSadi", "DrvzKarn", "SalmanFarsi", "Laleh", "Nobandegan", "TarebarKazeroon", "KhumeZaar", "Pasdaran", "Qatruyeh", "Evaz-Lar", "KaamFiruz", "Seydan", "Faruq", "ZangiAbad", "HomayJan", "Khorami", "KuhenJan", "MaharLu", "Afzar", "Golestan", "MobarakAbad", "NODAN", "Hessami", "SattarKhan", "Beyram", "Saadi", "MahmudAbad", "Lapouei", "Mazyjan", "ShahrePir", "Dobaran", "GaleDar", "KushkHezaar", "Banesh", "AkbarAbd-Kavar", "DejKord", "Kopon", "RahmatAbad", "BandAmir", "Dugaan", "MiyanDeh", "Toojerdi", "Fedeshkuyeh", "BaqSafa", "MoalemFzAbd", "Dehram", "Gerash", "Gooyom", "Nojin", "DoshmanZiyari", "Korbal", "MahFarkhan", "HQ", "JanatShahr", "TBar-Kazerun", "TarehBarShiraz", "BAJ-Khaniman"], "bajes": ["BJ-Kushkak", "Bj-SimakanBavanat", "BJH-Monj", "Bj-JamalAbadArsnjn", "BJH-Khir", "Bj-DehChah", "BJH-Karian"], "atms": [], "kiosks": ["Kiosk-TaavoniBazarenghelab", "Kiosk_MTarebarFrozabad", "Kiosk-SQAsgariyeh", "Kiosk-DashteNeshat", "Kiosk-RadMorghCo", "Kiosk-PsjDamon", "Kiosk-Isaco", "Kiosk-MahmudianFardStore", "Kiosk-KhoshkbarTafreshi", "Kiosk-MKHoshaSHiraz", "Kiosk-GolkhanedaranPardisF", "Kiosk-IRKhodroZarindasht", "Kiosk-KoshtrgaBehin", "Kiosk-KeshtoSantOsareNabShiraz", "Kiosk-MahoorMall", "Kiosk-TIRANIYAN"], "total": 159}, {"code": "QZV", "name": "قزوین", "color": "#16a085", "branches": ["MO", "Qazvin", "Sadi", "AsadAbadi", "Eqbaliyeh", "Takestan", "MusaSadrTk", "KhakAli", "Avaj", "Abyek", "BueinZ", "Alamut", "Danesfehan", "Ansari", "Alvand", "ZiaAbad", "KhoramDasht", "Esfarvarin", "RaazMian", "Jahad", "AbGarm", "Alborz", "Mohamadiyeh", "4RahValiAsr", "MinuDar", "Babaei", "Shohada", "Qeshlaq", "Ardaq", "TareBar", "HQ", "BAJ-MeydanTarebar"], "bajes": [], "atms": ["ATM-DashtRadin", "ATM-Melal", "ATM-NovinDrugStore", "ATM-BaghdaranTakestan", "ATM-BehnanFlour", "ATM-SHohadaHospital", "ATM-AhooraFarsjin", "ATM-hospitalboali", "ATM-Talachin2", "ATM-VelayatHospital", "ATM-QodsHospital", "ATM-KosarHospital", "ATM-SHafaHospital", "ATM-AmiralmomeninHospital", "ATM-RahimiyanHospital", "ATM-Velayat-Hospital"], "kiosks": ["Kiosk-MPooyandegan", "Kiosk-MMaskoniAlghadir", "Kiosk-GalleryMehrbanu", "Kiosk-FHosseinpour", "Kiosk-GalaryVenos", "Kiosk-RaziPharmacy", "Kiosk-DRostayeSiahposh", "Kiosk-HamidSHop", "Kiosk-VelayatHospital", "Kiosk-hospitalRajaei", "Kiosk-OlumPezeshki", "Kiosk-Talachin", "Kiosk-QZV-Kiosk-CBedashBolndiyan", "Kiosk-OlmPezshki2Bahonr", "Kiosk-Pakhsh-AkbarShahi", "Kiosk-Jahadkeshavarzi", "Kiosk-ForoshgahFakhri", "Kiosk-BootanForushgah", "kiosk-Barzegar", "kiosk-EqlimeHashtom", "kiosk-Mehranpoor", "kiosk-Keshtosanat", "Kiosk-Karami", "Kiosk-DabirestanBargozidegan", "Kiosk-JaygahAraz", "Kiosk-Manafi", "Kiosk-Sadeghi", "Kiosk-Sadaf", "Kiosk-Khoshkbar-Amin#"], "total": 77}, {"code": "QOM", "name": "قم", "color": "#1abc9c", "branches": ["HajiAbadLakHa", "Qahan", "Saeidi", "HQ", "QomRud#", "Pachian"], "bajes": [], "atms": ["ATM-MiaadGostar", "ATM-TayebGoshtParsaNovinCO"], "kiosks": ["Kiosk-GalleryTimeCenter", "Kiosk-Hyper-Market", "Kiosk-KarkhaneFoolad"], "total": 11}, {"code": "LOR", "name": "لرستان", "color": "#f39c12", "branches": ["MO", "Jahad", "Aligudarz", "ShrkImamAlgdrz", "MomenAbad", "TaavonAgdz", "Borujerd", "SepahBrjd", "TaavnBrjd", "SepidDasht", "DoRud", "NasereDin", "KuhDasht", "ImamKuhDsht", "Aleshtar", "FiruzAbad", "KashaniAlsht", "NurAbad", "Barkhordar", "7Cheshmeh", "BazarNrAbd", "PolDokhtar", "Zaqeh", "Azna", "Oshtarinan", "BeyranShahr", "Chegeni", "RumeshkanChaqabol", "Enqelab", "Mamulan", "ImamPlDkhtr", "Veysian", "ImanAbad", "Basij", "Taavon", "Motahari", "ChalanChulan", "Kunani", "B60mDrd", "Keshavarz", "HQ", "Afrineh"], "bajes": [], "atms": ["ATM-KeshtSanat", "ATM-OrzjansShidRahimi", "ATM-PasajNiloofar"], "kiosks": ["Kiosk-MostafaLKh", "Kiosk-AbuzarMall", "kiosk-AhanForoshi-Abzar-Padarvand", "kiosk-Kesht-Sanat-Parsdaneh", "Kiosk-AZNoor", "Kiosk-ClinicKhorshid", "Kiosk-MTarebarBorojerd", "Kiosk-PardisMall", "kiosk-Soorna", "kiosk-MiladNoor", "Kiosk-ForooshgahHoseinfar", "Kiosk-TalafroshiTehranMall", "kiosk-Modirankhodro-bohlooli", "kiosk-Mehdi-Nikkhah", "kiosk-Talar-Hafez"], "total": 60}, {"code": "MAZ", "name": "مازندران", "color": "#2ecc71", "branches": ["MO", "Sari", "Jahad", "Khazar", "Babol", "Amol", "Imamreza-Amol", "ShohadaBbl", "Chalus", "AmirKola", "HachiRud", "17ShrvrChls", "Taavon", "BlvAzadi", "Taleqani-QaemShahr", "QaemShahr", "Tonekabon", "Nur", "Behshar", "RostamKola", "Zirab", "PoleSefid", "BandPey", "RaamSar", "MKuchakRm", "Neka", "Surak", "MahmudAbad", "JuyBar", "AbbasAbad", "KelarAbad", "BabolSar", "HadiShahr", "FreydunKenar", "Chamestan", "Kiakola", "KelarDasht", "KhoshRudPey", "JahadAmol", "Bahnamir", "ShirGah", "NoShahr", "MarzanAbad", "ImamChalus", "Narivaran", "KhoramAbad", "NashtaRud", "SoleymanAbad", "TaleqaniTnkbn", "SalmanShahr", "GanjAfruz", "AhmadChalePey", "BazazBbl", "TaleqaniBbl", "RaeisAbad", "AhangarKola", "Larijan", "TareBarAml", "SheykhFzlhAml", "ImamAml", "MotahariRmSr", "Baladeh", "Royan", "NateqNuri", "GilKharan", "KiaSar", "TareBar", "18Dey", "BlvKeshavarz", "HosseinAbad", "GaluGah", "HashemiNjdBhshr", "QaraKheyl", "ImamQmShr", "SorkhRud", "KaluDeh", "MoalemAbad", "ManabeT-Nshr", "Urtasht", "ManabeT-Sari", "AmuzeshBabolsar-Branch", "ImamReza", "Gataab", "HQ"], "bajes": ["Bj-Sharafkola-Sari"], "atms": [], "kiosks": ["kiosk_Hayper-Amir", "Kiosk-Taavoni-Lafoor", "Kiosk-MbarAfshareh", "Kiosk-CaspianLoleTbarstan", "kiosk-ProteinChalaki", "Kiosk-Anbouhsazan", "kiosk-P-Sepehr-GHaemshahr", "Kiosk-Mojtamae-Adine-Tonekabon", "Kiosk-Laico", "Kiosk-BorjAlmasGHO", "Kiosk-Farhangian-Babolsar", "Kiosk-Moj-Pezeshkan-Valiasr", "Kiosk-MTarebarSari", "Kiosk-TeleCabinNamakABrud", "Kiosk-FJavadi", "Kiosk-CafeRKarga", "Kiosk-Jaygah-Pouresmaeil", "Kiosk-KHKeshvrziHosseinzadeh", "kiosk_Amin", "kiosk-MalekParkRestooran", "Kiosk-MJojehAli", "kiosk-Nezamsenfi"], "total": 107}, {"code": "MRZ", "name": "مرکزی", "color": "#3498db", "branches": ["MO", "MRZ-AdabJu", "MRZ-Ashtiyan", "Jahad", "MRZ-Gavaar", "MRZ-Tafresh", "MRZ-Khomeyn", "MRZ-Saveh", "Farmahin", "MRZ-Mamuniyeh", "MRZ-QarqAba", "MRZ-Tor", "MRZ-NahrMia", "MRZ-Komijan", "MRZ-Razeqan", "MRZ-KhoramDasht", "MRZ-Anaj", "Milajerd", "DavudAbad", "Saruq", "Enqelab", "AstanehShz", "Nobaran", "Khenejin", "Javarsian", "HQ", "Talkhab"], "bajes": [], "atms": ["ATM-Taavon", "ATM-EdareQalle", "ATM-Kombain"], "kiosks": ["Kiosk-MTareBarArak1", "Kiosk-MTareBareArak2", "Kiosk-MTareBareArak3", "Kiosk-MTareBareArak4", "Kiosk-MTareBareArak5", "kiosk-TarebarArak6", "Kiosk-ArakUNI1", "kiosk-ArakUNI2", "kiosk-Dehyari-Amanabad", "kiosk-Damdasht"], "total": 40}, {"code": "HMZ", "name": "هرمزگان", "color": "#e74c3c", "branches": ["Daneshgah", "HMZ-Jahad", "Beykah", "HQ", "TarehBar", "Bandarrajaee", "Jahad", "Shilat", "Shohada", "Rajaei", "Jaqin", "Bika", "Siyahu", "Bandar Khamir", "SarKhun", "BandrKolahi", "8Bandi", "Shamil", "Sw Core", "InterAnet-4M", "APN", "Dargahan - 448", "PardisKish2 - 448", "JenahBastak - 448", "BandarKong - 448", "BazarRuz - 448", "Bashagerd - 448"], "bajes": [], "atms": ["ATM-Mojtama-Moshirdavani", "ATM-MTDiplomat2", "ATM-DentalClinicHormoz", "ATM-DehyariNoband", "ATM-SahelKharbs", "ATM-DehyariDeho", "ATM-TarehBarMinab", "ATM-DehYariQalat", "ATM-Ecology", "ATM-RoustayeKhounsorkh", "ATM-Dehyari-Gachin", "ATM-EdarehQalleh", "ATM-KhalijFars", "ATM-BandarSayadiBasaeidu", "ATM-NakhlEbrahimi", "ATM-TaavoniTazia", "ATM-BehKahurdanMinab", "ATM-TipTofangDaran", "ATM-BorjeSalam", "ATM-Jahad", "ATM-MazeghBala", "ATM-Shilat", "ATM-Behzisti", "ATM-Asnaf", "ATM-Manabetabiyi", "ATM-JahadParsian", "ATM-EdareGhale", "ATM-ShahiPeymanSuperMarket", "ATM-DamPezeshki", "ATM-DiplomatKish", "ATM-Mazegh", "ATM-Shoraeslami", "ATM-SetarehQeshm", "ATM-BandrTiab", "ATM-oMdehForushiPEYMAN", "ATM-ManabeT", "ATM-Paniz", "ATM-Royal"], "kiosks": ["Kiosk-HyperMrketRvanbakhsh", "kiosk-Shahrdari-Karagan", "kiosk-Nakhlzarin", "kiosk-Rousta-Yaghlatan", "kiosk-Lavazemkhanegi", "Kiosk-DehyariKeshavzir", "kiosk-KashiSeramikDanesh", "kiosk-Molasadra-Store", "kiosk-TaavoniBandarHasiniye", "kiosk-LavazemKhanegiAmir", "kiosk-MojtamaAhooBare", "Kiosk-MarketJallabi", "Kiosk-KHKshvrziSamyar", "Kiosk-GFQeshm", "Kiosk-TFAbolfathi", "Kiosk-MoradivillageKHdmatErt", "Kiosk-MRfhiGhalatBala", "Kiosk-Dentistry-Alqasi", "Kiosk-MRfhiLashkarizadehSirik", "Kiosk-F24Makran", "Kiosk-BaskolMohseni", "Kiosk-MFSibChe", "Kiosk-Asadi", "Kiosk-GhaliehCenter", "Kiosk-Tjaghin", "Kiosk-QoreyshiStore", "Kiosk-Lashgari", "Kiosk-Bonakdaran", "Kiosk-BerenjAbbaszade", "Kiosk-Kichenvar", "Kiosk-PompbenzinBalal", "Kiosk-HosseiniLavazemKH", "Kiosk-RockersGolf", "Kiosk-Gazriz", "Kiosk-BParsKHalijFars", "Kiosk-Dehqanan", "Kiosk-SAMMarket", "Kiosk-RezvanMarket", "kiosk-DehyariYarghin"], "total": 104}, {"code": "HMD", "name": "همدان", "color": "#9b59b6", "branches": ["MO", "Nafisi", "AsadAbad", "Tuyserkan", "Malayer", "VafaeiMly", "Nahavand", "BuAli", "Meryanj", "EynOlQozat", "KaboodarAhang", "DaqDaqAbad", "ShirinSu", "Razan", "Samen", "Firuzan", "ShrkFiruzan", "Bahar", "Famenin", "Qahavand", "Jokar", "QorvehDrjzn", "Lalejin", "MShohada", "GolTapeh", "Avarzaman", "Besat", "MB-Azadi", "17Shahrivar", "Azandarian", "Barzul", "Abuzar", "Gian", "Damaq", "Zanganeh", "BahonarTykn", "Farasfaj", "TaavonBhr", "SalehAbad", "Karafs", "Mohajeran", "Shokri", "Mahdiyeh", "HQ"], "bajes": ["Bj-Serkan"], "atms": [], "kiosks": [], "total": 45}, {"code": "CHB", "name": "چهارمحال و بختیاری", "color": "#2c3e50", "branches": ["CHB-Farsan", "KuhRang", "HQ", "Jahad", "Khajenasir", "VPLS", "Core-A", "APN", "ShrKiyan - 448", "12Moharam - 448", "SureshJan - 448", "JavanMardi - 448", "KhajehNasir - 448", "Shobe Markazi"], "bajes": [], "atms": ["ATM-Bazoft", "ATM-Dehno", "ATM-Jahad"], "kiosks": [], "total": 17}, {"code": "KRD", "name": "کردستان", "color": "#27ae60", "branches": ["MO", "Jahad", "EnqelabSnj", "Bazar", "Sanandaj", "HosseinAbad", "HasanAbad", "Mohajerin", "ShahrakSan", "BabaRashani", "Baneh", "Bijar", "BazarBjr", "HasnAbdYsknd", "Dezaj", "Vinsar", "DehGolan", "QruChay", "MolaviDhgln", "DivanDareh", "Zarrineh", "Saqez", "Saheb", "JomhuriSqz", "Qorveh", "Ganji", "SrishAbad", "TakhtiQrv", "SeyedJamal-Qr", "Kamyaran", "Muchesh", "ImamKmyrn", "Marivan", "SarvAbdMrvn", "BLVResalatMarivan", "Abidar", "HQ"], "bajes": ["Bj-NajafAbad"], "atms": [], "kiosks": ["kiosk-PompBenzinHiva", "kiosk-RestooranChia", "Kiosk-DrMersaPharmacy", "kiosk-Meydan-yasokand", "kiosk-ForooshgahMoradi", "kiosk-Talaye-Zarin", "kiosk-Imantoyour", "kiosk-MadMorgh", "kiosk-PolMirkhan", "Kiosk-FPeugeotCentral", "Kiosk-DrJalaliClinic", "Kiosk-MokebArbaein"], "total": 50}, {"code": "KRM", "name": "کرمان", "color": "#e67e22", "branches": ["Soleymani", "Modiriyat", "Azadi", "Shahab", "ManabeT", "Rafsanjan", "Baft", "DashtAb", "Bam", "Baravat", "KabutarKhan", "Sirjan", "FeyzAbad", "SydJamalSr", "ShahrBabak", "ChatRud", "Baqin", "Sarbaz", "Zarand", "ChamranZrnd", "ToqrolJerd", "Ravar", "Shahdad", "Golbaf", "BardSir", "Fahraj", "Rayen", "Anar", "Bayaz", "Kuhbanan", "KhoramDasht", "Mahan", "Rabor", "Nuq", "Bahreman", "EsmaeilAbad", "Javadiyeh", "Orzueiyeh", "Bazar", "RostamAbad", "Rigan", "Soqan", "VakilAbad", "Baghabor", "Negar", "QandBrdSr", "FeizAbad", "Koshkueiyeh", "SharifAbad", "ShohadaRf", "YazdanAbad", "DashtKhak", "BahmanYar", "MalekAbad", "ImamSrjn", "Dehaj", "ImamShrBbk", "RahimAbad", "ZangiAbad", "TareBar", "Farokhi", "Shariati", "Ahmadiyeh", "Pasdaran", "FlestinSr", "MostafaKhmniRf", "Paariz", "Abuzar", "QadamGah", "Javar", "Bezanjan", "MO", "HQ"], "bajes": ["BJ-DowlatAbad", "Bj-BeheshtVhdt"], "atms": ["ATM-ClinicSalamat", "ATM-JavadAMHospital"], "kiosks": ["kiosk-ArgeBamAmirkabir"], "total": 78}, {"code": "KRSH", "name": "کرمانشاه", "color": "#8e44ad", "branches": ["HQ", "Farsinaj", "Qazanchi", "Golestan", "Rijab", "Dirah", "QaleMohamadHasanKhan", "Gowdin", "APN"], "bajes": [], "atms": ["ATM-Nafat O Mokhaberat", "ATM-JahadKeshavarzi", "ATM-Bazar-Navab", "ATM-ABMntgheKrsh", "ATM-OmurAB", "ATM-EdarekolZendanha", "ATM-TejariArg", "ATM-ManabeTabiei", "ATM-OmurDaam", "ATM-Dmpzshki", "ATM-Jahad"], "kiosks": ["Kiosk-Tishak", "Kiosk-Bimesalamat"], "total": 22}, {"code": "KNB", "name": "کهگیلویه و بویراحمد", "color": "#7f8c8d", "branches": ["Pataveh", "HQ", "LAN", "APN", "VPLS", "INTERANET", "Cheram", "Sisakht", "Yasouj", "Bahme'i", "Ta'avon", "Beladiyan", "ValiAsr", "Margoun", "Likak", "ArioBarzan-Dehdasht", "Taleghani-Dehdasht", "Markazi", "Basht", "Dehdasht", "MotahariYasouj", "DoGonbadan", "Landeh", "Parseh", "Zagros", "QalehRaeisi", "INTRANET"], "bajes": [], "atms": ["ATM-Bahmaei", "ATM-Sh.JalilHospital", "ATM-Ahmadzadeh", "ATM-EskandariStore", "ATM-BostanBasht", "ATM-Padiz", "ATM-ShahidJalil-Hospital", "ATM-JahadKeshavarzi-Dehdasht", "ATM-OloumPezeshki", "ATM-JahadKeshavarzi-Yasouj"], "kiosks": ["Kiosk-LYRostami", "Kiosk-MojtameShafa", "Kiosk-Ghalamchi", "Kiosk-DeyDoctors", "Kiosk-ZarrinKhusheT", "Kiosk-CoASKARI", "Kiosk-OmdeForushiMK", "Kiosk-MojtameNaneElahe", "Kiosk-RezvaniLavazemKH", "Kiosk-2GonbadanJahadK", "Kiosk-Zeytoon", "Kiosk-TamirgahPadash", "Kiosk-NazariYarMall", "Kiosk-BarbriGHadami"], "total": 51}, {"code": "GLS", "name": "گلستان", "color": "#2980b9", "branches": ["MO", "Gorgan", "SorkhanKalateh", "Jorjan", "SJahad", "Shohada", "Azadshahr", "Ramiyan", "Daland", "AqQala", "AnbarAlum", "BandarTorkaman", "Gomishan", "SiminShahr", "BandarGaz", "AliAbad", "FazelAbad", "KhanBebin", "Gerey", "KordKuy", "Dangolan", "Kalaleh", "MaraveTape", "MakhtumQoli", "Gonbad", "Qabus", "Minudasht", "GaliKesh", "Dozin", "Karimi", "MazraeKatul", "HafezGnbd", "JelinOliya", "ValiAsr", "HQ"], "bajes": ["BJ-TatarOliya"], "atms": ["ATM-Ziarat"], "kiosks": ["kiosk-VagharDane", "Kiosk-HozeElmieChenarli", "Kiosk-Spatna", "Kiosk-CaspianChika", "Kiosk-BazarTalaAqQala", "Kiosk-BMhiBndrTokaman", "Kiosk-P.lale", "Kiosk-Dehesht", "Kiosk-TarebarGonbad", "Kiosk-ForushgahImerAli", "Kiosk-JavaheriReayati", "Kiosk-Nejat", "Kiosk-Iranol", "kiosk-HyperManoochehri", "Kiosk-MtarebarGorgan1", "Kiosk-Behshadafarin", "Kiosk-Shahrdari-Nokande", "Kiosk-Valikabad", "Kiosk-CoMorghPigir", "Kiosk-Kesht-Gostar", "Kiosk-BaskolAdel", "kiosk-HyperMax"], "total": 59}, {"code": "GIL", "name": "گیلان", "color": "#27ae60", "branches": ["MO", "Rasht", "Hamidiyan", "RudSar", "Talesh", "LangeRud", "Astaneh", "Astara", "Anzali", "SepidRud", "RudBaar", "Lowshan", "Kalachay", "VajarGah", "SomeSara", "BazarJome", "ZiaBar", "Motahari", "GIL-Fuman", "GIL-Lahijan", "GIL-Qaziyan", "GIL-RezvanShr", "GIL-PareSar", "GIL-Shaft", "GIL-LashteNesha", "GIL-ZibaKenar", "GIL-Masal", "GIL-Jirandeh", "GIL-BareSar", "GIL-Sangar", "GIL-Amlash", "GIL-Kchsfahan", "GIL-Loleman", "GIL-Jalaliyeh", "GIL-ChabokSar", "GIL-Khoma", "GIL-RahimAbad", "GIL-MirzaK", "GIL-ImamRasht", "GIL-Manjil", "GIL-BazarRdSr", "GIL-SardarJangal", "GIL-KashefiLhjn", "GIL-Komleh", "GIL-TBarLngrd", "GIL-Deylaman", "GIL-Shanderman", "GIL-KhoshkBijar", "GIL-MAzad", "GIL-BazarSomSra", "GIL-GolSaar", "GIL-RudBaneh", "SiahKal", "HQ", "Motahhari"], "bajes": [], "atms": ["ATM-MTabiei", "ATM-TeleKabinLahijan", "ATM-MazraeGhoo", "ATM-FMirzaei", "ATM-DehyariDahka", "ATM-AjBishe", "ATM-Jahad"], "kiosks": ["kiosk-Dampezeshki", "Kiosk-BazarSepah", "Kiosk-IzugamDelpasand", "Kiosk-Masuleh", "Kiosk-MahdiRestaurant", "Kiosk-RoyalMall", "Kiosk-SetarehShomali", "kiosk-Mashrajab", "Kiosk-ForoshgahMehr", "Kiosk-FAref", "kiosk-ZeytoonMasoud", "Kiosk-HorAndishKhazar", "Kiosk-FSHalizar", "Kiosk-PsgAmir", "Kiosk-JahangiriRestaurant", "Kiosk-RostaNabiDehka", "kiosk-TOSEEH", "kiosk-TalaForooshiYusefi", "kiosk-PayaneAhmadi", "kiosk-Foomanat", "kiosk-Valiasr", "kiosk-Arike", "kiosk-DehyariKhanchah", "kiosk- Dalfak2", "Kiosk-PishkhanDolat", "kiosk-Shahrdarisiahkal", "Kiosk-KhaneTala", "Kiosk-MashinalatShabani", "Kiosk-Aghatala", "Kiosk-TiyurMarlik", "Kiosk-ParSefidSimorgh", "Kiosk-eghdamtalab"], "total": 94}, {"code": "YZD", "name": "یزد", "color": "#1abc9c", "branches": ["4raheMoallem", "HQ", "Kiusk-JafariStore", "Kiusk-DehshidOilstation", "kiyosk-Taavoni7", "VPLS", "Interanet", "Bafgh-448", "Shohada-AhamadAbad-448", "NasrAbad-448", "Aqda-448", "Meybod-448", "Bahabad-448", "Dehshir-448", "Taleghani-448", "BJ-Asfij", "Bj-AliAbad-448", "Faraghe-448"], "bajes": [], "atms": ["ATM-SangAhanMrkziRABAT", "ATM-Amin", "ATM-ImamAli", "ATM-SadrAbad", "ATM-Farhangian", "ATM-Terminal", "ATM-TekyeAbarkoh", "ATM-YazdKish", "ATM-KarimAbad", "ATM-ElahAbd", "ATM-Manabetabiee", "ATM-MolaSadra", "ATM-BarchinKaar", "ATM-AhanShahr"], "kiosks": ["Kiosk-AshkzarCharkhAB", "Kiosk-Tahchin", "kiosk-Haghshenas", "kiosk-Clinic-DR.Beheshti", "kiosk-DehyariEbrahimabad", "kiosk-Hospital-Mehriz", "KIOSK-Karimkhan", "kiosk-Chaharfasl", "Kiosk-SandoqHemayat", "Kiosk-AbuTalebi", "Kiosk-DamPezeshki", "Kiosk-SeyedStore", "Kiosk-Basculemohseni", "Kiosk-MayanDisel", "Kiosk-SorushRestaurant", "Kiosk-BarbariNobar -L2", "Kiosk-BakSazi2000", "Kiosk-ForshgahFatemi", "Kiosk-Haypertaha -L2", "Kiosk-SalehiStore", "Kiosk-DehyariTorkAbad", "Kiosk-Dehghan", "kiosk-AbMantaqei"], "total": 55}];
+
+let currentFilter = 'all';
+
+function showView(name, tab) {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('view-' + name).classList.add('active');
+  tab.classList.add('active');
+}
+
+function filterType(type, btn) {
+  currentFilter = type;
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderProvinces(document.querySelector('.search-box').value);
+}
+
+function filterProvinces(query) {
+  renderProvinces(query);
+}
+
+function renderProvinces(query) {
+  const grid = document.getElementById('provinces-grid');
+  grid.innerHTML = '';
+  query = (query || '').toLowerCase();
+  
+  provinceData.forEach(p => {
+    const matchesQuery = !query || 
+      p.name.includes(query) || 
+      p.code.toLowerCase().includes(query) ||
+      p.branches.some(b => b.toLowerCase().includes(query)) ||
+      p.bajes.some(b => b.toLowerCase().includes(query)) ||
+      p.atms.some(b => b.toLowerCase().includes(query)) ||
+      p.kiosks.some(b => b.toLowerCase().includes(query));
+    
+    if (!matchesQuery) return;
+    
+    let hasContent = currentFilter === 'all' ||
+      (currentFilter === 'branch' && p.branches.length > 0) ||
+      (currentFilter === 'baje' && p.bajes.length > 0) ||
+      (currentFilter === 'atm' && p.atms.length > 0) ||
+      (currentFilter === 'kiosk' && p.kiosks.length > 0);
+    
+    if (!hasContent) return;
+    
+    const card = document.createElement('div');
+    card.className = 'province-card';
+    card.style.setProperty('--pcolor', p.color);
+    
+    const total = p.branches.length + p.bajes.length + p.atms.length + p.kiosks.length;
+    
+    let bodyHtml = '';
+    
+    const shouldShowBranches = (currentFilter === 'all' || currentFilter === 'branch') && p.branches.length > 0;
+    const shouldShowBajes = (currentFilter === 'all' || currentFilter === 'baje') && p.bajes.length > 0;
+    const shouldShowAtms = (currentFilter === 'all' || currentFilter === 'atm') && p.atms.length > 0;
+    const shouldShowKiosks = (currentFilter === 'all' || currentFilter === 'kiosk') && p.kiosks.length > 0;
+    
+    if (shouldShowBranches) {
+      const items = query ? p.branches.filter(b => b.toLowerCase().includes(query)) : p.branches;
+      if (items.length) {
+        bodyHtml += `<div class="node-section">
+          <span class="node-section-title branch-title">🏦 شعبه (${items.length})</span>
+          <div class="node-list">${items.map(b => `<span class="node-chip branch-chip" title="${b}">${b}</span>`).join('')}</div>
+        </div>`;
+      }
+    }
+    
+    if (shouldShowBajes) {
+      const items = query ? p.bajes.filter(b => b.toLowerCase().includes(query)) : p.bajes;
+      if (items.length) {
+        bodyHtml += `<div class="node-section">
+          <span class="node-section-title baje-title">🏠 باجه (${items.length})</span>
+          <div class="node-list">${items.map(b => `<span class="node-chip baje-chip" title="${b}">${b}</span>`).join('')}</div>
+        </div>`;
+      }
+    }
+    
+    if (shouldShowAtms) {
+      const items = query ? p.atms.filter(b => b.toLowerCase().includes(query)) : p.atms;
+      if (items.length) {
+        bodyHtml += `<div class="node-section">
+          <span class="node-section-title atm-title">🏧 ATM / دستگاه (${items.length})</span>
+          <div class="node-list">${items.map(b => `<span class="node-chip atm-chip" title="${b}">${b}</span>`).join('')}</div>
+        </div>`;
+      }
+    }
+    
+    if (shouldShowKiosks) {
+      const items = query ? p.kiosks.filter(b => b.toLowerCase().includes(query)) : p.kiosks;
+      if (items.length) {
+        bodyHtml += `<div class="node-section">
+          <span class="node-section-title kiosk-title">💻 کیوسک (${items.length})</span>
+          <div class="node-list">${items.map(b => `<span class="node-chip kiosk-chip" title="${b}">${b}</span>`).join('')}</div>
+        </div>`;
+      }
+    }
+    
+    card.innerHTML = `
+      <div class="province-header" onclick="toggleCard(this)">
+        <div class="prov-color-dot" style="background:${p.color};box-shadow:0 0 8px ${p.color}"></div>
+        <div class="prov-name">${p.name}</div>
+        <div class="prov-code">${p.code}</div>
+        <div class="prov-total">${total}</div>
+        <div class="expand-btn">▼</div>
+      </div>
+      <div class="prov-stats">
+        <div class="prov-stat">
+          <div class="prov-stat-num branch-color">${p.branches.length}</div>
+          <div class="prov-stat-label">شعبه</div>
+        </div>
+        <div class="prov-stat">
+          <div class="prov-stat-num baje-color">${p.bajes.length}</div>
+          <div class="prov-stat-label">باجه</div>
+        </div>
+        <div class="prov-stat">
+          <div class="prov-stat-num atm-color">${p.atms.length}</div>
+          <div class="prov-stat-label">ATM</div>
+        </div>
+        <div class="prov-stat">
+          <div class="prov-stat-num kiosk-color">${p.kiosks.length}</div>
+          <div class="prov-stat-label">کیوسک</div>
+        </div>
+      </div>
+      <div class="province-body">${bodyHtml}</div>
+    `;
+    
+    // Auto-expand if query matches
+    if (query) card.classList.add('expanded');
+    
+    grid.appendChild(card);
+  });
+}
+
+function toggleCard(header) {
+  const card = header.closest('.province-card');
+  card.classList.toggle('expanded');
+}
+
+// Initial render
+renderProvinces('');
+</script>
+
+</body>
+</html>
