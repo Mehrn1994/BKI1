@@ -81,6 +81,7 @@ canvas{display:block;width:100%;height:100%}
         <span>Switch: <b id="sSw">0</b></span>
         <span>Provincial: <b id="sP">0</b></span>
         <span>Links: <b id="sL">0</b></span>
+        <span style="color:#34d399">🏦 شعبه+باجه+ATM+کیوسک: <b id="sBr" style="color:#34d399">0</b></span>
     </div>
     <button class="btn" onclick="resetAll()">&#8634; Reset</button>
     <a href="/nat-diagram" class="btn" style="border-color:rgba(251,191,36,0.4);color:#fbbf24" title="نمودار NAT دستگاه‌ها">&#9654; NAT Diagram</a>
@@ -136,12 +137,14 @@ canvas{display:block;width:100%;height:100%}
     <div class="ph"><h2 id="pTitle">-</h2><span class="badge" id="pBadge">-</span><button class="pcl" onclick="closeP()">&times;</button></div>
     <div class="ptabs">
         <div class="ptab on" data-t="ov" onclick="tab('ov',this)">Overview</div>
+        <div class="ptab" data-t="br" onclick="tab('br',this)">🏦 Branches</div>
         <div class="ptab" data-t="nat" onclick="tab('nat',this)">NAT</div>
         <div class="ptab" data-t="rt" onclick="tab('rt',this)">Routes</div>
         <div class="ptab" data-t="fl" onclick="tab('fl',this)">Flow</div>
     </div>
     <div class="pbody">
         <div class="tc on" id="t-ov"></div>
+        <div class="tc" id="t-br"></div>
         <div class="tc" id="t-nat"></div>
         <div class="tc" id="t-rt"></div>
         <div class="tc" id="t-fl"></div>
@@ -181,6 +184,8 @@ async function loadData(){
         document.getElementById('sSw').textContent=d.switch_count||0;
         document.getElementById('sP').textContent=d.provincial_count||0;
         document.getElementById('sL').textContent=d.total_links;
+        const totalEP=(d.nodes||[]).reduce((s,n)=>s+(n.endpoints_total||0),0);
+        document.getElementById('sBr').textContent=totalEP.toLocaleString();
         // Show diagnostic panel
         showDiag(d);
         buildGraph();fitView();mkParticles();
@@ -404,13 +409,15 @@ function drawNodes(vis,t){
             ctx.fillStyle=isSel?'rgba(253,224,71,0.95)':'rgba(226,232,240,0.5)';ctx.font=`${isSel?'bold ':''}${Math.max(10,12*cam.z)}px Inter`;
             ctx.fillText(n.label,s.x,s.y+r+(10+22)*cam.z);
         }
-        // Badge
-        if(n.tunnels_count>0&&cam.z>.2){
+        // Badge - show branch/endpoint count for provincial routers, tunnel count for others
+        const badgeVal=n.endpoints_total>0?n.endpoints_total:n.tunnels_count;
+        const badgeColor=n.endpoints_total>0?'#34d399':p.c[0];
+        if(badgeVal>0&&cam.z>.2){
             const bx=s.x+r*.7,by=s.y-r*.7,br=Math.max(9,12*cam.z);
-            ctx.beginPath();ctx.arc(bx,by,br,0,Math.PI*2);ctx.fillStyle=p.c[0];ctx.fill();
+            ctx.beginPath();ctx.arc(bx,by,br,0,Math.PI*2);ctx.fillStyle=badgeColor;ctx.fill();
             ctx.strokeStyle='rgba(8,12,24,0.6)';ctx.lineWidth=1.5;ctx.stroke();
             ctx.fillStyle='#fff';ctx.font=`bold ${Math.max(8,10*cam.z)}px Inter`;ctx.textBaseline='middle';
-            ctx.fillText(n.tunnels_count>999?'1k+':n.tunnels_count,bx,by);ctx.textBaseline='alphabetic';
+            ctx.fillText(badgeVal>999?'1k+':badgeVal,bx,by);ctx.textBaseline='alphabetic';
         }
     });
 }
@@ -434,7 +441,10 @@ window.addEventListener('mousemove',e=>{
     const r=canvas.getBoundingClientRect(),mx=e.clientX-r.left,my=e.clientY-r.top;
     if(dragging){tCam.x=camS.x-(e.clientX-dragS.x)/cam.z;tCam.y=camS.y-(e.clientY-dragS.y)/cam.z;return;}
     const h=hit(mx,my);hovered=h?h.id:null;canvas.style.cursor=h?'pointer':'grab';
-    if(h){const s=w2s(h.wx,h.wy);ttip.innerHTML=`<div class="tt-l">${h.id}</div><div class="tt-m">${h.label} | ${h.model||h.category}</div><div class="tt-r"><span>IF:<b>${h.interfaces_count}</b></span><span>Tun:<b>${h.tunnels_count}</b></span><span>NAT:<b>${h.nat_count}</b></span></div>`;ttip.classList.add('show');let tx=s.x+18,ty=s.y-16;if(tx+240>W)tx=s.x-250;if(ty<5)ty=5;ttip.style.left=tx+'px';ttip.style.top=ty+'px';}
+    if(h){const s=w2s(h.wx,h.wy);
+    let ttExtra='';
+    if(h.endpoints_total>0){ttExtra=`<div style="margin-top:4px;font-size:10px;color:#34d399">🏦${h.branches_count} شعبه &nbsp;🏠${h.bajes_count} باجه &nbsp;🏧${h.atms_count} ATM &nbsp;💻${h.kiosks_count} کیوسک</div>`;}
+    ttip.innerHTML=`<div class="tt-l">${h.id}</div><div class="tt-m">${h.label} | ${h.model||h.category}</div><div class="tt-r"><span>IF:<b>${h.interfaces_count}</b></span><span>Tun:<b>${h.tunnels_count}</b></span><span>NAT:<b>${h.nat_count}</b></span></div>${ttExtra}`;ttip.classList.add('show');let tx=s.x+18,ty=s.y-16;if(tx+240>W)tx=s.x-250;if(ty<5)ty=5;ttip.style.left=tx+'px';ttip.style.top=ty+'px';}
     else ttip.classList.remove('show');
 });
 window.addEventListener('mouseup',()=>{dragging=false;wrap.classList.remove('grabbing');});
@@ -466,16 +476,80 @@ function openP(id){
     const cm={'core-router':['Core Router','background:linear-gradient(135deg,rgba(244,114,182,0.2),rgba(251,146,60,0.2));color:#f472b6;border:1px solid rgba(244,114,182,0.3)'],'core-switch':['Switch','background:linear-gradient(135deg,rgba(129,140,248,0.2),rgba(192,132,252,0.2));color:#c4b5fd;border:1px solid rgba(129,140,248,0.3)'],'provincial-router':['Provincial','background:linear-gradient(135deg,rgba(34,211,238,0.2),rgba(59,130,246,0.2));color:#67e8f9;border:1px solid rgba(34,211,238,0.3)']};
     const c=cm[n.category]||['Other','background:rgba(100,116,139,0.15);color:#94a3b8'];
     document.getElementById('pBadge').textContent=c[0];document.getElementById('pBadge').style.cssText=c[1];
-    renderOV(n);renderNAT(n);renderRT(n);renderFL(n);tab('ov',document.querySelector('.ptab[data-t="ov"]'));
+    // Show/hide Branches tab based on whether node has branch data
+    const brTab=document.querySelector('.ptab[data-t="br"]');
+    if(brTab){brTab.style.display=(n.endpoints_total>0)?'':'none';}
+    renderOV(n);renderBR(n);renderNAT(n);renderRT(n);renderFL(n);
+    // Auto-open Branches tab for provincial routers with branches
+    if(n.category==='provincial-router'&&n.endpoints_total>0){tab('br',document.querySelector('.ptab[data-t="br"]'));}
+    else{tab('ov',document.querySelector('.ptab[data-t="ov"]'));}
 }
 function tab(t,el){document.querySelectorAll('.ptab').forEach(x=>x.classList.remove('on'));document.querySelectorAll('.tc').forEach(x=>x.classList.remove('on'));if(el)el.classList.add('on');document.getElementById('t-'+t).classList.add('on');}
 function mc(l,v,g){return`<div style="background:rgba(255,255,255,0.02);border:1px solid var(--brd);border-radius:8px;padding:8px;text-align:center"><div style="font-size:20px;font-weight:800;background:${g};-webkit-background-clip:text;-webkit-text-fill-color:transparent">${v}</div><div style="font-size:7px;color:var(--t3);margin-top:1px;font-weight:600">${l}</div></div>`;}
+
+function renderBR(n){
+    const el=document.getElementById('t-br');
+    if(!n.endpoints_total){el.innerHTML='<div style="text-align:center;padding:20px;color:var(--t3);font-size:11px">No branch data for this device</div>';return;}
+    let h=`<div style="padding:10px 0 6px;font-size:11px;color:var(--t2);font-weight:600">${n.label} — نقاط شبکه</div>`;
+    // Summary bar
+    h+='<div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:4px;margin-bottom:10px">';
+    h+=mc('شعبه',n.branches_count,'linear-gradient(135deg,#22d3ee,#3b82f6)');
+    h+=mc('باجه',n.bajes_count,'linear-gradient(135deg,#34d399,#22d3ee)');
+    h+=mc('ATM',n.atms_count,'linear-gradient(135deg,#f472b6,#fb923c)');
+    h+=mc('کیوسک',n.kiosks_count,'linear-gradient(135deg,#818cf8,#c084fc)');
+    h+='</div>';
+    // Branch search
+    h+=`<input id="brSearch" placeholder="🔍 جستجوی شعبه..." oninput="filterBR(this.value)" style="width:100%;background:rgba(255,255,255,0.04);border:1px solid var(--brd2);border-radius:6px;padding:5px 10px;color:var(--text);font-size:12px;outline:none;margin-bottom:8px;font-family:inherit">`;
+    // Branch sections
+    const sections=[
+        {key:'branches',label:'🏦 شعبه',col:'#22d3ee'},
+        {key:'bajes',label:'🏠 باجه',col:'#34d399'},
+        {key:'atms',label:'🏧 ATM / خودپرداز',col:'#f472b6'},
+        {key:'kiosks',label:'💻 کیوسک',col:'#c084fc'},
+    ];
+    sections.forEach(s=>{
+        const items=n[s.key]||[];
+        if(!items.length)return;
+        h+=`<div class="sc" id="br-sec-${s.key}"><div class="st" style="color:${s.col}">${s.label} (${items.length})</div>`;
+        h+='<div style="display:flex;flex-wrap:wrap;gap:3px;margin-top:4px">';
+        items.forEach(b=>{h+=`<span class="br-chip" data-name="${b.toLowerCase()}" style="padding:2px 7px;border-radius:8px;border:1px solid ${s.col}33;color:${s.col};background:${s.col}11;font-size:10px;cursor:default" title="${b}">${b}</span>`;});
+        h+='</div></div>';
+    });
+    el.innerHTML=h;
+}
+function filterBR(q){
+    q=q.toLowerCase();
+    document.querySelectorAll('.br-chip').forEach(chip=>{
+        const nm=chip.dataset.name||'';
+        chip.style.display=(nm.includes(q)||!q)?'':'none';
+    });
+    // Show/hide sections that have no visible chips
+    ['branches','bajes','atms','kiosks'].forEach(k=>{
+        const sec=document.getElementById('br-sec-'+k);if(!sec)return;
+        const chips=sec.querySelectorAll('.br-chip');
+        const anyVis=[...chips].some(c=>c.style.display!=='none');
+        sec.style.display=anyVis?'':'none';
+    });
+}
 
 function renderOV(n){
     let h='<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:10px">';
     h+=mc('Interfaces',n.interfaces_count,'linear-gradient(135deg,#22d3ee,#3b82f6)');h+=mc('Tunnels',n.tunnels_count,'linear-gradient(135deg,#818cf8,#c084fc)');h+=mc('NAT',n.nat_count,'linear-gradient(135deg,#f472b6,#fb923c)');
     h+=mc('OSPF',n.ospf_count,'linear-gradient(135deg,#34d399,#22d3ee)');h+=mc('Routes',n.static_routes_count,'linear-gradient(135deg,#fbbf24,#f97316)');h+=mc('ACL',n.acl_count||0,'linear-gradient(135deg,#22d3ee,#818cf8)');
     h+='</div>';
+    // If provincial router with branches, show summary
+    if(n.endpoints_total>0){
+        h+='<div class="sc" style="border-color:rgba(34,211,238,0.2);cursor:pointer" onclick="tab(\'br\',document.querySelector(\'.ptab[data-t=chr]\'))" >';
+        h+='<div class="st" style="color:#22d3ee">📍 نقاط شبکه استان</div>';
+        h+='<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:4px">';
+        if(n.branches_count)h+=`<span style="font-size:10px;color:#22d3ee">🏦 ${n.branches_count} شعبه</span>`;
+        if(n.bajes_count)h+=`<span style="font-size:10px;color:#34d399">🏠 ${n.bajes_count} باجه</span>`;
+        if(n.atms_count)h+=`<span style="font-size:10px;color:#f472b6">🏧 ${n.atms_count} ATM</span>`;
+        if(n.kiosks_count)h+=`<span style="font-size:10px;color:#c084fc">💻 ${n.kiosks_count} کیوسک</span>`;
+        h+=`<span style="font-size:10px;color:#fbbf24;margin-right:auto">جمع: ${n.endpoints_total} نقطه</span>`;
+        h+='</div><div style="font-size:9px;color:var(--t3);margin-top:4px">← تب Branches برای مشاهده کامل</div>';
+        h+='</div>';
+    }
     if(n.interfaces&&n.interfaces.length){h+='<div class="sc"><div class="st">Interfaces ('+n.interfaces_count+')</div>';n.interfaces.forEach(i=>{const nb=i.nat?`<span class="sb ${i.nat==='inside'?'b-in':'b-out'}">${i.nat}</span>`:'';h+=`<div class="sr"><span class="sv" style="min-width:100px">${i.name}</span><span class="sv" style="color:var(--accent1)">${i.ip||'-'}</span>${nb}</div>`;if(i.description)h+=`<div style="padding-left:108px;font-size:7px;color:var(--t3);margin-top:-2px">${i.description}</div>`;});h+='</div>';}
     if(n.tunnels&&n.tunnels.length){h+='<div class="sc"><div class="st">Tunnels ('+n.tunnels_count+')</div>';n.tunnels.slice(0,15).forEach(t=>{h+=`<div class="sr"><span class="sv" style="min-width:60px">${t.name}</span><span class="sv" style="color:var(--accent1)">${t.ip||''}</span><span style="color:var(--t3);font-size:7px">${t.tunnel_dst||''}</span></div>`;});if(n.tunnels.length>15)h+=`<div style="text-align:center;color:var(--t3);font-size:8px">+${n.tunnels.length-15} more</div>`;h+='</div>';}
     document.getElementById('t-ov').innerHTML=h;

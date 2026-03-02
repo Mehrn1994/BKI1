@@ -430,6 +430,170 @@ def _parse_nat_full(filepath):
     return result
 
 
+# Province code normalization for branch parsing
+_PROV_CANONICAL = {
+    'ISF': 'ESF', 'TEHB': 'TehB', 'KhRzv': 'KHR', 'Hmd': 'HMD', 'Fars': 'FRS',
+    'M1': 'TehB', 'M2': 'TehB',
+}
+_PROV_CODES = sorted([
+    'AZSH', 'AZGH', 'ALZ', 'ARD', 'ESF', 'ISF', 'BSH', 'TEH', 'TehB', 'TEHB',
+    'KHRJ', 'KHR', 'KhRzv', 'KHSH', 'KHZ', 'ZNJ', 'SMN', 'SNB', 'FRS', 'Fars',
+    'QOM', 'KRD', 'KRM', 'JKRM', 'KRSH', 'CHB', 'KNB', 'GIL', 'LOR', 'MAZ',
+    'MRZ', 'HMD', 'Hmd', 'HMZ', 'YZD', 'QZV', 'GLS', 'ILM',
+], key=len, reverse=True)
+
+_SKIP_BRANCH_KW = frozenset([
+    'MPLS', 'ShahinShahr', 'Gilanet', 'Zirsakht', 'Sw-Core', 'Intranet',
+    'Madar', 'PTMP', 'PDH', 'OStani', 'To-', 'AGG', 'Saatzani',
+    'PTMP', 'TB', 'HQ', 'EDGE', 'WAN', 'Backbone', 'Core',
+])
+
+
+def _get_branch_prov(desc):
+    """Extract canonical province code from a tunnel description like 'ESF-Mobarakeh'."""
+    for code in _PROV_CODES:
+        if desc.startswith(code + '-'):
+            return _PROV_CANONICAL.get(code, code)
+    return None
+
+
+def _branch_type(desc):
+    """Classify a branch node type from its description."""
+    dl = desc.lower()
+    if 'kiosk' in dl or 'Kiosk' in desc:
+        return 'kiosk'
+    if 'ATM' in desc or ('-atm-' in dl and 'atm' in dl):
+        return 'atm'
+    if '-Bj-' in desc or '-BJ-' in desc or '-BJH-' in desc or 'NBP' in desc:
+        return 'baje'
+    return 'branch'
+
+
+def _parse_branches_by_province():
+    """
+    Parse WAN-INTR1 + ISR-APN-RO + management router configs to extract
+    all branches, bajeh, ATMs, and kiosks grouped by province code.
+    Returns: dict  province_code -> {branches, bajes, atms, kiosks}
+    """
+    result = {}
+
+    def _add(prov, name, ntype):
+        if prov not in result:
+            result[prov] = {'branches': [], 'bajes': [], 'atms': [], 'kiosks': []}
+        key = {'branch': 'branches', 'baje': 'bajes', 'atm': 'atms', 'kiosk': 'kiosks'}.get(ntype, 'branches')
+        lst = result[prov][key]
+        if name not in lst:
+            lst.append(name)
+
+    def _process_desc(desc):
+        prov = _get_branch_prov(desc)
+        if not prov:
+            return
+        name = desc.split('-', 1)[1] if '-' in desc else desc
+        # Skip MO/HQ (management endpoints)
+        if name in ('MO', 'HQ') or desc.endswith('-MO') or desc.endswith('-HQ'):
+            return
+        ntype = _branch_type(desc)
+        _add(prov, name, ntype)
+
+    # ── Parse WAN-INTR1 (primary source) ─────────────────────────────────────
+    intr1 = os.path.join(CORE_ROUTER_DIR, 'WAN-INTR1-Feb-22-21-49-27.492-1081')
+    if not os.path.exists(intr1):
+        # Fall back to any file starting with WAN-INTR1
+        for f in os.listdir(CORE_ROUTER_DIR):
+            if f.startswith('WAN-INTR1'):
+                intr1 = os.path.join(CORE_ROUTER_DIR, f)
+                break
+
+    for fpath in [intr1]:
+        if not os.path.exists(fpath):
+            continue
+        try:
+            import subprocess
+            out = subprocess.run(['strings', fpath], capture_output=True, text=True, errors='replace').stdout
+        except Exception:
+            try:
+                with open(fpath, 'r', encoding='utf-8', errors='ignore') as f:
+                    out = f.read()
+            except Exception:
+                continue
+        cur = None
+        for line in out.splitlines():
+            line = line.strip()
+            if line.startswith('interface Tunnel'):
+                cur = line
+            elif 'description **' in line and cur:
+                m = re.search(r'\*\*\s*(.*?)\s*\*\*', line)
+                if m:
+                    _process_desc(m.group(1).strip())
+
+    # ── Parse management routers for provinces missing from WAN-INTR1 ─────────
+    mgmt_map = {
+        'SNB': '3825-SNB-18', 'KRSH': None, 'ILM': '3845-ILM-7',
+        'KNB': '3825-KNB-6', 'BSH': '3825-BSH-18', 'YZD': '3845-YZD-43',
+        'CHB': '3845-CHB-24', 'ARD': None, 'HMZ': '3845-HMZ-12',
+        'QOM': '3825-QOM-14',
+    }
+    # Find ASR1002X routers by prefix scan
+    for fname in os.listdir(ROUTER_DIR) if os.path.exists(ROUTER_DIR) else []:
+        if fname.startswith('ASR1002X-KRSH'):
+            mgmt_map['KRSH'] = fname
+        elif fname.startswith('ASR1002X-ARD'):
+            mgmt_map['ARD'] = fname
+
+    skip_kw = ['MPLS', 'Gilanet', 'Sw-Core', 'Intranet', 'Branch', 'Madar',
+               'PTMP', 'PDH', 'OStani', '512', 'Saatzani', 'EDGE', 'AGG',
+               'To-', 'HQ', 'Amuzesh', 'PTMP', 'Amouz']
+
+    for prov_code, fname in mgmt_map.items():
+        if not fname:
+            continue
+        fpath = os.path.join(ROUTER_DIR, fname)
+        if not os.path.exists(fpath):
+            continue
+        try:
+            import subprocess
+            out = subprocess.run(['strings', fpath], capture_output=True, text=True, errors='replace').stdout
+        except Exception:
+            try:
+                with open(fpath, 'r', encoding='utf-8', errors='ignore') as f:
+                    out = f.read()
+            except Exception:
+                continue
+        cur = None
+        for line in out.splitlines():
+            line = line.strip()
+            if line.startswith('interface Tunnel'):
+                cur = line
+            elif 'description **' in line and cur:
+                m = re.search(r'\*\*\s*(.*?)\s*\*\*', line)
+                if not m:
+                    continue
+                desc = m.group(1).strip()
+                if any(k in desc for k in skip_kw):
+                    continue
+                name = desc[len(prov_code) + 1:] if desc.startswith(prov_code + '-') else desc
+                if name in ('MO', 'HQ', 'Jahad', 'Modiriyat'):
+                    continue
+                ntype = _branch_type(desc)
+                _add(prov_code, name, ntype)
+
+    return result
+
+
+# Province-to-router-hostname mapping (abbr code → hostname in router configs)
+_PROV_TO_ROUTER_ABBR = {
+    'AZSH': 'AZSH', 'AZGH': 'AZGH', 'ALZ': 'ALZ', 'ARD': 'ARD',
+    'ESF': 'ESF', 'BSH': 'BSH', 'TEH': 'OSTehran', 'TehB': 'OSTehran',
+    'KHRJ': 'KHRJ', 'KHR': 'KHR', 'KHSH': 'KhShomali', 'KHZ': 'KHZ',
+    'ZNJ': 'ZNJ', 'SMN': 'SMN', 'SNB': 'SNB', 'FRS': 'FRS',
+    'QOM': 'QOM', 'KRD': 'KRD', 'KRM': 'KRM', 'JKRM': 'KRMJ',
+    'KRSH': 'KRMJ', 'CHB': 'CHB', 'KNB': 'KNB', 'GIL': 'GIL',
+    'LOR': 'LOR', 'MAZ': 'MAZ', 'MRZ': 'MRZ', 'HMD': 'HMD',
+    'HMZ': 'HMZ', 'YZD': 'YZD', 'QZV': 'QZV', 'GLS': 'GLS', 'ILM': 'ILM',
+}
+
+
 def _scan_all_router_dirs():
     """Scan all router directories (flat + subdirs) and return (filepath, fname, category) tuples."""
     results = []
@@ -518,6 +682,9 @@ def get_topology():
     if not os.path.exists(ROUTER_DIR):
         return jsonify({'nodes': [], 'links': [], 'error': 'Router directory not found'})
 
+    # Parse branches by province once (from WAN-INTR1 + management routers)
+    branches_by_prov = _parse_branches_by_province()
+
     # Scan all three directories
     all_configs = []
     # Provincial routers (top-level Router/ directory files only)
@@ -561,6 +728,24 @@ def get_topology():
             if tunnel.get('nat'):
                 nat_interfaces.append({'name': tunnel['name'], 'side': tunnel['nat']})
 
+        # Attach branch/bajeh/ATM/kiosk data for provincial routers
+        prov_branches = {}
+        if category == 'provincial-router':
+            # Try to match province abbreviation to branch data
+            for prov_key, bdata in branches_by_prov.items():
+                prov_abbr = _PROV_TO_ROUTER_ABBR.get(prov_key, prov_key)
+                if prov_abbr == abbr or prov_key == abbr:
+                    prov_branches = bdata
+                    break
+            # Also try direct abbr match
+            if not prov_branches and abbr in branches_by_prov:
+                prov_branches = branches_by_prov[abbr]
+
+        branches = prov_branches.get('branches', [])
+        bajes = prov_branches.get('bajes', [])
+        atms = prov_branches.get('atms', [])
+        kiosks = prov_branches.get('kiosks', [])
+
         node = {
             'id': hostname,
             'abbr': abbr,
@@ -583,6 +768,16 @@ def get_topology():
             'static_routes': info['static_routes'],
             'access_lists': info['acls'],
             'crypto_maps': [c['name'] for c in info['crypto_maps']],
+            # Branch / endpoint data
+            'branches': branches,
+            'bajes': bajes,
+            'atms': atms,
+            'kiosks': kiosks,
+            'branches_count': len(branches),
+            'bajes_count': len(bajes),
+            'atms_count': len(atms),
+            'kiosks_count': len(kiosks),
+            'endpoints_total': len(branches) + len(bajes) + len(atms) + len(kiosks),
         }
         nodes.append(node)
         parsed_configs[hostname] = info
