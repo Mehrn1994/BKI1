@@ -1075,6 +1075,7 @@
                 if (data.success) {
                     localStorage.setItem('currentUser', selectedUser);
                     localStorage.setItem('sessionStart', Date.now().toString());
+                    if (data.session_token) localStorage.setItem('session_token', data.session_token);
                     window.location.href = '/';
                 } else {
                     showError(data.error || 'خطا در ثبت نام');
@@ -1106,6 +1107,7 @@
                 if (data.success) {
                     localStorage.setItem('currentUser', selectedUser);
                     localStorage.setItem('sessionStart', Date.now().toString());
+                    if (data.session_token) localStorage.setItem('session_token', data.session_token);
                     window.location.href = '/';
                 } else {
                     showError(data.message || 'رمز اشتباه است');

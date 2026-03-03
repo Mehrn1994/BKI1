@@ -3,7 +3,7 @@ Network Config Portal Server - COMPLETE FIXED VERSION
 All APIs fixed + DB Manager only for Sahebdel
 """
 
-from flask import Flask, jsonify, request, render_template, Response, send_from_directory, send_file
+from flask import Flask, jsonify, request, render_template, Response, send_from_directory, send_file, stream_with_context
 from flask_cors import CORS
 import sqlite3
 import os
@@ -13,9 +13,11 @@ import shutil
 from datetime import datetime, timedelta
 import json
 import hashlib
+import secrets
 import pandas as pd
 import time
 import threading
+import ipaddress as _ipaddr
 # Email service removed - ticketing disabled
 
 app = Flask(__name__)
@@ -39,24 +41,26 @@ except ImportError as e:
     print("   Install with: pip install flask-socketio paramiko eventlet")
 
 # ==================== RATE LIMITING ====================
-login_attempts = {}  # {ip: [timestamp, timestamp, ...]}
+_rate_lock = threading.Lock()
+login_attempts = {}  # {ip: [timestamp, ...]}
 LOGIN_MAX_ATTEMPTS = 5
 LOGIN_WINDOW_SECONDS = 300  # 5 minutes
 
 def is_rate_limited(ip):
-    """Check if an IP has exceeded login attempt limit"""
-    now = time.time()
-    if ip not in login_attempts:
-        login_attempts[ip] = []
-    # Clean old attempts outside the window
-    login_attempts[ip] = [t for t in login_attempts[ip] if now - t < LOGIN_WINDOW_SECONDS]
-    return len(login_attempts[ip]) >= LOGIN_MAX_ATTEMPTS
+    """Check if an IP has exceeded login attempt limit (thread-safe)"""
+    with _rate_lock:
+        now = time.time()
+        if ip not in login_attempts:
+            login_attempts[ip] = []
+        login_attempts[ip] = [t for t in login_attempts[ip] if now - t < LOGIN_WINDOW_SECONDS]
+        return len(login_attempts[ip]) >= LOGIN_MAX_ATTEMPTS
 
 def record_login_attempt(ip):
-    """Record a failed login attempt"""
-    if ip not in login_attempts:
-        login_attempts[ip] = []
-    login_attempts[ip].append(time.time())
+    """Record a failed login attempt (thread-safe)"""
+    with _rate_lock:
+        if ip not in login_attempts:
+            login_attempts[ip] = []
+        login_attempts[ip].append(time.time())
 
 # General API rate limiting for sensitive write endpoints
 _api_rate = {}  # {ip+endpoint: [timestamps]}
@@ -64,16 +68,17 @@ API_RATE_LIMIT = 30  # max requests per window
 API_RATE_WINDOW = 60  # seconds
 
 def is_api_rate_limited(ip, endpoint):
-    """Check if an IP has exceeded API rate limit for a specific endpoint"""
-    key = f"{ip}:{endpoint}"
-    now = time.time()
-    if key not in _api_rate:
-        _api_rate[key] = []
-    _api_rate[key] = [t for t in _api_rate[key] if now - t < API_RATE_WINDOW]
-    if len(_api_rate[key]) >= API_RATE_LIMIT:
-        return True
-    _api_rate[key].append(now)
-    return False
+    """Check if an IP has exceeded API rate limit (thread-safe)"""
+    with _rate_lock:
+        key = f"{ip}:{endpoint}"
+        now = time.time()
+        if key not in _api_rate:
+            _api_rate[key] = []
+        _api_rate[key] = [t for t in _api_rate[key] if now - t < API_RATE_WINDOW]
+        if len(_api_rate[key]) >= API_RATE_LIMIT:
+            return True
+        _api_rate[key].append(now)
+        return False
 
 def validate_octet(value):
     """Validate that value is a valid IP octet (0-255)"""
@@ -178,12 +183,17 @@ def start_auto_release_thread():
 # Add response headers for caching
 @app.after_request
 def add_cache_headers(response):
-    # Cache static resources
-    if request.path.endswith(('.html', '.css', '.js', '.png', '.jpg', '.ico')):
-        response.headers['Cache-Control'] = 'public, max-age=3600'  # 1 hour
-    # API responses - short cache
+    # Cache static assets only
+    if request.path.endswith(('.css', '.js', '.png', '.jpg', '.ico')):
+        response.headers['Cache-Control'] = 'public, max-age=3600'
+    # API responses must never be cached publicly (contain user-specific data)
     elif request.path.startswith('/api/'):
-        response.headers['Cache-Control'] = 'public, max-age=5'  # 5 seconds
+        response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, private'
+        response.headers['Pragma'] = 'no-cache'
+        response.headers['Expires'] = '0'
+    # Add security headers
+    response.headers['X-Content-Type-Options'] = 'nosniff'
+    response.headers['X-Frame-Options'] = 'SAMEORIGIN'
     return response
 
 DB_PATH = os.path.join(os.path.dirname(__file__), 'data', 'network_ipam.db')
@@ -342,10 +352,72 @@ def init_tables():
     cursor.execute("CREATE INDEX IF NOT EXISTS idx_chat_room ON chat_messages(room)")
     cursor.execute("CREATE INDEX IF NOT EXISTS idx_chat_timestamp ON chat_messages(timestamp)")
 
+    # Sessions table for proper auth
+    cursor.execute("""CREATE TABLE IF NOT EXISTS sessions (
+        token TEXT PRIMARY KEY,
+        username TEXT NOT NULL,
+        created_at TEXT NOT NULL,
+        expires_at TEXT NOT NULL,
+        ip_address TEXT)""")
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_sessions_username ON sessions(username)")
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_sessions_expires ON sessions(expires_at)")
+
     conn.commit()
     conn.close()
 
 init_tables()
+
+# ==================== SESSION MANAGEMENT ====================
+SESSION_LIFETIME_HOURS = 8
+
+def create_session(username, ip_address=None):
+    """Create a new session token for a user."""
+    token = secrets.token_urlsafe(48)
+    now = datetime.now()
+    expires = now + timedelta(hours=SESSION_LIFETIME_HOURS)
+    conn = get_db()
+    # Remove expired sessions for this user
+    conn.execute("DELETE FROM sessions WHERE username=? AND expires_at<?",
+                 (username, now.strftime('%Y-%m-%d %H:%M:%S')))
+    conn.execute("INSERT INTO sessions (token, username, created_at, expires_at, ip_address) VALUES (?,?,?,?,?)",
+                 (token, username, now.strftime('%Y-%m-%d %H:%M:%S'),
+                  expires.strftime('%Y-%m-%d %H:%M:%S'), ip_address))
+    conn.commit()
+    conn.close()
+    return token
+
+def validate_session(token):
+    """Validate a session token and return username if valid."""
+    if not token or len(token) < 10:
+        return None
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("SELECT username FROM sessions WHERE token=? AND expires_at>?",
+                   (token, datetime.now().strftime('%Y-%m-%d %H:%M:%S')))
+    row = cursor.fetchone()
+    conn.close()
+    return row['username'] if row else None
+
+def get_current_user():
+    """Get authenticated user from session token in request headers/body/args."""
+    # Check Authorization header: Bearer <token>
+    auth = request.headers.get('Authorization', '')
+    if auth.startswith('Bearer '):
+        return validate_session(auth[7:])
+    # Check X-Session-Token header
+    token = request.headers.get('X-Session-Token', '')
+    if token:
+        return validate_session(token)
+    # Check JSON body
+    if request.is_json and request.json:
+        token = request.json.get('session_token', '')
+        if token:
+            return validate_session(token)
+    # Check query parameter
+    token = request.args.get('session_token', '')
+    if token:
+        return validate_session(token)
+    return None
 
 # Auto-import PTMP from router configs if table is empty (first run only)
 def _check_ptmp_import():
@@ -686,19 +758,27 @@ def login():
     cursor.execute("UPDATE user_passwords SET last_login = ? WHERE username = ?", (datetime.now().strftime('%Y-%m-%d %H:%M:%S'), username))
     conn.commit()
     conn.close()
-    return jsonify({"success": True, "is_admin": username == DB_ADMIN_USER})
+    # Create session token
+    token = create_session(username, request.remote_addr)
+    return jsonify({"success": True, "is_admin": username == DB_ADMIN_USER,
+                    "session_token": token, "username": username})
 
 @app.route('/api/check-admin', methods=['GET'])
 def check_admin():
-    username = request.args.get('username', '')
-    return jsonify({"is_admin": username == DB_ADMIN_USER, "admin_user": DB_ADMIN_USER})
+    username = get_current_user()
+    # Also accept legacy username param for backward compat (read-only info)
+    if not username:
+        username = request.args.get('username', '')
+        if username not in ALLOWED_USERS:
+            return jsonify({"is_admin": False, "authenticated": False})
+    return jsonify({"is_admin": username == DB_ADMIN_USER, "username": username, "authenticated": True})
 
 # ==================== STATS API ====================
 @app.route('/api/debug/tables', methods=['GET'])
 def debug_tables():
     """Debug endpoint to check table structure - admin only"""
-    username = request.args.get('username', '')
-    if username != DB_ADMIN_USER:
+    username = get_current_user()
+    if not username or username != DB_ADMIN_USER:
         return jsonify({'error': 'دسترسی فقط برای مدیر سیستم'}), 403
     try:
         conn = get_db()
@@ -5685,6 +5765,403 @@ def delete_translation(tid):
         return jsonify({'status': 'ok'})
     except Exception as e:
         return jsonify({'status': 'error', 'error': str(e)}), 500
+
+# ==================== AI ASSISTANT (Claude-powered) ====================
+
+_AI_SYSTEM_PROMPT = """شما دستیار هوشمند شبکه بانک کشاورزی ایران (BKI) هستید.
+You are the AI Network Assistant for Bank Keshavarzi Iran (BKI) IPAM Portal.
+
+Your capabilities:
+- Answer questions about IP address management (LAN, APN INT/Mali, VPLS/MPLS tunnels, Tunnel200, Intranet)
+- Search and analyze IP reservations, usage patterns, and capacity
+- Identify expiring reservations before they cause issues
+- Analyze province-level network usage and suggest optimizations
+- Help users understand network topology and configurations
+- Provide actionable recommendations based on real data
+
+Key facts about the network:
+- LAN IPs: 10.x.y.z/24 subnets for branch offices (each branch gets a /24)
+- APN INT: Mobile network tunnels for ATMs and kiosks
+- APN Mali: Financial mobile network endpoints
+- VPLS/MPLS tunnels: Province-level L2/L3 VPN connectivity
+- Tunnel200: Backup tunnel endpoints
+- PTMP: Point-to-Multipoint serial connections for remote branches
+- 33 provinces in Iran: KHZ=خوزستان, FRS=فارس, ESF=اصفهان, KHR=خراسان رضوی,
+  TehB/TEH=تهران, AZSH=آذربایجان شرقی, AZGH=آذربایجان غربی, etc.
+
+Rules:
+- Always respond in the SAME language the user writes in (Persian or English)
+- When showing IPs or technical data, use `monospace` format
+- Be concise but complete - don't pad responses
+- Always use the provided tools to get real data before answering data questions
+- If a question is outside your scope, say so clearly"""
+
+_AI_TOOLS = [
+    {
+        "name": "get_network_stats",
+        "description": "Get comprehensive network statistics: total/free/used IPs across all service types, pending reservations, expired leases",
+        "input_schema": {"type": "object", "properties": {}, "required": []}
+    },
+    {
+        "name": "get_province_details",
+        "description": "Get detailed IP usage statistics for a specific province including LAN, APN, VPLS data",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "province": {"type": "string", "description": "Province abbreviation (e.g. KHZ, FRS, ESF, KHR, TehB, AZSH, AZGH, GIL, MAZ, etc.)"}
+            },
+            "required": ["province"]
+        }
+    },
+    {
+        "name": "get_free_ips",
+        "description": "Get list of available/free IP subnets for a province or all provinces",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "province": {"type": "string", "description": "Province abbreviation. Omit for all provinces"},
+                "limit": {"type": "integer", "description": "Max results to return (default 20, max 50)"}
+            },
+            "required": []
+        }
+    },
+    {
+        "name": "get_expiring_reservations",
+        "description": "Get IP reservations expiring within N days - critical for proactive management",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "days": {"type": "integer", "description": "Days ahead to check (default 10)"}
+            },
+            "required": []
+        }
+    },
+    {
+        "name": "search_branches",
+        "description": "Search for branch offices by name across all service types (LAN, APN, VPLS, PTMP)",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "query": {"type": "string", "description": "Branch name or partial name"},
+                "province": {"type": "string", "description": "Optional: filter by province abbreviation"}
+            },
+            "required": ["query"]
+        }
+    },
+    {
+        "name": "get_recent_activity",
+        "description": "Get recent IP reservation and release activity log",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "limit": {"type": "integer", "description": "Number of activities to return (default 15)"}
+            },
+            "required": []
+        }
+    },
+    {
+        "name": "analyze_network",
+        "description": "Analyze network utilization: top provinces by usage, bottlenecks, high-demand areas, underutilized subnets",
+        "input_schema": {"type": "object", "properties": {}, "required": []}
+    },
+    {
+        "name": "get_tunnel_stats",
+        "description": "Get tunnel IP statistics by type: APN INT, APN Mali, Tunnel200, VPLS/MPLS, Intranet tunnels",
+        "input_schema": {"type": "object", "properties": {}, "required": []}
+    }
+]
+
+
+def _ai_run_tool(name, inp):
+    """Execute an AI tool call and return JSON string result."""
+    try:
+        conn = get_db()
+        cursor = conn.cursor()
+
+        if name == "get_network_stats":
+            stats = {}
+            for tbl, key in [('lan_ips', 'lan'), ('apn_ips', 'apn_int'), ('apn_mali', 'apn_mali'),
+                              ('tunnel200_ips', 'tunnel200'), ('vpls_tunnels', 'vpls'),
+                              ('intranet_tunnels', 'intranet')]:
+                try:
+                    cursor.execute(f"SELECT COUNT(*) t, "
+                                   f"SUM(CASE WHEN LOWER(status)='free' OR status IS NULL THEN 1 ELSE 0 END) f, "
+                                   f"SUM(CASE WHEN LOWER(status)!='free' AND status IS NOT NULL THEN 1 ELSE 0 END) u "
+                                   f"FROM {tbl}")
+                    r = cursor.fetchone()
+                    stats[key] = {'total': r[0] or 0, 'free': r[1] or 0, 'used': r[2] or 0}
+                except Exception:
+                    stats[key] = {'total': 0, 'free': 0, 'used': 0}
+            cursor.execute("SELECT COUNT(*) FROM reserved_ips WHERE LOWER(status)='reserved'")
+            stats['pending_reservations'] = cursor.fetchone()[0]
+            today = datetime.now().strftime('%Y-%m-%d')
+            cursor.execute("SELECT COUNT(*) FROM reserved_ips WHERE expiry_date < ? AND LOWER(status)='reserved'", (today,))
+            stats['expired_unreleased'] = cursor.fetchone()[0]
+            conn.close()
+            return json.dumps(stats, ensure_ascii=False)
+
+        elif name == "get_province_details":
+            prov = inp.get('province', '').upper()
+            result = {'province': prov}
+            cursor.execute("""SELECT COUNT(*) t,
+                SUM(CASE WHEN LOWER(status)='free' THEN 1 ELSE 0 END) free,
+                SUM(CASE WHEN LOWER(status)='reserved' THEN 1 ELSE 0 END) reserved,
+                SUM(CASE WHEN LOWER(status) IN ('used','activated') THEN 1 ELSE 0 END) used
+                FROM lan_ips WHERE UPPER(province)=?""", (prov,))
+            r = cursor.fetchone()
+            result['lan'] = {'total': r[0], 'free': r[1] or 0, 'reserved': r[2] or 0, 'used': r[3] or 0}
+            cursor.execute("""SELECT branch_name, username, reservation_date, expiry_date, status
+                FROM reserved_ips WHERE UPPER(province)=? ORDER BY expiry_date LIMIT 20""", (prov,))
+            result['reservations'] = [dict(zip([c[0] for c in cursor.description], row)) for row in cursor.fetchall()]
+            cursor.execute("SELECT COUNT(*) FROM apn_ips WHERE UPPER(province)=?", (prov,))
+            result['apn_int_count'] = cursor.fetchone()[0]
+            cursor.execute("SELECT COUNT(*) FROM apn_mali WHERE UPPER(province)=?", (prov,))
+            result['apn_mali_count'] = cursor.fetchone()[0]
+            conn.close()
+            return json.dumps(result, ensure_ascii=False)
+
+        elif name == "get_free_ips":
+            prov = inp.get('province', '').upper()
+            limit = min(int(inp.get('limit', 20)), 50)
+            if prov:
+                cursor.execute("SELECT province, octet2, octet3 FROM lan_ips WHERE LOWER(status)='free' AND UPPER(province)=? LIMIT ?", (prov, limit))
+            else:
+                cursor.execute("SELECT province, octet2, octet3 FROM lan_ips WHERE LOWER(status)='free' ORDER BY province LIMIT ?", (limit,))
+            rows = cursor.fetchall()
+            ips = [{'subnet': f"10.{r[1]}.{r[2]}.0/24", 'province': r[0]} for r in rows]
+            conn.close()
+            return json.dumps({'count': len(ips), 'free_subnets': ips}, ensure_ascii=False)
+
+        elif name == "get_expiring_reservations":
+            days = int(inp.get('days', 10))
+            today = datetime.now().strftime('%Y-%m-%d')
+            target = (datetime.now() + timedelta(days=days)).strftime('%Y-%m-%d')
+            cursor.execute("""SELECT province, branch_name, username, expiry_date,
+                CAST(JULIANDAY(expiry_date) - JULIANDAY(?) AS INTEGER) days_left
+                FROM reserved_ips WHERE expiry_date BETWEEN ? AND ? AND LOWER(status)='reserved'
+                ORDER BY expiry_date""", (today, today, target))
+            rows = [dict(zip([c[0] for c in cursor.description], r)) for r in cursor.fetchall()]
+            conn.close()
+            return json.dumps({'total': len(rows), 'check_days': days, 'expiring': rows}, ensure_ascii=False)
+
+        elif name == "search_branches":
+            q = f"%{inp.get('query', '')}%"
+            pf = inp.get('province', '').upper()
+            results = []
+            for tbl, stype in [('lan_ips', 'LAN'), ('apn_ips', 'APN INT'), ('apn_mali', 'APN Mali'),
+                                ('vpls_tunnels', 'VPLS'), ('ptmp_connections', 'PTMP')]:
+                prov_q = f"AND UPPER(province)=?" if pf else ""
+                params = (q, pf) if pf else (q,)
+                try:
+                    cursor.execute(f"SELECT branch_name, province, status, username FROM {tbl} "
+                                   f"WHERE branch_name LIKE ? {prov_q} LIMIT 8", params)
+                    for r in cursor.fetchall():
+                        results.append({'type': stype, 'branch': r[0], 'province': r[1],
+                                        'status': r[2], 'user': r[3]})
+                except Exception:
+                    pass
+            conn.close()
+            return json.dumps({'total': len(results), 'results': results}, ensure_ascii=False)
+
+        elif name == "get_recent_activity":
+            limit = min(int(inp.get('limit', 15)), 50)
+            activities = []
+            if os.path.exists(ACTIVITY_LOG):
+                try:
+                    with open(ACTIVITY_LOG, 'r', encoding='utf-8') as f:
+                        data = json.load(f)
+                    activities = list(reversed(data[-limit:]))
+                except Exception:
+                    pass
+            conn.close()
+            return json.dumps({'total': len(activities), 'activities': activities}, ensure_ascii=False)
+
+        elif name == "analyze_network":
+            analysis = {}
+            cursor.execute("""SELECT province, COUNT(*) total,
+                SUM(CASE WHEN LOWER(status)='free' THEN 1 ELSE 0 END) free,
+                SUM(CASE WHEN LOWER(status)!='free' AND status IS NOT NULL THEN 1 ELSE 0 END) used
+                FROM lan_ips GROUP BY province ORDER BY total DESC LIMIT 15""")
+            analysis['provinces_by_size'] = [dict(zip([c[0] for c in cursor.description], r)) for r in cursor.fetchall()]
+            cursor.execute("""SELECT province, COUNT(*) cnt FROM reserved_ips
+                WHERE LOWER(status)='reserved' GROUP BY province ORDER BY cnt DESC LIMIT 8""")
+            analysis['most_pending_by_province'] = [dict(zip([c[0] for c in cursor.description], r)) for r in cursor.fetchall()]
+            cursor.execute("""SELECT username, COUNT(*) cnt FROM reserved_ips
+                WHERE LOWER(status)='reserved' GROUP BY username ORDER BY cnt DESC LIMIT 5""")
+            analysis['top_users_by_reservations'] = [dict(zip([c[0] for c in cursor.description], r)) for r in cursor.fetchall()]
+            today = datetime.now().strftime('%Y-%m-%d')
+            cursor.execute("SELECT COUNT(*) FROM reserved_ips WHERE expiry_date < ? AND LOWER(status)='reserved'", (today,))
+            analysis['expired_not_released'] = cursor.fetchone()[0]
+            conn.close()
+            return json.dumps(analysis, ensure_ascii=False)
+
+        elif name == "get_tunnel_stats":
+            stats = {}
+            for tbl, label in [('apn_ips', 'APN INT'), ('apn_mali', 'APN Mali'),
+                                ('tunnel200_ips', 'Tunnel 200'), ('vpls_tunnels', 'VPLS/MPLS'),
+                                ('intranet_tunnels', 'Intranet')]:
+                try:
+                    cursor.execute(f"SELECT COUNT(*), "
+                                   f"SUM(CASE WHEN LOWER(status)='free' OR status IS NULL THEN 1 ELSE 0 END) "
+                                   f"FROM {tbl}")
+                    r = cursor.fetchone()
+                    total = r[0] or 0
+                    free = r[1] or 0
+                    stats[label] = {'total': total, 'free': free, 'used': total - free,
+                                    'utilization_pct': round((total - free) / total * 100, 1) if total else 0}
+                except Exception:
+                    stats[label] = {'total': 0, 'free': 0, 'used': 0, 'utilization_pct': 0}
+            conn.close()
+            return json.dumps(stats, ensure_ascii=False)
+
+        conn.close()
+        return json.dumps({'error': f'Unknown tool: {name}'})
+    except Exception as e:
+        return json.dumps({'error': str(e)})
+
+
+@app.route('/api/ai/chat', methods=['POST'])
+def ai_chat():
+    """AI chat with Claude (non-streaming, with tool use loop)."""
+    username = get_current_user()
+    if not username:
+        return jsonify({'error': 'Authentication required'}), 401
+
+    data = request.json or {}
+    messages = data.get('messages', [])
+    if not messages:
+        return jsonify({'error': 'No messages provided'}), 400
+
+    api_key = os.environ.get('ANTHROPIC_API_KEY')
+    if not api_key:
+        return jsonify({
+            'error': 'AI service not configured',
+            'hint': 'Set ANTHROPIC_API_KEY environment variable to enable AI assistant',
+            'demo': True
+        }), 503
+
+    try:
+        import anthropic
+        client = anthropic.Anthropic(api_key=api_key)
+        current_messages = [m for m in messages]
+
+        for _ in range(6):  # max agentic iterations
+            resp = client.messages.create(
+                model="claude-sonnet-4-6",
+                max_tokens=2048,
+                system=_AI_SYSTEM_PROMPT,
+                tools=_AI_TOOLS,
+                messages=current_messages
+            )
+            if resp.stop_reason == 'tool_use':
+                tool_results = []
+                for blk in resp.content:
+                    if blk.type == 'tool_use':
+                        result = _ai_run_tool(blk.name, blk.input)
+                        tool_results.append({'type': 'tool_result', 'tool_use_id': blk.id, 'content': result})
+                current_messages.append({'role': 'assistant', 'content': resp.content})
+                current_messages.append({'role': 'user', 'content': tool_results})
+            else:
+                text = ''.join(blk.text for blk in resp.content if hasattr(blk, 'text'))
+                return jsonify({'response': text,
+                                'tokens': resp.usage.input_tokens + resp.usage.output_tokens})
+
+        return jsonify({'error': 'Max AI iterations reached'}), 500
+
+    except ImportError:
+        return jsonify({'error': 'anthropic package not installed. Run: pip install anthropic', 'demo': True}), 503
+    except Exception as e:
+        return jsonify({'error': f'AI error: {str(e)}'}), 500
+
+
+@app.route('/api/ai/stream', methods=['POST'])
+def ai_stream():
+    """Streaming AI chat via Server-Sent Events (SSE)."""
+    username = get_current_user()
+    if not username:
+        def _unauth():
+            yield 'data: {"error":"Authentication required"}\n\n'
+        return Response(stream_with_context(_unauth()), mimetype='text/event-stream', status=401)
+
+    data = request.json or {}
+    messages = data.get('messages', [])
+    api_key = os.environ.get('ANTHROPIC_API_KEY')
+
+    if not api_key:
+        def _demo():
+            demo_msg = "🤖 AI Assistant در حال Demo است. برای فعال‌سازی، ANTHROPIC_API_KEY را تنظیم کنید.\n\nTo enable the full AI assistant, set the ANTHROPIC_API_KEY environment variable and restart the server."
+            for char in demo_msg:
+                yield f'data: {json.dumps({"text": char})}\n\n'
+                time.sleep(0.01)
+            yield f'data: {json.dumps({"done": True})}\n\n'
+        return Response(stream_with_context(_demo()), mimetype='text/event-stream',
+                        headers={'X-Accel-Buffering': 'no', 'Cache-Control': 'no-cache'})
+
+    def _generate():
+        try:
+            import anthropic
+            client = anthropic.Anthropic(api_key=api_key)
+            current_messages = list(messages)
+
+            for iteration in range(6):
+                tool_use_blocks = []
+                current_tool = None
+
+                with client.messages.stream(
+                    model="claude-sonnet-4-6",
+                    max_tokens=2048,
+                    system=_AI_SYSTEM_PROMPT,
+                    tools=_AI_TOOLS,
+                    messages=current_messages
+                ) as stream:
+                    for event in stream:
+                        etype = type(event).__name__
+                        if etype == 'ContentBlockStart':
+                            cb = getattr(event, 'content_block', None)
+                            if cb and getattr(cb, 'type', '') == 'tool_use':
+                                current_tool = {'id': cb.id, 'name': cb.name, 'raw_input': ''}
+                                yield f'data: {json.dumps({"tool_call": cb.name})}\n\n'
+                        elif etype == 'ContentBlockDelta':
+                            d = getattr(event, 'delta', None)
+                            if d:
+                                if hasattr(d, 'text') and d.text:
+                                    yield f'data: {json.dumps({"text": d.text})}\n\n'
+                                elif hasattr(d, 'partial_json') and current_tool:
+                                    current_tool['raw_input'] += d.partial_json
+                        elif etype == 'ContentBlockStop':
+                            if current_tool:
+                                try:
+                                    current_tool['input'] = json.loads(current_tool['raw_input'] or '{}')
+                                except Exception:
+                                    current_tool['input'] = {}
+                                tool_use_blocks.append(current_tool)
+                                current_tool = None
+
+                    final = stream.get_final_message()
+
+                if final.stop_reason == 'tool_use':
+                    tool_results = []
+                    for t in tool_use_blocks:
+                        result = _ai_run_tool(t['name'], t.get('input', {}))
+                        tool_results.append({'type': 'tool_result', 'tool_use_id': t['id'], 'content': result})
+                        yield f'data: {json.dumps({"tool_result": t["name"], "data_preview": result[:100]})}\n\n'
+                    current_messages.append({'role': 'assistant', 'content': final.content})
+                    current_messages.append({'role': 'user', 'content': tool_results})
+                else:
+                    yield f'data: {json.dumps({"done": True, "tokens": final.usage.input_tokens + final.usage.output_tokens})}\n\n'
+                    return
+
+            yield f'data: {json.dumps({"done": True})}\n\n'
+
+        except ImportError:
+            yield f'data: {json.dumps({"error": "anthropic package not installed. Run: pip install anthropic"})}\n\n'
+        except Exception as e:
+            yield f'data: {json.dumps({"error": str(e)})}\n\n'
+
+    return Response(stream_with_context(_generate()), mimetype='text/event-stream',
+                    headers={'X-Accel-Buffering': 'no', 'Cache-Control': 'no-cache',
+                             'Access-Control-Allow-Origin': '*'})
+
 
 # ==================== MAIN ====================
 if __name__ == '__main__':

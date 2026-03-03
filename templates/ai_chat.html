@@ -1,0 +1,311 @@
+<!-- AI Network Assistant Widget -->
+<style>
+#aiWidget{position:fixed;bottom:88px;right:20px;z-index:9996;font-family:inherit}
+#aiFloatBtn{width:52px;height:52px;border-radius:50%;background:linear-gradient(135deg,#10b981,#059669);color:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 4px 20px rgba(16,185,129,.45);transition:transform .2s,box-shadow .2s;border:none;outline:none}
+#aiFloatBtn:hover{transform:scale(1.12);box-shadow:0 6px 30px rgba(16,185,129,.65)}
+#aiFloatBtn svg{width:25px;height:25px}
+
+#aiPanel{display:none;position:fixed;bottom:154px;right:20px;width:430px;max-height:580px;background:var(--bg-card,#111827);border:1px solid rgba(16,185,129,.2);border-radius:18px;box-shadow:0 12px 50px rgba(0,0,0,.55),0 0 0 1px rgba(16,185,129,.08);flex-direction:column;overflow:hidden;z-index:9997}
+#aiPanel.open{display:flex}
+
+.ai-hdr{padding:13px 16px;background:linear-gradient(135deg,#064e3b,#047857);color:#fff;display:flex;align-items:center;gap:10px;flex-shrink:0}
+.ai-hdr-ico{font-size:22px;line-height:1;flex-shrink:0}
+.ai-hdr-info{flex:1;min-width:0}
+.ai-hdr-title{font-weight:700;font-size:14px}
+.ai-hdr-sub{font-size:11px;opacity:.65;margin-top:1px}
+.ai-hdr-close{background:none;border:none;color:rgba(255,255,255,.55);cursor:pointer;font-size:22px;width:32px;height:32px;display:flex;align-items:center;justify-content:center;border-radius:8px;transition:.15s;line-height:1}
+.ai-hdr-close:hover{color:#fff;background:rgba(255,255,255,.15)}
+
+.ai-msgs{flex:1;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:8px;min-height:0;max-height:430px}
+.ai-msgs::-webkit-scrollbar{width:4px}
+.ai-msgs::-webkit-scrollbar-thumb{background:rgba(16,185,129,.25);border-radius:2px}
+
+.ai-m{max-width:90%;padding:9px 13px;border-radius:14px;font-size:13px;line-height:1.6;word-break:break-word;animation:aiIn .18s ease-out}
+@keyframes aiIn{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:none}}
+.ai-m.u{align-self:flex-start;background:linear-gradient(135deg,#065f46,#047857);color:#fff;border-bottom-left-radius:4px}
+.ai-m.a{align-self:flex-end;background:rgba(255,255,255,.07);color:var(--text-primary,#e2e8f0);border-bottom-right-radius:4px;border:1px solid rgba(255,255,255,.07)}
+[data-theme="light"] .ai-m.a{background:rgba(0,0,0,.06);border-color:rgba(0,0,0,.1)}
+.ai-m.err{background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.25);color:#fca5a5;align-self:flex-end}
+
+.ai-tool{align-self:center;display:flex;align-items:center;gap:6px;background:rgba(16,185,129,.09);border:1px solid rgba(16,185,129,.18);color:#6ee7b7;border-radius:20px;padding:4px 12px;font-size:11px;font-weight:600;animation:aiIn .18s ease-out;flex-shrink:0;max-width:90%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ai-tool.done{background:rgba(16,185,129,.15);color:#34d399}
+
+.ai-dot{align-self:flex-end;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.07);border-radius:14px;border-bottom-right-radius:4px;padding:10px 14px;display:flex;gap:5px;align-items:center}
+.ai-dot span{width:6px;height:6px;border-radius:50%;background:#10b981;display:inline-block;animation:aDot 1.2s infinite}
+.ai-dot span:nth-child(2){animation-delay:.2s}
+.ai-dot span:nth-child(3){animation-delay:.4s}
+@keyframes aDot{0%,60%,100%{transform:translateY(0)}30%{transform:translateY(-6px)}}
+
+.ai-welcome{text-align:center;padding:18px 14px;color:var(--text-muted,#64748b)}
+.ai-welcome-icon{font-size:34px;margin-bottom:8px}
+.ai-welcome h3{font-size:13px;font-weight:700;color:var(--text-secondary,#94a3b8);margin-bottom:5px}
+.ai-welcome p{font-size:12px;line-height:1.6;margin-bottom:10px}
+.ai-suggs{display:flex;flex-direction:column;gap:5px}
+.ai-sug{padding:7px 11px;border-radius:10px;background:rgba(16,185,129,.07);border:1px solid rgba(16,185,129,.14);color:#6ee7b7;font-size:12px;cursor:pointer;text-align:right;transition:.15s}
+.ai-sug:hover{background:rgba(16,185,129,.15);border-color:rgba(16,185,129,.3)}
+
+.ai-inp-area{padding:10px 12px;border-top:1px solid rgba(255,255,255,.06);display:flex;gap:8px;align-items:flex-end;flex-shrink:0;background:rgba(0,0,0,.12)}
+[data-theme="light"] .ai-inp-area{background:rgba(0,0,0,.04);border-top-color:rgba(0,0,0,.08)}
+#aiInput{flex:1;padding:9px 13px;border-radius:18px;border:1px solid rgba(16,185,129,.18);background:rgba(255,255,255,.05);color:var(--text-primary,#e2e8f0);font-size:13px;font-family:inherit;outline:none;resize:none;max-height:80px;overflow-y:auto;line-height:1.5;transition:border-color .2s;direction:auto}
+#aiInput:focus{border-color:#10b981}
+#aiInput::placeholder{color:#6b7280;font-size:12px}
+[data-theme="light"] #aiInput{background:rgba(0,0,0,.04);border-color:rgba(16,185,129,.25);color:var(--text-primary,#0f172a)}
+#aiSendBtn{width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,#10b981,#059669);color:#fff;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:.15s;outline:none}
+#aiSendBtn:hover:not(:disabled){transform:scale(1.08)}
+#aiSendBtn:disabled{opacity:.4;cursor:not-allowed}
+#aiSendBtn svg{width:15px;height:15px}
+
+.ai-pre{background:rgba(0,0,0,.35);padding:8px 12px;border-radius:7px;overflow-x:auto;font-family:monospace;font-size:12px;margin:4px 0;direction:ltr;border:1px solid rgba(255,255,255,.06)}
+.ai-code{background:rgba(0,0,0,.3);padding:1px 5px;border-radius:4px;font-family:monospace;font-size:12px}
+</style>
+
+<div id="aiWidget">
+  <button id="aiFloatBtn" title="دستیار هوشمند شبکه">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/>
+    </svg>
+  </button>
+</div>
+
+<div id="aiPanel">
+  <div class="ai-hdr">
+    <div class="ai-hdr-ico">🤖</div>
+    <div class="ai-hdr-info">
+      <div class="ai-hdr-title">دستیار هوشمند شبکه</div>
+      <div class="ai-hdr-sub">BKI Network AI Assistant</div>
+    </div>
+    <button class="ai-hdr-close" onclick="toggleAIPanel()" title="بستن">×</button>
+  </div>
+
+  <div class="ai-msgs" id="aiMsgs">
+    <div class="ai-welcome" id="aiWelcome">
+      <div class="ai-welcome-icon">🧠</div>
+      <h3>دستیار هوشمند شبکه بانک کشاورزی</h3>
+      <p>درباره آدرس‌های IP، شعب، تونل‌ها و ظرفیت شبکه بپرسید.</p>
+      <div class="ai-suggs">
+        <div class="ai-sug" onclick="aiSuggest(this.textContent)">آمار کلی شبکه را نشان بده</div>
+        <div class="ai-sug" onclick="aiSuggest(this.textContent)">کدام استان‌ها بیشترین IP آزاد دارند؟</div>
+        <div class="ai-sug" onclick="aiSuggest(this.textContent)">رزروهای نزدیک به انقضا را نشان بده</div>
+        <div class="ai-sug" onclick="aiSuggest(this.textContent)">وضعیت تونل‌های VPLS و MPLS را بررسی کن</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="ai-inp-area">
+    <textarea id="aiInput" rows="1" placeholder="سوال خود را بپرسید... (Enter برای ارسال، Shift+Enter برای خط جدید)"></textarea>
+    <button id="aiSendBtn" onclick="aiSend()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="22" y1="2" x2="11" y2="13"></line>
+        <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+      </svg>
+    </button>
+  </div>
+</div>
+
+<script>
+(function(){
+  'use strict';
+  var panel=document.getElementById('aiPanel');
+  var msgs=document.getElementById('aiMsgs');
+  var inp=document.getElementById('aiInput');
+  var sendBtn=document.getElementById('aiSendBtn');
+  var history=[];
+  var streaming=false;
+  var welcomeRemoved=false;
+
+  function toggleAIPanel(){
+    if(panel.classList.contains('open')){
+      panel.classList.remove('open');
+    } else {
+      panel.classList.add('open');
+      inp.focus();
+    }
+  }
+  document.getElementById('aiFloatBtn').addEventListener('click',toggleAIPanel);
+
+  inp.addEventListener('input',function(){
+    this.style.height='auto';
+    this.style.height=Math.min(this.scrollHeight,80)+'px';
+  });
+  inp.addEventListener('keydown',function(e){
+    if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();aiSend();}
+  });
+
+  function getToken(){
+    return localStorage.getItem('session_token')||'';
+  }
+
+  function scrollBot(){msgs.scrollTop=msgs.scrollHeight;}
+
+  function rmWelcome(){
+    if(!welcomeRemoved){
+      var w=document.getElementById('aiWelcome');
+      if(w)w.remove();
+      welcomeRemoved=true;
+    }
+  }
+
+  function mkDiv(cls,html){
+    var d=document.createElement('div');
+    d.className=cls;
+    if(html!==undefined)d.innerHTML=html;
+    msgs.appendChild(d);
+    scrollBot();
+    return d;
+  }
+
+  function addDots(){
+    var d=document.createElement('div');
+    d.className='ai-dot';
+    d.id='aiDots';
+    d.innerHTML='<span></span><span></span><span></span>';
+    msgs.appendChild(d);
+    scrollBot();
+  }
+  function rmDots(){var d=document.getElementById('aiDots');if(d)d.remove();}
+
+  var TOOL_ICONS={
+    get_network_stats:'📊',get_province_details:'📍',get_free_ips:'🔢',
+    get_expiring_reservations:'⏰',search_branches:'🔍',get_recent_activity:'📅',
+    analyze_network:'📈',get_tunnel_stats:'🔗'
+  };
+  var TOOL_LABELS={
+    get_network_stats:'آمار شبکه',get_province_details:'جزئیات استان',
+    get_free_ips:'IP های آزاد',get_expiring_reservations:'رزروهای منقضی',
+    search_branches:'جستجوی شعبه',get_recent_activity:'فعالیت اخیر',
+    analyze_network:'تحلیل شبکه',get_tunnel_stats:'آمار تونل‌ها'
+  };
+
+  function escHtml(s){
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+  function mdRender(text){
+    // code blocks
+    text=text.replace(/```[\w]*\n?([\s\S]*?)```/g,function(_,c){
+      return '<pre class="ai-pre">'+escHtml(c.trimEnd())+'</pre>';
+    });
+    // inline code
+    text=text.replace(/`([^`\n]+)`/g,function(_,c){
+      return '<code class="ai-code">'+escHtml(c)+'</code>';
+    });
+    // bold
+    text=text.replace(/\*\*([^*\n]+)\*\*/g,'<strong>$1</strong>');
+    // h3/h2/h1
+    text=text.replace(/^### (.+)$/gm,'<div style="font-weight:700;color:#6ee7b7;margin:6px 0 2px">$1</div>');
+    text=text.replace(/^## (.+)$/gm,'<div style="font-weight:700;font-size:14px;color:#34d399;margin:7px 0 3px">$1</div>');
+    text=text.replace(/^# (.+)$/gm,'<div style="font-weight:700;font-size:15px;color:#34d399;margin:8px 0 4px">$1</div>');
+    // bullets
+    text=text.replace(/^[-•\*] (.+)$/gm,'<div style="padding-right:16px;position:relative">• $1</div>');
+    // newlines
+    text=text.replace(/\n/g,'<br>');
+    return text;
+  }
+
+  async function aiSend(){
+    var text=inp.value.trim();
+    if(!text||streaming)return;
+
+    var token=getToken();
+    if(!token){
+      rmWelcome();
+      mkDiv('ai-m err','برای استفاده از دستیار هوشمند، لطفاً از سیستم خارج شوید و دوباره وارد شوید.');
+      return;
+    }
+
+    inp.value='';
+    inp.style.height='auto';
+    rmWelcome();
+    mkDiv('ai-m u',escHtml(text));
+    history.push({role:'user',content:text});
+
+    streaming=true;
+    sendBtn.disabled=true;
+    addDots();
+
+    var aDiv=null;
+    var aText='';
+    var activeToolEl=null;
+
+    try{
+      var resp=await fetch('/api/ai/stream',{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({messages:history,session_token:token})
+      });
+
+      if(!resp.ok){
+        rmDots();
+        if(resp.status===401){
+          mkDiv('ai-m err','توکن نشست منقضی شده. لطفاً از سیستم خارج شده و مجدداً وارد شوید.');
+        } else {
+          mkDiv('ai-m err','خطا در اتصال به سرور AI ('+resp.status+')');
+        }
+        streaming=false;sendBtn.disabled=false;return;
+      }
+
+      var reader=resp.body.getReader();
+      var dec=new TextDecoder();
+      var buf='';
+
+      while(true){
+        var chunk=await reader.read();
+        if(chunk.done)break;
+        buf+=dec.decode(chunk.value,{stream:true});
+        var lines=buf.split('\n');
+        buf=lines.pop();
+        for(var i=0;i<lines.length;i++){
+          var line=lines[i];
+          if(!line.startsWith('data: '))continue;
+          var raw=line.slice(6).trim();
+          if(!raw)continue;
+          var evt;
+          try{evt=JSON.parse(raw);}catch(e){continue;}
+
+          if(evt.text){
+            rmDots();
+            if(!aDiv){aDiv=mkDiv('ai-m a','');}
+            aText+=evt.text;
+            aDiv.innerHTML=mdRender(aText);
+            scrollBot();
+          } else if(evt.tool_call){
+            var ic=TOOL_ICONS[evt.tool_call]||'⚙️';
+            var lb=TOOL_LABELS[evt.tool_call]||evt.tool_call;
+            activeToolEl=mkDiv('ai-tool',ic+' در حال دریافت: '+lb+'...');
+          } else if(evt.tool_result){
+            if(activeToolEl){
+              var ic2=TOOL_ICONS[evt.tool_result]||'⚙️';
+              var lb2=TOOL_LABELS[evt.tool_result]||evt.tool_result;
+              activeToolEl.className='ai-tool done';
+              activeToolEl.textContent=ic2+' '+lb2+' ✓';
+              activeToolEl=null;
+            }
+          } else if(evt.done){
+            if(aText)history.push({role:'assistant',content:aText});
+          } else if(evt.error){
+            rmDots();
+            mkDiv('ai-m err','خطا: '+escHtml(evt.error));
+          }
+        }
+      }
+    } catch(err){
+      rmDots();
+      mkDiv('ai-m err','خطا در اتصال: '+escHtml(err.message));
+    } finally {
+      if(!aDiv&&aText==='')rmDots();
+      streaming=false;
+      sendBtn.disabled=false;
+      scrollBot();
+    }
+  }
+
+  window.aiSuggest=function(text){
+    if(streaming)return;
+    inp.value=text;
+    panel.classList.add('open');
+    aiSend();
+  };
+  window.toggleAIPanel=toggleAIPanel;
+  window.aiSend=aiSend;
+})();
+</script>

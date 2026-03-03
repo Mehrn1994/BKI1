@@ -13,7 +13,23 @@ shared_files_bp = Blueprint('shared_files', __name__)
 
 SHARED_DIR = os.path.join(Config.BASE_DIR, 'data', 'shared_files')
 MAX_FILE_SIZE = 100 * 1024 * 1024  # 100 MB
-ALLOWED_EXTENSIONS = None  # No restriction - all file types allowed
+# Whitelist of safe file extensions - executables, scripts, and server-side files are blocked
+ALLOWED_EXTENSIONS = {
+    'pdf', 'xlsx', 'xls', 'csv', 'doc', 'docx', 'txt', 'rtf',
+    'png', 'jpg', 'jpeg', 'gif', 'webp', 'svg',
+    'zip', 'rar', '7z', 'tar', 'gz',
+    'ppt', 'pptx',
+    'mp4', 'mp3', 'wav',
+    'json', 'xml', 'yaml', 'yml',
+    'log', 'cfg', 'conf',
+}
+# Blocked dangerous extensions (executables, scripts, server-side code)
+BLOCKED_EXTENSIONS = {
+    'exe', 'bat', 'cmd', 'sh', 'ps1', 'vbs', 'js', 'ts', 'py', 'rb', 'php',
+    'asp', 'aspx', 'jsp', 'jar', 'war', 'ear', 'dll', 'so', 'dylib',
+    'msi', 'deb', 'rpm', 'apk', 'ipa', 'dmg', 'iso',
+    'html', 'htm', 'htaccess', 'cgi', 'pl',
+}
 
 
 def _get_file_info(filepath):
@@ -60,6 +76,12 @@ def upload_file():
             return jsonify({'status': 'error', 'error': 'No file selected'}), 400
 
         ext = file.filename.rsplit('.', 1)[-1].lower() if '.' in file.filename else ''
+
+        # Block dangerous file types
+        if ext in BLOCKED_EXTENSIONS:
+            return jsonify({'status': 'error', 'error': f'File type .{ext} is not allowed for security reasons'}), 400
+        if ext and ext not in ALLOWED_EXTENSIONS:
+            return jsonify({'status': 'error', 'error': f'File type .{ext} is not permitted. Allowed: documents, images, archives'}), 400
 
         # Check file size
         file.seek(0, 2)
