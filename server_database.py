@@ -5766,7 +5766,39 @@ def delete_translation(tid):
     except Exception as e:
         return jsonify({'status': 'error', 'error': str(e)}), 500
 
-# ==================== AI ASSISTANT (Claude-powered) ====================
+# ==================== AI ASSISTANT (Multi-Provider) ====================
+
+def _get_ai_config():
+    """Returns (provider, model, api_key, base_url).
+    Env vars:
+      AI_PROVIDER   = "anthropic" (default) | "openai"
+      ANTHROPIC_API_KEY — used when provider=anthropic
+      AI_API_KEY / OPENAI_API_KEY — used when provider=openai
+      AI_BASE_URL   = "http://localhost:11434/v1"  (Ollama default)
+      AI_MODEL      = model name override
+    """
+    provider = os.environ.get('AI_PROVIDER', 'anthropic').lower()
+    if provider == 'anthropic':
+        model = os.environ.get('AI_MODEL', 'claude-sonnet-4-6')
+        api_key = os.environ.get('ANTHROPIC_API_KEY', '')
+        base_url = None
+    else:
+        model = os.environ.get('AI_MODEL', 'llama3.2')
+        api_key = os.environ.get('AI_API_KEY') or os.environ.get('OPENAI_API_KEY') or 'ollama'
+        base_url = os.environ.get('AI_BASE_URL', 'http://localhost:11434/v1')
+    return provider, model, api_key, base_url
+
+
+def _tools_openai_fmt():
+    """Convert _AI_TOOLS (Anthropic format) → OpenAI function calling format."""
+    return [
+        {"type": "function", "function": {
+            "name": t["name"],
+            "description": t["description"],
+            "parameters": t["input_schema"]
+        }}
+        for t in _AI_TOOLS
+    ]
 
 _AI_SYSTEM_PROMPT = """شما دستیار هوشمند شبکه بانک کشاورزی ایران (BKI) هستید.
 You are the AI Network Assistant for Bank Keshavarzi Iran (BKI) IPAM Portal.
@@ -6020,9 +6052,26 @@ def _ai_run_tool(name, inp):
         return json.dumps({'error': str(e)})
 
 
+@app.route('/api/ai/config', methods=['GET'])
+def ai_config():
+    """Return current AI provider config (no secrets)."""
+    provider, model, api_key, base_url = _get_ai_config()
+    configured = bool(api_key and api_key not in ('', 'ollama'))
+    # For Ollama/local, just having a base_url means it may be configured
+    if provider == 'openai':
+        configured = True  # local models don't need a real key
+    return jsonify({
+        'provider': provider,
+        'model': model,
+        'base_url': base_url,
+        'configured': configured,
+        'has_key': bool(api_key)
+    })
+
+
 @app.route('/api/ai/chat', methods=['POST'])
 def ai_chat():
-    """AI chat with Claude (non-streaming, with tool use loop)."""
+    """Non-streaming AI chat with agentic tool-use loop. Supports Anthropic + OpenAI-compatible providers."""
     username = get_current_user()
     if not username:
         return jsonify({'error': 'Authentication required'}), 401
@@ -6032,51 +6081,91 @@ def ai_chat():
     if not messages:
         return jsonify({'error': 'No messages provided'}), 400
 
-    api_key = os.environ.get('ANTHROPIC_API_KEY')
-    if not api_key:
-        return jsonify({
-            'error': 'AI service not configured',
-            'hint': 'Set ANTHROPIC_API_KEY environment variable to enable AI assistant',
-            'demo': True
-        }), 503
+    provider, model, api_key, base_url = _get_ai_config()
 
+    # ---- Anthropic provider ----
+    if provider == 'anthropic':
+        if not api_key:
+            return jsonify({'error': 'Set ANTHROPIC_API_KEY to enable AI', 'demo': True}), 503
+        try:
+            import anthropic
+            client = anthropic.Anthropic(api_key=api_key)
+            cur = list(messages)
+            for _ in range(6):
+                resp = client.messages.create(
+                    model=model, max_tokens=2048, system=_AI_SYSTEM_PROMPT,
+                    tools=_AI_TOOLS, messages=cur)
+                if resp.stop_reason == 'tool_use':
+                    results = []
+                    for blk in resp.content:
+                        if blk.type == 'tool_use':
+                            results.append({'type': 'tool_result', 'tool_use_id': blk.id,
+                                            'content': _ai_run_tool(blk.name, blk.input)})
+                    cur.append({'role': 'assistant', 'content': resp.content})
+                    cur.append({'role': 'user', 'content': results})
+                else:
+                    text = ''.join(b.text for b in resp.content if hasattr(b, 'text'))
+                    return jsonify({'response': text,
+                                    'tokens': resp.usage.input_tokens + resp.usage.output_tokens,
+                                    'model': model, 'provider': 'anthropic'})
+            return jsonify({'error': 'Max iterations reached'}), 500
+        except ImportError:
+            return jsonify({'error': 'Run: pip install anthropic', 'demo': True}), 503
+        except Exception as e:
+            return jsonify({'error': str(e)}), 500
+
+    # ---- OpenAI-compatible provider (Ollama, LM Studio, OpenRouter, etc.) ----
     try:
-        import anthropic
-        client = anthropic.Anthropic(api_key=api_key)
-        current_messages = [m for m in messages]
+        import openai
+        client = openai.OpenAI(api_key=api_key, base_url=base_url)
+        # Build messages in OpenAI format (system message first)
+        oai_msgs = [{'role': 'system', 'content': _AI_SYSTEM_PROMPT}]
+        for m in messages:
+            oai_msgs.append({'role': m['role'], 'content': m['content']})
 
-        for _ in range(6):  # max agentic iterations
-            resp = client.messages.create(
-                model="claude-sonnet-4-6",
-                max_tokens=2048,
-                system=_AI_SYSTEM_PROMPT,
-                tools=_AI_TOOLS,
-                messages=current_messages
-            )
-            if resp.stop_reason == 'tool_use':
-                tool_results = []
-                for blk in resp.content:
-                    if blk.type == 'tool_use':
-                        result = _ai_run_tool(blk.name, blk.input)
-                        tool_results.append({'type': 'tool_result', 'tool_use_id': blk.id, 'content': result})
-                current_messages.append({'role': 'assistant', 'content': resp.content})
-                current_messages.append({'role': 'user', 'content': tool_results})
+        oai_tools = _tools_openai_fmt()
+        for _ in range(6):
+            kwargs = {'model': model, 'max_tokens': 2048, 'messages': oai_msgs}
+            try:
+                kwargs['tools'] = oai_tools
+                resp = client.chat.completions.create(**kwargs)
+            except Exception:
+                # Model may not support tools — retry without
+                kwargs.pop('tools', None)
+                resp = client.chat.completions.create(**kwargs)
+
+            choice = resp.choices[0]
+            if choice.finish_reason == 'tool_calls' and choice.message.tool_calls:
+                # Execute all tool calls
+                tool_calls_msg = {'role': 'assistant', 'content': choice.message.content or '',
+                                  'tool_calls': [
+                                      {'id': tc.id, 'type': 'function',
+                                       'function': {'name': tc.function.name, 'arguments': tc.function.arguments}}
+                                      for tc in choice.message.tool_calls
+                                  ]}
+                oai_msgs.append(tool_calls_msg)
+                for tc in choice.message.tool_calls:
+                    try:
+                        inp = json.loads(tc.function.arguments or '{}')
+                    except Exception:
+                        inp = {}
+                    result = _ai_run_tool(tc.function.name, inp)
+                    oai_msgs.append({'role': 'tool', 'tool_call_id': tc.id, 'content': result})
             else:
-                text = ''.join(blk.text for blk in resp.content if hasattr(blk, 'text'))
-                return jsonify({'response': text,
-                                'tokens': resp.usage.input_tokens + resp.usage.output_tokens})
+                text = choice.message.content or ''
+                tokens = getattr(resp.usage, 'total_tokens', 0) if resp.usage else 0
+                return jsonify({'response': text, 'tokens': tokens, 'model': model, 'provider': provider})
 
-        return jsonify({'error': 'Max AI iterations reached'}), 500
-
+        return jsonify({'error': 'Max iterations reached'}), 500
     except ImportError:
-        return jsonify({'error': 'anthropic package not installed. Run: pip install anthropic', 'demo': True}), 503
+        return jsonify({'error': 'Run: pip install openai', 'demo': True}), 503
     except Exception as e:
-        return jsonify({'error': f'AI error: {str(e)}'}), 500
+        return jsonify({'error': str(e)}), 500
 
 
 @app.route('/api/ai/stream', methods=['POST'])
 def ai_stream():
-    """Streaming AI chat via Server-Sent Events (SSE)."""
+    """Streaming AI chat via SSE. Supports Anthropic + OpenAI-compatible providers."""
     username = get_current_user()
     if not username:
         def _unauth():
@@ -6085,82 +6174,172 @@ def ai_stream():
 
     data = request.json or {}
     messages = data.get('messages', [])
-    api_key = os.environ.get('ANTHROPIC_API_KEY')
+    provider, model, api_key, base_url = _get_ai_config()
 
-    if not api_key:
+    _sse_headers = {'X-Accel-Buffering': 'no', 'Cache-Control': 'no-cache'}
+
+    # ---- Demo mode: no key for Anthropic ----
+    if provider == 'anthropic' and not api_key:
         def _demo():
-            demo_msg = "🤖 AI Assistant در حال Demo است. برای فعال‌سازی، ANTHROPIC_API_KEY را تنظیم کنید.\n\nTo enable the full AI assistant, set the ANTHROPIC_API_KEY environment variable and restart the server."
-            for char in demo_msg:
+            tips = (
+                "🤖 **AI Assistant - Demo Mode**\n\n"
+                "برای فعال‌سازی کامل، یکی از روش‌های زیر را انتخاب کنید:\n\n"
+                "**گزینه ۱ — Anthropic Claude (ابری):**\n"
+                "`export ANTHROPIC_API_KEY=\"sk-ant-...\"`\n\n"
+                "**گزینه ۲ — Ollama (آفلاین/محلی):**\n"
+                "`export AI_PROVIDER=openai`\n"
+                "`export AI_BASE_URL=http://localhost:11434/v1`\n"
+                "`export AI_MODEL=llama3.2`\n\n"
+                "**گزینه ۳ — LM Studio:**\n"
+                "`export AI_PROVIDER=openai`\n"
+                "`export AI_BASE_URL=http://localhost:1234/v1`\n\n"
+                "**گزینه ۴ — OpenRouter (ابری، چند مدل):**\n"
+                "`export AI_PROVIDER=openai`\n"
+                "`export AI_API_KEY=sk-or-...`\n"
+                "`export AI_BASE_URL=https://openrouter.ai/api/v1`\n"
+                "`export AI_MODEL=meta-llama/llama-3.3-70b-instruct`"
+            )
+            for char in tips:
                 yield f'data: {json.dumps({"text": char})}\n\n'
-                time.sleep(0.01)
+                time.sleep(0.008)
             yield f'data: {json.dumps({"done": True})}\n\n'
-        return Response(stream_with_context(_demo()), mimetype='text/event-stream',
-                        headers={'X-Accel-Buffering': 'no', 'Cache-Control': 'no-cache'})
+        return Response(stream_with_context(_demo()), mimetype='text/event-stream', headers=_sse_headers)
 
-    def _generate():
+    # ---- Anthropic streaming ----
+    def _anthropic_gen():
         try:
             import anthropic
             client = anthropic.Anthropic(api_key=api_key)
-            current_messages = list(messages)
-
-            for iteration in range(6):
-                tool_use_blocks = []
-                current_tool = None
-
+            cur = list(messages)
+            for _ in range(6):
+                tool_blocks = []
+                cur_tool = None
                 with client.messages.stream(
-                    model="claude-sonnet-4-6",
-                    max_tokens=2048,
-                    system=_AI_SYSTEM_PROMPT,
-                    tools=_AI_TOOLS,
-                    messages=current_messages
+                    model=model, max_tokens=2048, system=_AI_SYSTEM_PROMPT,
+                    tools=_AI_TOOLS, messages=cur
                 ) as stream:
                     for event in stream:
                         etype = type(event).__name__
                         if etype == 'ContentBlockStart':
                             cb = getattr(event, 'content_block', None)
                             if cb and getattr(cb, 'type', '') == 'tool_use':
-                                current_tool = {'id': cb.id, 'name': cb.name, 'raw_input': ''}
+                                cur_tool = {'id': cb.id, 'name': cb.name, 'raw_input': ''}
                                 yield f'data: {json.dumps({"tool_call": cb.name})}\n\n'
                         elif etype == 'ContentBlockDelta':
                             d = getattr(event, 'delta', None)
                             if d:
                                 if hasattr(d, 'text') and d.text:
                                     yield f'data: {json.dumps({"text": d.text})}\n\n'
-                                elif hasattr(d, 'partial_json') and current_tool:
-                                    current_tool['raw_input'] += d.partial_json
+                                elif hasattr(d, 'partial_json') and cur_tool:
+                                    cur_tool['raw_input'] += d.partial_json
                         elif etype == 'ContentBlockStop':
-                            if current_tool:
+                            if cur_tool:
                                 try:
-                                    current_tool['input'] = json.loads(current_tool['raw_input'] or '{}')
+                                    cur_tool['input'] = json.loads(cur_tool['raw_input'] or '{}')
                                 except Exception:
-                                    current_tool['input'] = {}
-                                tool_use_blocks.append(current_tool)
-                                current_tool = None
-
+                                    cur_tool['input'] = {}
+                                tool_blocks.append(cur_tool)
+                                cur_tool = None
                     final = stream.get_final_message()
 
                 if final.stop_reason == 'tool_use':
-                    tool_results = []
-                    for t in tool_use_blocks:
-                        result = _ai_run_tool(t['name'], t.get('input', {}))
-                        tool_results.append({'type': 'tool_result', 'tool_use_id': t['id'], 'content': result})
-                        yield f'data: {json.dumps({"tool_result": t["name"], "data_preview": result[:100]})}\n\n'
-                    current_messages.append({'role': 'assistant', 'content': final.content})
-                    current_messages.append({'role': 'user', 'content': tool_results})
+                    results = []
+                    for t in tool_blocks:
+                        res = _ai_run_tool(t['name'], t.get('input', {}))
+                        results.append({'type': 'tool_result', 'tool_use_id': t['id'], 'content': res})
+                        yield f'data: {json.dumps({"tool_result": t["name"], "data_preview": res[:100]})}\n\n'
+                    cur.append({'role': 'assistant', 'content': final.content})
+                    cur.append({'role': 'user', 'content': results})
                 else:
-                    yield f'data: {json.dumps({"done": True, "tokens": final.usage.input_tokens + final.usage.output_tokens})}\n\n'
+                    tokens = final.usage.input_tokens + final.usage.output_tokens
+                    yield f'data: {json.dumps({"done": True, "tokens": tokens, "model": model})}\n\n'
                     return
-
             yield f'data: {json.dumps({"done": True})}\n\n'
-
         except ImportError:
-            yield f'data: {json.dumps({"error": "anthropic package not installed. Run: pip install anthropic"})}\n\n'
+            yield f'data: {json.dumps({"error": "Run: pip install anthropic"})}\n\n'
         except Exception as e:
             yield f'data: {json.dumps({"error": str(e)})}\n\n'
 
-    return Response(stream_with_context(_generate()), mimetype='text/event-stream',
-                    headers={'X-Accel-Buffering': 'no', 'Cache-Control': 'no-cache',
-                             'Access-Control-Allow-Origin': '*'})
+    # ---- OpenAI-compatible streaming (Ollama, LM Studio, OpenRouter…) ----
+    def _openai_gen():
+        try:
+            import openai
+            client = openai.OpenAI(api_key=api_key, base_url=base_url)
+            oai_msgs = [{'role': 'system', 'content': _AI_SYSTEM_PROMPT}]
+            for m in messages:
+                oai_msgs.append({'role': m['role'], 'content': m['content']})
+
+            oai_tools = _tools_openai_fmt()
+            for _ in range(6):
+                # Accumulate tool calls across streamed chunks
+                tool_calls_buf = {}   # index → {id, name, args}
+                text_buf = ''
+                finish_reason = None
+
+                try:
+                    stream_kwargs = {'model': model, 'max_tokens': 2048,
+                                     'messages': oai_msgs, 'tools': oai_tools, 'stream': True}
+                    stream = client.chat.completions.create(**stream_kwargs)
+                except Exception:
+                    # Retry without tools if model doesn't support function calling
+                    stream_kwargs.pop('tools', None)
+                    stream = client.chat.completions.create(**stream_kwargs)
+
+                for chunk in stream:
+                    if not chunk.choices:
+                        continue
+                    delta = chunk.choices[0].delta
+                    finish_reason = chunk.choices[0].finish_reason or finish_reason
+
+                    if delta.content:
+                        text_buf += delta.content
+                        yield f'data: {json.dumps({"text": delta.content})}\n\n'
+
+                    if delta.tool_calls:
+                        for tc in delta.tool_calls:
+                            idx = tc.index
+                            if idx not in tool_calls_buf:
+                                tool_calls_buf[idx] = {'id': tc.id or '', 'name': '', 'args': ''}
+                                if tc.function and tc.function.name:
+                                    tool_calls_buf[idx]['name'] = tc.function.name
+                                    yield f'data: {json.dumps({"tool_call": tc.function.name})}\n\n'
+                            if tc.function:
+                                if tc.function.name and not tool_calls_buf[idx]['name']:
+                                    tool_calls_buf[idx]['name'] = tc.function.name
+                                    yield f'data: {json.dumps({"tool_call": tc.function.name})}\n\n'
+                                if tc.function.arguments:
+                                    tool_calls_buf[idx]['args'] += tc.function.arguments
+
+                if finish_reason == 'tool_calls' and tool_calls_buf:
+                    # Build assistant message with tool_calls
+                    tc_list = []
+                    for idx in sorted(tool_calls_buf.keys()):
+                        tc = tool_calls_buf[idx]
+                        tc_list.append({'id': tc['id'], 'type': 'function',
+                                        'function': {'name': tc['name'], 'arguments': tc['args']}})
+                    oai_msgs.append({'role': 'assistant', 'content': text_buf or '', 'tool_calls': tc_list})
+
+                    # Execute tools
+                    for tc in tc_list:
+                        try:
+                            inp = json.loads(tc['function']['arguments'] or '{}')
+                        except Exception:
+                            inp = {}
+                        res = _ai_run_tool(tc['function']['name'], inp)
+                        yield f'data: {json.dumps({"tool_result": tc["function"]["name"], "data_preview": res[:100]})}\n\n'
+                        oai_msgs.append({'role': 'tool', 'tool_call_id': tc['id'], 'content': res})
+                else:
+                    yield f'data: {json.dumps({"done": True, "model": model, "provider": provider})}\n\n'
+                    return
+
+            yield f'data: {json.dumps({"done": True})}\n\n'
+        except ImportError:
+            yield f'data: {json.dumps({"error": "Run: pip install openai"})}\n\n'
+        except Exception as e:
+            yield f'data: {json.dumps({"error": str(e)})}\n\n'
+
+    gen = _anthropic_gen if provider == 'anthropic' else _openai_gen
+    return Response(stream_with_context(gen()), mimetype='text/event-stream', headers=_sse_headers)
 
 
 # ==================== MAIN ====================
