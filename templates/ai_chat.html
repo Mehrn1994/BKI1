@@ -72,7 +72,7 @@
     <div class="ai-hdr-ico">🤖</div>
     <div class="ai-hdr-info">
       <div class="ai-hdr-title">دستیار هوشمند شبکه</div>
-      <div class="ai-hdr-sub">BKI Network AI Assistant</div>
+      <div class="ai-hdr-sub" id="aiModelLabel">BKI Network AI Assistant</div>
     </div>
     <button class="ai-hdr-close" onclick="toggleAIPanel()" title="بستن">×</button>
   </div>
@@ -113,12 +113,27 @@
   var streaming=false;
   var welcomeRemoved=false;
 
+  var aiCfg={provider:'anthropic',model:'claude-sonnet-4-6',configured:false};
+
+  function loadAIConfig(){
+    fetch('/api/ai/config').then(function(r){return r.json();}).then(function(cfg){
+      aiCfg=cfg;
+      var lbl=document.getElementById('aiModelLabel');
+      if(!lbl)return;
+      var provIcon={'anthropic':'☁️','openai':'💻'}[cfg.provider]||'🔧';
+      var modelShort=cfg.model.split('/').pop(); // strip org prefix for openrouter models
+      lbl.textContent=provIcon+' '+modelShort+(cfg.base_url&&cfg.provider==='openai'?' (local)':'');
+      lbl.title='Provider: '+cfg.provider+(cfg.base_url?' | '+cfg.base_url:'');
+    }).catch(function(){});
+  }
+
   function toggleAIPanel(){
     if(panel.classList.contains('open')){
       panel.classList.remove('open');
     } else {
       panel.classList.add('open');
       inp.focus();
+      loadAIConfig();
     }
   }
   document.getElementById('aiFloatBtn').addEventListener('click',toggleAIPanel);
