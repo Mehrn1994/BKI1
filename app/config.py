@@ -7,9 +7,37 @@ import os
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 
+def _get_or_create_secret_key():
+    """Get persistent secret key: env var → saved file → generate new and save."""
+    env_key = os.environ.get('BKI_SECRET_KEY')
+    if env_key:
+        return env_key
+    key_file = os.path.join(BASE_DIR, 'data', '.secret_key')
+    if os.path.exists(key_file):
+        try:
+            with open(key_file, 'r') as f:
+                key = f.read().strip()
+                if len(key) >= 32:
+                    return key
+        except Exception:
+            pass
+    # Generate new persistent key
+    import secrets as _sec
+    key = _sec.token_hex(32)
+    try:
+        os.makedirs(os.path.dirname(key_file), exist_ok=True)
+        with open(key_file, 'w') as f:
+            f.write(key)
+        # Restrict file permissions
+        os.chmod(key_file, 0o600)
+    except Exception:
+        pass
+    return key
+
+
 class Config:
-    # Flask
-    SECRET_KEY = os.environ.get('BKI_SECRET_KEY', os.urandom(32).hex())
+    # Flask - persistent secret key (survives restarts)
+    SECRET_KEY = _get_or_create_secret_key()
     MAX_CONTENT_LENGTH = 16 * 1024 * 1024  # 16MB max upload
 
     # Database
