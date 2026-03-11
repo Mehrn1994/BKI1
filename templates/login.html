@@ -957,7 +957,7 @@
         // ══════════════════════════════════════════
         // 3D FLOATING NETWORK CANVAS
         // ══════════════════════════════════════════
-        (function init3DNetwork() {
+        try { (function init3DNetwork() {
             const canvas = document.getElementById('netCanvas');
             const ctx = canvas.getContext('2d');
             let W, H;
@@ -1096,7 +1096,7 @@
             }
 
             frame();
-        })();
+        })(); } catch(e) { console.warn('3D canvas init error (non-critical):', e); }
 
         let selectedUser = null;
         let selectedUserColor = '';
@@ -1130,6 +1130,8 @@
         function openUserModal() {
             document.getElementById('userModal').classList.add('show');
             document.body.style.overflow = 'hidden';
+            // Always (re)load users when modal opens - guards against race conditions or IIFE errors
+            loadUsers();
         }
 
         function closeUserModal() {
@@ -1158,9 +1160,15 @@
         }
 
         // Load users
+        let _loadUsersInFlight = false;
         async function loadUsers() {
+            if (_loadUsersInFlight) return;
+            _loadUsersInFlight = true;
             try {
-                const response = await fetch('/api/users');
+                const ctrl = new AbortController();
+                const timer = setTimeout(() => ctrl.abort(), 8000); // 8s timeout
+                const response = await fetch('/api/users', { signal: ctrl.signal });
+                clearTimeout(timer);
 
                 if (!response.ok) {
                     throw new Error('HTTP Error: ' + response.status);
@@ -1186,14 +1194,17 @@
                 `}).join('');
 
             } catch (error) {
+                const msg = error.name === 'AbortError' ? 'سرور پاسخ نداد (timeout)' : error.message;
                 document.getElementById('usersGrid').innerHTML = `
                     <div class="loading-container">
                         <p style="font-size: 2.5rem; margin-bottom: 15px;">😕</p>
                         <p style="font-weight: 600; margin-bottom: 8px;">خطا در اتصال به سرور</p>
-                        <p style="font-size: 0.85rem; opacity: 0.7;">${escapeHtml(error.message)}</p>
-                        <button class="retry-btn" onclick="loadUsers()">🔄 تلاش مجدد</button>
+                        <p style="font-size: 0.85rem; opacity: 0.7;">${escapeHtml(msg)}</p>
+                        <button class="retry-btn" onclick="_loadUsersInFlight=false;loadUsers()">🔄 تلاش مجدد</button>
                     </div>
                 `;
+            } finally {
+                _loadUsersInFlight = false;
             }
         }
 
