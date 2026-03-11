@@ -70,6 +70,54 @@ canvas{display:block;width:100%;height:100%}
 .load span{font-size:10px;color:var(--t3)}
 @keyframes spin{to{transform:rotate(360deg)}}
 ::-webkit-scrollbar{width:3px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:rgba(148,163,184,0.15);border-radius:3px}
+
+/* ═══ 3D TILT MODE ═══ */
+#canvasWrap.tilt3d {
+    perspective: 1400px;
+}
+#canvasWrap.tilt3d canvas {
+    transform: rotateX(18deg) rotateY(-4deg) scale(0.92);
+    transform-origin: center center;
+    transform-style: preserve-3d;
+    transition: transform 0.6s cubic-bezier(.25,.8,.25,1);
+}
+.btn-3d.active {
+    background: rgba(34,211,238,0.15) !important;
+    border-color: rgba(34,211,238,0.6) !important;
+    color: #22d3ee !important;
+    box-shadow: 0 0 14px rgba(34,211,238,0.3);
+}
+
+/* ═══ SCAN LINE ═══ */
+.net-scan {
+    position: absolute;
+    left: 0; right: 0;
+    height: 2px;
+    pointer-events: none;
+    z-index: 10;
+    background: linear-gradient(90deg, transparent 0%, rgba(34,211,238,0.06) 20%, rgba(34,211,238,0.55) 50%, rgba(34,211,238,0.06) 80%, transparent 100%);
+    box-shadow: 0 0 10px rgba(34,211,238,0.4);
+    animation: netScan 9s linear infinite;
+    top: -2px;
+}
+@keyframes netScan {
+    0%   { top: -2px; opacity: 0; }
+    4%   { opacity: 1; }
+    96%  { opacity: 0.6; }
+    100% { top: 100%; opacity: 0; }
+}
+
+/* ═══ ANIMATED GRID PULSE ═══ */
+@keyframes gridPulse {
+    0%, 100% { opacity: 0.03; }
+    50%       { opacity: 0.07; }
+}
+
+/* ═══ NODE PING RING ═══ */
+@keyframes pingRing {
+    0%   { transform: scale(1);   opacity: 0.6; }
+    100% { transform: scale(2.8); opacity: 0; }
+}
 </style>
 </head>
 <body>
@@ -84,6 +132,7 @@ canvas{display:block;width:100%;height:100%}
         <span style="color:#34d399">🏦 شعبه+باجه+ATM+کیوسک: <b id="sBr" style="color:#34d399">0</b></span>
     </div>
     <button class="btn" onclick="resetAll()">&#8634; Reset</button>
+    <button class="btn btn-3d" id="btn3D" onclick="toggle3D(this)" title="حالت نمای سه‌بعدی">&#9641; 3D View</button>
     <a href="/nat-diagram" class="btn" style="border-color:rgba(251,191,36,0.4);color:#fbbf24" title="نمودار NAT دستگاه‌ها">&#9654; NAT Diagram</a>
     <a href="/" class="btn">&#8592; Home</a>
 </div>
@@ -107,6 +156,8 @@ canvas{display:block;width:100%;height:100%}
 <div class="main">
 <div id="canvasWrap">
     <canvas id="graphCanvas"></canvas>
+    <!-- Holographic scan line -->
+    <div class="net-scan"></div>
     <div id="tooltip"></div>
     <div class="legend">
         <div class="lt">DEVICES</div>
@@ -288,27 +339,50 @@ function fitView(){
 function getVis(){return nodes.filter(n=>{if(filter!=='all'&&n.category!==filter)return false;if(searchStr){const q=searchStr.toLowerCase();if(!n.id.toLowerCase().includes(q)&&!n.label.includes(searchStr)&&!(n.abbr||'').toLowerCase().includes(q))return false;}return true;});}
 function isNb(id){return selected?links.some(l=>(l.source===selected&&l.target===id)||(l.target===selected&&l.source===id)):false;}
 
+// ── STARS (generated once) ──
+const STARS=Array.from({length:180},()=>({x:Math.random()*4000-2000,y:Math.random()*3000-1500,r:Math.random()*1.2+.2,op:Math.random()*.5+.1,blink:Math.random()*Math.PI*2,bs:0.005+Math.random()*.015}));
+
 // ── DRAWING ──
 function drawBg(){
     ctx.fillStyle='#080c18';ctx.fillRect(0,0,W,H);
-    // Ambient orbs
-    [[0,0,350,'rgba(34,211,238,0.02)'],[500,400,400,'rgba(129,140,248,0.015)'],[200,600,300,'rgba(244,114,182,0.012)']].forEach(([x,y,r,c])=>{
+
+    // Stars (fixed-world, small dots)
+    const t=performance.now()/1000;
+    STARS.forEach(st=>{
+        const s=w2s(st.x,st.y);
+        if(s.x<-10||s.x>W+10||s.y<-10||s.y>H+10)return;
+        const op=st.op*(0.6+0.4*Math.sin(t*st.bs*60+st.blink));
+        ctx.beginPath();ctx.arc(s.x,s.y,st.r*Math.min(1,cam.z),0,Math.PI*2);
+        ctx.fillStyle=`rgba(148,163,184,${op})`;ctx.fill();
+    });
+
+    // Ambient orbs (larger, more vibrant)
+    [[0,0,400,'rgba(34,211,238,0.025)'],[500,400,450,'rgba(129,140,248,0.02)'],[200,600,320,'rgba(244,114,182,0.018)'],[-300,-200,280,'rgba(52,211,153,0.015)']].forEach(([x,y,r,c])=>{
         const s=w2s(x,y),gr=ctx.createRadialGradient(s.x,s.y,0,s.x,s.y,r*cam.z);gr.addColorStop(0,c);gr.addColorStop(1,'transparent');ctx.fillStyle=gr;ctx.fillRect(s.x-r*cam.z,s.y-r*cam.z,r*2*cam.z,r*2*cam.z);
     });
-    // Grid
-    ctx.strokeStyle='rgba(100,116,139,0.03)';ctx.lineWidth=.5;
+
+    // Grid (animated pulse opacity)
+    const gridOp=0.03+0.02*Math.sin(t*0.4);
+    ctx.strokeStyle=`rgba(100,116,139,${gridOp})`;ctx.lineWidth=.5;
     const gs=80,tl=s2w(0,0),br=s2w(W,H);ctx.beginPath();
     for(let x=Math.floor(tl.x/gs)*gs;x<=br.x;x+=gs){const s=w2s(x,0);ctx.moveTo(s.x,0);ctx.lineTo(s.x,H);}
     for(let y=Math.floor(tl.y/gs)*gs;y<=br.y;y+=gs){const s=w2s(0,y);ctx.moveTo(0,s.y);ctx.lineTo(W,s.y);}
     ctx.stroke();
-    // Separator line between Data Center zone (y<0) and Geographic map (y>=0)
+
+    // Separator line
     const sep=w2s(-500,0),sep2=w2s(4000,0);
     ctx.strokeStyle='rgba(34,211,238,0.08)';ctx.lineWidth=1;ctx.setLineDash([8,6]);
     ctx.beginPath();ctx.moveTo(sep.x,sep.y);ctx.lineTo(sep2.x,sep2.y);ctx.stroke();ctx.setLineDash([]);
-    // Label - dynamically positioned above core routers
+
+    // Label
     if(dcLabelPos.x!==0||dcLabelPos.y!==0){
         const lbl=w2s(dcLabelPos.x,dcLabelPos.y);
-        if(lbl.y>-100&&lbl.y<H+100){ctx.fillStyle='rgba(34,211,238,0.15)';ctx.font=`bold ${Math.max(16,24*cam.z)}px Inter`;ctx.textAlign='center';ctx.fillText('TEHRAN DATA CENTER',lbl.x,lbl.y);}
+        if(lbl.y>-100&&lbl.y<H+100){
+            // Glowing text
+            ctx.shadowColor='rgba(34,211,238,0.4)';ctx.shadowBlur=18;
+            ctx.fillStyle='rgba(34,211,238,0.18)';ctx.font=`bold ${Math.max(16,24*cam.z)}px Inter`;ctx.textAlign='center';ctx.fillText('TEHRAN DATA CENTER',lbl.x,lbl.y);
+            ctx.shadowBlur=0;
+        }
     }
 }
 
@@ -358,12 +432,35 @@ function drawPart(vis,t){
         const tt=p.t,x=(1-tt)*(1-tt)*a.x+2*(1-tt)*tt*cx+tt*tt*b.x,y=(1-tt)*(1-tt)*a.y+2*(1-tt)*tt*cy+tt*tt*b.y;
         const isSel=selected&&(l.source===selected||l.target===selected);
         const lc=LINK_COLORS[l.type]||'#22d3ee';
-        const sz=p.sz*cam.z*(isSel?1.8:1);
-        const gr=ctx.createRadialGradient(x,y,0,x,y,sz*4);
-        gr.addColorStop(0,isSel?hex2(lc,0.4):'rgba(34,211,238,0.15)');gr.addColorStop(1,'transparent');
-        ctx.fillStyle=gr;ctx.fillRect(x-sz*4,y-sz*4,sz*8,sz*8);
-        ctx.beginPath();ctx.arc(x,y,sz,0,Math.PI*2);
-        ctx.fillStyle=isSel?lc:'rgba(34,211,238,0.6)';ctx.globalAlpha=p.op*(isSel?1:.5);ctx.fill();ctx.globalAlpha=1;
+        const sz=p.sz*cam.z*(isSel?2.4:1.2);
+        const pulse=0.7+0.3*Math.sin(t*6+p.t*12);
+
+        // Large outer glow (link color)
+        const glowR=sz*(isSel?9:6);
+        const gr=ctx.createRadialGradient(x,y,0,x,y,glowR);
+        gr.addColorStop(0,hex2(lc,isSel?0.35:0.12));
+        gr.addColorStop(0.4,hex2(lc,isSel?0.12:0.04));
+        gr.addColorStop(1,'transparent');
+        ctx.fillStyle=gr;ctx.fillRect(x-glowR,y-glowR,glowR*2,glowR*2);
+
+        // Comet tail (draw backwards along path)
+        const tailLen=0.06;
+        const t0=Math.max(0,p.t-tailLen);
+        const tx=(1-t0)*(1-t0)*a.x+2*(1-t0)*t0*cx+t0*t0*b.x;
+        const ty=(1-t0)*(1-t0)*a.y+2*(1-t0)*t0*cy+t0*t0*b.y;
+        const tailGrad=ctx.createLinearGradient(tx,ty,x,y);
+        tailGrad.addColorStop(0,'transparent');
+        tailGrad.addColorStop(1,hex2(lc,isSel?0.7:0.35));
+        ctx.beginPath();ctx.moveTo(tx,ty);ctx.lineTo(x,y);
+        ctx.strokeStyle=tailGrad;ctx.lineWidth=sz*(isSel?2.5:1.8);ctx.stroke();
+
+        // Core dot
+        ctx.beginPath();ctx.arc(x,y,sz*pulse,0,Math.PI*2);
+        ctx.fillStyle=lc;ctx.globalAlpha=p.op*(isSel?1:0.75);ctx.fill();
+        // White center spark
+        ctx.beginPath();ctx.arc(x,y,sz*0.45,0,Math.PI*2);
+        ctx.fillStyle='rgba(255,255,255,0.9)';ctx.globalAlpha=p.op*(isSel?0.9:0.5)*pulse;ctx.fill();
+        ctx.globalAlpha=1;
     });
 }
 
@@ -377,11 +474,27 @@ function drawNodes(vis,t){
             if(cam.z>.15){ctx.fillStyle='rgba(148,163,184,0.3)';ctx.font=`${Math.max(10,12*cam.z)}px Inter`;ctx.textAlign='center';ctx.textBaseline='top';ctx.fillText(n.id,s.x,s.y+r*.6+6*cam.z);}
             return;
         }
-        // Pulse ring for core
+        // Pulse rings for core (enhanced 3D)
         if(n.category==='core-router'){
             const pu=Math.sin(t*2+n.pulse)*.5+.5;
-            ctx.beginPath();ctx.arc(s.x,s.y,r*(1.8+pu*.6),0,Math.PI*2);ctx.strokeStyle=`rgba(244,114,182,${.04+pu*.06})`;ctx.lineWidth=1.5;ctx.stroke();
-            ctx.beginPath();ctx.arc(s.x,s.y,r*(2.4+pu*.4),0,Math.PI*2);ctx.strokeStyle=`rgba(244,114,182,${.02+pu*.03})`;ctx.lineWidth=.8;ctx.stroke();
+            const pu2=Math.sin(t*1.5+n.pulse+1)*.5+.5;
+            // 3 expanding rings
+            [1.6+pu*.5, 2.2+pu*.4, 3.0+pu2*.3].forEach((rm,i)=>{
+                const op=[.08+pu*.08, .05+pu*.05, .025+pu2*.03][i];
+                ctx.beginPath();ctx.arc(s.x,s.y,r*rm,0,Math.PI*2);
+                ctx.strokeStyle=`rgba(244,114,182,${op})`;
+                ctx.lineWidth=[2,1.2,.7][i];
+                ctx.stroke();
+            });
+            // Shadow under core nodes (3D depth)
+            const sdGr=ctx.createRadialGradient(s.x,s.y+r*1.5,0,s.x,s.y+r*1.5,r*2.5);
+            sdGr.addColorStop(0,'rgba(244,114,182,0.12)');sdGr.addColorStop(1,'transparent');
+            ctx.fillStyle=sdGr;ctx.beginPath();ctx.ellipse(s.x,s.y+r*1.4,r*2,r*.5,0,0,Math.PI*2);ctx.fill();
+        }
+        if(n.category==='core-switch'){
+            const pu=Math.sin(t*1.8+n.pulse)*.5+.5;
+            ctx.beginPath();ctx.arc(s.x,s.y,r*(1.7+pu*.4),0,Math.PI*2);
+            ctx.strokeStyle=`rgba(129,140,248,${.06+pu*.06})`;ctx.lineWidth=1.5;ctx.stroke();
         }
         // Glow
         const glR=r*(isSel?3:isHov?2.5:1.8);
@@ -422,11 +535,36 @@ function drawNodes(vis,t){
     });
 }
 
+// ── 3D TILT TOGGLE ──
+function toggle3D(btn){
+    const wrap=document.getElementById('canvasWrap');
+    const isOn=wrap.classList.toggle('tilt3d');
+    btn.classList.toggle('active',isOn);
+    btn.textContent=isOn?'⬡ 2D View':'⬡ 3D View';
+}
+
+// ── CORNER PING PINGS (overlay DOM elements) ──
+let lastPingTime=0;
+function maybePingCore(t){
+    if(t-lastPingTime<4)return;
+    lastPingTime=t;
+    const cores=nodes.filter(n=>n.category==='core-router');
+    if(!cores.length)return;
+    const n=cores[Math.floor(Math.random()*cores.length)];
+    const s=w2s(n.wx,n.wy);
+    const ping=document.createElement('div');
+    ping.style.cssText=`position:absolute;left:${s.x}px;top:${s.y}px;width:0;height:0;border-radius:50%;border:2px solid rgba(244,114,182,0.8);pointer-events:none;z-index:5;transform:translate(-50%,-50%);animation:pingRing 1.2s ease-out forwards`;
+    document.getElementById('canvasWrap').appendChild(ping);
+    setTimeout(()=>ping.remove(),1300);
+}
+
 function animate(){
     const t=performance.now()/1000;
     cam.x+=(tCam.x-cam.x)*.1;cam.y+=(tCam.y-cam.y)*.1;cam.z+=(tCam.z-cam.z)*.1;
     const vis=getVis();drawBg();drawLinks(vis,t);drawPart(vis,t);drawNodes(vis,t);
-    // Debug: show selected node info
+    // Periodic ping rings on core nodes
+    maybePingCore(t);
+    // Debug selected
     if(selected){const sn=nodes.find(n=>n.id===selected);if(sn){const lc=links.filter(l=>l.source===selected||l.target===selected).length;ctx.fillStyle='rgba(253,224,71,0.9)';ctx.font='bold 11px Inter';ctx.textAlign='left';ctx.textBaseline='top';ctx.fillText(`Selected: ${selected} (${sn.category}) | Links: ${lc}`,10,H-20);}}
     requestAnimationFrame(animate);
 }

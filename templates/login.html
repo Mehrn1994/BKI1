@@ -652,6 +652,69 @@
 
         @keyframes spin { to { transform: rotate(360deg); } }
 
+        /* 3D Network Canvas */
+        #netCanvas {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            z-index: -1;
+            pointer-events: none;
+        }
+
+        /* Holographic Scan Line */
+        .scan-line {
+            position: fixed;
+            top: -3px; left: 0;
+            width: 100%; height: 3px;
+            background: linear-gradient(90deg, transparent 0%, rgba(0,229,255,0.05) 20%, rgba(0,229,255,0.9) 50%, rgba(0,229,255,0.05) 80%, transparent 100%);
+            z-index: 5;
+            pointer-events: none;
+            animation: scanDown 10s linear infinite;
+            box-shadow: 0 0 12px rgba(0,229,255,0.5);
+        }
+        @keyframes scanDown {
+            0%   { top: -3px; opacity: 0; }
+            3%   { opacity: 1; }
+            97%  { opacity: 1; }
+            100% { top: 100vh; opacity: 0; }
+        }
+
+        /* Corner HUD decorations */
+        .hud-corner {
+            position: fixed;
+            width: 60px; height: 60px;
+            z-index: 2;
+            pointer-events: none;
+            opacity: 0.4;
+        }
+        .hud-corner.tl { top: 16px; left: 16px; border-top: 2px solid var(--accent); border-left: 2px solid var(--accent); }
+        .hud-corner.tr { top: 16px; right: 16px; border-top: 2px solid var(--secondary); border-right: 2px solid var(--secondary); }
+        .hud-corner.bl { bottom: 16px; left: 16px; border-bottom: 2px solid var(--accent); border-left: 2px solid var(--accent); }
+        .hud-corner.br { bottom: 16px; right: 16px; border-bottom: 2px solid var(--secondary); border-right: 2px solid var(--secondary); }
+
+        /* Logo 3D tilt */
+        .logo-container {
+            transform-style: preserve-3d;
+            will-change: transform;
+        }
+
+        /* 3D Team Cards */
+        .team-card {
+            transform-style: preserve-3d;
+            will-change: transform;
+        }
+
+        /* Glitch title effect */
+        @keyframes glitch {
+            0%, 90%, 100% { text-shadow: 0 4px 25px rgba(0,0,0,0.3); transform: none; }
+            92% { text-shadow: 3px 0 0 rgba(0,229,255,0.8), -3px 0 0 rgba(233,30,99,0.8); transform: skewX(0.5deg); }
+            94% { text-shadow: -3px 0 0 rgba(0,229,255,0.8), 3px 0 0 rgba(233,30,99,0.8); transform: skewX(-0.5deg); }
+            96% { text-shadow: 0 4px 25px rgba(0,0,0,0.3); transform: none; }
+        }
+        .brand-title {
+            animation: glitch 8s ease-in-out infinite;
+        }
+
         .loading-container {
             text-align: center;
             padding: 40px 20px;
@@ -776,13 +839,22 @@
     <div class="bg-layer"></div>
     <div class="bg-overlay"></div>
 
+    <!-- 3D Network Canvas -->
+    <canvas id="netCanvas"></canvas>
+
     <!-- Floating Orbs -->
     <div class="orb orb-1"></div>
     <div class="orb orb-2"></div>
     <div class="orb orb-3"></div>
 
-    <!-- Particles -->
-    <div class="particles" id="particles"></div>
+    <!-- Holographic Scan Line -->
+    <div class="scan-line"></div>
+
+    <!-- HUD Corner Decorations -->
+    <div class="hud-corner tl"></div>
+    <div class="hud-corner tr"></div>
+    <div class="hud-corner bl"></div>
+    <div class="hud-corner br"></div>
 
     <!-- Main Content -->
     <div class="login-wrapper">
@@ -882,22 +954,149 @@
     </div>
 
     <script>
-        // Create particles
-        function createParticles() {
-            const container = document.getElementById('particles');
-            for (let i = 0; i < 30; i++) {
-                const particle = document.createElement('div');
-                particle.className = 'particle';
-                particle.style.left = Math.random() * 100 + '%';
-                particle.style.animationDuration = (Math.random() * 10 + 10) + 's';
-                particle.style.animationDelay = Math.random() * 15 + 's';
-                particle.style.width = (Math.random() * 6 + 2) + 'px';
-                particle.style.height = particle.style.width;
-                particle.style.opacity = Math.random() * 0.5 + 0.3;
-                container.appendChild(particle);
+        // ══════════════════════════════════════════
+        // 3D FLOATING NETWORK CANVAS
+        // ══════════════════════════════════════════
+        (function init3DNetwork() {
+            const canvas = document.getElementById('netCanvas');
+            const ctx = canvas.getContext('2d');
+            let W, H;
+            let mouseX = 0, mouseY = 0;
+            let rotX = 0, rotY = 0;
+            let tRotX = 0, tRotY = 0;
+
+            const COLORS = ['#00bcd4','#00e5ff','#e91e63','#ff4081','#ffffff'];
+            const NODE_COUNT = 90;
+
+            // Build nodes
+            const nodes = Array.from({length: NODE_COUNT}, () => ({
+                x: (Math.random() - 0.5) * 2200,
+                y: (Math.random() - 0.5) * 2200,
+                z: (Math.random() - 0.5) * 900,
+                vx: (Math.random() - 0.5) * 0.35,
+                vy: (Math.random() - 0.5) * 0.35,
+                vz: (Math.random() - 0.5) * 0.18,
+                r: Math.random() * 3.5 + 1,
+                col: COLORS[Math.floor(Math.random() * COLORS.length)],
+                pulse: Math.random() * Math.PI * 2,
+                pSpeed: 0.02 + Math.random() * 0.02,
+            }));
+
+            function resize() {
+                W = canvas.width  = window.innerWidth;
+                H = canvas.height = window.innerHeight;
             }
-        }
-        createParticles();
+            window.addEventListener('resize', resize);
+            resize();
+
+            // Mouse → subtle camera tilt
+            document.addEventListener('mousemove', e => {
+                mouseX = e.clientX;
+                mouseY = e.clientY;
+                tRotY = ((e.clientX / window.innerWidth)  - 0.5) * 0.35;
+                tRotX = ((e.clientY / window.innerHeight) - 0.5) * 0.22;
+            });
+
+            function project(x, y, z) {
+                const fov = 700;
+                const pz = fov + z;
+                const sc = fov / Math.max(pz, 0.1);
+                return { px: x * sc + W / 2, py: y * sc + H / 2, sc };
+            }
+
+            function rotateXY(x, y, z, rx, ry) {
+                // Rotate Y
+                let nx = x * Math.cos(ry) - z * Math.sin(ry);
+                let nz = x * Math.sin(ry) + z * Math.cos(ry);
+                // Rotate X
+                let ny = y * Math.cos(rx) - nz * Math.sin(rx);
+                nz     = y * Math.sin(rx) + nz * Math.cos(rx);
+                return [nx, ny, nz];
+            }
+
+            let autoRot = 0;
+            function frame() {
+                requestAnimationFrame(frame);
+                autoRot += 0.0008;
+                rotX += (tRotX - rotX) * 0.04;
+                rotY += (tRotY + autoRot - rotY) * 0.04;
+
+                ctx.clearRect(0, 0, W, H);
+
+                // Transform all nodes
+                const proj = nodes.map(n => {
+                    n.x += n.vx; n.y += n.vy; n.z += n.vz;
+                    n.pulse += n.pSpeed;
+                    if (Math.abs(n.x) > 1100) n.vx *= -1;
+                    if (Math.abs(n.y) > 1100) n.vy *= -1;
+                    if (Math.abs(n.z) >  450) n.vz *= -1;
+                    const [rx, ry, rz] = rotateXY(n.x, n.y, n.z, rotX, rotY);
+                    const p = project(rx, ry, rz);
+                    return { ...n, ...p, rz };
+                }).sort((a, b) => a.rz - b.rz);
+
+                // Draw connections
+                for (let i = 0; i < proj.length; i++) {
+                    for (let j = i + 1; j < proj.length; j++) {
+                        const a = proj[i], b = proj[j];
+                        const dx = a.px - b.px, dy = a.py - b.py;
+                        const dist = Math.sqrt(dx * dx + dy * dy);
+                        if (dist > 220) continue;
+                        const alpha = (1 - dist / 220) * 0.22 * Math.min(a.sc, b.sc) * 2;
+                        const grad = ctx.createLinearGradient(a.px, a.py, b.px, b.py);
+                        grad.addColorStop(0, a.col.replace('#', 'rgba(').replace(/(..)(..)(..)/, (m, r, g, b2) =>
+                            `${parseInt(r,16)},${parseInt(g,16)},${parseInt(b2,16)},${alpha}`).replace('rgba(','rgba(') + ')');
+                        // simpler approach:
+                        const rgb1 = hexToRgb(a.col), rgb2 = hexToRgb(b.col);
+                        ctx.beginPath();
+                        ctx.moveTo(a.px, a.py);
+                        ctx.lineTo(b.px, b.py);
+                        ctx.strokeStyle = `rgba(${rgb1.r},${rgb1.g},${rgb1.b},${alpha})`;
+                        ctx.lineWidth = 0.8 + alpha * 2;
+                        ctx.stroke();
+                    }
+                }
+
+                // Draw nodes
+                proj.forEach(n => {
+                    if (n.sc < 0.05) return;
+                    const r = Math.max(0.5, n.r * n.sc * 1.8);
+                    const pulse = (Math.sin(n.pulse) + 1) / 2;
+                    const alpha = Math.min(1, n.sc * 1.2 + 0.1);
+                    const rgb = hexToRgb(n.col);
+
+                    // Outer glow
+                    const gGlow = ctx.createRadialGradient(n.px, n.py, 0, n.px, n.py, r * 5);
+                    gGlow.addColorStop(0, `rgba(${rgb.r},${rgb.g},${rgb.b},${alpha * 0.15 * (0.5 + pulse * 0.5)})`);
+                    gGlow.addColorStop(1, 'transparent');
+                    ctx.fillStyle = gGlow;
+                    ctx.beginPath();
+                    ctx.arc(n.px, n.py, r * 5, 0, Math.PI * 2);
+                    ctx.fill();
+
+                    // Core dot
+                    ctx.beginPath();
+                    ctx.arc(n.px, n.py, r, 0, Math.PI * 2);
+                    ctx.fillStyle = `rgba(${rgb.r},${rgb.g},${rgb.b},${alpha})`;
+                    ctx.fill();
+
+                    // Specular highlight
+                    ctx.beginPath();
+                    ctx.arc(n.px - r * 0.3, n.py - r * 0.3, r * 0.4, 0, Math.PI * 2);
+                    ctx.fillStyle = `rgba(255,255,255,${alpha * 0.5})`;
+                    ctx.fill();
+                });
+            }
+
+            function hexToRgb(hex) {
+                const r = parseInt(hex.slice(1, 3), 16);
+                const g = parseInt(hex.slice(3, 5), 16);
+                const b = parseInt(hex.slice(5, 7), 16);
+                return { r, g, b };
+            }
+
+            frame();
+        })();
 
         let selectedUser = null;
         let selectedUserColor = '';
@@ -1142,6 +1341,75 @@
                 }
             }
         });
+
+        // ══════════════════════════════════════════
+        // MOUSE PARALLAX - Logo 3D Tilt
+        // ══════════════════════════════════════════
+        (function initParallax() {
+            const logo = document.querySelector('.logo-container');
+            let lRotX = 0, lRotY = 0;
+
+            document.addEventListener('mousemove', e => {
+                const cx = window.innerWidth  / 2;
+                const cy = window.innerHeight / 2;
+                const dx = (e.clientX - cx) / cx;
+                const dy = (e.clientY - cy) / cy;
+                lRotX += (-dy * 18 - lRotX) * 0.08;
+                lRotY += ( dx * 18 - lRotY) * 0.08;
+            });
+
+            function logoTilt() {
+                requestAnimationFrame(logoTilt);
+                if (!logo) return;
+                logo.style.transform = `perspective(600px) rotateX(${lRotX}deg) rotateY(${lRotY}deg)`;
+            }
+            logoTilt();
+
+            // Orb parallax layers
+            const orbs = document.querySelectorAll('.orb');
+            document.addEventListener('mousemove', e => {
+                const px = (e.clientX / window.innerWidth  - 0.5) * 2;
+                const py = (e.clientY / window.innerHeight - 0.5) * 2;
+                orbs.forEach((orb, i) => {
+                    const depth = [0.03, 0.05, 0.02][i] || 0.03;
+                    orb.style.transform = `translate(${px * 40 * depth * 100}px, ${py * 40 * depth * 100}px)`;
+                });
+            });
+        })();
+
+        // ══════════════════════════════════════════
+        // TEAM CARD 3D Tilt on Hover
+        // ══════════════════════════════════════════
+        function apply3DTilt(card) {
+            card.addEventListener('mousemove', e => {
+                const rect = card.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+                const cx = rect.width  / 2;
+                const cy = rect.height / 2;
+                const rx = -((y - cy) / cy) * 12;
+                const ry =  ((x - cx) / cx) * 12;
+                card.style.transform = `perspective(600px) rotateX(${rx}deg) rotateY(${ry}deg) translateY(-6px)`;
+            });
+            card.addEventListener('mouseleave', () => {
+                card.style.transform = '';
+            });
+        }
+
+        // Apply to existing + future cards
+        function applyCardEffects() {
+            document.querySelectorAll('.team-card').forEach(c => {
+                if (!c.dataset.tilt3d) {
+                    c.dataset.tilt3d = '1';
+                    apply3DTilt(c);
+                }
+            });
+        }
+
+        // Observe team grid for new cards
+        const gridObs = new MutationObserver(applyCardEffects);
+        const teamGrid = document.getElementById('usersGrid');
+        if (teamGrid) gridObs.observe(teamGrid, { childList: true, subtree: true });
     </script>
 </body>
 </html>
