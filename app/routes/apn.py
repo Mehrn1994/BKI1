@@ -236,15 +236,15 @@ def free_mali_point():
             branch_name, ip_wan = point[0], point[1]
             updates = []
             cursor.execute("""
-                UPDATE apn_mali SET username=NULL, branch_name=NULL, province=NULL,
-                type=NULL, lan_ip=NULL, reservation_date=NULL WHERE id=?
+                UPDATE apn_mali SET username=NULL, branch_name=NULL, branch_name_fa=NULL,
+                province=NULL, province_fa=NULL, type=NULL, lan_ip=NULL, reservation_date=NULL WHERE id=?
             """, (point_id,))
             updates.append(f'APN Mali IP released: {ip_wan}')
 
             cursor.execute("""
                 UPDATE tunnel_mali SET status=NULL, username=NULL, branch_name=NULL,
-                reservation_date=NULL, description=NULL, destination_ip=NULL
-                WHERE destination_ip=?
+                branch_name_fa=NULL, reservation_date=NULL, description=NULL, description_fa=NULL,
+                destination_ip=NULL WHERE destination_ip=?
             """, (ip_wan,))
             if cursor.rowcount > 0:
                 updates.append('Associated tunnel released')
@@ -275,14 +275,15 @@ def free_int_point():
             branch_name, ip_wan_apn = point[0], point[1]
             updates = []
             cursor.execute("""
-                UPDATE apn_ips SET username=NULL, branch_name=NULL, province=NULL,
-                type=NULL, lan_ip=NULL, reservation_date=NULL WHERE id=?
+                UPDATE apn_ips SET username=NULL, branch_name=NULL, branch_name_fa=NULL,
+                province=NULL, province_fa=NULL, type=NULL, lan_ip=NULL, reservation_date=NULL WHERE id=?
             """, (point_id,))
             updates.append(f'APN INT IP released: {ip_wan_apn}')
 
             cursor.execute("""
                 UPDATE tunnel200_ips SET status=NULL, username=NULL, branch_name=NULL,
-                reservation_date=NULL, description=NULL WHERE branch_name=?
+                branch_name_fa=NULL, reservation_date=NULL, description=NULL, description_fa=NULL
+                WHERE branch_name=?
             """, (branch_name,))
             if cursor.rowcount > 0:
                 updates.append('Associated Tunnel200 released')

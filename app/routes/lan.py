@@ -234,8 +234,11 @@ def reserve_lan_ip():
         if lan_ip and not octet2:
             parts = lan_ip.replace('/24', '').split('.')
             if len(parts) >= 3:
-                octet2 = int(parts[1])
-                octet3 = int(parts[2])
+                try:
+                    octet2 = int(parts[1])
+                    octet3 = int(parts[2])
+                except (ValueError, IndexError):
+                    return jsonify({'status': 'error', 'message': 'Invalid IP format'}), 400
         if not octet2 or not octet3 or not username:
             return jsonify({'status': 'error', 'message': 'Incomplete data'}), 400
         if not validate_octet(octet2) or not validate_octet(octet3):
@@ -301,12 +304,16 @@ def release_lan():
         parts = lan_ip.replace('/24', '').split('.')
         if len(parts) < 3:
             return jsonify({'status': 'error', 'message': 'Invalid IP'}), 400
-        octet2, octet3 = int(parts[1]), int(parts[2])
+        try:
+            octet2, octet3 = int(parts[1]), int(parts[2])
+        except (ValueError, IndexError):
+            return jsonify({'status': 'error', 'message': 'Invalid IP format'}), 400
         username = data.get('username', 'unknown')
 
         with get_db_transaction() as conn:
             cursor = conn.cursor()
-            cursor.execute("UPDATE lan_ips SET username=NULL, reservation_date=NULL, status='Free' WHERE octet2=? AND octet3=?", (octet2, octet3))
+            cursor.execute("""UPDATE lan_ips SET username=NULL, reservation_date=NULL, branch_name=NULL,
+                branch_name_fa=NULL, province_fa=NULL, status='Free' WHERE octet2=? AND octet3=?""", (octet2, octet3))
             cursor.execute("DELETE FROM reserved_ips WHERE octet2=? AND octet3=?", (octet2, octet3))
 
         log_audit('release_lan', f'{lan_ip}', username, 'lan', ip_address=request.remote_addr)
@@ -326,16 +333,21 @@ def release_used_lan():
         if lan_ip and not octet2:
             parts = lan_ip.replace('/24', '').split('.')
             if len(parts) >= 3:
-                octet2, octet3 = int(parts[1]), int(parts[2])
+                try:
+                    octet2, octet3 = int(parts[1]), int(parts[2])
+                except (ValueError, IndexError):
+                    return jsonify({'status': 'error', 'message': 'Invalid IP format'}), 400
         if not octet2 or not octet3:
             return jsonify({'status': 'error', 'message': 'Invalid IP'}), 400
 
         with get_db_transaction() as conn:
             cursor = conn.cursor()
             if lan_id:
-                cursor.execute("UPDATE lan_ips SET username=NULL, reservation_date=NULL, branch_name=NULL, status='Free' WHERE id=?", (lan_id,))
+                cursor.execute("""UPDATE lan_ips SET username=NULL, reservation_date=NULL, branch_name=NULL,
+                    branch_name_fa=NULL, province_fa=NULL, status='Free' WHERE id=?""", (lan_id,))
             else:
-                cursor.execute("UPDATE lan_ips SET username=NULL, reservation_date=NULL, branch_name=NULL, status='Free' WHERE octet2=? AND octet3=?", (octet2, octet3))
+                cursor.execute("""UPDATE lan_ips SET username=NULL, reservation_date=NULL, branch_name=NULL,
+                    branch_name_fa=NULL, province_fa=NULL, status='Free' WHERE octet2=? AND octet3=?""", (octet2, octet3))
             cursor.execute("DELETE FROM reserved_ips WHERE octet2=? AND octet3=?", (octet2, octet3))
 
         log_audit('release_lan', f'10.{octet2}.{octet3}.0', data.get('username', 'unknown'), 'lan',
@@ -498,12 +510,20 @@ def bulk_reserve_lan():
                 if row and row['status'] and row['status'].lower() in ('reserved', 'used'):
                     results.append({'ip': f'10.{octet2}.{octet3}.0/24', 'status': 'skip', 'message': 'Already reserved'})
                     continue
-                cursor.execute("UPDATE lan_ips SET username=?, reservation_date=?, branch_name=?, status='Reserved' WHERE octet2=? AND octet3=?",
-                               (username, now.strftime('%Y-%m-%d'), branch, octet2, octet3))
+                branch_fa  = _tr(branch)      if branch  else None
+                prov_fa    = _tr_prov(province) if province else None
                 cursor.execute("""
-                    INSERT INTO reserved_ips (province, octet2, octet3, branch_name, username, reservation_date, expiry_date, status)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, 'reserved')
-                """, (province, octet2, octet3, branch, username, now.strftime('%Y-%m-%d'), expiry.strftime('%Y-%m-%d')))
+                    UPDATE lan_ips SET username=?, reservation_date=?, branch_name=?,
+                        branch_name_fa=COALESCE(?, branch_name_fa),
+                        province_fa=COALESCE(?, province_fa), status='Reserved'
+                    WHERE octet2=? AND octet3=?
+                """, (username, now.strftime('%Y-%m-%d'), branch, branch_fa, prov_fa, octet2, octet3))
+                cursor.execute("""
+                    INSERT INTO reserved_ips (province, octet2, octet3, branch_name, branch_name_fa,
+                        province_fa, username, reservation_date, expiry_date, status)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'reserved')
+                """, (province, octet2, octet3, branch, branch_fa, prov_fa,
+                      username, now.strftime('%Y-%m-%d'), expiry.strftime('%Y-%m-%d')))
                 results.append({'ip': f'10.{octet2}.{octet3}.0/24', 'status': 'ok'})
 
         log_audit('bulk_reserve_lan', f'{len([r for r in results if r["status"]=="ok"])} IPs reserved',
@@ -529,8 +549,12 @@ def bulk_release_lan():
             for ip_str in ips:
                 parts = ip_str.replace('/24', '').split('.')
                 if len(parts) >= 3:
-                    o2, o3 = int(parts[1]), int(parts[2])
-                    cursor.execute("UPDATE lan_ips SET username=NULL, reservation_date=NULL, branch_name=NULL, status='Free' WHERE octet2=? AND octet3=?", (o2, o3))
+                    try:
+                        o2, o3 = int(parts[1]), int(parts[2])
+                    except (ValueError, IndexError):
+                        continue
+                    cursor.execute("""UPDATE lan_ips SET username=NULL, reservation_date=NULL, branch_name=NULL,
+                        branch_name_fa=NULL, province_fa=NULL, status='Free' WHERE octet2=? AND octet3=?""", (o2, o3))
                     cursor.execute("DELETE FROM reserved_ips WHERE octet2=? AND octet3=?", (o2, o3))
                     released += 1
 

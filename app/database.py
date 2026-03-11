@@ -135,6 +135,35 @@ def init_tables():
         created_by TEXT DEFAULT 'System', size_bytes INTEGER,
         backup_type TEXT DEFAULT 'manual')""")
 
+    # Add _fa (Persian translation) columns to all relevant tables (idempotent)
+    _FA_ALTERS = [
+        ('reserved_ips',       'branch_name_fa', 'TEXT'),
+        ('reserved_ips',       'province_fa',    'TEXT'),
+        ('lan_ips',            'branch_name_fa', 'TEXT'),
+        ('lan_ips',            'province_fa',    'TEXT'),
+        ('apn_ips',            'branch_name_fa', 'TEXT'),
+        ('apn_ips',            'province_fa',    'TEXT'),
+        ('apn_mali',           'branch_name_fa', 'TEXT'),
+        ('apn_mali',           'province_fa',    'TEXT'),
+        ('intranet_tunnels',   'tunnel_name_fa', 'TEXT'),
+        ('intranet_tunnels',   'description_fa', 'TEXT'),
+        ('intranet_tunnels',   'province_fa',    'TEXT'),
+        ('vpls_tunnels',       'branch_name_fa', 'TEXT'),
+        ('vpls_tunnels',       'description_fa', 'TEXT'),
+        ('vpls_tunnels',       'province_fa',    'TEXT'),
+        ('ptmp_connections',   'branch_name_fa', 'TEXT'),
+        ('ptmp_connections',   'province_fa',    'TEXT'),
+        ('tunnel_mali',        'branch_name_fa', 'TEXT'),
+        ('tunnel_mali',        'description_fa', 'TEXT'),
+        ('tunnel200_ips',      'branch_name_fa', 'TEXT'),
+        ('tunnel200_ips',      'description_fa', 'TEXT'),
+    ]
+    for tbl, col, typ in _FA_ALTERS:
+        try:
+            cursor.execute(f"ALTER TABLE {tbl} ADD COLUMN {col} {typ}")
+        except Exception:
+            pass  # Column already exists - safe to ignore
+
     # Create all indexes
     _create_indexes(cursor)
 
