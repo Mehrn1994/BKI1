@@ -139,32 +139,46 @@ def delete_service():
 
             if table == 'lan_ips':
                 octet2, octet3 = row['octet2'], row['octet3']
-                cursor.execute("UPDATE lan_ips SET username=NULL, reservation_date=NULL, branch_name=NULL, status='Free', notes=NULL, wan_ip=NULL WHERE id=?", (record_id,))
+                cursor.execute("""UPDATE lan_ips SET username=NULL, reservation_date=NULL, branch_name=NULL,
+                    branch_name_fa=NULL, province_fa=NULL, status='Free', notes=NULL, wan_ip=NULL WHERE id=?""", (record_id,))
                 cursor.execute("DELETE FROM reserved_ips WHERE octet2=? AND octet3=?", (octet2, octet3))
                 log_audit('delete_service', f"LAN IP: 10.{octet2}.{octet3}.0/24", username, 'service', table, record_id, ip_address=request.remote_addr)
             elif table == 'apn_mali':
                 ip = row['ip_wan'] or ''
-                cursor.execute("UPDATE apn_mali SET username=NULL, branch_name=NULL, province=NULL, type=NULL, lan_ip=NULL, reservation_date=NULL WHERE id=?", (record_id,))
+                cursor.execute("""UPDATE apn_mali SET username=NULL, branch_name=NULL, branch_name_fa=NULL,
+                    province=NULL, province_fa=NULL, type=NULL, lan_ip=NULL, reservation_date=NULL WHERE id=?""", (record_id,))
                 if ip:
-                    cursor.execute("UPDATE tunnel_mali SET status=NULL, username=NULL, branch_name=NULL, reservation_date=NULL, description=NULL, destination_ip=NULL WHERE destination_ip=?", (ip,))
+                    cursor.execute("""UPDATE tunnel_mali SET status=NULL, username=NULL, branch_name=NULL,
+                        branch_name_fa=NULL, reservation_date=NULL, description=NULL, description_fa=NULL,
+                        destination_ip=NULL WHERE destination_ip=?""", (ip,))
                 log_audit('delete_service', f"APN Mali: {ip}", username, 'service', table, record_id, ip_address=request.remote_addr)
             elif table == 'apn_ips':
                 branch = row['branch_name'] or ''
-                cursor.execute("UPDATE apn_ips SET username=NULL, branch_name=NULL, province=NULL, type=NULL, lan_ip=NULL, reservation_date=NULL WHERE id=?", (record_id,))
+                cursor.execute("""UPDATE apn_ips SET username=NULL, branch_name=NULL, branch_name_fa=NULL,
+                    province=NULL, province_fa=NULL, type=NULL, lan_ip=NULL, reservation_date=NULL WHERE id=?""", (record_id,))
                 if branch:
-                    cursor.execute("UPDATE tunnel200_ips SET status=NULL, username=NULL, branch_name=NULL, reservation_date=NULL, description=NULL WHERE branch_name=?", (branch,))
+                    cursor.execute("""UPDATE tunnel200_ips SET status=NULL, username=NULL, branch_name=NULL,
+                        branch_name_fa=NULL, reservation_date=NULL, description=NULL, description_fa=NULL
+                        WHERE branch_name=?""", (branch,))
                 log_audit('delete_service', f"APN INT: {branch}", username, 'service', table, record_id, ip_address=request.remote_addr)
             elif table == 'intranet_tunnels':
-                cursor.execute("UPDATE intranet_tunnels SET status='Free', reserved_by=NULL, reserved_at=NULL, tunnel_name=NULL, description=NULL, ip_lan=NULL, ip_intranet=NULL WHERE id=?", (record_id,))
+                cursor.execute("""UPDATE intranet_tunnels SET status='Free', reserved_by=NULL, reserved_at=NULL,
+                    tunnel_name=NULL, tunnel_name_fa=NULL, description=NULL, description_fa=NULL,
+                    province_fa=NULL, ip_lan=NULL, ip_intranet=NULL WHERE id=?""", (record_id,))
                 log_audit('delete_service', f"Intranet: {row['tunnel_name'] or ''}", username, 'service', table, record_id, ip_address=request.remote_addr)
             elif table == 'vpls_tunnels':
-                cursor.execute("UPDATE vpls_tunnels SET status='Free', username=NULL, branch_name=NULL, tunnel_name=NULL, description=NULL, wan_ip=NULL, tunnel_dest=NULL, reservation_date=NULL WHERE id=?", (record_id,))
+                cursor.execute("""UPDATE vpls_tunnels SET status='Free', username=NULL, branch_name=NULL,
+                    branch_name_fa=NULL, tunnel_name=NULL, description=NULL, description_fa=NULL,
+                    province_fa=NULL, wan_ip=NULL, tunnel_dest=NULL, reservation_date=NULL WHERE id=?""", (record_id,))
                 log_audit('delete_service', f"VPLS: {row['branch_name'] or ''}", username, 'service', table, record_id, ip_address=request.remote_addr)
             elif table == 'tunnel_mali':
-                cursor.execute("UPDATE tunnel_mali SET status=NULL, username=NULL, branch_name=NULL, reservation_date=NULL, description=NULL, destination_ip=NULL WHERE id=?", (record_id,))
+                cursor.execute("""UPDATE tunnel_mali SET status=NULL, username=NULL, branch_name=NULL,
+                    branch_name_fa=NULL, reservation_date=NULL, description=NULL, description_fa=NULL,
+                    destination_ip=NULL WHERE id=?""", (record_id,))
                 log_audit('delete_service', f"Tunnel Mali: {row['branch_name'] or ''}", username, 'service', table, record_id, ip_address=request.remote_addr)
             elif table == 'tunnel200_ips':
-                cursor.execute("UPDATE tunnel200_ips SET status=NULL, username=NULL, branch_name=NULL, reservation_date=NULL, description=NULL WHERE id=?", (record_id,))
+                cursor.execute("""UPDATE tunnel200_ips SET status=NULL, username=NULL, branch_name=NULL,
+                    branch_name_fa=NULL, reservation_date=NULL, description=NULL, description_fa=NULL WHERE id=?""", (record_id,))
                 log_audit('delete_service', f"Tunnel200: {row['branch_name'] or ''}", username, 'service', table, record_id, ip_address=request.remote_addr)
             elif table == 'ptmp_connections':
                 cursor.execute("DELETE FROM ptmp_connections WHERE id=?", (record_id,))

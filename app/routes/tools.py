@@ -76,7 +76,7 @@ def ping_lan_ip():
                 octet2, octet3 = int(parts[1]), int(parts[2])
         if not octet2 or not octet3:
             return jsonify({'reachable': False, 'message': 'Invalid parameters'})
-        ping_ip = f"10.{octet2}.254.{octet3}"
+        ping_ip = f"10.{octet2}.{octet3}.254"
         if platform.system().lower() == 'windows':
             cmd = ['ping', '-n', '2', '-w', '2000', ping_ip]
         else:

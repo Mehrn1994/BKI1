@@ -310,16 +310,22 @@ def reserve_tunnel200():
         now = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         username = data.get('username', '')
 
+        _bn200    = data.get('branch_name', '')
+        _desc200  = data.get('description', f"APN-INT-{_bn200}")
+        _bn200_fa = _tr(_bn200)    if _bn200   else None
+        _desc200_fa = _tr(_desc200) if _desc200 else None
+
         with get_db_transaction() as conn:
             cursor = conn.cursor()
             cursor.execute("""
                 UPDATE tunnel200_ips SET status='Reserved', username=?, branch_name=?,
-                    tunnel_number=?, interface_name=?, description=?, reservation_date=?
+                    branch_name_fa=COALESCE(?, branch_name_fa),
+                    tunnel_number=?, interface_name=?, description=?,
+                    description_fa=COALESCE(?, description_fa), reservation_date=?
                 WHERE hub_ip=? AND branch_ip=?
-            """, (username, data.get('branch_name', ''), data.get('tunnel_number', ''),
+            """, (username, _bn200, _bn200_fa, data.get('tunnel_number', ''),
                   data.get('interface_name', f"Tunnel{data.get('tunnel_number', '')}"),
-                  data.get('description', f"APN-INT-{data.get('branch_name', '')}"),
-                  now, data.get('hub_ip'), data.get('branch_ip')))
+                  _desc200, _desc200_fa, now, data.get('hub_ip'), data.get('branch_ip')))
 
         log_audit('reserve_tunnel200', f"{data.get('hub_ip')}/{data.get('branch_ip')}", username, 'tunnel200',
                   ip_address=request.remote_addr)
