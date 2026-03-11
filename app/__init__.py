@@ -112,6 +112,17 @@ def create_app():
     # Auto-import PTMP on first run
     _check_ptmp_import()
 
+    # Run FA column migration (idempotent - adds _fa columns and translates existing data)
+    try:
+        from app.utils.db_fa_migrate import run_migration
+        summary = run_migration(Config.DB_PATH)
+        added = sum(len(v['added_cols']) for v in summary.values())
+        translated = sum(v['rows_translated'] for v in summary.values())
+        if added or translated:
+            print(f"FA migration: {added} columns added, {translated} rows translated")
+    except Exception as e:
+        print(f"FA migration skipped: {e}")
+
     return app
 
 

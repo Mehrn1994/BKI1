@@ -5,6 +5,11 @@ from flask import Blueprint, jsonify, request
 
 from app.database import get_db, get_db_readonly, get_db_transaction, log_audit
 from app.security import sanitize_error
+try:
+    from app.utils.translator import translate as _tr, translate_province as _tr_prov
+except Exception:
+    def _tr(x, **kw): return x
+    def _tr_prov(x): return x
 
 apn_bp = Blueprint('apn', __name__)
 
@@ -85,11 +90,16 @@ def reserve_ips():
                     updates.append(f"LAN IP {lan_ip} activated")
 
             if apn_ip:
+                _bn_fa = _tr(branch_name) if branch_name else None
+                _pv_fa = _tr_prov(province) if province else None
                 cursor.execute("""
                     UPDATE apn_ips SET username=?, reservation_date=?, branch_name=?,
-                        province=COALESCE(?, province), type=COALESCE(?, type), lan_ip=COALESCE(?, lan_ip)
+                        branch_name_fa=COALESCE(?, branch_name_fa),
+                        province=COALESCE(?, province),
+                        province_fa=COALESCE(?, province_fa),
+                        type=COALESCE(?, type), lan_ip=COALESCE(?, lan_ip)
                     WHERE ip_wan_apn=?
-                """, (username, now, branch_name, province, ip_type, lan_ip, apn_ip))
+                """, (username, now, branch_name, _bn_fa, province, _pv_fa, ip_type, lan_ip, apn_ip))
                 updates.append(f"APN IP {apn_ip} reserved")
 
             if branch_name and not lan_ip:
@@ -131,11 +141,16 @@ def reserve_mali_ips():
         with get_db_transaction() as conn:
             cursor = conn.cursor()
             if apn_ip:
+                _bn_fa2 = _tr(branch_name) if branch_name else None
+                _pv_fa2 = _tr_prov(province) if province else None
                 cursor.execute("""
                     UPDATE apn_mali SET username=?, reservation_date=?, branch_name=?,
-                        province=COALESCE(?, province), type=?, lan_ip=COALESCE(?, lan_ip)
+                        branch_name_fa=COALESCE(?, branch_name_fa),
+                        province=COALESCE(?, province),
+                        province_fa=COALESCE(?, province_fa),
+                        type=?, lan_ip=COALESCE(?, lan_ip)
                     WHERE ip_wan=?
-                """, (username, now, branch_name, province, node_type, lan_ip, apn_ip))
+                """, (username, now, branch_name, _bn_fa2, province, _pv_fa2, node_type, lan_ip, apn_ip))
                 updates.append(f"APN Mali IP {apn_ip} reserved")
 
             if tunnel_id:

@@ -9,6 +9,25 @@ from flask import Blueprint, jsonify, request, Response
 from app.database import get_db_readonly, log_audit
 from app.security import validate_host, sanitize_output, sanitize_error
 
+try:
+    from app.utils.translator import translate as _tr, translate_province as _tr_prov
+
+    def _is_persian(text):
+        persian_chars = sum(1 for c in text if '\u0600' <= c <= '\u06ff')
+        return persian_chars / max(len(text), 1) > 0.3
+
+    def _fa_like(q):
+        """Return Persian translation of query for FA column search, or None."""
+        if _is_persian(q):
+            return f'%{q}%'
+        fa = _tr(q)
+        if fa and fa != q:
+            return f'%{fa}%'
+        return None
+except Exception:
+    def _is_persian(text): return False
+    def _fa_like(q): return None
+
 tools_bp = Blueprint('tools', __name__)
 
 
@@ -111,15 +130,25 @@ def smart_search():
         return jsonify([])
     results = []
     like = f'%{q}%'
+    fa_like = _fa_like(q)  # Persian translation of query for _fa columns
 
     with get_db_readonly() as conn:
         cursor = conn.cursor()
 
-        cursor.execute("""
-            SELECT 'lan_ip' as type, branch_name, province, octet2, octet3, username, status
-            FROM lan_ips WHERE branch_name LIKE ? OR province LIKE ? OR username LIKE ?
-            OR (octet2||'.'||octet3) LIKE ? LIMIT 15
-        """, (like, like, like, like))
+        # LAN IPs - search English + FA columns
+        if fa_like:
+            cursor.execute("""
+                SELECT 'lan_ip' as type, branch_name, province, octet2, octet3, username, status
+                FROM lan_ips WHERE branch_name LIKE ? OR province LIKE ? OR username LIKE ?
+                OR (octet2||'.'||octet3) LIKE ?
+                OR branch_name_fa LIKE ? OR province_fa LIKE ? LIMIT 15
+            """, (like, like, like, like, fa_like, fa_like))
+        else:
+            cursor.execute("""
+                SELECT 'lan_ip' as type, branch_name, province, octet2, octet3, username, status
+                FROM lan_ips WHERE branch_name LIKE ? OR province LIKE ? OR username LIKE ?
+                OR (octet2||'.'||octet3) LIKE ? LIMIT 15
+            """, (like, like, like, like))
         for r in cursor.fetchall():
             results.append({
                 'type': 'lan_ip', 'icon': 'pin',
@@ -129,10 +158,19 @@ def smart_search():
                 'link': '/reserve-lan'
             })
 
-        cursor.execute("""
-            SELECT 'tunnel' as type, tunnel_name, ip_address, description, province, status
-            FROM intranet_tunnels WHERE tunnel_name LIKE ? OR ip_address LIKE ? OR description LIKE ? OR province LIKE ? LIMIT 10
-        """, (like, like, like, like))
+        # Intranet tunnels - search English + FA columns
+        if fa_like:
+            cursor.execute("""
+                SELECT 'tunnel' as type, tunnel_name, ip_address, description, province, status
+                FROM intranet_tunnels WHERE tunnel_name LIKE ? OR ip_address LIKE ?
+                OR description LIKE ? OR province LIKE ?
+                OR tunnel_name_fa LIKE ? OR description_fa LIKE ? OR province_fa LIKE ? LIMIT 10
+            """, (like, like, like, like, fa_like, fa_like, fa_like))
+        else:
+            cursor.execute("""
+                SELECT 'tunnel' as type, tunnel_name, ip_address, description, province, status
+                FROM intranet_tunnels WHERE tunnel_name LIKE ? OR ip_address LIKE ? OR description LIKE ? OR province LIKE ? LIMIT 10
+            """, (like, like, like, like))
         for r in cursor.fetchall():
             results.append({
                 'type': 'tunnel', 'icon': 'link',
@@ -142,10 +180,18 @@ def smart_search():
                 'link': '/intranet'
             })
 
-        cursor.execute("""
-            SELECT 'apn' as type, branch_name, province, lan_ip, ip_wan_apn, username
-            FROM apn_ips WHERE branch_name LIKE ? OR province LIKE ? OR lan_ip LIKE ? OR ip_wan_apn LIKE ? LIMIT 10
-        """, (like, like, like, like))
+        # APN INT - search English + FA columns
+        if fa_like:
+            cursor.execute("""
+                SELECT 'apn' as type, branch_name, province, lan_ip, ip_wan_apn, username
+                FROM apn_ips WHERE branch_name LIKE ? OR province LIKE ? OR lan_ip LIKE ? OR ip_wan_apn LIKE ?
+                OR branch_name_fa LIKE ? OR province_fa LIKE ? LIMIT 10
+            """, (like, like, like, like, fa_like, fa_like))
+        else:
+            cursor.execute("""
+                SELECT 'apn' as type, branch_name, province, lan_ip, ip_wan_apn, username
+                FROM apn_ips WHERE branch_name LIKE ? OR province LIKE ? OR lan_ip LIKE ? OR ip_wan_apn LIKE ? LIMIT 10
+            """, (like, like, like, like))
         for r in cursor.fetchall():
             results.append({
                 'type': 'apn_int', 'icon': 'apn',
@@ -155,10 +201,18 @@ def smart_search():
                 'status': 'Used' if r['username'] else 'Free', 'link': '/apn-int'
             })
 
-        cursor.execute("""
-            SELECT 'apn_mali' as type, branch_name, province, lan_ip, ip_wan, username
-            FROM apn_mali WHERE branch_name LIKE ? OR province LIKE ? OR lan_ip LIKE ? OR ip_wan LIKE ? LIMIT 10
-        """, (like, like, like, like))
+        # APN Mali - search English + FA columns
+        if fa_like:
+            cursor.execute("""
+                SELECT 'apn_mali' as type, branch_name, province, lan_ip, ip_wan, username
+                FROM apn_mali WHERE branch_name LIKE ? OR province LIKE ? OR lan_ip LIKE ? OR ip_wan LIKE ?
+                OR branch_name_fa LIKE ? OR province_fa LIKE ? LIMIT 10
+            """, (like, like, like, like, fa_like, fa_like))
+        else:
+            cursor.execute("""
+                SELECT 'apn_mali' as type, branch_name, province, lan_ip, ip_wan, username
+                FROM apn_mali WHERE branch_name LIKE ? OR province LIKE ? OR lan_ip LIKE ? OR ip_wan LIKE ? LIMIT 10
+            """, (like, like, like, like))
         for r in cursor.fetchall():
             results.append({
                 'type': 'apn_mali', 'icon': 'apn',
@@ -169,10 +223,17 @@ def smart_search():
             })
 
         try:
-            cursor.execute("""
-                SELECT COALESCE(branch_name, branch_name_en) as bname, province, interface_name, lan_ip
-                FROM ptmp_connections WHERE branch_name LIKE ? OR branch_name_en LIKE ? OR interface_name LIKE ? OR province LIKE ? LIMIT 10
-            """, (like, like, like, like))
+            if fa_like:
+                cursor.execute("""
+                    SELECT COALESCE(branch_name, branch_name_en) as bname, province, interface_name, lan_ip
+                    FROM ptmp_connections WHERE branch_name LIKE ? OR branch_name_en LIKE ? OR interface_name LIKE ? OR province LIKE ?
+                    OR branch_name_fa LIKE ? OR province_fa LIKE ? LIMIT 10
+                """, (like, like, like, like, fa_like, fa_like))
+            else:
+                cursor.execute("""
+                    SELECT COALESCE(branch_name, branch_name_en) as bname, province, interface_name, lan_ip
+                    FROM ptmp_connections WHERE branch_name LIKE ? OR branch_name_en LIKE ? OR interface_name LIKE ? OR province LIKE ? LIMIT 10
+                """, (like, like, like, like))
             for r in cursor.fetchall():
                 results.append({
                     'type': 'ptmp', 'icon': 'serial',

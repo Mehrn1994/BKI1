@@ -8,6 +8,11 @@ from app.security import (
     is_api_rate_limited, validate_octet, require_auth,
     get_current_user, sanitize_error
 )
+try:
+    from app.utils.translator import translate as _tr, translate_province as _tr_prov
+except Exception:
+    def _tr(x, **kw): return x
+    def _tr_prov(x): return x
 
 lan_bp = Blueprint('lan', __name__)
 
@@ -251,16 +256,23 @@ def reserve_lan_ip():
             if row and row['status'] and row['status'].lower() in ('reserved', 'used', 'activated'):
                 return jsonify({'status': 'error', 'message': 'IP already reserved'}), 409
 
-            cursor.execute("""
-                UPDATE lan_ips SET username=?, reservation_date=?, branch_name=?, status='Reserved'
-                WHERE octet2=? AND octet3=?
-            """, (username, now.strftime('%Y-%m-%d'), branch_name, octet2, octet3))
+            branch_name_fa = _tr(branch_name)
+            province_fa    = _tr_prov(province)
 
             cursor.execute("""
-                INSERT INTO reserved_ips (province, octet2, octet3, branch_name, username,
-                    reservation_date, expiry_date, request_number, point_type, mehregostar_code, status)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'reserved')
-            """, (province, octet2, octet3, branch_name, username, now.strftime('%Y-%m-%d'),
+                UPDATE lan_ips SET username=?, reservation_date=?, branch_name=?,
+                    branch_name_fa=?, province_fa=?, status='Reserved'
+                WHERE octet2=? AND octet3=?
+            """, (username, now.strftime('%Y-%m-%d'), branch_name,
+                  branch_name_fa, province_fa, octet2, octet3))
+
+            cursor.execute("""
+                INSERT INTO reserved_ips (province, octet2, octet3, branch_name, branch_name_fa,
+                    province_fa, username, reservation_date, expiry_date, request_number,
+                    point_type, mehregostar_code, status)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'reserved')
+            """, (province, octet2, octet3, branch_name, branch_name_fa,
+                  province_fa, username, now.strftime('%Y-%m-%d'),
                   expiry.strftime('%Y-%m-%d'), request_number, point_type, mehregostar_code))
 
         log_audit('reserve_lan', f'10.{octet2}.{octet3}.0/24 for {branch_name}', username,

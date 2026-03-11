@@ -4,6 +4,11 @@ from flask import Blueprint, jsonify, request
 
 from app.database import get_db, get_db_readonly, get_db_transaction, log_audit
 from app.security import is_api_rate_limited, validate_table_name, sanitize_error
+try:
+    from app.utils.translator import translate as _tr, translate_province as _tr_prov
+except Exception:
+    def _tr(x, **kw): return x
+    def _tr_prov(x): return x
 
 services_bp = Blueprint('services', __name__)
 
@@ -188,12 +193,15 @@ def save_ptmp():
         conn = get_db()
         now = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         desc = f'** {branch_name} - PTMP **' if branch_name else '** PTMP **'
+        branch_name_fa = _tr(branch_name) if branch_name else None
+        province_fa    = _tr_prov(province) if province else None
         conn.execute("""
             INSERT INTO ptmp_connections (interface_name, description, branch_name, branch_name_en,
-                bandwidth, ip_type, encapsulation, province, province_abbr, router_hostname, router_file,
-                status, username, reservation_date, lan_ip)
-            VALUES (?, ?, ?, ?, '64', 'unnumbered', 'ppp', ?, '', ?, 'manual', 'Manual', ?, ?, ?)
-        """, (serial_port, desc, branch_name or None, branch_name or None, province, hostname, username, now, lan_ip))
+                branch_name_fa, bandwidth, ip_type, encapsulation, province, province_fa,
+                province_abbr, router_hostname, router_file, status, username, reservation_date, lan_ip)
+            VALUES (?, ?, ?, ?, ?, '64', 'unnumbered', 'ppp', ?, ?, '', ?, 'manual', 'Manual', ?, ?, ?)
+        """, (serial_port, desc, branch_name or None, branch_name or None, branch_name_fa,
+              province, province_fa, hostname, username, now, lan_ip))
         conn.commit()
         conn.close()
 
