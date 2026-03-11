@@ -7,6 +7,11 @@ from flask import Blueprint, jsonify, request
 from app.config import Config
 from app.database import get_db, get_db_readonly, get_db_transaction, log_audit
 from app.security import sanitize_error
+try:
+    from app.utils.translator import translate as _tr, translate_province as _tr_prov
+except Exception:
+    def _tr(x, **kw): return x
+    def _tr_prov(x): return x
 
 tunnels_bp = Blueprint('tunnels', __name__)
 
@@ -71,14 +76,21 @@ def reserve_tunnel():
 
         with get_db_transaction() as conn:
             cursor = conn.cursor()
+            _tn = data.get('Tunnel Name')
+            _desc = data.get('Description')
+            _prov = data.get('Province')
+            _tn_fa   = _tr(_tn)   if _tn   else None
+            _desc_fa = _tr(_desc) if _desc else None
+            _prov_fa = _tr_prov(_prov) if _prov else None
             cursor.execute("""
                 UPDATE intranet_tunnels SET status='Reserved', reserved_by=?, reserved_at=?,
-                    tunnel_name=COALESCE(?, tunnel_name), ip_lan=COALESCE(?, ip_lan),
-                    ip_intranet=COALESCE(?, ip_intranet), description=COALESCE(?, description),
-                    province=COALESCE(?, province)
+                    tunnel_name=COALESCE(?, tunnel_name), tunnel_name_fa=COALESCE(?, tunnel_name_fa),
+                    ip_lan=COALESCE(?, ip_lan), ip_intranet=COALESCE(?, ip_intranet),
+                    description=COALESCE(?, description), description_fa=COALESCE(?, description_fa),
+                    province=COALESCE(?, province), province_fa=COALESCE(?, province_fa)
                 WHERE ip_address=?
-            """, (username, now, data.get('Tunnel Name'), data.get('IP LAN'),
-                  data.get('IP Intranet'), data.get('Description'), data.get('Province'), ip_address))
+            """, (username, now, _tn, _tn_fa, data.get('IP LAN'),
+                  data.get('IP Intranet'), _desc, _desc_fa, _prov, _prov_fa, ip_address))
 
         log_audit('reserve_tunnel', ip_address, username, 'intranet', ip_address=request.remote_addr)
         return jsonify({'status': 'ok'})
@@ -176,12 +188,19 @@ def reserve_vpls_tunnel():
 
         with get_db_transaction() as conn:
             cursor = conn.cursor()
+            _vbn = data.get('branch_name', '')
+            _vdsc = data.get('description', '')
+            _vpv = data.get('province', '')
             cursor.execute("""
                 UPDATE vpls_tunnels SET status='Reserved', tunnel_name=?, description=?,
-                    province=?, branch_name=?, wan_ip=?, tunnel_dest=?, username=?, reservation_date=?
+                    description_fa=COALESCE(?, description_fa),
+                    province=?, province_fa=COALESCE(?, province_fa),
+                    branch_name=?, branch_name_fa=COALESCE(?, branch_name_fa),
+                    wan_ip=?, tunnel_dest=?, username=?, reservation_date=?
                 WHERE id=? AND LOWER(status)='free'
-            """, (data.get('tunnel_name', ''), data.get('description', ''),
-                  data.get('province', ''), data.get('branch_name', ''),
+            """, (data.get('tunnel_name', ''), _vdsc, _tr(_vdsc) or None,
+                  _vpv, _tr_prov(_vpv) or None,
+                  _vbn, _tr(_vbn) or None,
                   data.get('wan_ip', ''), data.get('tunnel_dest', ''),
                   username, now, tunnel_id))
             if cursor.rowcount == 0:
