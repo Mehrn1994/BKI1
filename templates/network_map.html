@@ -839,8 +839,9 @@ function renderSyncLast(d){
 
 function renderDevices(devs){
     const el=document.getElementById('sm-devices');if(!el)return;
+    const cnt=document.getElementById('devCount');if(cnt)cnt.textContent=(devs&&devs.length)||0;
     if(!devs||!devs.length){
-        el.innerHTML='<div style="text-align:center;padding:30px;color:var(--t3)"><div style="font-size:28px;margin-bottom:8px">🖥️</div><div>دستگاهی تعریف نشده</div><div style="font-size:10px;margin-top:4px">از تب «+ Add Device» دستگاه اضافه کنید</div></div>';
+        el.innerHTML='<div style="text-align:center;padding:30px;color:var(--t3)"><div style="font-size:28px;margin-bottom:8px">🖥️</div><div>دستگاهی تعریف نشده</div><div style="font-size:10px;margin-top:4px">از تب «+ افزودن دستگاه» دستگاه اضافه کنید</div></div>';
         return;
     }
     let h='';
@@ -865,25 +866,13 @@ function renderDevices(devs){
 }
 
 function renderChanges(changes){
-    const el=document.getElementById('sm-changes');if(!el)return;
+    const el=document.getElementById('sm-changes-list');if(!el)return;
     if(!changes||!changes.length){
         el.innerHTML='<div style="text-align:center;padding:30px;color:var(--t3)"><div style="font-size:28px;margin-bottom:8px">✅</div><div>هیچ تغییری ثبت نشده</div></div>';
         return;
     }
-    const typeMap={
-        interface_added:'ct-add',interface_removed:'ct-rem',
-        tunnel_added:'ct-add',tunnel_removed:'ct-rem',tunnel_changed:'ct-chg',
-        route_added:'ct-add',route_removed:'ct-rem',
-        nat_added:'ct-add',nat_removed:'ct-rem',
-        ospf_added:'ct-add',ospf_removed:'ct-rem',
-    };
-    const labelMap={
-        interface_added:'+ Interface',interface_removed:'− Interface',
-        tunnel_added:'+ Tunnel',tunnel_removed:'− Tunnel',tunnel_changed:'~ Tunnel',
-        route_added:'+ Route',route_removed:'− Route',
-        nat_added:'+ NAT',nat_removed:'− NAT',
-        ospf_added:'+ OSPF',ospf_removed:'− OSPF',
-    };
+    const typeMap={interface_added:'ct-add',interface_removed:'ct-rem',tunnel_added:'ct-add',tunnel_removed:'ct-rem',tunnel_changed:'ct-chg',route_added:'ct-add',route_removed:'ct-rem',nat_added:'ct-add',nat_removed:'ct-rem',ospf_added:'ct-add',ospf_removed:'ct-rem'};
+    const labelMap={interface_added:'+ Interface',interface_removed:'− Interface',tunnel_added:'+ Tunnel',tunnel_removed:'− Tunnel',tunnel_changed:'~ Tunnel',route_added:'+ Route',route_removed:'− Route',nat_added:'+ NAT',nat_removed:'− NAT',ospf_added:'+ OSPF',ospf_removed:'− OSPF'};
     let h='';
     changes.forEach(c=>{
         const cls=typeMap[c.change_type]||'ct-chg';
@@ -897,7 +886,7 @@ function renderChanges(changes){
             <span style="font-size:9px;color:var(--t3);margin-right:auto;direction:ltr">${c.detected_at}</span>
           </div>
           <div style="font-size:10px;color:var(--t2)">${c.change_detail}</div>
-          ${c.old_value?`<div style="font-size:9px;color:var(--t3);direction:ltr;margin-top:2px">قبل: <span style="color:#f87171">${c.old_value}</span>${c.new_value?` &nbsp;→&nbsp; <span style="color:#34d399">${c.new_value}</span>`:''}</div>`:''}
+          ${c.old_value?`<div style="font-size:9px;color:var(--t3);direction:ltr;margin-top:2px">قبل: <span style="color:#f87171">${c.old_value}</span>${c.new_value?` → <span style="color:#34d399">${c.new_value}</span>`:''}</div>`:''}
         </div>`;
     });
     el.innerHTML=h;
@@ -911,12 +900,33 @@ function loadChangesTab(){
 
 function triggerSync(){
     if(!confirm('Sync الان اجرا شود؟\n(فقط read-only — هیچ تغییری روی دستگاه‌ها نمی‌دهد)'))return;
+    const btn=document.getElementById('syncNowBtn');
+    if(btn){btn.disabled=true;btn.textContent='⏳ در حال اجرا...';}
     fetch('/api/network-map/sync/trigger',{method:'POST'}).then(r=>r.json()).then(d=>{
+        if(btn){btn.disabled=false;btn.textContent='▶ Sync Now';}
         if(d.success){
-            alert('Sync شروع شد. نتایج چند دقیقه دیگر آماده می‌شود.');
-            setTimeout(()=>loadSyncStatus(true),3000);
-        } else alert('خطا: '+d.message);
-    }).catch(e=>alert('خطا: '+e));
+            _showSyncMsg('Sync شروع شد — نتایج چند دقیقه دیگر آماده می‌شود.','ok');
+            setTimeout(()=>loadSyncStatus(true),4000);
+        } else {
+            _showSyncMsg('خطا: '+d.message,'err');
+        }
+    }).catch(e=>{
+        if(btn){btn.disabled=false;btn.textContent='▶ Sync Now';}
+        _showSyncMsg('خطای ارتباط: سرور باید ریستارت شود.','err');
+        console.error('[Sync trigger error]',e);
+    });
+}
+function _showSyncMsg(msg,type){
+    const el=document.getElementById('sm-overview');if(!el)return;
+    const color=type==='ok'?'#34d399':'#f87171';
+    const existing=document.getElementById('sync-flash');
+    if(existing)existing.remove();
+    const div=document.createElement('div');
+    div.id='sync-flash';
+    div.style=`background:rgba(${type==='ok'?'52,211,153':'248,113,113'},0.08);border:1px solid ${color};border-radius:8px;padding:10px 14px;margin-bottom:10px;font-size:11px;color:${color}`;
+    div.textContent=msg;
+    el.prepend(div);
+    setTimeout(()=>{if(div.parentNode)div.remove();},5000);
 }
 
 function toggleDevice(id,val){
@@ -943,8 +953,13 @@ function addDeviceSubmit(){
             document.querySelectorAll('.smc').forEach(t=>t.classList.remove('on'));
             document.querySelector('.smtab[data-tab="sm-devices"]').classList.add('on');
             document.getElementById('sm-devices').classList.add('on');
-        } else alert('خطا: '+d.message);
-    }).catch(e=>alert('خطا: '+e));
+        } else {
+            _showSyncMsg('خطا: '+d.message,'err');
+        }
+    }).catch(e=>{
+        _showSyncMsg('خطای ارتباط با سرور — لطفاً سرور را ریستارت کنید.','err');
+        console.error('[addDevice error]',e);
+    });
 }
 
 setInterval(()=>{if(syncData.running)loadSyncStatus(document.getElementById('syncModal').classList.contains('open'));},5000);
@@ -1032,35 +1047,6 @@ setInterval(()=>{if(syncData.running)loadSyncStatus(document.getElementById('syn
   </div>
 </div>
 
-<script>
-// Fix changes tab targeting inner list
-const origRenderChanges=renderChanges;
-function renderChanges(changes){
-    const el=document.getElementById('sm-changes-list')||document.getElementById('sm-changes');
-    if(!el)return;
-    if(!changes||!changes.length){
-        el.innerHTML='<div style="text-align:center;padding:30px;color:var(--t3)"><div style="font-size:28px;margin-bottom:8px">✅</div><div>هیچ تغییری ثبت نشده</div></div>';
-        return;
-    }
-    const typeMap={interface_added:'ct-add',interface_removed:'ct-rem',tunnel_added:'ct-add',tunnel_removed:'ct-rem',tunnel_changed:'ct-chg',route_added:'ct-add',route_removed:'ct-rem',nat_added:'ct-add',nat_removed:'ct-rem',ospf_added:'ct-add',ospf_removed:'ct-rem'};
-    const labelMap={interface_added:'+ Interface',interface_removed:'− Interface',tunnel_added:'+ Tunnel',tunnel_removed:'− Tunnel',tunnel_changed:'~ Tunnel',route_added:'+ Route',route_removed:'− Route',nat_added:'+ NAT',nat_removed:'− NAT',ospf_added:'+ OSPF',ospf_removed:'− OSPF'};
-    let h='';
-    changes.forEach(c=>{
-        const cls=typeMap[c.change_type]||'ct-chg';
-        const lbl=labelMap[c.change_type]||c.change_type;
-        const rowCls=c.severity==='warning'?'chg-row chg-warn':'chg-row';
-        h+=`<div class="${rowCls}"><div style="display:flex;align-items:center;gap:6px;margin-bottom:3px"><span style="font-weight:600;color:var(--text)">${c.hostname}</span><span class="chg-type ${cls}">${lbl}</span>${c.severity==='warning'?'<span style="font-size:9px">⚠️</span>':''}<span style="font-size:9px;color:var(--t3);margin-right:auto;direction:ltr">${c.detected_at}</span></div><div style="font-size:10px;color:var(--t2)">${c.change_detail}</div>${c.old_value?`<div style="font-size:9px;color:var(--t3);direction:ltr;margin-top:2px">قبل: <span style="color:#f87171">${c.old_value}</span>${c.new_value?` → <span style="color:#34d399">${c.new_value}</span>`:''}</div>`:''}</div>`;
-    });
-    el.innerHTML=h;
-}
-// Update device count badge
-const origRenderDevices=renderDevices;
-function renderDevices(devs){
-    origRenderDevices(devs);
-    const el=document.getElementById('devCount');
-    if(el)el.textContent=(devs&&devs.length)||0;
-}
-</script>
 {% include 'ai_chat.html' %}
 </body>
 </html>
