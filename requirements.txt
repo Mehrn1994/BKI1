@@ -15,7 +15,9 @@ openpyxl>=3.1.0
 
 # Remote connections (optional)
 # flask-socketio>=5.3.0
-# paramiko>=3.0.0
+
+# SSH for network topology auto-sync (daily read-only polling)
+paramiko>=3.0.0
 
 # Testing
 pytest>=7.0.0

@@ -127,6 +127,37 @@ def _cleanup_old_backups():
         pass
 
 
+def daily_network_sync():
+    """
+    Background thread: SSH into all network devices every day at 06:00 AM,
+    fetch running configs (READ-ONLY), detect changes, update topology data.
+    Never modifies any device configuration.
+    """
+    from datetime import timedelta
+    print("Daily network sync scheduler started (runs at 06:00 AM)")
+
+    while True:
+        now = datetime.now()
+        target = now.replace(hour=6, minute=0, second=0, microsecond=0)
+        if now >= target:
+            target += timedelta(days=1)
+
+        sleep_secs = (target - now).total_seconds()
+        print(f"[NetworkSync] Next sync scheduled at {target.strftime('%Y-%m-%d 06:00')} "
+              f"(in {sleep_secs / 3600:.1f}h)")
+        time.sleep(sleep_secs)
+
+        try:
+            from app.network_sync import run_full_sync
+            print(f"[NetworkSync] Starting daily sync at {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+            result = run_full_sync()
+            print(f"[NetworkSync] Completed — "
+                  f"{result.get('success_count', 0)}/{result.get('total', 0)} devices OK, "
+                  f"{result.get('changes', 0)} change(s) detected")
+        except Exception as e:
+            print(f"[NetworkSync] Error during daily sync: {e}")
+
+
 def start_background_tasks():
     """Start all background threads."""
     global auto_release_active
@@ -139,3 +170,7 @@ def start_background_tasks():
     t2 = threading.Thread(target=scheduled_backup, daemon=True)
     t2.start()
     print(f"Scheduled backup thread started (every {Config.BACKUP_INTERVAL_HOURS}h)")
+
+    t3 = threading.Thread(target=daily_network_sync, daemon=True)
+    t3.start()
+    print("Daily network sync thread started (runs at 06:00 AM)")

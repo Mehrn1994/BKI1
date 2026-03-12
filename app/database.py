@@ -135,6 +135,44 @@ def init_tables():
         created_by TEXT DEFAULT 'System', size_bytes INTEGER,
         backup_type TEXT DEFAULT 'manual')""")
 
+    # Network devices for topology auto-sync (SSH polling)
+    cursor.execute("""CREATE TABLE IF NOT EXISTS network_devices (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        hostname TEXT NOT NULL,
+        ip_address TEXT NOT NULL,
+        username TEXT NOT NULL,
+        password_enc TEXT NOT NULL,
+        device_type TEXT DEFAULT 'router',
+        router_file TEXT,
+        enabled INTEGER DEFAULT 1,
+        last_sync TEXT,
+        last_sync_status TEXT,
+        created_at TEXT,
+        notes TEXT)""")
+
+    # Topology change log (detected via daily SSH sync)
+    cursor.execute("""CREATE TABLE IF NOT EXISTS topology_changes (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        detected_at TEXT NOT NULL,
+        hostname TEXT NOT NULL,
+        change_type TEXT NOT NULL,
+        change_detail TEXT NOT NULL,
+        old_value TEXT,
+        new_value TEXT,
+        severity TEXT DEFAULT 'info')""")
+
+    # Sync run log
+    cursor.execute("""CREATE TABLE IF NOT EXISTS sync_log (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        started_at TEXT NOT NULL,
+        completed_at TEXT,
+        status TEXT DEFAULT 'running',
+        devices_total INTEGER DEFAULT 0,
+        devices_success INTEGER DEFAULT 0,
+        devices_failed INTEGER DEFAULT 0,
+        changes_detected INTEGER DEFAULT 0,
+        notes TEXT)""")
+
     # Add _fa (Persian translation) columns to all relevant tables (idempotent)
     _FA_ALTERS = [
         ('reserved_ips',       'branch_name_fa', 'TEXT'),

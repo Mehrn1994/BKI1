@@ -2,9 +2,11 @@
 import math
 import os
 import re
-from flask import Blueprint, jsonify
+import threading
+from flask import Blueprint, jsonify, request
 
 from app.config import Config
+from app.database import get_db
 
 network_map_bp = Blueprint('network_map', __name__)
 
@@ -993,3 +995,194 @@ def get_topology():
         'link_types': link_type_counts,
         '_version': 'v7-tunnel-accurate',
     })
+
+
+# ═══════════════════════════════════════════════════════════════════
+#  Auto-Sync API  –  Device management + topology change tracking
+# ═══════════════════════════════════════════════════════════════════
+
+@network_map_bp.route('/api/network-map/sync/status')
+def sync_status():
+    """Return last sync log entry + device statuses."""
+    conn = get_db()
+    try:
+        last = conn.execute(
+            "SELECT * FROM sync_log ORDER BY id DESC LIMIT 1"
+        ).fetchone()
+        devices = conn.execute(
+            "SELECT id, hostname, ip_address, device_type, enabled, "
+            "last_sync, last_sync_status, notes FROM network_devices ORDER BY hostname"
+        ).fetchall()
+        running = False
+        try:
+            from app.network_sync import is_sync_running
+            running = is_sync_running()
+        except Exception:
+            pass
+        return jsonify({
+            'last_sync': dict(last) if last else None,
+            'devices': [dict(d) for d in devices],
+            'sync_running': running,
+        })
+    finally:
+        conn.close()
+
+
+@network_map_bp.route('/api/network-map/sync/changes')
+def sync_changes():
+    """Return recent topology changes (last 200)."""
+    hostname = request.args.get('hostname', '')
+    severity = request.args.get('severity', '')
+    limit = min(int(request.args.get('limit', 200)), 500)
+
+    query = "SELECT * FROM topology_changes WHERE 1=1"
+    params = []
+    if hostname:
+        query += " AND hostname=?"
+        params.append(hostname)
+    if severity:
+        query += " AND severity=?"
+        params.append(severity)
+    query += " ORDER BY id DESC LIMIT ?"
+    params.append(limit)
+
+    conn = get_db()
+    try:
+        rows = conn.execute(query, params).fetchall()
+        return jsonify({'changes': [dict(r) for r in rows], 'total': len(rows)})
+    finally:
+        conn.close()
+
+
+@network_map_bp.route('/api/network-map/sync/trigger', methods=['POST'])
+def sync_trigger():
+    """Manually trigger a full sync in a background thread."""
+    try:
+        from app.network_sync import is_sync_running, run_full_sync
+        if is_sync_running():
+            return jsonify({'success': False, 'message': 'Sync already running'}), 409
+
+        def _run():
+            try:
+                run_full_sync()
+            except Exception as e:
+                print(f"[NetworkSync] Manual trigger error: {e}")
+
+        t = threading.Thread(target=_run, daemon=True)
+        t.start()
+        return jsonify({'success': True, 'message': 'Sync started'})
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+
+@network_map_bp.route('/api/network-map/devices', methods=['GET'])
+def list_devices():
+    """List all configured network devices."""
+    conn = get_db()
+    try:
+        rows = conn.execute(
+            "SELECT id, hostname, ip_address, device_type, router_file, "
+            "enabled, last_sync, last_sync_status, created_at, notes "
+            "FROM network_devices ORDER BY hostname"
+        ).fetchall()
+        return jsonify({'devices': [dict(r) for r in rows]})
+    finally:
+        conn.close()
+
+
+@network_map_bp.route('/api/network-map/devices', methods=['POST'])
+def add_device():
+    """Add a new network device for sync polling."""
+    data = request.get_json(silent=True) or {}
+    hostname = (data.get('hostname') or '').strip()
+    ip = (data.get('ip_address') or '').strip()
+    username = (data.get('username') or '').strip()
+    password = (data.get('password') or '').strip()
+
+    if not hostname or not ip or not username or not password:
+        return jsonify({'success': False, 'message': 'hostname, ip_address, username, password required'}), 400
+
+    try:
+        from app.network_sync import obfuscate_password
+        enc = obfuscate_password(password)
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+    from datetime import datetime
+    conn = get_db()
+    try:
+        conn.execute(
+            """INSERT INTO network_devices
+               (hostname, ip_address, username, password_enc, device_type,
+                router_file, enabled, created_at, notes)
+               VALUES (?,?,?,?,?,?,1,?,?)""",
+            (hostname, ip, username, enc,
+             data.get('device_type', 'router'),
+             data.get('router_file', ''),
+             datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+             data.get('notes', ''))
+        )
+        conn.commit()
+        return jsonify({'success': True, 'message': f'Device {hostname} added'})
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)}), 500
+    finally:
+        conn.close()
+
+
+@network_map_bp.route('/api/network-map/devices/<int:device_id>', methods=['PUT'])
+def update_device(device_id):
+    """Update device settings (toggle enabled, update IP/notes)."""
+    data = request.get_json(silent=True) or {}
+    conn = get_db()
+    try:
+        row = conn.execute("SELECT * FROM network_devices WHERE id=?", (device_id,)).fetchone()
+        if not row:
+            return jsonify({'success': False, 'message': 'Device not found'}), 404
+
+        enabled = data.get('enabled', row['enabled'])
+        ip = data.get('ip_address', row['ip_address'])
+        notes = data.get('notes', row['notes'])
+        device_type = data.get('device_type', row['device_type'])
+        router_file = data.get('router_file', row['router_file'])
+
+        # Update password only if provided
+        enc = row['password_enc']
+        if data.get('password'):
+            from app.network_sync import obfuscate_password
+            enc = obfuscate_password(data['password'])
+
+        conn.execute(
+            """UPDATE network_devices SET enabled=?, ip_address=?, notes=?,
+               device_type=?, router_file=?, password_enc=? WHERE id=?""",
+            (enabled, ip, notes, device_type, router_file, enc, device_id)
+        )
+        conn.commit()
+        return jsonify({'success': True})
+    finally:
+        conn.close()
+
+
+@network_map_bp.route('/api/network-map/devices/<int:device_id>', methods=['DELETE'])
+def delete_device(device_id):
+    """Remove a device from sync polling."""
+    conn = get_db()
+    try:
+        conn.execute("DELETE FROM network_devices WHERE id=?", (device_id,))
+        conn.commit()
+        return jsonify({'success': True})
+    finally:
+        conn.close()
+
+
+@network_map_bp.route('/api/network-map/sync/logs')
+def sync_logs():
+    """Return recent sync run history."""
+    conn = get_db()
+    try:
+        rows = conn.execute(
+            "SELECT * FROM sync_log ORDER BY id DESC LIMIT 30"
+        ).fetchall()
+        return jsonify({'logs': [dict(r) for r in rows]})
+    finally:
+        conn.close()
