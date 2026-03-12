@@ -1004,15 +1004,18 @@ def get_topology():
 @network_map_bp.route('/api/network-map/sync/status')
 def sync_status():
     """Return last sync log entry + device statuses."""
-    conn = get_db()
     try:
-        last = conn.execute(
-            "SELECT * FROM sync_log ORDER BY id DESC LIMIT 1"
-        ).fetchone()
-        devices = conn.execute(
-            "SELECT id, hostname, ip_address, device_type, enabled, "
-            "last_sync, last_sync_status, notes FROM network_devices ORDER BY hostname"
-        ).fetchall()
+        conn = get_db()
+        try:
+            last = conn.execute(
+                "SELECT * FROM sync_log ORDER BY id DESC LIMIT 1"
+            ).fetchone()
+            devices = conn.execute(
+                "SELECT id, hostname, ip_address, device_type, enabled, "
+                "last_sync, last_sync_status, notes FROM network_devices ORDER BY hostname"
+            ).fetchall()
+        finally:
+            conn.close()
         running = False
         try:
             from app.network_sync import is_sync_running
@@ -1024,34 +1027,38 @@ def sync_status():
             'devices': [dict(d) for d in devices],
             'sync_running': running,
         })
-    finally:
-        conn.close()
+    except Exception as e:
+        return jsonify({'last_sync': None, 'devices': [], 'sync_running': False,
+                        '_error': str(e)}), 200
 
 
 @network_map_bp.route('/api/network-map/sync/changes')
 def sync_changes():
     """Return recent topology changes (last 200)."""
-    hostname = request.args.get('hostname', '')
-    severity = request.args.get('severity', '')
-    limit = min(int(request.args.get('limit', 200)), 500)
-
-    query = "SELECT * FROM topology_changes WHERE 1=1"
-    params = []
-    if hostname:
-        query += " AND hostname=?"
-        params.append(hostname)
-    if severity:
-        query += " AND severity=?"
-        params.append(severity)
-    query += " ORDER BY id DESC LIMIT ?"
-    params.append(limit)
-
-    conn = get_db()
     try:
-        rows = conn.execute(query, params).fetchall()
+        hostname = request.args.get('hostname', '')
+        severity = request.args.get('severity', '')
+        limit = min(int(request.args.get('limit', 200)), 500)
+
+        query = "SELECT * FROM topology_changes WHERE 1=1"
+        params = []
+        if hostname:
+            query += " AND hostname=?"
+            params.append(hostname)
+        if severity:
+            query += " AND severity=?"
+            params.append(severity)
+        query += " ORDER BY id DESC LIMIT ?"
+        params.append(limit)
+
+        conn = get_db()
+        try:
+            rows = conn.execute(query, params).fetchall()
+        finally:
+            conn.close()
         return jsonify({'changes': [dict(r) for r in rows], 'total': len(rows)})
-    finally:
-        conn.close()
+    except Exception as e:
+        return jsonify({'changes': [], 'total': 0, '_error': str(e)}), 200
 
 
 @network_map_bp.route('/api/network-map/sync/trigger', methods=['POST'])
