@@ -1310,9 +1310,7 @@
                 document.getElementById('dbManagerLink').style.display = 'block';
             }
             loadCachedStats();
-            loadStatistics();
-            loadActivity();
-            loadDashboard();
+            loadAllDashboardData();
         });
 
         function loadCachedStats() {
@@ -1398,17 +1396,106 @@
             }
         }
 
-        async function loadStatistics() {
+        async function loadAllDashboardData() {
             try {
-                const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), 10000);
-                const response = await fetch('/api/stats', { signal: controller.signal });
-                clearTimeout(timeoutId);
-                const data = await response.json();
-                localStorage.setItem('dashboardStats', JSON.stringify(data));
-                updateStatsUI(data);
+                const [statsRes, activitiesRes, expiringRes, activityTodayRes, provincesRes] = await Promise.all([
+                    fetch('/api/stats'),
+                    fetch('/api/db/activity'),
+                    fetch('/api/expiring-reservations'),
+                    fetch('/api/today-activity'),
+                    fetch('/api/top-provinces')
+                ]);
+
+                // Stats
+                const stats = await statsRes.json();
+                localStorage.setItem('dashboardStats', JSON.stringify(stats));
+                updateStatsUI(stats);
+                updateGauge('gaugeLan', 'gaugeLanPercent', 'gaugeLanUsed', 'gaugeLanTotal', stats.lan_ips?.used || 0, stats.lan_ips?.total || 0);
+                updateGauge('gaugeTunnel', 'gaugeTunnelPercent', 'gaugeTunnelUsed', 'gaugeTunnelTotal', stats.tunnels?.used || 0, stats.tunnels?.total || 0);
+                updateGauge('gaugeApnInt', 'gaugeApnIntPercent', 'gaugeApnIntUsed', 'gaugeApnIntTotal', stats.apn?.used || 0, stats.apn?.total || 0);
+                updateGauge('gaugeApnMali', 'gaugeApnMaliPercent', 'gaugeApnMaliUsed', 'gaugeApnMaliTotal', stats.apn_mali?.used || 0, stats.apn_mali?.total || 0);
+                updateGauge('gaugeVpls', 'gaugeVplsPercent', 'gaugeVplsUsed', 'gaugeVplsTotal', stats.vpls?.used || 0, stats.vpls?.total || 0);
+                const totalRecords = (stats.lan_ips?.total || 0) + (stats.tunnels?.total || 0) + (stats.apn?.total || 0) + (stats.apn_mali?.total || 0) + (stats.vpls?.total || 0);
+                animateCounter('totalRecordsCounter', totalRecords);
+
+                // Activity list
+                try {
+                    const activities = await activitiesRes.json();
+                    const container = document.getElementById('activityList');
+                    if (activities.length === 0) {
+                        container.innerHTML = '<div style="text-align:center;padding:32px;color:var(--text-secondary);">هیچ فعالیتی ثبت نشده</div>';
+                    } else {
+                        container.innerHTML = activities.slice(0, 10).map(act => {
+                            let iconClass = 'config', icon = '⚙️';
+                            if (act.title.includes('رزرو')) { iconClass = 'reserve'; icon = '📍'; }
+                            else if (act.title.includes('ورود')) { iconClass = 'login'; icon = '🔐'; }
+                            else if (act.title.includes('آزادسازی')) { iconClass = 'reserve'; icon = '🔓'; }
+                            else if (act.title.includes('آپلود') || act.title.includes('Backup')) { iconClass = 'config'; icon = '💾'; }
+                            return `<div class="activity-item">
+                                <div class="activity-icon ${iconClass}">${icon}</div>
+                                <div class="activity-content">
+                                    <div class="title">${act.title}</div>
+                                    <div class="desc">${act.description}</div>
+                                    <div class="time">${act.time} - ${act.user}</div>
+                                </div>
+                            </div>`;
+                        }).join('');
+                    }
+                } catch (e) {
+                    document.getElementById('activityList').innerHTML = '<div style="text-align:center;padding:32px;color:var(--text-secondary);">خطا در بارگذاری</div>';
+                }
+
+                // Expiring reservations
+                try {
+                    const expiring = await expiringRes.json();
+                    animateCounter('expiringCounter', expiring.count || 0, 800);
+                } catch (e) { document.getElementById('expiringCounter').textContent = '0'; }
+
+                // Today's activity count
+                try {
+                    const activity = await activityTodayRes.json();
+                    animateCounter('todayActivityCounter', activity.count || 0, 800);
+                } catch (e) { document.getElementById('todayActivityCounter').textContent = '0'; }
+
+                // Top provinces
+                try {
+                    const provinces = await provincesRes.json();
+                    const container = document.getElementById('topProvincesChart');
+                    if (container) {
+                        if (provinces.length === 0) {
+                            container.innerHTML = '<div style="color:var(--text-muted);font-size:13px;text-align:center;padding:20px;">داده‌ای یافت نشد</div>';
+                        } else {
+                            const maxCount = Math.max(...provinces.map(p => p.count));
+                            const colors = ['#10b981','#3b82f6','#8b5cf6','#f59e0b','#ef4444','#ec4899','#06b6d4','#84cc16'];
+                            container.innerHTML = provinces.slice(0, 8).map((p, i) => {
+                                const w = (p.count / maxCount) * 100;
+                                const c = colors[i % colors.length];
+                                return `<div style="display:flex;align-items:center;gap:12px;">
+                                    <div style="width:26px;height:26px;background:${c};border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:white;flex-shrink:0;">${i+1}</div>
+                                    <div style="flex:1;min-width:0;">
+                                        <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
+                                            <span style="font-size:13px;font-weight:600;">${p.province}</span>
+                                            <span style="font-size:12px;color:var(--text-muted);direction:ltr;font-family:'Segoe UI',system-ui,sans-serif;">${formatNumber(p.count)} IP</span>
+                                        </div>
+                                        <div style="height:8px;background:rgba(255,255,255,0.06);border-radius:4px;overflow:hidden;">
+                                            <div class="province-bar" style="height:100%;width:0%;background:linear-gradient(90deg,${c},${c}99);border-radius:4px;" data-width="${w}"></div>
+                                        </div>
+                                    </div>
+                                </div>`;
+                            }).join('');
+                            setTimeout(() => {
+                                container.querySelectorAll('.province-bar').forEach(bar => {
+                                    bar.style.width = bar.dataset.width + '%';
+                                });
+                            }, 100);
+                        }
+                    }
+                } catch (e) {
+                    const container = document.getElementById('topProvincesChart');
+                    if (container) container.innerHTML = '<div style="color:var(--text-muted);font-size:13px;text-align:center;">خطا در بارگذاری</div>';
+                }
             } catch (error) {
-                console.error('Error loading statistics:', error);
+                console.error('Error loading dashboard data:', error);
             }
         }
 
@@ -1446,37 +1533,9 @@
             document.getElementById('legendTunUsed').textContent = `Tunnel استفاده شده: ${formatNumber(tunUsed)}`;
         }
 
-        async function loadActivity() {
-            const container = document.getElementById('activityList');
-            try {
-                const response = await fetch('/api/db/activity');
-                const activities = await response.json();
-                if (activities.length === 0) {
-                    container.innerHTML = '<div style="text-align:center;padding:32px;color:var(--text-secondary);">هیچ فعالیتی ثبت نشده</div>';
-                    return;
-                }
-                container.innerHTML = activities.slice(0, 10).map(act => {
-                    let iconClass = 'config', icon = '⚙️';
-                    if (act.title.includes('رزرو')) { iconClass = 'reserve'; icon = '📍'; }
-                    else if (act.title.includes('ورود')) { iconClass = 'login'; icon = '🔐'; }
-                    else if (act.title.includes('آزادسازی')) { iconClass = 'reserve'; icon = '🔓'; }
-                    else if (act.title.includes('آپلود') || act.title.includes('Backup')) { iconClass = 'config'; icon = '💾'; }
-                    return `<div class="activity-item">
-                        <div class="activity-icon ${iconClass}">${icon}</div>
-                        <div class="activity-content">
-                            <div class="title">${act.title}</div>
-                            <div class="desc">${act.description}</div>
-                            <div class="time">${act.time} - ${act.user}</div>
-                        </div>
-                    </div>`;
-                }).join('');
-            } catch (error) {
-                container.innerHTML = '<div style="text-align:center;padding:32px;color:var(--text-secondary);">خطا در بارگذاری</div>';
-            }
-        }
 
         // ============ Animated Counter ============
-        function animateCounter(elementId, targetValue, duration = 1500) {
+        function animateCounter(elementId, targetValue, duration = 800) {
             const element = document.getElementById(elementId);
             if (!element) return;
             const start = parseInt(element.textContent.replace(/[^\d]/g, '')) || 0;
@@ -1511,83 +1570,7 @@
             if (totalEl) totalEl.textContent = formatNumber(total);
         }
 
-        // ============ Top Provinces ============
-        async function loadTopProvinces() {
-            try {
-                const response = await fetch('/api/top-provinces');
-                const provinces = await response.json();
-                const container = document.getElementById('topProvincesChart');
-                if (!container) return;
-                if (provinces.length === 0) {
-                    container.innerHTML = '<div style="color:var(--text-muted);font-size:13px;text-align:center;padding:20px;">داده‌ای یافت نشد</div>';
-                    return;
-                }
-                const maxCount = Math.max(...provinces.map(p => p.count));
-                const colors = ['#10b981','#3b82f6','#8b5cf6','#f59e0b','#ef4444','#ec4899','#06b6d4','#84cc16'];
-                container.innerHTML = provinces.slice(0, 8).map((p, i) => {
-                    const w = (p.count / maxCount) * 100;
-                    const c = colors[i % colors.length];
-                    return `<div style="display:flex;align-items:center;gap:12px;">
-                        <div style="width:26px;height:26px;background:${c};border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:white;flex-shrink:0;">${i+1}</div>
-                        <div style="flex:1;min-width:0;">
-                            <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
-                                <span style="font-size:13px;font-weight:600;">${p.province}</span>
-                                <span style="font-size:12px;color:var(--text-muted);direction:ltr;font-family:'Segoe UI',system-ui,sans-serif;">${formatNumber(p.count)} IP</span>
-                            </div>
-                            <div style="height:8px;background:rgba(255,255,255,0.06);border-radius:4px;overflow:hidden;">
-                                <div class="province-bar" style="height:100%;width:0%;background:linear-gradient(90deg,${c},${c}99);border-radius:4px;" data-width="${w}"></div>
-                            </div>
-                        </div>
-                    </div>`;
-                }).join('');
-                setTimeout(() => {
-                    container.querySelectorAll('.province-bar').forEach(bar => {
-                        bar.style.width = bar.dataset.width + '%';
-                    });
-                }, 200);
-            } catch (error) {
-                console.error('Error loading top provinces:', error);
-                document.getElementById('topProvincesChart').innerHTML = '<div style="color:var(--text-muted);font-size:13px;text-align:center;">خطا در بارگذاری</div>';
-            }
-        }
 
-        // ============ Dashboard ============
-        async function loadDashboard() {
-            try {
-                const statsRes = await fetch('/api/stats');
-                const stats = await statsRes.json();
-                const lanUsed = stats.lan_ips?.used || 0;
-                const lanTotal = stats.lan_ips?.total || 0;
-                updateGauge('gaugeLan', 'gaugeLanPercent', 'gaugeLanUsed', 'gaugeLanTotal', lanUsed, lanTotal);
-                const tunUsed = stats.tunnels?.used || 0;
-                const tunTotal = stats.tunnels?.total || 0;
-                updateGauge('gaugeTunnel', 'gaugeTunnelPercent', 'gaugeTunnelUsed', 'gaugeTunnelTotal', tunUsed, tunTotal);
-                const apnIntUsed = stats.apn?.used || 0;
-                const apnIntTotal = stats.apn?.total || 0;
-                updateGauge('gaugeApnInt', 'gaugeApnIntPercent', 'gaugeApnIntUsed', 'gaugeApnIntTotal', apnIntUsed, apnIntTotal);
-                const apnMaliUsed = stats.apn_mali?.used || 0;
-                const apnMaliTotal = stats.apn_mali?.total || 0;
-                updateGauge('gaugeApnMali', 'gaugeApnMaliPercent', 'gaugeApnMaliUsed', 'gaugeApnMaliTotal', apnMaliUsed, apnMaliTotal);
-                const vplsUsed = stats.vpls?.used || 0;
-                const vplsTotal = stats.vpls?.total || 0;
-                updateGauge('gaugeVpls', 'gaugeVplsPercent', 'gaugeVplsUsed', 'gaugeVplsTotal', vplsUsed, vplsTotal);
-                const totalRecords = lanTotal + tunTotal + apnIntTotal + apnMaliTotal + vplsTotal;
-                animateCounter('totalRecordsCounter', totalRecords);
-                try {
-                    const expiringRes = await fetch('/api/expiring-reservations');
-                    const expiring = await expiringRes.json();
-                    animateCounter('expiringCounter', expiring.count || 0, 1000);
-                } catch (e) { document.getElementById('expiringCounter').textContent = '0'; }
-                try {
-                    const activityRes = await fetch('/api/today-activity');
-                    const activity = await activityRes.json();
-                    animateCounter('todayActivityCounter', activity.count || 0, 1000);
-                } catch (e) { document.getElementById('todayActivityCounter').textContent = '0'; }
-                loadTopProvinces();
-            } catch (error) {
-                console.error('Error loading dashboard:', error);
-            }
-        }
 
         // ============ Search ============
         let searchTimeout = null;
