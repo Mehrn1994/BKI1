@@ -15,8 +15,10 @@ _db_lock = threading.Lock()
 
 
 def get_db():
-    """Get a database connection (thread-local)."""
-    conn = sqlite3.connect(Config.DB_PATH)
+    """Get a database connection — always connects to live.db (the active mirror)."""
+    from app.db_mirror import LIVE_DB_PATH, ensure_live_db
+    ensure_live_db()
+    conn = sqlite3.connect(LIVE_DB_PATH)
     conn.row_factory = sqlite3.Row
     conn.execute("PRAGMA journal_mode=WAL")
     conn.execute("PRAGMA foreign_keys=ON")
