@@ -18,9 +18,22 @@ def create_app():
     app.config['SECRET_KEY'] = Config.SECRET_KEY
     app.config['MAX_CONTENT_LENGTH'] = Config.MAX_CONTENT_LENGTH
     app.config['TEMPLATES_AUTO_RELOAD'] = True
+    app.config['COMPRESS_MIMETYPES'] = [
+        'text/html', 'text/css', 'text/javascript',
+        'application/javascript', 'application/json'
+    ]
+    app.config['COMPRESS_LEVEL'] = 6
+    app.config['COMPRESS_MIN_SIZE'] = 1024
 
     # CORS - restricted origins (not wildcard)
     CORS(app, origins=Config.CORS_ORIGINS)
+
+    # Gzip compression for all responses
+    try:
+        from flask_compress import Compress
+        Compress(app)
+    except ImportError:
+        pass
 
     # Ensure directories exist
     os.makedirs(Config.BACKUP_DIR, exist_ok=True)
