@@ -197,6 +197,7 @@ def add_cache_headers(response):
     return response
 
 DB_PATH = os.path.join(os.path.dirname(__file__), 'data', 'network_ipam.db')
+LIVE_DB_PATH = os.path.join(os.path.dirname(__file__), 'data', 'live.db')
 BACKUP_DIR = os.path.join(os.path.dirname(__file__), 'data', 'backups')
 ACTIVITY_LOG = os.path.join(os.path.dirname(__file__), 'data', 'activity.json')
 CHAT_UPLOAD_DIR = os.path.join(os.path.dirname(__file__), 'data', 'chat_files')
@@ -212,8 +213,198 @@ STATS_CACHE_SECONDS = 60  # Cache for 1 minute
 ALLOWED_USERS = ["Yarian", "Sattari", "Barari", "Sahebdel", "Vahedi", "Aghajani", "Hossein", "Rezaei", "Bagheri"]
 DB_ADMIN_USER = "Sahebdel"
 
+# ==================== LIVE DB MIRROR ====================
+# live.db = دیتابیس فعال سیستم (تیم روی این کار می‌کند)
+# network_ipam.db = دیتابیس اصلی (هر شب از live.db آپدیت می‌شود)
+
+_MIRROR_TABLES = [
+    'lan_ips', 'apn_ips', 'apn_mali', 'intranet_tunnels',
+    'ptmp_connections', 'reserved_ips', 'tunnel200_ips', 'tunnel_mali',
+    'vpls_tunnels', 'user_passwords', 'custom_translations',
+]
+_mirror_ready = False
+_mirror_lock = threading.Lock()
+
+
+def _init_live_db():
+    """live.db را راه‌اندازی می‌کند؛ اگر نبود از network_ipam.db کپی می‌کند."""
+    global _mirror_ready
+    with _mirror_lock:
+        if _mirror_ready:
+            return
+        if not os.path.exists(LIVE_DB_PATH):
+            if os.path.exists(DB_PATH):
+                shutil.copy2(DB_PATH, LIVE_DB_PATH)
+                print(f"✅ [Mirror] live.db ایجاد شد (کپی از network_ipam.db)")
+        _setup_mirror_triggers()
+        _mirror_ready = True
+
+
+def _setup_mirror_triggers():
+    """جدول _change_log و تریگرهای خودکار را در live.db می‌سازد."""
+    conn = sqlite3.connect(LIVE_DB_PATH)
+    conn.execute("PRAGMA journal_mode=WAL")
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS _change_log (
+            id         INTEGER PRIMARY KEY AUTOINCREMENT,
+            ts         TEXT    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            table_name TEXT    NOT NULL,
+            op         TEXT    NOT NULL,
+            row_id     INTEGER NOT NULL,
+            row_json   TEXT,
+            merged     INTEGER DEFAULT 0,
+            merged_at  TEXT
+        )""")
+    conn.execute("CREATE INDEX IF NOT EXISTS _idx_cl ON _change_log(merged, ts)")
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS _merge_log (
+            id      INTEGER PRIMARY KEY AUTOINCREMENT,
+            ts      TEXT DEFAULT CURRENT_TIMESTAMP,
+            applied INTEGER, skipped INTEGER, errors INTEGER, dry_run INTEGER,
+            detail  TEXT
+        )""")
+    conn.commit()
+
+    active = 0
+    for table in _MIRROR_TABLES:
+        try:
+            if not conn.execute(
+                "SELECT 1 FROM sqlite_master WHERE type='table' AND name=?", (table,)
+            ).fetchone():
+                continue
+            conn.execute(
+                f"CREATE TRIGGER IF NOT EXISTS _trg_{table}_i "
+                f"AFTER INSERT ON {table} BEGIN "
+                f"INSERT INTO _change_log(table_name,op,row_id) "
+                f"VALUES('{table}','I',NEW.id); END"
+            )
+            conn.execute(
+                f"CREATE TRIGGER IF NOT EXISTS _trg_{table}_u "
+                f"AFTER UPDATE ON {table} BEGIN "
+                f"INSERT INTO _change_log(table_name,op,row_id) "
+                f"VALUES('{table}','U',NEW.id); END"
+            )
+            cols = [r[1] for r in conn.execute(f"PRAGMA table_info({table})").fetchall()]
+            jp = ",".join(f"'{c}',OLD.{c}" for c in cols)
+            conn.execute(
+                f"CREATE TRIGGER IF NOT EXISTS _trg_{table}_d "
+                f"AFTER DELETE ON {table} BEGIN "
+                f"INSERT INTO _change_log(table_name,op,row_id,row_json) "
+                f"VALUES('{table}','D',OLD.id,json_object({jp})); END"
+            )
+            active += 1
+        except Exception as e:
+            print(f"[Mirror] Trigger {table}: {e}")
+
+    conn.commit()
+    conn.close()
+    print(f"✅ [Mirror] Triggers فعال روی {active} جدول — live.db آماده")
+
+
+def _mirror_merge_to_main(dry_run=False):
+    """تغییرات live.db را به network_ipam.db اعمال می‌کند."""
+    _init_live_db()
+    live = sqlite3.connect(LIVE_DB_PATH)
+    live.row_factory = sqlite3.Row
+    main = sqlite3.connect(DB_PATH)
+    main.row_factory = sqlite3.Row
+
+    pending = live.execute(
+        "SELECT * FROM _change_log WHERE merged=0 ORDER BY id ASC"
+    ).fetchall()
+
+    stats = {'total': len(pending), 'applied': 0, 'skipped': 0, 'errors': 0,
+             'dry_run': dry_run, 'detail': [],
+             'ts': datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
+    merged_ids = []
+
+    for ch in pending:
+        table, op, rid = ch['table_name'], ch['op'], ch['row_id']
+        try:
+            if op == 'D':
+                if not dry_run:
+                    main.execute(f"DELETE FROM {table} WHERE id=?", (rid,))
+                stats['applied'] += 1
+                stats['detail'].append(f"DELETE {table} id={rid}")
+            elif op in ('I', 'U'):
+                row = live.execute(f"SELECT * FROM {table} WHERE id=?", (rid,)).fetchone()
+                if row is None:
+                    stats['skipped'] += 1
+                    continue
+                data = dict(row)
+                cols = list(data.keys())
+                exists = main.execute(f"SELECT id FROM {table} WHERE id=?", (rid,)).fetchone()
+                if not dry_run:
+                    if exists:
+                        non_id = [c for c in cols if c != 'id']
+                        sql = f"UPDATE {table} SET {','.join(c+'=?' for c in non_id)} WHERE id=?"
+                        main.execute(sql, [data[c] for c in non_id] + [rid])
+                    else:
+                        ph = ','.join('?' * len(cols))
+                        main.execute(
+                            f"INSERT OR REPLACE INTO {table}({','.join(cols)}) VALUES({ph})",
+                            [data[c] for c in cols]
+                        )
+                stats['applied'] += 1
+                stats['detail'].append(f"{op} {table} id={rid}")
+            merged_ids.append(ch['id'])
+        except Exception as e:
+            stats['errors'] += 1
+            stats['detail'].append(f"ERROR {table} id={rid}: {e}")
+
+    if not dry_run:
+        if stats['errors'] == 0:
+            main.commit()
+        else:
+            main.rollback()
+        now_s = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        if merged_ids:
+            live.execute(
+                f"UPDATE _change_log SET merged=1,merged_at=? "
+                f"WHERE id IN ({','.join('?'*len(merged_ids))})",
+                [now_s] + merged_ids
+            )
+        live.execute(
+            "DELETE FROM _change_log WHERE merged=1 "
+            "AND ts < datetime('now','-24 hours')"
+        )
+        live.execute(
+            "INSERT INTO _merge_log(applied,skipped,errors,dry_run,detail) VALUES(?,?,?,?,?)",
+            (stats['applied'], stats['skipped'], stats['errors'],
+             1 if dry_run else 0, json.dumps(stats['detail'], ensure_ascii=False))
+        )
+        live.execute(
+            "DELETE FROM _merge_log WHERE id NOT IN "
+            "(SELECT id FROM _merge_log ORDER BY id DESC LIMIT 100)"
+        )
+        live.commit()
+
+    main.close()
+    live.close()
+    return stats
+
+
+def _nightly_mirror_thread():
+    """هر شب 23:30 merge خودکار اجرا می‌کند."""
+    print("[Mirror] Nightly merge scheduler started (23:30 daily)")
+    while True:
+        now = datetime.now()
+        target = now.replace(hour=23, minute=30, second=0, microsecond=0)
+        if now >= target:
+            target += timedelta(days=1)
+        time.sleep((target - now).total_seconds())
+        try:
+            stats = _mirror_merge_to_main(dry_run=False)
+            print(f"[Mirror] Nightly merge done — "
+                  f"applied={stats['applied']} skipped={stats['skipped']} errors={stats['errors']}")
+        except Exception as e:
+            print(f"[Mirror] Nightly merge error: {e}")
+
+
 def get_db():
-    conn = sqlite3.connect(DB_PATH)
+    """همیشه به live.db وصل می‌شود (دیتابیس فعال سیستم)."""
+    _init_live_db()
+    conn = sqlite3.connect(LIVE_DB_PATH)
     conn.row_factory = sqlite3.Row
     return conn
 
@@ -6342,6 +6533,59 @@ def ai_stream():
     return Response(stream_with_context(gen()), mimetype='text/event-stream', headers=_sse_headers)
 
 
+# ==================== MIRROR API ====================
+
+@app.route('/api/db/mirror/status')
+def mirror_status():
+    """وضعیت live.db mirror را برمی‌گرداند."""
+    try:
+        _init_live_db()
+        conn = sqlite3.connect(LIVE_DB_PATH)
+        pending  = conn.execute("SELECT COUNT(*) FROM _change_log WHERE merged=0").fetchone()[0]
+        total    = conn.execute("SELECT COUNT(*) FROM _change_log").fetchone()[0]
+        last_mrg = conn.execute("SELECT MAX(merged_at) FROM _change_log WHERE merged=1").fetchone()[0]
+        oldest   = conn.execute("SELECT MIN(ts) FROM _change_log WHERE merged=0").fetchone()[0]
+        by_tbl   = conn.execute(
+            "SELECT table_name, COUNT(*) AS c FROM _change_log "
+            "WHERE merged=0 GROUP BY table_name ORDER BY c DESC"
+        ).fetchall()
+        last_run = None
+        try:
+            last_run = conn.execute("SELECT MAX(ts) FROM _merge_log WHERE dry_run=0").fetchone()[0]
+        except Exception:
+            pass
+        conn.close()
+        return jsonify({
+            'live_db':         LIVE_DB_PATH,
+            'main_db':         DB_PATH,
+            'live_size_kb':    round(os.path.getsize(LIVE_DB_PATH) / 1024, 1) if os.path.exists(LIVE_DB_PATH) else 0,
+            'main_size_kb':    round(os.path.getsize(DB_PATH) / 1024, 1) if os.path.exists(DB_PATH) else 0,
+            'pending_changes': pending,
+            'total_logged':    total,
+            'last_merged_at':  last_mrg,
+            'oldest_pending':  oldest,
+            'last_merge_run':  last_run,
+            'by_table':        {r[0]: r[1] for r in by_tbl},
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/db/mirror/merge', methods=['POST'])
+def mirror_merge():
+    """تغییرات live.db را به network_ipam.db اعمال می‌کند (دستی)."""
+    try:
+        data     = request.json or {}
+        username = data.get('username', '')
+        dry_run  = bool(data.get('dry_run', False))
+        if username != DB_ADMIN_USER:
+            return jsonify({'error': 'فقط ادمین مجاز است'}), 403
+        stats = _mirror_merge_to_main(dry_run=dry_run)
+        return jsonify(stats)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
 # ==================== MAIN ====================
 if __name__ == '__main__':
     print("=" * 70)
@@ -6353,6 +6597,12 @@ if __name__ == '__main__':
     print(f"🗑️ Auto-Release Check: Every {AUTO_RELEASE_INTERVAL // 3600} hours")
     print("=" * 70)
     
+    # Initialize live.db mirror and start nightly merge thread
+    _init_live_db()
+    t_mirror = threading.Thread(target=_nightly_mirror_thread, daemon=True)
+    t_mirror.start()
+    print("✅ [Mirror] Nightly merge thread started (runs at 23:30)")
+
     # Start auto-release thread for expired reservations
     start_auto_release_thread()
     
