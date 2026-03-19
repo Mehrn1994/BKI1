@@ -122,6 +122,15 @@ def create_app():
     def server_error(e):
         return jsonify({'error': 'Internal server error'}), 500
 
+    @app.errorhandler(Exception)
+    def handle_exception(e):
+        import traceback
+        import logging
+        logging.error("Unhandled exception: %s\n%s", e, traceback.format_exc())
+        if request.path.startswith('/api/'):
+            return jsonify({'error': 'Server error', 'detail': str(e)}), 500
+        return "Server error", 500
+
     # Auto-import PTMP on first run
     _check_ptmp_import()
 

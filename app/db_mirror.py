@@ -93,17 +93,23 @@ def _setup_journal_schema():
             if not exists:
                 continue
 
+            # Drop and recreate triggers to ensure correct rowid-based definition
+            conn.execute(f"DROP TRIGGER IF EXISTS _trg_{table}_i")
+            conn.execute(f"DROP TRIGGER IF EXISTS _trg_{table}_u")
+            conn.execute(f"DROP TRIGGER IF EXISTS _trg_{table}_d")
+
+            # Use rowid (always exists in SQLite) instead of id (not all tables have it)
             conn.execute(
                 f"CREATE TRIGGER IF NOT EXISTS _trg_{table}_i "
                 f"AFTER INSERT ON {table} BEGIN "
                 f"INSERT INTO _change_log (table_name, op, row_id) "
-                f"VALUES ('{table}', 'I', NEW.id); END"
+                f"VALUES ('{table}', 'I', NEW.rowid); END"
             )
             conn.execute(
                 f"CREATE TRIGGER IF NOT EXISTS _trg_{table}_u "
                 f"AFTER UPDATE ON {table} BEGIN "
                 f"INSERT INTO _change_log (table_name, op, row_id) "
-                f"VALUES ('{table}', 'U', NEW.id); END"
+                f"VALUES ('{table}', 'U', NEW.rowid); END"
             )
 
             # DELETE trigger — snapshot کامل سطر را ذخیره می‌کند
@@ -113,7 +119,7 @@ def _setup_journal_schema():
                 f"CREATE TRIGGER IF NOT EXISTS _trg_{table}_d "
                 f"AFTER DELETE ON {table} BEGIN "
                 f"INSERT INTO _change_log (table_name, op, row_id, row_json) "
-                f"VALUES ('{table}', 'D', OLD.id, json_object({json_parts})); END"
+                f"VALUES ('{table}', 'D', OLD.rowid, json_object({json_parts})); END"
             )
 
         except Exception as e:
