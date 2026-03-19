@@ -46,12 +46,90 @@ _initialized = False
 # init
 # ------------------------------------------------------------------
 
+def _fix_main_db_triggers():
+    """
+    تریگرهای شکسته در network_ipam.db را اصلاح می‌کند.
+
+    مشکل: تریگرهای _trg_* در network_ipam.db با NEW.id ساخته شده‌اند
+    ولی بعضی جداول (مثل user_passwords) ستون id ندارند، فقط rowid دارند.
+    این باعث خطای sqlite3.OperationalError: no such column: NEW.id می‌شود.
+
+    راه‌حل: تریگرهای قدیمی را حذف و با NEW.rowid بازسازی می‌کنیم.
+    """
+    if not os.path.exists(Config.DB_PATH):
+        return
+    try:
+        conn = sqlite3.connect(Config.DB_PATH)
+
+        # بررسی وجود جدول _change_log در network_ipam.db
+        has_change_log = conn.execute(
+            "SELECT 1 FROM sqlite_master WHERE type='table' AND name='_change_log'"
+        ).fetchone()
+
+        if not has_change_log:
+            # اگر _change_log وجود نداشت، فقط تریگرهای شکسته را حذف می‌کنیم
+            broken = conn.execute(
+                "SELECT name FROM sqlite_master WHERE type='trigger' AND name LIKE '_trg_%'"
+            ).fetchall()
+            for (tname,) in broken:
+                conn.execute(f"DROP TRIGGER IF EXISTS {tname}")
+            conn.commit()
+            conn.close()
+            print(f"[Mirror] Removed {len(broken)} stale triggers from network_ipam.db (no _change_log needed)")
+            return
+
+        # اگر _change_log وجود داشت، تریگرها را با rowid بازسازی می‌کنیم
+        for table in MIRROR_TABLES:
+            try:
+                exists = conn.execute(
+                    "SELECT 1 FROM sqlite_master WHERE type='table' AND name=?",
+                    (table,)
+                ).fetchone()
+                if not exists:
+                    continue
+
+                conn.execute(f"DROP TRIGGER IF EXISTS _trg_{table}_i")
+                conn.execute(f"DROP TRIGGER IF EXISTS _trg_{table}_u")
+                conn.execute(f"DROP TRIGGER IF EXISTS _trg_{table}_d")
+
+                conn.execute(
+                    f"CREATE TRIGGER IF NOT EXISTS _trg_{table}_i "
+                    f"AFTER INSERT ON {table} BEGIN "
+                    f"INSERT INTO _change_log (table_name, op, row_id) "
+                    f"VALUES ('{table}', 'I', NEW.rowid); END"
+                )
+                conn.execute(
+                    f"CREATE TRIGGER IF NOT EXISTS _trg_{table}_u "
+                    f"AFTER UPDATE ON {table} BEGIN "
+                    f"INSERT INTO _change_log (table_name, op, row_id) "
+                    f"VALUES ('{table}', 'U', NEW.rowid); END"
+                )
+                cols = [r[1] for r in conn.execute(f"PRAGMA table_info({table})").fetchall()]
+                json_parts = ", ".join(f"'{c}', OLD.{c}" for c in cols)
+                conn.execute(
+                    f"CREATE TRIGGER IF NOT EXISTS _trg_{table}_d "
+                    f"AFTER DELETE ON {table} BEGIN "
+                    f"INSERT INTO _change_log (table_name, op, row_id, row_json) "
+                    f"VALUES ('{table}', 'D', OLD.rowid, json_object({json_parts})); END"
+                )
+            except Exception as e:
+                print(f"[Mirror] Fix trigger {table} in network_ipam.db: {e}")
+
+        conn.commit()
+        conn.close()
+        print(f"[Mirror] Fixed triggers in network_ipam.db (using rowid)")
+    except Exception as e:
+        print(f"[Mirror] _fix_main_db_triggers error: {e}")
+
+
 def ensure_live_db():
     """اطمینان از وجود live.db؛ در صورت نبود از network_ipam.db کپی می‌کند."""
     global _initialized
     with _init_lock:
         if _initialized:
             return
+        # اول تریگرهای شکسته network_ipam.db را اصلاح می‌کنیم
+        _fix_main_db_triggers()
         if not os.path.exists(LIVE_DB_PATH):
             if os.path.exists(Config.DB_PATH):
                 print(f"[Mirror] First run — cloning {Config.DB_PATH} → live.db")
