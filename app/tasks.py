@@ -158,6 +158,36 @@ def daily_network_sync():
             print(f"[NetworkSync] Error during daily sync: {e}")
 
 
+def nightly_mirror_merge():
+    """
+    Background thread: هر شب 23:30 تغییرات live.db را به network_ipam.db اعمال می‌کند.
+    این تسک تضمین می‌کند حتی اگر توسعه‌دهنده network_ipam.db را جایگزین کند،
+    تغییرات تیم در شب بازیابی می‌شوند.
+    """
+    print("[Mirror] Nightly merge scheduler started (runs at 23:30)")
+
+    while True:
+        now = datetime.now()
+        target = now.replace(hour=23, minute=30, second=0, microsecond=0)
+        if now >= target:
+            target += timedelta(days=1)
+
+        sleep_secs = (target - now).total_seconds()
+        print(f"[Mirror] Next merge at {target.strftime('%Y-%m-%d 23:30')} "
+              f"(in {sleep_secs / 3600:.1f}h)")
+        time.sleep(sleep_secs)
+
+        try:
+            from app.db_mirror import merge_live_to_main, _log_merge_run
+            print(f"[Mirror] Starting nightly merge at {datetime.now().strftime('%H:%M:%S')}")
+            stats = merge_live_to_main(dry_run=False)
+            _log_merge_run(stats)
+            print(f"[Mirror] Merge done — applied={stats['applied']} "
+                  f"skipped={stats['skipped']} errors={stats['errors']}")
+        except Exception as e:
+            print(f"[Mirror] Nightly merge error: {e}")
+
+
 def start_background_tasks():
     """Start all background threads."""
     global auto_release_active
@@ -174,3 +204,7 @@ def start_background_tasks():
     t3 = threading.Thread(target=daily_network_sync, daemon=True)
     t3.start()
     print("Daily network sync thread started (runs at 06:00 AM)")
+
+    t4 = threading.Thread(target=nightly_mirror_merge, daemon=True)
+    t4.start()
+    print("Nightly mirror merge thread started (runs at 23:30)")

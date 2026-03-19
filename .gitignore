@@ -8,6 +8,9 @@ venv/
 # Database backups
 data/backups/*.db
 
+# Live mirror DB (runtime file — never commit)
+data/live.db
+
 # Backup files
 *.bak
 *.bak.*

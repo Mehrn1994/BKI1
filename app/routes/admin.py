@@ -270,3 +270,40 @@ def reset_users():
         return jsonify({'success': True})
     except Exception as e:
         return jsonify({'error': sanitize_error(e)}), 500
+
+
+# ------------------------------------------------------------------
+# Live DB Mirror API
+# ------------------------------------------------------------------
+
+@admin_bp.route('/api/db/mirror/status', methods=['GET'])
+def mirror_status():
+    """وضعیت live.db mirror را برمی‌گرداند."""
+    try:
+        from app.db_mirror import get_status
+        return jsonify(get_status())
+    except Exception as e:
+        return jsonify({'error': sanitize_error(e)}), 500
+
+
+@admin_bp.route('/api/db/mirror/merge', methods=['POST'])
+def mirror_merge():
+    """تغییرات live.db را به network_ipam.db اعمال می‌کند (manual trigger)."""
+    try:
+        data = request.json or {}
+        username = data.get('username', '')
+        dry_run  = bool(data.get('dry_run', False))
+
+        if username != Config.DB_ADMIN_USER:
+            return jsonify({'error': 'Admin only'}), 403
+
+        from app.db_mirror import merge_live_to_main, _log_merge_run
+        stats = merge_live_to_main(dry_run=dry_run)
+        if not dry_run:
+            _log_merge_run(stats)
+            log_audit('mirror_merge',
+                      f"applied={stats['applied']} errors={stats['errors']}",
+                      username, 'admin', ip_address=request.remote_addr)
+        return jsonify(stats)
+    except Exception as e:
+        return jsonify({'error': sanitize_error(e)}), 500
