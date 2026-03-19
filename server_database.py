@@ -226,12 +226,42 @@ _mirror_ready = False
 _mirror_lock = threading.Lock()
 
 
+def _fix_main_db_broken_triggers():
+    """
+    تریگرهای شکسته را از network_ipam.db پاک می‌کند.
+
+    مشکل: تریگرهای _trg_* با NEW.id/OLD.id ساخته شده‌اند ولی جداولی مثل
+    user_passwords ستون id ندارند. این باعث خطای login می‌شود:
+      sqlite3.OperationalError: no such column: NEW.id
+
+    راه‌حل: تریگرهای _trg_* را از network_ipam.db حذف می‌کنیم.
+    (change tracking فقط باید در live.db باشد، نه در network_ipam.db)
+    """
+    if not os.path.exists(DB_PATH):
+        return
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        broken = conn.execute(
+            "SELECT name FROM sqlite_master WHERE type='trigger' AND name LIKE '_trg_%'"
+        ).fetchall()
+        for (tname,) in broken:
+            conn.execute(f"DROP TRIGGER IF EXISTS {tname}")
+        if broken:
+            conn.commit()
+            print(f"✅ [Mirror] {len(broken)} تریگر شکسته از network_ipam.db حذف شد")
+        conn.close()
+    except Exception as e:
+        print(f"⚠️ [Mirror] _fix_main_db_broken_triggers error: {e}")
+
+
 def _init_live_db():
     """live.db را راه‌اندازی می‌کند؛ اگر نبود از network_ipam.db کپی می‌کند."""
     global _mirror_ready
     with _mirror_lock:
         if _mirror_ready:
             return
+        # ابتدا تریگرهای شکسته network_ipam.db را پاک می‌کنیم (رفع خطای login)
+        _fix_main_db_broken_triggers()
         if not os.path.exists(LIVE_DB_PATH):
             if os.path.exists(DB_PATH):
                 shutil.copy2(DB_PATH, LIVE_DB_PATH)
@@ -272,25 +302,29 @@ def _setup_mirror_triggers():
                 "SELECT 1 FROM sqlite_master WHERE type='table' AND name=?", (table,)
             ).fetchone():
                 continue
+            # Drop and recreate to ensure correct rowid-based triggers
+            conn.execute(f"DROP TRIGGER IF EXISTS _trg_{table}_i")
+            conn.execute(f"DROP TRIGGER IF EXISTS _trg_{table}_u")
+            conn.execute(f"DROP TRIGGER IF EXISTS _trg_{table}_d")
             conn.execute(
-                f"CREATE TRIGGER IF NOT EXISTS _trg_{table}_i "
+                f"CREATE TRIGGER _trg_{table}_i "
                 f"AFTER INSERT ON {table} BEGIN "
                 f"INSERT INTO _change_log(table_name,op,row_id) "
-                f"VALUES('{table}','I',NEW.id); END"
+                f"VALUES('{table}','I',NEW.rowid); END"
             )
             conn.execute(
-                f"CREATE TRIGGER IF NOT EXISTS _trg_{table}_u "
+                f"CREATE TRIGGER _trg_{table}_u "
                 f"AFTER UPDATE ON {table} BEGIN "
                 f"INSERT INTO _change_log(table_name,op,row_id) "
-                f"VALUES('{table}','U',NEW.id); END"
+                f"VALUES('{table}','U',NEW.rowid); END"
             )
             cols = [r[1] for r in conn.execute(f"PRAGMA table_info({table})").fetchall()]
             jp = ",".join(f"'{c}',OLD.{c}" for c in cols)
             conn.execute(
-                f"CREATE TRIGGER IF NOT EXISTS _trg_{table}_d "
+                f"CREATE TRIGGER _trg_{table}_d "
                 f"AFTER DELETE ON {table} BEGIN "
                 f"INSERT INTO _change_log(table_name,op,row_id,row_json) "
-                f"VALUES('{table}','D',OLD.id,json_object({jp})); END"
+                f"VALUES('{table}','D',OLD.rowid,json_object({jp})); END"
             )
             active += 1
         except Exception as e:
