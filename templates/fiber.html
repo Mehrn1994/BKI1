@@ -389,10 +389,72 @@ document.addEventListener('DOMContentLoaded', function() {
             </div>
             <div id="vplsSection" style="display:none;margin:14px 0;padding:14px;background:rgba(139,92,246,0.06);border:1.5px solid rgba(139,92,246,0.25);border-radius:10px;">
                 <label style="font-weight:700;color:#8b5cf6;display:block;margin-bottom:8px;">&#128276; VPLS (&#1605;&#1575;&#1604;&#1740;)</label>
-                <label style="font-size:13px;">Choose FREE VPLS Tunnel</label>
-                <select id="vplsTunnelSelect"><option value="">Select a branch first...</option></select>
-                <button class="reload-btn" type="button" id="reloadVplsBtn">&#128260; Reload</button>
-                <div class="tunnel-info" id="vplsTunnelInfo" style="display:none;"></div>
+
+                <!-- Auto-Detected WAN IPs (same as mpls_vpls.html) -->
+                <div id="vplsAutoFillPanel" style="display:none;margin-bottom:12px;padding:14px;background:linear-gradient(135deg,rgba(16,185,129,0.08),rgba(6,182,212,0.06));border:1.5px solid rgba(16,185,129,0.3);border-radius:10px;">
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+                        <div style="font-size:12px;text-transform:uppercase;letter-spacing:0.5px;color:#10b981;font-weight:700;">&#9889; Auto-Detected Tunnel IPs</div>
+                        <div id="vplsAutoStats" style="font-size:11px;color:var(--text-muted,#94a3b8);"></div>
+                    </div>
+                    <!-- Hub IP -->
+                    <div style="margin-bottom:10px;padding:10px;background:rgba(139,92,246,0.06);border:1px solid rgba(139,92,246,0.2);border-radius:8px;">
+                        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+                            <label style="margin:0;font-size:13px;font-weight:700;color:#8b5cf6;">Tunnel Destination (HUB IP)</label>
+                            <label style="display:flex;align-items:center;gap:6px;margin:0;cursor:pointer;font-size:12px;color:var(--text-secondary,#94a3b8);">
+                                <input type="checkbox" id="overrideVplsHubIp" style="width:16px;height:16px;accent-color:#ef4444;cursor:pointer;" onchange="toggleVplsHubOverride()">
+                                <span>&#9998; Manual Override</span>
+                            </label>
+                        </div>
+                        <div id="autoVplsHubDisplay" style="display:flex;align-items:center;gap:10px;">
+                            <span id="autoVplsHubValue" style="font-size:15px;font-weight:700;color:#10b981;font-family:'Consolas',monospace;background:rgba(16,185,129,0.1);padding:5px 12px;border-radius:6px;border:1px solid rgba(16,185,129,0.2);">-</span>
+                            <span id="autoVplsHubLabel" style="font-size:11px;color:var(--text-muted,#94a3b8);">Hub router IP (auto-detected)</span>
+                        </div>
+                        <div id="manualVplsHubInput" style="display:none;margin-top:6px;">
+                            <input type="text" id="manualVplsHub" placeholder="Enter HUB IP manually..." style="border-color:rgba(239,68,68,0.4)!important;background:rgba(239,68,68,0.04)!important;">
+                        </div>
+                    </div>
+                    <!-- WAN IP -->
+                    <div style="padding:10px;background:rgba(59,130,246,0.06);border:1px solid rgba(59,130,246,0.2);border-radius:8px;">
+                        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+                            <label style="margin:0;font-size:13px;font-weight:700;color:#3b82f6;">WAN Interface IP (Tunnel Source)</label>
+                            <label style="display:flex;align-items:center;gap:6px;margin:0;cursor:pointer;font-size:12px;color:var(--text-secondary,#94a3b8);">
+                                <input type="checkbox" id="overrideVplsWanIp" style="width:16px;height:16px;accent-color:#ef4444;cursor:pointer;" onchange="toggleVplsWanOverride()">
+                                <span>&#9998; Manual Override</span>
+                            </label>
+                        </div>
+                        <div id="autoVplsWanDisplay" style="display:flex;align-items:center;gap:10px;">
+                            <span id="autoVplsWanValue" style="font-size:15px;font-weight:700;color:#3b82f6;font-family:'Consolas',monospace;background:rgba(59,130,246,0.1);padding:5px 12px;border-radius:6px;border:1px solid rgba(59,130,246,0.2);">-</span>
+                            <span id="autoVplsWanLabel" style="font-size:11px;color:var(--text-muted,#94a3b8);">IP روی اینترفیس WAN (اکتت آخر = Y شعبه)</span>
+                        </div>
+                        <div id="manualVplsWanInput" style="display:none;margin-top:6px;">
+                            <input type="text" id="manualVplsWan" placeholder="Enter WAN IP manually..." style="border-color:rgba(239,68,68,0.4)!important;background:rgba(239,68,68,0.04)!important;">
+                        </div>
+                    </div>
+                    <!-- Subnet info -->
+                    <div id="vplsSubnetInfo" style="margin-top:8px;padding:7px 12px;background:rgba(245,158,11,0.06);border:1px solid rgba(245,158,11,0.2);border-radius:6px;font-size:11px;color:var(--text-muted,#94a3b8);">
+                        <span>&#128203; Subnet: <strong id="vplsSubnetDisplay">-</strong></span>
+                        <span style="margin-left:10px;">Used: <strong id="vplsUsedCount">-</strong></span>
+                        <span style="margin-left:10px;">Free: <strong id="vplsFreeCount">-</strong></span>
+                    </div>
+                </div>
+                <!-- Manual fallback -->
+                <div id="vplsManualFields">
+                    <label style="font-size:13px;">WAN Interface IP (Tunnel Source)</label>
+                    <input type="text" id="vplsWanIpManual" placeholder="e.g. 10.23.251.21">
+                    <label style="font-size:13px;">Tunnel Destination (HUB IP)</label>
+                    <input type="text" id="vplsHubIpManual" placeholder="e.g. 10.23.251.1">
+                </div>
+                <input type="hidden" id="vplsWanIpFinal">
+                <input type="hidden" id="vplsHubIpFinal">
+
+                <!-- Tunnel IP Pair (/31) -->
+                <div style="margin-top:12px;padding:12px;background:rgba(6,182,212,0.06);border:1px solid rgba(6,182,212,0.2);border-radius:8px;">
+                    <label style="font-weight:700;color:#06b6d4;display:block;margin-bottom:6px;">&#128640; Tunnel IP Pair (/31)</label>
+                    <label style="font-size:13px;">Choose FREE /31 range</label>
+                    <select id="vplsTunnelSelect"><option value="">Select a branch first...</option></select>
+                    <button class="reload-btn" type="button" id="reloadVplsBtn">&#128260; Reload</button>
+                    <div class="tunnel-info" id="vplsTunnelInfo" style="display:none;"></div>
+                </div>
             </div>
             <label>Branch Name (English)</label>
             <input type="text" id="branchNameEn" placeholder="e.g. Yasuj">
@@ -517,6 +579,80 @@ async function loadVplsTunnels(province){
     }catch(e){showStatus('Error loading VPLS tunnels: '+e.message,true);}
 }
 
+let currentVplsTemplate=null;
+
+async function loadVplsTunnelTemplate(provinceAbbr,y){
+    try{
+        const url=`/api/tunnel-template?province_abbr=${encodeURIComponent(provinceAbbr)}&service_type=VPLS`;
+        const res=await fetch(url);
+        const data=await res.json();
+        if(data.available){
+            currentVplsTemplate=data;
+            const subnetPrefix=data.branch_subnet.replace('.0/24','');
+            const computedWanIp=subnetPrefix+'.'+y;
+            data.computed_wan_ip=computedWanIp;
+            document.getElementById('vplsAutoFillPanel').style.display='block';
+            document.getElementById('vplsManualFields').style.display='none';
+            document.getElementById('autoVplsHubValue').textContent=data.hub_ip;
+            document.getElementById('autoVplsHubLabel').textContent=`Hub IP for VPLS in ${provinceAbbr} (${data.branch_subnet})`;
+            document.getElementById('autoVplsWanValue').textContent=computedWanIp;
+            document.getElementById('autoVplsWanLabel').textContent=`Based on branch Y=${y} \u2192 ${subnetPrefix}.${y}`;
+            document.getElementById('vplsSubnetDisplay').textContent=data.branch_subnet;
+            document.getElementById('vplsUsedCount').textContent=data.used_count;
+            document.getElementById('vplsFreeCount').textContent=data.remaining;
+            syncVplsIpFields();
+        }else{
+            currentVplsTemplate=null;
+            document.getElementById('vplsAutoFillPanel').style.display='none';
+            document.getElementById('vplsManualFields').style.display='block';
+        }
+    }catch(err){
+        console.error('Error loading VPLS template:',err);
+        currentVplsTemplate=null;
+        document.getElementById('vplsAutoFillPanel').style.display='none';
+        document.getElementById('vplsManualFields').style.display='block';
+    }
+}
+
+function syncVplsIpFields(){
+    const wanFinal=document.getElementById('vplsWanIpFinal');
+    const hubFinal=document.getElementById('vplsHubIpFinal');
+    if(document.getElementById('overrideVplsWanIp').checked){
+        wanFinal.value=document.getElementById('manualVplsWan').value.trim();
+    }else if(currentVplsTemplate&&currentVplsTemplate.computed_wan_ip){
+        wanFinal.value=currentVplsTemplate.computed_wan_ip;
+    }else{
+        wanFinal.value=document.getElementById('vplsWanIpManual').value.trim();
+    }
+    if(document.getElementById('overrideVplsHubIp').checked){
+        hubFinal.value=document.getElementById('manualVplsHub').value.trim();
+    }else if(currentVplsTemplate&&currentVplsTemplate.hub_ip){
+        hubFinal.value=currentVplsTemplate.hub_ip;
+    }else{
+        hubFinal.value=document.getElementById('vplsHubIpManual').value.trim();
+    }
+}
+
+function toggleVplsHubOverride(){
+    const isOverride=document.getElementById('overrideVplsHubIp').checked;
+    document.getElementById('autoVplsHubDisplay').style.display=isOverride?'none':'flex';
+    document.getElementById('manualVplsHubInput').style.display=isOverride?'block':'none';
+    syncVplsIpFields();
+}
+
+function toggleVplsWanOverride(){
+    const isOverride=document.getElementById('overrideVplsWanIp').checked;
+    document.getElementById('autoVplsWanDisplay').style.display=isOverride?'none':'flex';
+    document.getElementById('manualVplsWanInput').style.display=isOverride?'block':'none';
+    syncVplsIpFields();
+}
+
+document.addEventListener('input',function(e){
+    if(['manualVplsWan','manualVplsHub','vplsWanIpManual','vplsHubIpManual'].includes(e.target.id)){
+        syncVplsIpFields();
+    }
+});
+
 document.getElementById('branchName').addEventListener('input',function(){
     const val=this.value.trim();
     const match=val.match(/\[([^\]]+)\]\s*\(10\.(\d+)\.(\d+)\.0\)/);
@@ -533,7 +669,7 @@ document.getElementById('branchName').addEventListener('input',function(){
         document.getElementById('autoY').textContent=y;
         document.getElementById('autoLan').textContent=`10.${x}.${y}.5/24`;
         document.getElementById('autoFieldsPanel').style.display='block';
-        if(isMali)loadVplsTunnels(prov.en);
+        if(isMali){loadVplsTunnels(prov.en);loadVplsTunnelTemplate(prov.abbr,y);}
     }
 });
 document.getElementById('reloadVplsBtn').addEventListener('click',function(){
@@ -653,7 +789,7 @@ crypto map BKI-MAP-INT 1 ipsec-isakmp
 }
 
 function generateFTTHConfig(p){
-    const {bx,by,intranetWanIp,intranetMask,vplsBranchIp,vplsHubIp,branchNameEn,provinceAbbr}=p;
+    const {bx,by,intranetWanIp,intranetMask,vplsBranchIp,vplsHubIp,vplsWanIp,branchNameEn,provinceAbbr}=p;
     let cfg='';
     if(isIntranet&&intranetWanIp) cfg+=buildFTTHCrypto();
     cfg+=`interface Loopback0
@@ -672,9 +808,9 @@ function generateFTTHConfig(p){
 !
 `;
     }
-    if(isMali&&vplsBranchIp){
+    if(isMali&&vplsWanIp){
         cfg+=`interface FastEthernet0/1
- ip address ${vplsBranchIp} 255.255.255.0
+ ip address ${vplsWanIp} 255.255.255.0
  ip access-group SERIAL_IN in
  duplex auto
  speed auto
@@ -735,7 +871,7 @@ ip route 192.168.65.0 255.255.255.0 FastEthernet0/0 name Chakavak
 
 function generateSFP4331Config(p){
     const {bx,by,intranetWanIp,intranetMask,vlanIntranet,vlanMali,
-           vplsBranchIp,vplsHubIp,branchNameEn,provinceAbbr,t200br,t201br,mask}=p;
+           vplsBranchIp,vplsHubIp,vplsWanIp,branchNameEn,provinceAbbr,t200br,t201br,mask}=p;
     let cfg='';
     if(isIntranet&&intranetWanIp) cfg+=buildSFPCrypto(intranetWanIp);
     cfg+=`interface Loopback0
@@ -810,7 +946,7 @@ interface GigabitEthernet0/0/2
         cfg+=`interface GigabitEthernet0/0/2.${vlanMali}
  description VPLS-WAN
  encapsulation dot1Q ${vlanMali}
- ip address 10.${bx}.251.${by} 255.255.255.252
+ ip address ${vplsWanIp||`10.${bx}.251.${by}`} 255.255.255.0
  ip access-group SERIAL_IN in
 !
 `;
@@ -861,7 +997,7 @@ ip route 192.168.65.0 255.255.255.0 Tunnel200 name Chakavak
 
 function generateSFP2960RouterConfig(p){
     const {bx,by,intranetWanIp,intranetMask,vlanIntranet,vlanMali,
-           vplsBranchIp,vplsHubIp,branchNameEn,provinceAbbr,t200br,t201br,mask}=p;
+           vplsBranchIp,vplsHubIp,vplsWanIp,branchNameEn,provinceAbbr,t200br,t201br,mask}=p;
     let cfg='';
     if(isIntranet&&intranetWanIp) cfg+=buildSFPCrypto(intranetWanIp);
     cfg+=`interface Loopback0
@@ -877,10 +1013,10 @@ function generateSFP2960RouterConfig(p){
     if(isMali){
         cfg+=`interface Tunnel79
  description ** VPLS - ${provinceAbbr}-${branchNameEn||by} **
- ip address 10.${bx}.252.${by} 255.255.255.0
+ ip address ${vplsBranchIp||`10.${bx}.252.${by}`} 255.255.255.0
  ip nat inside
  tunnel source FastEthernet0/1.${vlanMali||'99'}
- tunnel destination 10.${bx}.252.1
+ tunnel destination ${vplsHubIp||`10.${bx}.252.1`}
 !
 `;
     }
@@ -953,7 +1089,7 @@ interface FastEthernet0/1.10
         cfg+=`interface FastEthernet0/1.${vlanMali}
  description VPLS-WAN
  encapsulation dot1Q ${vlanMali}
- ip address 10.${bx}.252.${by} 255.255.255.0
+ ip address ${vplsWanIp||`10.${bx}.252.${by}`} 255.255.255.0
  ip access-group SERIAL_IN in
 !
 `;
@@ -1044,11 +1180,16 @@ document.getElementById('generateBtn').addEventListener('click',async function()
     if(isSFP&&isIntranet&&!vlanIntranet){showStatus('لطفا VLAN غیرمالی را وارد کنید!',true);return;}
     if(isSFP&&isMali&&!vlanMali){showStatus('لطفا VLAN مالی را وارد کنید!',true);return;}
 
-    let vplsBranchIp='',vplsHubIp='',vplsTunnelId=null;
+    let vplsBranchIp='',vplsHubIp='',vplsWanIp='',vplsTunnelId=null;
     if(isMali){
+        syncVplsIpFields();
+        vplsWanIp=document.getElementById('vplsWanIpFinal').value.trim();
+        vplsHubIp=document.getElementById('vplsHubIpFinal').value.trim();
+        if(!vplsWanIp){showStatus('لطفا WAN IP مالی را وارد کنید!',true);return;}
+        if(!vplsHubIp){showStatus('لطفا Hub IP مالی را وارد کنید!',true);return;}
         const vv=document.getElementById('vplsTunnelSelect').value;
         if(!vv){showStatus('لطفا یک تانل VPLS انتخاب کنید!',true);return;}
-        try{const vd=JSON.parse(vv);vplsBranchIp=vd.branch_ip||'';vplsHubIp=vd.hub_ip||'';vplsTunnelId=vd.id;}catch(e){}
+        try{const vd=JSON.parse(vv);vplsBranchIp=vd.branch_ip||'';vplsTunnelId=vd.id;}catch(e){}
         if(!vplsBranchIp){showStatus('داده تانل VPLS نامعتبر است!',true);return;}
     }
 
@@ -1086,7 +1227,7 @@ document.getElementById('generateBtn').addEventListener('click',async function()
         }catch(e){showStatus('Error: '+e.message,true);btn.disabled=false;btn.textContent='\u26a1 Generate Fiber Config';return;}
     }
 
-    const params={bx,by,intranetWanIp,intranetMask,vlanIntranet,vlanMali,vplsBranchIp,vplsHubIp,branchNameEn,provinceAbbr,t200br,t201br,mask:tunnelMask};
+    const params={bx,by,intranetWanIp,intranetMask,vlanIntranet,vlanMali,vplsBranchIp,vplsHubIp,vplsWanIp,branchNameEn,provinceAbbr,t200br,t201br,mask:tunnelMask};
     let routerCfg='';
     if(isFTTH()){
         routerCfg=generateFTTHConfig(params);
