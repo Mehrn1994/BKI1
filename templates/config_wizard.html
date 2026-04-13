@@ -380,26 +380,43 @@ const STEPS = {
     },
 
     // ---- FIBER PATH ----
-    fiber_type: {
-        id: 'fiber_type',
-        title: '&#128171; نوع ارتباط فیبر',
-        subtitle: 'فیبر نوری از چه نوعی است؟',
-        label: 'نوع فیبر',
+    fiber_connection: {
+        id: 'fiber_connection',
+        title: '&#128171; نوع اتصال فیبر نوری',
+        subtitle: 'نوع اتصال فیبر نوری را انتخاب کنید',
+        label: 'نوع اتصال',
         options: [
-            { value: 'FTTH', icon: '&#127968;', title: 'FTTH', desc: 'Fiber To The Home' },
-            { value: 'SFP', icon: '&#128171;', title: 'SFP', desc: 'Small Form-factor Pluggable' },
-            { value: 'Switch 2960', icon: '&#128433;', title: 'سوییچ 2960', desc: 'Cisco Catalyst 2960 Switch' }
+            { value: 'FTTH', icon: '&#127968;', title: 'FTTH/O (Modem)',
+              desc: 'اتصال از طریق مودم/ONT مخابراتی — ماژول 4ESW' },
+            { value: 'SFP',  icon: '&#128171;', title: 'ACCESS (SFP)',
+              desc: 'اتصال مستقیم SFP — نیاز به شماره VLAN از مخابرات' }
+        ]
+    },
+    fiber_router: {
+        id: 'fiber_router',
+        title: '&#128421; نوع تجهیز',
+        subtitle: 'تجهیز سمت مخابرات را انتخاب کنید',
+        label: 'تجهیز',
+        options: [
+            { value: '4331', icon: '&#128421;', title: 'روتر 4331',
+              desc: 'ISR 4331 — سابینترفیس GigEth0/0/2.VLAN' },
+            { value: '2960', icon: '&#128433;', title: 'سوییچ 2960',
+              desc: 'سوییچ لایه ۲ + روتر شعبه (Fa0/1.VLAN)' }
         ]
     },
     fiber_service: {
         id: 'fiber_service',
-        title: '&#9881; نوع سرویس فیبر',
-        subtitle: 'چه نوع سرویسی روی فیبر نیاز دارید؟',
+        title: '&#9881; نوع سرویس',
+        subtitle: 'کدام سرویس‌ها فعال می‌شوند؟',
         label: 'نوع سرویس',
         isFinal: true,
         options: [
-            { value: 'مالی', icon: '&#128181;', title: 'مالی', desc: 'سرویس مالی روی فیبر' },
-            { value: 'غیرمالی', icon: '&#128421;', title: 'غیرمالی', desc: 'سرویس غیرمالی روی فیبر' }
+            { value: 'غیرمالی', icon: '&#128421;', title: 'غیرمالی (Intranet)',
+              desc: 'اینترانت — Tunnel200/201' },
+            { value: 'مالی',    icon: '&#128181;', title: 'مالی (VPLS)',
+              desc: 'سرویس مالی MPLS/VPLS — Tunnel79' },
+            { value: 'هردو',    icon: '&#9889;',   title: 'هردو',
+              desc: 'هر دو سرویس مالی و غیرمالی' }
         ]
     }
 };
@@ -411,7 +428,7 @@ function getNextStepId(currentStepId, selectedValue) {
         case 'platform':
             if (selectedValue === 'APN') return 'apn_isp';
             if (selectedValue === 'سیم مسی') return 'copper_protocol';
-            if (selectedValue === 'فیبر') return 'fiber_type';
+            if (selectedValue === 'فیبر') return 'fiber_connection';
             return null;
         // APN
         case 'apn_isp': return 'apn_service';
@@ -428,7 +445,10 @@ function getNextStepId(currentStepId, selectedValue) {
         case 'copper_module_type': return null; // final
         case 'copper_modem_type': return null; // final
         // Fiber
-        case 'fiber_type': return 'fiber_service';
+        case 'fiber_connection':
+            if (selectedValue === 'SFP') return 'fiber_router'; // ACCESS SFP → pick device
+            return 'fiber_service'; // FTTH/O → straight to service
+        case 'fiber_router': return 'fiber_service';
         case 'fiber_service': return null; // final
         default: return null;
     }
@@ -660,11 +680,7 @@ function finishWizard() {
 
     // ---- FIBER ----
     if (platform === 'فیبر') {
-        const fiberType = selections['fiber_type'];
-
-        const fiberService = selections['fiber_service'];
-        alert('پیکربندی فیبر (' + fiberType + ') - ' + fiberService +
-              '\n\nصفحه پیکربندی فیبر به زودی اضافه می‌شود.');
+        window.location.href = '/fiber';
         return;
     }
 }
