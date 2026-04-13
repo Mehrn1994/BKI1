@@ -82,3 +82,8 @@ def network_map_page():
 @pages_bp.route('/nat-diagram')
 def nat_diagram_page():
     return render_template('nat_diagram.html')
+
+
+@pages_bp.route('/fiber')
+def fiber_page():
+    return render_template('fiber.html')

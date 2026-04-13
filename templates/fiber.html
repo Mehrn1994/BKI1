@@ -1,0 +1,1116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Fiber Optic Config Generator</title>
+    <style>
+/* ========== THEME SYSTEM ========== */
+:root {
+    --bg-primary: #0f172a;
+    --bg-secondary: #1e293b;
+    --bg-card: rgba(30, 41, 59, 0.8);
+    --bg-header: rgba(30, 41, 59, 0.9);
+    --text-primary: #e2e8f0;
+    --text-secondary: #94a3b8;
+    --text-muted: #64748b;
+    --border-color: rgba(255, 255, 255, 0.1);
+    --shadow-color: rgba(0, 0, 0, 0.3);
+    --input-bg: rgba(15, 23, 42, 0.8);
+    --input-border: rgba(255, 255, 255, 0.2);
+    --card-hover: rgba(255, 255, 255, 0.05);
+}
+
+[data-theme="light"] {
+    --bg-primary: #f8fafc;
+    --bg-secondary: #f1f5f9;
+    --bg-card: #ffffff;
+    --bg-header: #ffffff;
+    --text-primary: #0f172a;
+    --text-secondary: #334155;
+    --text-muted: #475569;
+    --border-color: rgba(0, 0, 0, 0.15);
+    --shadow-color: rgba(0, 0, 0, 0.1);
+    --input-bg: #ffffff;
+    --input-border: rgba(0, 0, 0, 0.2);
+    --card-hover: rgba(0, 0, 0, 0.05);
+}
+
+body { transition: background 0.3s ease, color 0.3s ease; }
+
+[data-theme="light"] body {
+    background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 100%) !important;
+    color: var(--text-primary) !important;
+}
+
+[data-theme="light"] .header, [data-theme="light"] header,
+[data-theme="light"] .top-bar, [data-theme="light"] .navbar {
+    background: var(--bg-header) !important;
+    border-color: var(--border-color) !important;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08) !important;
+}
+
+[data-theme="light"] .card, [data-theme="light"] .form-section,
+[data-theme="light"] .config-section, [data-theme="light"] .result-section,
+[data-theme="light"] .section, [data-theme="light"] .panel,
+[data-theme="light"] .main-card, [data-theme="light"] .box {
+    background: var(--bg-card) !important;
+    border-color: var(--border-color) !important;
+    color: var(--text-primary) !important;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.06) !important;
+}
+
+[data-theme="light"] input, [data-theme="light"] select, [data-theme="light"] textarea {
+    background: var(--input-bg) !important;
+    border: 1px solid var(--input-border) !important;
+    color: #0f172a !important;
+}
+
+[data-theme="light"] input::placeholder { color: #64748b !important; }
+[data-theme="light"] select option { background: #fff; color: #0f172a; }
+
+[data-theme="light"] label, [data-theme="light"] .form-label,
+[data-theme="light"] h1, [data-theme="light"] h2, [data-theme="light"] h3, [data-theme="light"] h4,
+[data-theme="light"] .section-title, [data-theme="light"] .title,
+[data-theme="light"] .app-title h1, [data-theme="light"] .app-title p {
+    color: #0f172a !important;
+}
+
+[data-theme="light"] p, [data-theme="light"] span:not(.badge):not(.tag),
+[data-theme="light"] div:not(.btn):not(.badge) {
+    color: inherit;
+}
+
+[data-theme="light"] .hint, [data-theme="light"] .info-text, [data-theme="light"] small,
+[data-theme="light"] .description, [data-theme="light"] .help-text,
+[data-theme="light"] .form-hint, [data-theme="light"] .note {
+    color: #334155 !important;
+}
+
+[data-theme="light"] .user-display, [data-theme="light"] .user-info,
+[data-theme="light"] .user-name, [data-theme="light"] #currentUser {
+    color: #0f172a !important;
+}
+
+[data-theme="light"] .badge, [data-theme="light"] .tag, [data-theme="light"] .count {
+    color: #fff !important;
+}
+
+[data-theme="light"] a:not(.btn):not(button):not(.back-btn):not(.logout-link) {
+    color: #2563eb !important;
+}
+
+[data-theme="light"] .back-btn, [data-theme="light"] .logout-link {
+    color: #dc2626 !important;
+}
+
+[data-theme="light"] pre, [data-theme="light"] code, [data-theme="light"] .config-output,
+[data-theme="light"] .output-box, [data-theme="light"] .code-block {
+    background: #1e293b !important;
+    color: #e2e8f0 !important;
+}
+
+[data-theme="light"] table { border-color: var(--border-color) !important; }
+[data-theme="light"] th, [data-theme="light"] td {
+    border-color: var(--border-color) !important;
+    color: #0f172a !important;
+}
+[data-theme="light"] th { background: #f1f5f9 !important; color: #0f172a !important; }
+[data-theme="light"] tr:hover { background: #f8fafc !important; }
+
+[data-theme="light"] .success, [data-theme="light"] .alert-success,
+[data-theme="light"] .success-box, [data-theme="light"] .ip-reserved {
+    background: #dcfce7 !important;
+    color: #166534 !important;
+    border-color: #86efac !important;
+}
+
+[data-theme="light"] .error, [data-theme="light"] .alert-error,
+[data-theme="light"] .error-box {
+    background: #fee2e2 !important;
+    color: #991b1b !important;
+    border-color: #fca5a5 !important;
+}
+
+[data-theme="light"] .info-box, [data-theme="light"] .notice,
+[data-theme="light"] .auto-ip-info {
+    background: #eff6ff !important;
+    color: #1e40af !important;
+    border-color: #93c5fd !important;
+}
+
+[data-theme="light"] .btn-primary, [data-theme="light"] button[type="submit"] {
+    background: #2563eb !important;
+    color: #fff !important;
+}
+
+.theme-toggle {
+    background: var(--bg-card, rgba(30,41,59,0.8));
+    border: 1px solid var(--border-color, rgba(255,255,255,0.1));
+    border-radius: 50%;
+    width: 36px;
+    height: 36px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
+    transition: all 0.3s ease;
+    margin-left: 10px;
+}
+.theme-toggle:hover { transform: scale(1.1); }
+
+/* ========== DARK THEME EXPLICIT OVERRIDES ========== */
+:root body {
+    background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+    color: #e2e8f0;
+}
+:root .card {
+    background: rgba(30, 41, 59, 0.8);
+    border-color: rgba(255, 255, 255, 0.1);
+    color: #e2e8f0;
+}
+:root h1, :root h2, :root h3, :root h4 { color: #f1f5f9; }
+:root label { color: #cbd5e1; }
+:root .device-title { color: #f1f5f9; }
+:root input, :root select, :root textarea {
+    background: rgba(15, 23, 42, 0.8);
+    border-color: rgba(255, 255, 255, 0.2);
+    color: #e2e8f0;
+}
+:root input::placeholder { color: #64748b; }
+:root pre, :root textarea {
+    background: rgba(15, 23, 42, 0.8);
+    border-color: rgba(255, 255, 255, 0.15);
+    color: #e2e8f0;
+}
+
+[data-theme="dark"] label, [data-theme="dark"] .form-label { color: #cbd5e1 !important; }
+[data-theme="dark"] h1, [data-theme="dark"] h2, [data-theme="dark"] h3, [data-theme="dark"] h4 { color: #f1f5f9 !important; }
+[data-theme="dark"] span { color: inherit; }
+[data-theme="dark"] .card {
+    background: rgba(30, 41, 59, 0.85) !important;
+    border-color: rgba(255, 255, 255, 0.12) !important;
+    color: #e2e8f0 !important;
+}
+[data-theme="dark"] input, [data-theme="dark"] select, [data-theme="dark"] textarea {
+    background: rgba(15, 23, 42, 0.9) !important;
+    border: 1px solid rgba(255, 255, 255, 0.2) !important;
+    color: #f1f5f9 !important;
+}
+[data-theme="dark"] input::placeholder { color: #64748b !important; }
+[data-theme="dark"] select option { background: #1e293b; color: #e2e8f0; }
+[data-theme="dark"] .device-title { color: #f1f5f9 !important; }
+[data-theme="dark"] .device-box-header { color: #f1f5f9 !important; }
+[data-theme="dark"] .user-info { background: rgba(59, 130, 246, 0.15) !important; color: #93c5fd !important; }
+[data-theme="dark"] .tunnel-info { background: rgba(245, 158, 11, 0.12) !important; color: #fcd34d !important; }
+[data-theme="dark"] .status-success { background: rgba(16, 185, 129, 0.15) !important; color: #6ee7b7 !important; border-color: rgba(16, 185, 129, 0.3) !important; }
+[data-theme="dark"] .status-error { background: rgba(239, 68, 68, 0.15) !important; color: #fca5a5 !important; border-color: rgba(239, 68, 68, 0.3) !important; }
+[data-theme="dark"] pre, [data-theme="dark"] textarea { background: rgba(15, 23, 42, 0.9) !important; border-color: rgba(255, 255, 255, 0.15) !important; color: #e2e8f0 !important; }
+[data-theme="dark"] .auto-field-item { background: rgba(59, 130, 246, 0.08) !important; border-color: rgba(59, 130, 246, 0.2) !important; }
+[data-theme="dark"] .auto-field-label { color: #94a3b8 !important; }
+[data-theme="dark"] .auto-field-value { color: #f1f5f9 !important; }
+
+/* ========== END THEME ========== */
+
+/* Auto-fill fields styling */
+.auto-fields-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.auto-field-item { background: #f0f7ff; border: 1px solid #bfdbfe; border-radius: 8px; padding: 8px 12px; }
+.auto-field-label { display: block; font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px; color: #64748b; font-weight: 600; margin-bottom: 3px; }
+.auto-field-value { display: block; font-size: 14px; font-weight: 700; color: #0f172a; font-family: 'Consolas', 'JetBrains Mono', monospace; }
+
+        body {
+            font-family: monospace;
+            background: var(--bg-primary, #f5faff);
+            color: var(--text-primary, #1e293b);
+            margin: 0;
+        }
+        header { padding: 0; margin: 0; }
+        h1 { margin: 0; font-size: 20px; font-weight: bold; color: var(--text-primary, #0f172a); }
+        h2 { color: var(--text-primary, #0f172a); }
+        .ascii-banner { text-align: center; font-size: 14px; line-height: 1.2; white-space: pre; color: #8b5cf6; margin: 12px 0; font-family: monospace; }
+        main {
+            display: grid;
+            grid-template-columns: 380px 1fr;
+            gap: 16px;
+            padding: 16px;
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+        .card {
+            background: var(--bg-card, #ffffff);
+            border: 1px solid var(--border-color, #cbd5e1);
+            border-radius: 10px;
+            padding: 16px;
+            color: var(--text-primary, #0f172a);
+        }
+        label { display: block; margin-top: 10px; font-size: 12px; font-weight: bold; color: var(--text-secondary, #334155); }
+        input, select {
+            width: 100%; padding: 8px; margin-top: 4px; border-radius: 6px;
+            border: 1px solid var(--input-border, #94a3b8);
+            background: var(--input-bg, #f1f5f9);
+            color: var(--text-primary, #0f172a);
+            box-sizing: border-box;
+        }
+        button { margin-top: 12px; padding: 10px; border-radius: 8px; border: none; font-weight: bold; cursor: pointer; }
+        button.primary { background: #8b5cf6; color: #fff; }
+        button.primary:hover { background: #7c3aed; }
+        button.primary:disabled { background: #94a3b8; cursor: not-allowed; }
+        .reload-btn { background: #64748b; color: #fff; padding: 6px 12px; font-size: 11px; }
+        pre, textarea {
+            background: var(--input-bg, #f8fafc);
+            border: 1px dashed var(--border-color, #94a3b8);
+            border-radius: 8px; padding: 14px; white-space: pre; overflow-x: auto;
+            max-height: 60vh; font-size: 12px; color: var(--text-primary, #1e293b);
+            width: 100%; box-sizing: border-box; font-family: Consolas, monospace;
+        }
+        textarea { resize: vertical; min-height: 500px; }
+        .status-message { padding: 10px; margin: 10px 0; border-radius: 6px; font-size: 13px; }
+        .status-success { background: #d1fae5; color: #065f46; border: 1px solid #10b981; }
+        .status-error { background: #fee2e2; color: #991b1b; border: 1px solid #ef4444; }
+        .user-info { background: #dbeafe; padding: 8px; border-radius: 6px; margin-bottom: 12px; font-size: 12px; color: #1e40af; font-weight: bold; }
+        .tunnel-info { background: #fef3c7; padding: 8px; border-radius: 6px; margin-top: 8px; font-size: 11px; color: #92400e; }
+        .device-box { margin-bottom: 20px; }
+        .device-box-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+        .device-title { font-size: 13px; font-weight: bold; color: var(--text-primary, #0f172a); }
+        .copy-btn { background: #10b981; color: #ecfdf5; border-radius: 6px; padding: 4px 10px; font-size: 11px; margin-top: 0; }
+        .copy-btn:hover { background: #059669; }
+
+/* ========== BETTER FONTS ========== */
+body { font-size: 16px !important; line-height: 1.6 !important; }
+h1 { font-size: 1.8rem !important; font-weight: 700 !important; }
+h2 { font-size: 1.4rem !important; font-weight: 700 !important; }
+h3 { font-size: 1.2rem !important; font-weight: 600 !important; }
+label, .form-label { font-size: 15px !important; font-weight: 600 !important; color: var(--text-primary, inherit) !important; }
+input, select, textarea { font-size: 15px !important; padding: 12px 14px !important; }
+.hint, .info-text, .help-text, .form-hint, small, .note, .description { font-size: 14px !important; font-weight: 500 !important; }
+.btn, button:not(.theme-toggle) { font-size: 15px !important; font-weight: 600 !important; }
+pre, code, .config-output, .output-box { font-size: 14px !important; line-height: 1.5 !important; }
+
+[data-theme="light"] label, [data-theme="light"] .form-label,
+[data-theme="light"] .section-title, [data-theme="light"] .title,
+[data-theme="light"] h1, [data-theme="light"] h2, [data-theme="light"] h3 { color: #0f172a !important; }
+[data-theme="light"] .hint, [data-theme="light"] small,
+[data-theme="light"] .info-text, [data-theme="light"] .description,
+[data-theme="light"] .help-text { color: #334155 !important; }
+[data-theme="light"] input, [data-theme="light"] select, [data-theme="light"] textarea {
+    color: #0f172a !important; background: #fff !important; border: 1px solid rgba(0,0,0,0.2) !important;
+}
+[data-theme="light"] input::placeholder { color: #64748b !important; }
+    </style>
+
+<script>
+(function() {
+    var theme = localStorage.getItem('theme') || 'dark';
+    document.documentElement.setAttribute('data-theme', theme);
+})();
+
+function toggleTheme() {
+    var current = document.documentElement.getAttribute('data-theme') || 'dark';
+    var next = current === 'dark' ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', next);
+    localStorage.setItem('theme', next);
+    var icon = document.getElementById('themeIcon');
+    if (icon) icon.textContent = next === 'dark' ? '\u{1F319}' : '\u{2600}\u{FE0F}';
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    var icon = document.getElementById('themeIcon');
+    if (icon) {
+        var theme = localStorage.getItem('theme') || 'dark';
+        icon.textContent = theme === 'dark' ? '\u{1F319}' : '\u{2600}\u{FE0F}';
+    }
+});
+</script>
+</head>
+<body>
+    <header>
+        <div style="max-width:1200px;margin:0 auto;padding:10px 16px;display:flex;justify-content:space-between;align-items:center;background:var(--bg-header,#e2e8f0);border-bottom:1px solid var(--border-color,#cbd5e1);">
+            <div>
+                <span style="font-size:14px;color:var(--text-secondary,#475569);">&#128100; User: </span>
+                <span id="currentUser" style="font-size:14px;font-weight:bold;color:var(--text-primary,#0f172a);">Loading...</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px;">
+                <button class="theme-toggle" onclick="toggleTheme()" title="Toggle Theme"><span id="themeIcon">&#127769;</span></button>
+                <a href="/config-wizard" style="padding:6px 14px;border-radius:6px;background:#3b82f6;color:#fff;text-decoration:none;font-size:13px;font-weight:bold;" onmouseover="this.style.background='#2563eb'" onmouseout="this.style.background='#3b82f6'">&#8594; &#1576;&#1575;&#1586;&#1711;&#1588;&#1578; &#1576;&#1607; &#1608;&#1740;&#1586;&#1575;&#1585;&#1583;</a>
+                <a href="/" style="padding:6px 14px;border-radius:6px;background:#ef4444;color:#fff;text-decoration:none;font-size:13px;font-weight:bold;" onmouseover="this.style.background='#dc2626'" onmouseout="this.style.background='#ef4444'">&#8592; &#1576;&#1575;&#1586;&#1711;&#1588;&#1578; &#1576;&#1607; &#1605;&#1606;&#1608;&#1740; &#1575;&#1589;&#1604;&#1740;</a>
+            </div>
+        </div>
+        <div style="text-align:center;padding:10px 16px;background:var(--bg-header,#e2e8f0);">
+            <h1 style="color:var(--text-primary,inherit);">&#128308; Fiber Optic (&#1601;&#1740;&#1576;&#1585; &#1606;&#1608;&#1585;&#1740;) Config Generator</h1>
+            <div class="ascii-banner"><pre>Keshavarzi Bank Network - Fiber Optic</pre></div>
+            <div id="wizardSummary" style="display:inline-flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-top:6px;"></div>
+        </div>
+    </header>
+    <main>
+        <section class="card">
+            <h2>Inputs</h2>
+            <label>Select Branch (&#1575;&#1606;&#1578;&#1582;&#1575;&#1576; &#1588;&#1593;&#1576;&#1607;)</label>
+            <input id="branchName" type="text" list="branchList" placeholder="Type branch name..." autocomplete="off">
+            <datalist id="branchList"></datalist>
+            <div id="autoFieldsPanel" style="display:none;margin:12px 0;background:rgba(20,184,166,0.06);border:1px solid rgba(20,184,166,0.2);border-radius:10px;padding:14px 16px;">
+                <div style="font-size:11px;text-transform:uppercase;letter-spacing:0.5px;color:#14b8a6;font-weight:700;margin-bottom:10px;">Auto-filled from branch</div>
+                <div class="auto-fields-grid">
+                    <div class="auto-field-item"><span class="auto-field-label">Province</span><span class="auto-field-value" id="autoProvince">-</span></div>
+                    <div class="auto-field-item"><span class="auto-field-label">X (Province)</span><span class="auto-field-value" id="autoX">-</span></div>
+                    <div class="auto-field-item"><span class="auto-field-label">Y (Branch)</span><span class="auto-field-value" id="autoY">-</span></div>
+                    <div class="auto-field-item"><span class="auto-field-label">LAN IP</span><span class="auto-field-value" id="autoLan">-</span></div>
+                </div>
+            </div>
+            <input type="hidden" id="branchX">
+            <input type="hidden" id="branchY">
+            <input type="hidden" id="province">
+            <input type="hidden" id="provinceAbbr">
+            <div id="vlanSection" style="display:none;margin:14px 0;padding:14px;background:rgba(245,158,11,0.06);border:1.5px solid rgba(245,158,11,0.3);border-radius:10px;">
+                <label style="font-weight:700;color:#f59e0b;display:block;margin-bottom:8px;">&#127760; VLAN &#1605;&#1582;&#1575;&#1576;&#1585;&#1575;&#1578;</label>
+                <div id="vlanIntranetBox" style="display:none;margin-bottom:10px;">
+                    <label style="font-size:13px;">VLAN &#1594;&#1740;&#1585;&#1605;&#1575;&#1604;&#1740; (Intranet)</label>
+                    <input type="number" id="vlanIntranet" placeholder="e.g. 100" min="2" max="4094">
+                </div>
+                <div id="vlanMaliBox" style="display:none;">
+                    <label style="font-size:13px;">VLAN &#1605;&#1575;&#1604;&#1740; (VPLS)</label>
+                    <input type="number" id="vlanMali" placeholder="e.g. 200" min="2" max="4094">
+                </div>
+            </div>
+            <div id="intranetSection" style="display:none;margin:14px 0;padding:14px;background:rgba(6,182,212,0.06);border:1.5px solid rgba(6,182,212,0.25);border-radius:10px;">
+                <label style="font-weight:700;color:#06b6d4;display:block;margin-bottom:8px;">&#128640; Intranet (&#1594;&#1740;&#1585;&#1605;&#1575;&#1604;&#1740;)</label>
+                <label style="font-size:13px;">Choose FREE /31 Tunnel Pair</label>
+                <select id="intranetTunnelSelect"><option value="">Loading...</option></select>
+                <button class="reload-btn" type="button" onclick="loadIntranetTunnels()">&#128260; Reload</button>
+                <div class="tunnel-info">&#10003; First free tunnel auto-selected</div>
+                <label style="font-size:13px;margin-top:10px;">WAN IP (Intranet Interface)</label>
+                <input type="text" id="intranetWanIp" placeholder="e.g. 10.181.2.10">
+                <label style="font-size:13px;">Subnet Mask Intranet WAN</label>
+                <select id="intranetWanMask">
+                    <option value="255.255.255.248">/29 (&#1662;&#1740;&#1588;&#8204;&#1601;&#1585;&#1590;)</option>
+                    <option value="255.255.255.252">/30</option>
+                    <option value="255.255.255.240">/28</option>
+                    <option value="255.255.255.0">/24</option>
+                </select>
+            </div>
+            <div id="vplsSection" style="display:none;margin:14px 0;padding:14px;background:rgba(139,92,246,0.06);border:1.5px solid rgba(139,92,246,0.25);border-radius:10px;">
+                <label style="font-weight:700;color:#8b5cf6;display:block;margin-bottom:8px;">&#128276; VPLS (&#1605;&#1575;&#1604;&#1740;)</label>
+                <label style="font-size:13px;">Choose FREE VPLS Tunnel</label>
+                <select id="vplsTunnelSelect"><option value="">Select a branch first...</option></select>
+                <button class="reload-btn" type="button" id="reloadVplsBtn">&#128260; Reload</button>
+                <div class="tunnel-info" id="vplsTunnelInfo" style="display:none;"></div>
+            </div>
+            <label>Branch Name (English)</label>
+            <input type="text" id="branchNameEn" placeholder="e.g. Yasuj">
+            <div id="statusMessage"></div>
+            <button class="primary" id="generateBtn" style="width:100%;margin-top:16px;background:linear-gradient(135deg,#14b8a6,#0891b2);">&#9889; Generate Fiber Config</button>
+        </section>
+        <section class="card">
+            <h2>Generated Config</h2>
+            <div class="device-box">
+                <div class="device-box-header">
+                    <span class="device-title" id="routerConfigTitle">Router Config</span>
+                    <button class="copy-btn" onclick="copyConfig('routerConfig')">Copy</button>
+                </div>
+                <textarea id="routerConfig" readonly>Config will appear here after Generate...</textarea>
+            </div>
+            <div class="device-box" id="switchConfigBox" style="display:none;">
+                <div class="device-box-header">
+                    <span class="device-title">2960 Switch Config</span>
+                    <button class="copy-btn" onclick="copyConfig('switchConfig')">Copy</button>
+                </div>
+                <textarea id="switchConfig" readonly>Switch config will appear here...</textarea>
+            </div>
+        </section>
+    </main>
+
+    <script>
+const SESSION_TIMEOUT=8*60*60*1000;
+(function(){const ss=localStorage.getItem('sessionStart');if(ss&&(Date.now()-parseInt(ss))>SESSION_TIMEOUT){localStorage.clear();sessionStorage.clear();alert('Session expired.');location.href='/login';}})();
+let currentUsername=localStorage.getItem('currentUser')||localStorage.getItem('username')||sessionStorage.getItem('username')||'unknown';
+document.getElementById('currentUser').textContent=currentUsername;
+if(currentUsername==='unknown'){location.href='/login';}
+function copyConfig(id){const el=document.getElementById(id);el.select();document.execCommand('copy');}
+function showStatus(msg,isError=false){const d=document.getElementById('statusMessage');d.className='status-message '+(isError?'status-error':'status-success');d.textContent=msg;setTimeout(()=>{d.textContent='';d.className='';},5000);}
+
+const provinceMapping={
+    'تهران بزرگ':{en:'Tehran',abbr:'TEHB'},'تهران':{en:'Tehran',abbr:'TEH'},
+    'البرز':{en:'Alborz',abbr:'KRJ'},'آذربایجان شرقی':{en:'East Azerbaijan',abbr:'AZSH'},
+    'آذربایجان غربی':{en:'West Azerbaijan',abbr:'AZGH'},'کردستان':{en:'Kurdistan',abbr:'KRD'},
+    'اصفهان':{en:'Isfahan',abbr:'ESF'},'خراسان رضوی':{en:'Razavi Khorasan',abbr:'KHR'},
+    'فارس':{en:'Fars',abbr:'FRS'},'کرمان':{en:'Kerman',abbr:'KRM'},
+    'خوزستان':{en:'Khuzestan',abbr:'KHZ'},'لرستان':{en:'Lorestan',abbr:'LOR'},
+    'گیلان':{en:'Gilan',abbr:'GIL'},'گلستان':{en:'Golestan',abbr:'GLS'},
+    'مازندران':{en:'Mazandaran',abbr:'MAZ'},'سیستان و بلوچستان':{en:'Sistan and Baluchestan',abbr:'SNB'},
+    'یزد':{en:'Yazd',abbr:'YZD'},'زنجان':{en:'Zanjan',abbr:'ZNJ'},
+    'سمنان':{en:'Semnan',abbr:'SMN'},'مرکزی':{en:'Markazi',abbr:'MRZ'},
+    'همدان':{en:'Hamadan',abbr:'HMD'},'قزوین':{en:'Qazvin',abbr:'QZV'},
+    'قم':{en:'Qom',abbr:'QOM'},'اردبیل':{en:'Ardabil',abbr:'ARD'},
+    'ایلام':{en:'Ilam',abbr:'ILM'},'بوشهر':{en:'Bushehr',abbr:'BSH'},
+    'چهارمحال و بختیاری':{en:'Chaharmahal and Bakhtiari',abbr:'CHB'},
+    'هرمزگان':{en:'Hormozgan',abbr:'HMZ'},'کرمانشاه':{en:'Kermanshah',abbr:'KRMSH'},
+    'کهگیلویه و بویراحمد':{en:'Kohgiluyeh and Boyer-Ahmad',abbr:'KHB'},
+    'خراسان شمالی':{en:'North Khorasan',abbr:'KHSH'},'خراسان جنوبی':{en:'South Khorasan',abbr:'KHRJ'}
+};
+
+let selectedBranchData=null;
+let wizardCfg={};
+try{wizardCfg=JSON.parse(localStorage.getItem('wizardConfig')||'{}');}catch(e){}
+const fiberConnection=wizardCfg.fiber_connection||'FTTH';
+const fiberRouter=wizardCfg.fiber_router||'';
+const fiberService=wizardCfg.fiber_service||'غیرمالی';
+const isMali=(fiberService==='مالی'||fiberService==='هردو');
+const isIntranet=(fiberService==='غیرمالی'||fiberService==='هردو');
+const isSFP=(fiberConnection==='SFP');
+const is2960=(fiberRouter==='2960');
+function isFTTH(){return fiberConnection==='FTTH';}
+
+(function(){
+    const s=document.getElementById('wizardSummary');if(!s)return;
+    const badge=(txt,col)=>`<span style="padding:4px 12px;background:${col};color:#fff;border-radius:20px;font-size:13px;font-weight:600;">${txt}</span>`;
+    let html=badge(isSFP?'ACCESS (SFP)':'FTTH/O (Modem)','#14b8a6');
+    if(isSFP)html+=badge(is2960?'Switch 2960':'Router 4331','#8b5cf6');
+    html+=badge(fiberService,isMali&&isIntranet?'#f59e0b':isMali?'#8b5cf6':'#0891b2');
+    s.innerHTML=html;
+})();
+
+function showSections(){
+    document.getElementById('vlanSection').style.display=isSFP?'block':'none';
+    if(isSFP){
+        document.getElementById('vlanIntranetBox').style.display=isIntranet?'block':'none';
+        document.getElementById('vlanMaliBox').style.display=isMali?'block':'none';
+    }
+    document.getElementById('intranetSection').style.display=isIntranet?'block':'none';
+    document.getElementById('vplsSection').style.display=isMali?'block':'none';
+    document.getElementById('switchConfigBox').style.display=(isSFP&&is2960)?'block':'none';
+}
+
+async function loadBranches(){
+    try{
+        const res=await fetch('/api/branches');
+        const branches=await res.json();
+        const dl=document.getElementById('branchList');
+        dl.innerHTML='';
+        branches.forEach(b=>{const o=document.createElement('option');o.value=`${b.name} - [${b.province}] (10.${b.x}.${b.y}.0)`;dl.appendChild(o);});
+    }catch(e){console.error('Error loading branches:',e);}
+}
+
+async function loadIntranetTunnels(){
+    try{
+        const res=await fetch('/tunnels');
+        const data=await res.json();
+        const sel=document.getElementById('intranetTunnelSelect');
+        sel.innerHTML='';
+        if(!data.length){sel.innerHTML='<option value="">No free tunnels</option>';return;}
+        data.forEach((r,i)=>{const o=document.createElement('option');o.value=JSON.stringify(r);o.text=`${r['IP Address']}${i===0?' \u2190 Selected':''}`;sel.add(o);});
+        sel.selectedIndex=0;
+    }catch(e){showStatus('Error loading tunnels: '+e.message,true);}
+}
+
+async function loadVplsTunnels(province){
+    try{
+        let url='/api/vpls-tunnels';
+        if(province)url+='?province='+encodeURIComponent(province);
+        const res=await fetch(url);
+        const data=await res.json();
+        const sel=document.getElementById('vplsTunnelSelect');
+        sel.innerHTML='';
+        if(!data.length){sel.innerHTML='<option value="">No free VPLS tunnels for this province</option>';return;}
+        data.forEach((r,i)=>{const o=document.createElement('option');o.value=JSON.stringify(r);o.text=`${r.ip_address} (branch:${r.branch_ip||'-'})${i===0?' \u2190 Selected':''}`;sel.add(o);});
+        sel.selectedIndex=0;
+        const info=document.getElementById('vplsTunnelInfo');
+        if(data[0]&&data[0].branch_ip){info.textContent=`\u2713 Branch IP: ${data[0].branch_ip} | Hub: ${data[0].hub_ip||'-'}`;info.style.display='block';}
+    }catch(e){showStatus('Error loading VPLS tunnels: '+e.message,true);}
+}
+
+document.getElementById('branchName').addEventListener('input',function(){
+    const val=this.value.trim();
+    const match=val.match(/\[([^\]]+)\]\s*\(10\.(\d+)\.(\d+)\.0\)/);
+    if(match){
+        const pname=match[1],x=match[2],y=match[3];
+        const prov=provinceMapping[pname]||{en:pname,abbr:pname};
+        selectedBranchData={x,y,provincePersian:pname,provinceEn:prov.en,provinceAbbr:prov.abbr};
+        document.getElementById('branchX').value=x;
+        document.getElementById('branchY').value=y;
+        document.getElementById('province').value=prov.en;
+        document.getElementById('provinceAbbr').value=prov.abbr;
+        document.getElementById('autoProvince').textContent=prov.en+' ('+prov.abbr+')';
+        document.getElementById('autoX').textContent=x;
+        document.getElementById('autoY').textContent=y;
+        document.getElementById('autoLan').textContent=`10.${x}.${y}.5/24`;
+        document.getElementById('autoFieldsPanel').style.display='block';
+        if(isMali)loadVplsTunnels(prov.en);
+    }
+});
+document.getElementById('reloadVplsBtn').addEventListener('click',function(){
+    const prov=document.getElementById('province').value;
+    if(prov)loadVplsTunnels(prov);
+});
+function mirror200to201(ip){const p=ip.split('.');if(p[0]==='10'&&p[1]==='200')p[1]='201';return p.join('.');}
+function intranetGW(ip){const p=ip.split('.');p[3]=String(parseInt(p[3])-1);return p.join('.');}
+
+function buildACLs(bx,by,intranetWanIp,mode){
+    let acl=`\nip access-list extended ETHERNET_IN
+ deny   tcp any any range 135 139
+ deny   tcp any any eq 445
+ deny   udp any any range 135 netbios-ss
+ deny   udp any any eq 1434
+ deny   tcp any any eq 4444
+ permit ip 10.${bx}.${by}.0 0.0.0.255 192.168.65.0 0.0.0.255
+ permit ip 10.${bx}.${by}.0 0.0.0.255 192.168.72.0 0.0.0.255
+ permit ip 10.${bx}.${by}.0 0.0.0.255 10.${bx}.${by}.0 0.0.0.255
+ permit ip 10.${bx}.${by}.0 0.0.0.255 10.0.0.0 0.0.255.255
+ permit ip 10.${bx}.${by}.0 0.0.0.255 10.30.42.0 0.0.0.255
+ permit ip 10.${bx}.${by}.0 0.0.0.255 host 91.240.180.40
+ permit ip 10.${bx}.${by}.0 0.0.0.255 host 91.240.181.1
+!`;
+    if(isIntranet){
+        acl+=`\nip access-list extended INTR@NET
+ permit icmp any any
+ deny   udp any any eq tftp
+ deny   udp any any eq 135
+ deny   tcp any any eq 135
+ deny   tcp any any eq 445
+ deny   tcp any any eq 4444
+ deny   tcp any any eq 1433
+ permit ip 10.30.42.0 0.0.0.255 any
+ permit ip host 91.240.180.40 any
+ permit ip host 91.240.181.1 any
+!
+ip access-list extended INTRANET-CRYPTO
+ permit ip 10.${bx}.${by}.0 0.0.0.255 10.0.0.0 0.255.255.255
+ permit ip 10.${bx}.${by}.0 0.0.0.255 192.168.65.0 0.0.0.255
+!`;
+    }
+    if(isMali){
+        acl+=`\nip access-list extended SERIAL_IN
+ permit ospf any any
+ permit icmp any any
+ permit ip 10.0.0.0 0.255.255.255 any
+ permit ip 192.168.65.0 0.0.0.255 any
+ permit ip 192.168.72.0 0.0.0.255 any
+!`;
+    }
+    acl+=`\nip access-list extended OSPF-PERMIT
+ permit ip 192.168.65.0 0.0.0.255 any
+ permit ip 10.${bx}.0.0 0.0.255.255 any
+ permit ip 10.0.0.0 0.255.255.255 any
+ permit ip 192.168.72.0 0.0.0.255 any
+!
+ip access-list standard TELNET_ACCESS
+ permit 10.30.42.0 0.0.0.255
+ permit 192.168.65.0 0.0.0.255
+ permit 10.0.0.0 0.255.255.255
+!`;
+    if(mode==='sfp'&&isIntranet&&intranetWanIp){
+        acl+=`\nip access-list extended INTR1ACL
+ permit gre host ${intranetWanIp} host 10.30.42.200
+!
+ip access-list extended INTR2ACL
+ permit gre host ${intranetWanIp} host 10.30.42.201
+!`;
+    }
+    return acl;
+}
+
+function buildSFPCrypto(intranetWanIp){
+    return `crypto isakmp policy 102
+ encryption aes
+ hash sha
+ authentication pre-share
+ group 2
+crypto isakmp key N3w1ntr@n3t address 10.30.42.200
+crypto isakmp key N3w1ntr@n3t address 10.30.42.201
+!
+crypto ipsec transform-set INTR1 esp-aes 256 esp-sha-hmac
+ mode tunnel
+crypto ipsec transform-set INTR2 esp-aes 256 esp-sha-hmac
+ mode tunnel
+!
+crypto map BKI-MAP-INT 2 ipsec-isakmp
+ set peer 10.30.42.200
+ set transform-set INTR1
+ match address INTR1ACL
+crypto map BKI-MAP-INT 3 ipsec-isakmp
+ set peer 10.30.42.201
+ set transform-set INTR2
+ match address INTR2ACL
+!
+`;
+}
+
+function buildFTTHCrypto(){
+    return `crypto isakmp policy 102
+ encryption aes
+ hash sha
+ authentication pre-share
+ group 2
+crypto isakmp key bk!@# address 10.30.42.2
+!
+crypto ipsec transform-set BK!-TR esp-aes 256 esp-sha-hmac
+ mode tunnel
+!
+crypto map BKI-MAP-INT 1 ipsec-isakmp
+ set peer 10.30.42.2
+ set transform-set BK!-TR
+ match address INTRANET-CRYPTO
+!
+`;
+}
+
+function generateFTTHConfig(p){
+    const {bx,by,intranetWanIp,intranetMask,vplsBranchIp,vplsHubIp,branchNameEn,provinceAbbr}=p;
+    let cfg='';
+    if(isIntranet&&intranetWanIp) cfg+=buildFTTHCrypto();
+    cfg+=`interface Loopback0
+ ip address 10.${bx}.254.${by} 255.255.255.0
+!
+`;
+    if(isIntranet&&intranetWanIp){
+        cfg+=`interface FastEthernet0/0
+ ip address ${intranetWanIp} ${intranetMask}
+ ip access-group INTR@NET in
+ ip nat outside
+ ip virtual-reassembly
+ duplex auto
+ speed auto
+ crypto map BKI-MAP-INT
+!
+`;
+    }
+    if(isMali&&vplsBranchIp){
+        cfg+=`interface FastEthernet0/1
+ ip address ${vplsBranchIp} 255.255.255.0
+ ip access-group SERIAL_IN in
+ duplex auto
+ speed auto
+!
+`;
+    }
+    cfg+=`interface FastEthernet0/0/0
+ switchport access vlan 40
+ no shutdown
+!
+interface Vlan40
+ ip address 10.${bx}.${by}.5 255.255.255.0
+ ip access-group ETHERNET_IN in
+ ip nat inside
+ ip virtual-reassembly
+ standby 1 ip 10.${bx}.${by}.1
+ standby 1 priority 90
+ standby 1 preempt
+!
+`;
+    if(isMali&&vplsBranchIp){
+        cfg+=`interface Tunnel79
+ description ** VPLS - ${provinceAbbr}-${branchNameEn||by} **
+ ip address ${vplsBranchIp} 255.255.255.0
+ ip nat inside
+ tunnel source FastEthernet0/1
+ tunnel destination ${vplsHubIp||`10.${bx}.251.1`}
+!
+`;
+    }
+    cfg+=`router ospf 1
+ router-id 10.${bx}.254.${by}
+ log-adjacency-changes
+ area ${bx} stub
+ network 10.${bx}.254.${by} 0.0.0.0 area ${bx}
+ network 10.${bx}.${by}.0 0.0.0.255 area ${bx}`;
+    if(isMali&&vplsBranchIp) cfg+=`\n network ${vplsBranchIp} 0.0.0.0 area 0`;
+    cfg+='\n!\n';
+    if(isIntranet&&intranetWanIp){
+        const gw=intranetGW(intranetWanIp);
+        cfg+=`ip access-list extended natlist
+ permit ip 10.${bx}.${by}.0 0.0.0.255 10.0.0.0 0.255.255.255
+ permit ip 10.${bx}.${by}.0 0.0.0.255 10.30.42.0 0.0.0.255
+ permit ip 10.${bx}.${by}.0 0.0.0.255 host 91.240.180.40
+ permit ip 10.${bx}.${by}.0 0.0.0.255 host 91.240.181.1
+!
+ip nat inside source list natlist interface FastEthernet0/0 overload
+ip route 0.0.0.0 0.0.0.0 ${gw} name Internet
+ip route 10.0.0.0 255.255.0.0 FastEthernet0/0 name BKI-INT
+ip route 10.30.42.0 255.255.255.0 ${gw} name SSL-VPN
+ip route 192.168.65.0 255.255.255.0 FastEthernet0/0 name Chakavak
+`;
+    }
+    cfg+=buildACLs(bx,by,intranetWanIp,'ftth');
+    cfg+='\ndo wr';
+    return cfg.trim();
+}
+
+function generateSFP4331Config(p){
+    const {bx,by,intranetWanIp,intranetMask,vlanIntranet,vlanMali,
+           vplsBranchIp,vplsHubIp,branchNameEn,provinceAbbr,t200br,t201br,mask}=p;
+    let cfg='';
+    if(isIntranet&&intranetWanIp) cfg+=buildSFPCrypto(intranetWanIp);
+    cfg+=`interface Loopback0
+ ip address 10.${bx}.254.${by} 255.255.255.255
+!
+`;
+    if(isIntranet&&intranetWanIp){
+        cfg+=`interface Loopback2
+ ip address 10.210.${bx}.${by} 255.255.255.255
+!
+`;
+    }
+    if(isMali&&vplsBranchIp){
+        cfg+=`interface Tunnel79
+ description ** VPLS - ${provinceAbbr}-${branchNameEn||by} **
+ ip address ${vplsBranchIp} 255.255.255.252
+ ip nat inside
+ tunnel source GigabitEthernet0/0/2.${vlanMali||'99'}
+ tunnel destination ${vplsHubIp||`10.${bx}.251.2`}
+!
+`;
+    }
+    if(isIntranet&&intranetWanIp&&t200br){
+        cfg+=`interface Tunnel200
+ description Intranet - R1
+ bandwidth 2000
+ ip address ${t200br} ${mask||'255.255.255.254'}
+ ip mtu 1360
+ ip nat outside
+ ip virtual-reassembly
+ ip tcp adjust-mss 1320
+ ip ospf cost 200
+ keepalive 10 3
+ tunnel source ${intranetWanIp}
+ tunnel destination 10.30.42.200
+!
+interface Tunnel201
+ description Intranet - R2
+ bandwidth 2000
+ ip address ${t201br} ${mask||'255.255.255.254'}
+ ip mtu 1360
+ ip nat outside
+ ip virtual-reassembly
+ ip tcp adjust-mss 1320
+ ip ospf cost 200
+ keepalive 10 3
+ tunnel source ${intranetWanIp}
+ tunnel destination 10.30.42.201
+!
+`;
+    }
+    cfg+=`interface GigabitEthernet0/0/0
+ description LAN
+ ip address 10.${bx}.${by}.5 255.255.255.0
+ ip access-group ETHERNET_IN in
+ ip nat inside
+ ip virtual-reassembly
+ standby 1 ip 10.${bx}.${by}.1
+ standby 1 priority 90
+ standby 1 preempt
+!
+interface GigabitEthernet0/0/1
+ no ip address
+ description SPARE-RJ45
+!
+interface GigabitEthernet0/0/2
+ no ip address
+ description UPLINK-TO-TIC-SFP
+!
+`;
+    if(isMali&&vlanMali){
+        cfg+=`interface GigabitEthernet0/0/2.${vlanMali}
+ description VPLS-WAN
+ encapsulation dot1Q ${vlanMali}
+ ip address 10.${bx}.251.${by} 255.255.255.252
+ ip access-group SERIAL_IN in
+!
+`;
+    }
+    if(isIntranet&&vlanIntranet&&intranetWanIp){
+        cfg+=`interface GigabitEthernet0/0/2.${vlanIntranet}
+ description INTRANET-WAN
+ encapsulation dot1Q ${vlanIntranet}
+ ip address ${intranetWanIp} ${intranetMask||'255.255.255.248'}
+ ip access-group INTR@NET in
+ ip nat outside
+ ip virtual-reassembly
+ crypto map BKI-MAP-INT
+!
+`;
+    }
+    cfg+=`router ospf 1
+ router-id 10.${bx}.254.${by}
+ log-adjacency-changes
+ area ${bx} stub
+ network 10.${bx}.254.${by} 0.0.0.0 area ${bx}
+ network 10.${bx}.${by}.0 0.0.0.255 area ${bx}`;
+    if(isMali) cfg+=`\n network 10.${bx}.251.${by} 0.0.0.0 area 0`;
+    cfg+='\n!\n';
+    if(isIntranet&&intranetWanIp&&t200br){
+        const gw=intranetGW(intranetWanIp);
+        cfg+=`router ospf 200
+ router-id 10.210.${bx}.${by}
+ log-adjacency-changes
+ network 10.210.${bx}.${by} 0.0.0.0 area 0
+ network ${t200br} 0.0.0.0 area 0
+ network ${t201br} 0.0.0.0 area 0
+!
+ip access-list extended intnat
+ permit ip 10.${bx}.${by}.0 0.0.0.255 10.0.0.0 0.255.255.255
+!
+ip nat inside source list intnat interface Loopback2 overload
+ip route 0.0.0.0 0.0.0.0 ${gw} name Internet
+ip route 10.0.0.0 255.255.0.0 Tunnel200 name BKI-INT
+ip route 10.30.42.0 255.255.255.0 ${gw} name SSL-VPN
+ip route 192.168.65.0 255.255.255.0 Tunnel200 name Chakavak
+`;
+    }
+    cfg+=buildACLs(bx,by,intranetWanIp,'sfp');
+    cfg+='\ndo wr';
+    return cfg.trim();
+}
+
+function generateSFP2960RouterConfig(p){
+    const {bx,by,intranetWanIp,intranetMask,vlanIntranet,vlanMali,
+           vplsBranchIp,vplsHubIp,branchNameEn,provinceAbbr,t200br,t201br,mask}=p;
+    let cfg='';
+    if(isIntranet&&intranetWanIp) cfg+=buildSFPCrypto(intranetWanIp);
+    cfg+=`interface Loopback0
+ ip address 10.${bx}.254.${by} 255.255.255.0
+!
+`;
+    if(isIntranet&&intranetWanIp){
+        cfg+=`interface Loopback2
+ ip address 10.210.${bx}.${by} 255.255.255.255
+!
+`;
+    }
+    if(isMali){
+        cfg+=`interface Tunnel79
+ description ** VPLS - ${provinceAbbr}-${branchNameEn||by} **
+ ip address 10.${bx}.252.${by} 255.255.255.0
+ ip nat inside
+ tunnel source FastEthernet0/1.${vlanMali||'99'}
+ tunnel destination 10.${bx}.252.1
+!
+`;
+    }
+    if(isIntranet&&intranetWanIp&&t200br){
+        cfg+=`interface Tunnel200
+ description Intranet - R1
+ bandwidth 2000
+ ip address ${t200br} ${mask||'255.255.255.254'}
+ ip mtu 1360
+ ip nat outside
+ ip virtual-reassembly
+ ip tcp adjust-mss 1320
+ ip ospf cost 200
+ keepalive 10 3
+ tunnel source ${intranetWanIp}
+ tunnel destination 10.30.42.200
+!
+interface Tunnel201
+ description Intranet - R2
+ bandwidth 2000
+ ip address ${t201br} ${mask||'255.255.255.254'}
+ ip mtu 1360
+ ip nat outside
+ ip virtual-reassembly
+ ip tcp adjust-mss 1320
+ ip ospf cost 200
+ keepalive 10 3
+ tunnel source ${intranetWanIp}
+ tunnel destination 10.30.42.201
+!
+`;
+    }
+    cfg+=`interface FastEthernet0/0
+ description LAN
+ ip address 10.${bx}.${by}.5 255.255.255.0
+ ip access-group ETHERNET_IN in
+ ip nat inside
+ ip virtual-reassembly
+ standby 1 ip 10.${bx}.${by}.1
+ standby 1 priority 90
+ standby 1 preempt
+ duplex auto
+ speed auto
+!
+interface FastEthernet0/1
+ no ip address
+ description TRUNK-TO-2960
+ duplex auto
+ speed auto
+!
+interface FastEthernet0/1.10
+ description Management
+ encapsulation dot1Q 10
+ ip address 192.168.${by}.1 255.255.255.252
+!
+`;
+    if(isIntranet&&vlanIntranet&&intranetWanIp){
+        cfg+=`interface FastEthernet0/1.${vlanIntranet}
+ description INTRANET-WAN
+ encapsulation dot1Q ${vlanIntranet}
+ ip address ${intranetWanIp} ${intranetMask||'255.255.255.248'}
+ ip access-group INTR@NET in
+ ip nat outside
+ ip virtual-reassembly
+ crypto map BKI-MAP-INT
+!
+`;
+    }
+    if(isMali&&vlanMali){
+        cfg+=`interface FastEthernet0/1.${vlanMali}
+ description VPLS-WAN
+ encapsulation dot1Q ${vlanMali}
+ ip address 10.${bx}.252.${by} 255.255.255.0
+ ip access-group SERIAL_IN in
+!
+`;
+    }
+    cfg+=`router ospf 1
+ router-id 10.${bx}.254.${by}
+ log-adjacency-changes
+ area ${bx} stub
+ network 10.${bx}.254.${by} 0.0.0.0 area ${bx}
+ network 10.${bx}.${by}.0 0.0.0.255 area ${bx}`;
+    if(isMali) cfg+=`\n network 10.${bx}.252.${by} 0.0.0.0 area 0`;
+    cfg+='\n!\n';
+    if(isIntranet&&intranetWanIp&&t200br){
+        const gw=intranetGW(intranetWanIp);
+        cfg+=`router ospf 200
+ router-id 10.210.${bx}.${by}
+ log-adjacency-changes
+ network 10.210.${bx}.${by} 0.0.0.0 area 0
+ network ${t200br} 0.0.0.0 area 0
+ network ${t201br} 0.0.0.0 area 0
+!
+ip access-list extended intnat
+ permit ip 10.${bx}.${by}.0 0.0.0.255 10.0.0.0 0.255.255.255
+!
+ip nat inside source list intnat interface Loopback2 overload
+ip route 0.0.0.0 0.0.0.0 ${gw} name Internet
+ip route 10.0.0.0 255.255.0.0 Tunnel200 name BKI-INT
+ip route 10.30.42.0 255.255.255.0 ${gw} name SSL-VPN
+ip route 192.168.65.0 255.255.255.0 Tunnel200 name Chakavak
+`;
+    }
+    cfg+=buildACLs(bx,by,intranetWanIp,'sfp');
+    cfg+='\ndo wr';
+    return cfg.trim();
+}
+
+function generate2960SwitchConfig(p){
+    const {bx,by,vlanIntranet,vlanMali,branchNameEn,provinceAbbr}=p;
+    const vlanList=[...(isIntranet&&vlanIntranet?[vlanIntranet]:[]),...(isMali&&vlanMali?[vlanMali]:[])];
+    const allowedVlans='10'+(isIntranet&&vlanIntranet?','+vlanIntranet:'')+(isMali&&vlanMali?','+vlanMali:'');
+    return `hostname ${provinceAbbr}-${branchNameEn||by}-SW
+!
+spanning-tree mode pvst
+spanning-tree extend system-id
+${vlanList.length?`spanning-tree vlan ${vlanList.join(',')} priority 24576`:''}
+!
+vlan 10
+ name Management
+!
+${isIntranet&&vlanIntranet?`vlan ${vlanIntranet}\n name Intranet\n!`:''}
+${isMali&&vlanMali?`vlan ${vlanMali}\n name VPLS\n!`:''}
+interface GigabitEthernet0/1
+ description UPLINK-TO-TIC
+ switchport trunk encapsulation dot1q
+ switchport trunk allowed vlan ${allowedVlans}
+ switchport mode trunk
+ no shutdown
+!
+interface GigabitEthernet0/2
+ description DOWNLINK-TO-Router
+ switchport trunk encapsulation dot1q
+ switchport trunk allowed vlan ${allowedVlans}
+ switchport mode trunk
+ no shutdown
+!
+interface Vlan1
+ no ip address
+ shutdown
+!
+interface Vlan10
+ ip address 192.168.${by}.2 255.255.255.252
+ no shutdown
+!
+do wr`.trim();
+}
+
+document.getElementById('generateBtn').addEventListener('click',async function(){
+    if(!selectedBranchData){showStatus('Please select a branch first!',true);return;}
+    const bx=selectedBranchData.x,by=selectedBranchData.y;
+    const provinceAbbr=selectedBranchData.provinceAbbr;
+    const branchNameEn=document.getElementById('branchNameEn').value.trim();
+    const intranetWanIp=document.getElementById('intranetWanIp').value.trim();
+    const intranetMask=document.getElementById('intranetWanMask').value;
+    const vlanIntranet=document.getElementById('vlanIntranet').value.trim();
+    const vlanMali=document.getElementById('vlanMali').value.trim();
+
+    if(isIntranet&&!intranetWanIp){showStatus('لطفا IP اینترنت را وارد کنید!',true);return;}
+    if(isSFP&&isIntranet&&!vlanIntranet){showStatus('لطفا VLAN غیرمالی را وارد کنید!',true);return;}
+    if(isSFP&&isMali&&!vlanMali){showStatus('لطفا VLAN مالی را وارد کنید!',true);return;}
+
+    let vplsBranchIp='',vplsHubIp='',vplsTunnelId=null;
+    if(isMali){
+        const vv=document.getElementById('vplsTunnelSelect').value;
+        if(!vv){showStatus('لطفا یک تانل VPLS انتخاب کنید!',true);return;}
+        try{const vd=JSON.parse(vv);vplsBranchIp=vd.branch_ip||'';vplsHubIp=vd.hub_ip||'';vplsTunnelId=vd.id;}catch(e){}
+        if(!vplsBranchIp){showStatus('داده تانل VPLS نامعتبر است!',true);return;}
+    }
+
+    let t200br='',t201br='',tunnelMask='255.255.255.254',intranetTunnelIp=null;
+    if(!isFTTH()&&isIntranet){
+        const tv=document.getElementById('intranetTunnelSelect').value;
+        if(!tv){showStatus('لطفا یک تانل اینترانت انتخاب کنید!',true);return;}
+        try{
+            const td=JSON.parse(tv);
+            const hubIp=td['IP Address'].split('/')[0];
+            const brParts=hubIp.split('.');brParts[3]=String(parseInt(brParts[3])+1);
+            t200br=brParts.join('.');
+            t201br=mirror200to201(t200br);
+            intranetTunnelIp=td['IP Address'];
+        }catch(e){}
+    }
+
+    const btn=this;btn.disabled=true;btn.textContent='در حال تولید...';
+
+    if(isMali&&vplsTunnelId){
+        try{
+            const yPad=by.length<2?'0'+by:by;
+            const r=await fetch('/api/reserve-vpls-tunnel',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:vplsTunnelId,tunnel_name:`Tunnel${bx}${yPad}`,description:branchNameEn?`Fiber-VPLS-${branchNameEn}`:'Fiber-VPLS',province:document.getElementById('province').value||'',branch_name:branchNameEn||'',username:currentUsername})});
+            const res=await r.json();
+            if(res.status!=='ok'){showStatus('VPLS reserve failed: '+(res.error||''),true);btn.disabled=false;btn.textContent='\u26a1 Generate Fiber Config';return;}
+            loadVplsTunnels(document.getElementById('province').value);
+        }catch(e){showStatus('Error: '+e.message,true);btn.disabled=false;btn.textContent='\u26a1 Generate Fiber Config';return;}
+    }
+    if(!isFTTH()&&isIntranet&&intranetTunnelIp){
+        try{
+            const r=await fetch('/reserve',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({ip_address:intranetTunnelIp,description:branchNameEn?`Fiber-${branchNameEn}`:'Fiber',province:document.getElementById('province').value||'',ip_intranet:intranetWanIp,ip_lan:`10.${bx}.${by}.5`,username:currentUsername})});
+            const res=await r.json();
+            if(res.status!=='ok'){showStatus('Intranet reserve failed: '+(res.error||''),true);btn.disabled=false;btn.textContent='\u26a1 Generate Fiber Config';return;}
+            loadIntranetTunnels();
+        }catch(e){showStatus('Error: '+e.message,true);btn.disabled=false;btn.textContent='\u26a1 Generate Fiber Config';return;}
+    }
+
+    const params={bx,by,intranetWanIp,intranetMask,vlanIntranet,vlanMali,vplsBranchIp,vplsHubIp,branchNameEn,provinceAbbr,t200br,t201br,mask:tunnelMask};
+    let routerCfg='';
+    if(isFTTH()){
+        routerCfg=generateFTTHConfig(params);
+        document.getElementById('routerConfigTitle').textContent='FTTH/O Router Config (4ESW)';
+    }else if(is2960){
+        routerCfg=generateSFP2960RouterConfig(params);
+        document.getElementById('routerConfigTitle').textContent='ACCESS SFP + 2960 — Branch Router';
+        document.getElementById('switchConfigBox').style.display='block';
+        document.getElementById('switchConfig').value=generate2960SwitchConfig(params);
+    }else{
+        routerCfg=generateSFP4331Config(params);
+        document.getElementById('routerConfigTitle').textContent='ACCESS SFP + 4331 Router Config';
+    }
+    document.getElementById('routerConfig').value=routerCfg;
+    showStatus('\u2713 Config generated successfully!');
+    btn.disabled=false;btn.textContent='\u26a1 Generate Fiber Config';
+});
+
+showSections();
+loadBranches();
+if(isIntranet&&!isFTTH())loadIntranetTunnels();
+
+    </script>
+
+{% include 'chat_widget.html' %}
+</body>
+</html>

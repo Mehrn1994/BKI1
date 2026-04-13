@@ -1059,6 +1059,10 @@ def network_map_page():
 def nat_diagram_page():
     return render_template('nat_diagram.html')
 
+@app.route('/fiber')
+def fiber_page():
+    return render_template('fiber.html')
+
 # ==================== FINGLISH TO PERSIAN TRANSLATION ====================
 FINGLISH_DICT = {
     # Common branch/place name words
