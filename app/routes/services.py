@@ -106,6 +106,12 @@ def _search_by_lan_ip(cursor, like_q, add_result):
     for r in cursor.fetchall(): add_result(r, 'intranet_tunnels', 'Intranet')
 
     try:
+        cursor.execute("SELECT id, COALESCE(branch_name, description), province, ip_address, lan_ip, username, reservation_date FROM vpls_tunnels WHERE lan_ip LIKE ? AND LOWER(status) IN ('reserved', 'used')", (like_q,))
+        for r in cursor.fetchall(): add_result(r, 'vpls_tunnels', 'MPLS/VPLS')
+    except Exception:
+        pass
+
+    try:
         cursor.execute("SELECT id, COALESCE(branch_name, branch_name_en), province, interface_name, lan_ip, username, reservation_date FROM ptmp_connections WHERE lan_ip LIKE ? AND (branch_name IS NOT NULL OR branch_name_en IS NOT NULL)", (like_q,))
         for r in cursor.fetchall(): add_result(r, 'ptmp_connections', 'PTMP Serial')
     except Exception:
@@ -169,7 +175,8 @@ def delete_service():
             elif table == 'vpls_tunnels':
                 cursor.execute("""UPDATE vpls_tunnels SET status='Free', username=NULL, branch_name=NULL,
                     branch_name_fa=NULL, tunnel_name=NULL, description=NULL, description_fa=NULL,
-                    province_fa=NULL, wan_ip=NULL, tunnel_dest=NULL, reservation_date=NULL WHERE id=?""", (record_id,))
+                    province_fa=NULL, wan_ip=NULL, tunnel_dest=NULL, lan_ip=NULL,
+                    reservation_date=NULL WHERE id=?""", (record_id,))
                 log_audit('delete_service', f"VPLS: {row['branch_name'] or ''}", username, 'service', table, record_id, ip_address=request.remote_addr)
             elif table == 'tunnel_mali':
                 cursor.execute("""UPDATE tunnel_mali SET status=NULL, username=NULL, branch_name=NULL,
