@@ -1363,8 +1363,9 @@ document.getElementById('generateBtn').addEventListener('click',async function()
     if(isMali&&vplsTunnelId){
         try{
             const yPad=by.length<2?'0'+by:by;
+            const persianProv=selectedBranchData.provincePersian||'';
             const provinceEn=selectedBranchData.provinceEn||'';
-            const r=await fetch('/api/reserve-vpls-tunnel',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:vplsTunnelId,tunnel_name:`Tunnel${bx}${yPad}`,description:branchNameFa||branchNameEn?`Fiber-VPLS-${branchNameFa||branchNameEn}`:'Fiber-VPLS',province:provinceEn,branch_name:branchNameFa||branchNameEn||'',username:currentUsername,wan_ip:vplsWanIp,tunnel_dest:vplsHubIp,lan_ip:`10.${bx}.${by}.0`})});
+            const r=await fetch('/api/reserve-vpls-tunnel',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:vplsTunnelId,tunnel_name:`Tunnel${bx}${yPad}`,description:branchNameFa||branchNameEn?`Fiber-VPLS-${branchNameFa||branchNameEn}`:'Fiber-VPLS',province:persianProv,branch_name:branchNameFa||branchNameEn||'',username:currentUsername,wan_ip:vplsWanIp,tunnel_dest:vplsHubIp,lan_ip:`10.${bx}.${by}.0`})});
             const res=await r.json();
             if(res.status!=='ok'){showStatus('VPLS reserve failed: '+(res.error||''),true);btn.disabled=false;btn.textContent='\u26a1 Generate Fiber Config';return;}
             loadVplsTunnels(provinceEn);
