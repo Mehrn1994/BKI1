@@ -565,6 +565,18 @@ def init_tables():
         reservation_date TEXT)""")
     cursor.execute("CREATE INDEX IF NOT EXISTS idx_vpls_tunnels_status ON vpls_tunnels(status)")
 
+    # Add lan_ip column to vpls_tunnels if not exists
+    try:
+        cursor.execute("ALTER TABLE vpls_tunnels ADD COLUMN lan_ip TEXT")
+    except Exception:
+        pass  # Column already exists
+
+    # Add branch_name column to intranet_tunnels if not exists
+    try:
+        cursor.execute("ALTER TABLE intranet_tunnels ADD COLUMN branch_name TEXT")
+    except Exception:
+        pass  # Column already exists
+
     # Chat messages table
     cursor.execute("""CREATE TABLE IF NOT EXISTS chat_messages (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -1725,12 +1737,25 @@ def search_services():
                 add_result(r, 'apn_ips', 'APN غیرمالی')
 
             cursor.execute("""
-                SELECT id, tunnel_name, province, ip_address, ip_lan, reserved_by, reserved_at
+                SELECT id, COALESCE(branch_name, description, tunnel_name), province, ip_address, ip_lan, reserved_by, reserved_at
                 FROM intranet_tunnels WHERE ip_lan LIKE ?
                 AND LOWER(status) = 'reserved'
             """, (like_q,))
             for r in cursor.fetchall():
                 add_result(r, 'intranet_tunnels', 'Intranet')
+
+            # VPLS/MPLS by LAN IP
+            try:
+                cursor.execute("""
+                    SELECT id, COALESCE(branch_name, description, tunnel_name), province,
+                           ip_address, lan_ip, username, reservation_date
+                    FROM vpls_tunnels WHERE lan_ip LIKE ?
+                    AND LOWER(status) IN ('reserved', 'used')
+                """, (like_q,))
+                for r in cursor.fetchall():
+                    add_result(r, 'vpls_tunnels', 'MPLS/VPLS')
+            except Exception:
+                pass
 
             # PTMP by LAN IP
             try:
@@ -2408,24 +2433,26 @@ def reserve_tunnel():
         ip_intranet = data.get('IP Intranet')
         description = data.get('Description')
         province = data.get('Province')
-        
+        branch_name = data.get('Branch Name') or None
+
         conn = get_db()
         cursor = conn.cursor()
         now = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-        
+
         # Update ALL fields, not just status
         cursor.execute("""
-            UPDATE intranet_tunnels 
-            SET status = 'Reserved', 
-                reserved_by = ?, 
+            UPDATE intranet_tunnels
+            SET status = 'Reserved',
+                reserved_by = ?,
                 reserved_at = ?,
                 tunnel_name = COALESCE(?, tunnel_name),
                 ip_lan = COALESCE(?, ip_lan),
                 ip_intranet = COALESCE(?, ip_intranet),
                 description = COALESCE(?, description),
-                province = COALESCE(?, province)
+                province = COALESCE(?, province),
+                branch_name = COALESCE(?, branch_name)
             WHERE ip_address = ?
-        """, (username, now, tunnel_name, ip_lan, ip_intranet, description, province, ip_address))
+        """, (username, now, tunnel_name, ip_lan, ip_intranet, description, province, branch_name, ip_address))
         
         conn.commit()
         conn.close()

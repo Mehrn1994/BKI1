@@ -1372,7 +1372,7 @@ document.getElementById('generateBtn').addEventListener('click',async function()
         try{
             const persianProv=selectedBranchData.provincePersian||'';
             const tunnelLabel=`Tunnel${bx}${by.length<2?'0'+by:by}`;
-            const r=await fetch('/reserve',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({'IP Address':intranetTunnelIp,'Tunnel Name':tunnelLabel,'Description':branchNameEn?`Fiber-${branchNameEn}`:'Fiber','Province':persianProv,'IP Intranet':intranetWanIp,'IP LAN':`10.${bx}.${by}.0`,'by':currentUsername})});
+            const r=await fetch('/reserve',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({'IP Address':intranetTunnelIp,'Tunnel Name':tunnelLabel,'Branch Name':branchNameEn||'','Description':branchNameEn?`Fiber-${branchNameEn}`:'Fiber','Province':persianProv,'IP Intranet':intranetWanIp,'IP LAN':`10.${bx}.${by}.0`,'by':currentUsername})});
             const res=await r.json();
             if(res.status!=='ok'){showStatus('Intranet reserve failed: '+(res.error||''),true);btn.disabled=false;btn.textContent='\u26a1 Generate Fiber Config';return;}
             loadIntranetTunnels();
