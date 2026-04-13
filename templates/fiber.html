@@ -459,7 +459,11 @@ document.addEventListener('DOMContentLoaded', function() {
             <label>Branch Name (English)</label>
             <input type="text" id="branchNameEn" placeholder="e.g. Yasuj">
             <div id="statusMessage"></div>
-            <button class="primary" id="generateBtn" style="width:100%;margin-top:16px;background:linear-gradient(135deg,#14b8a6,#0891b2);">&#9889; Generate Fiber Config</button>
+            <label style="display:flex;align-items:center;gap:8px;margin-top:14px;margin-bottom:4px;cursor:pointer;">
+                <input type="checkbox" id="includeBaseConfig" style="width:18px;height:18px;accent-color:#10b981;cursor:pointer;">
+                <span style="font-size:14px;color:var(--text-primary);">Include Default Config (تنظیمات پایه)</span>
+            </label>
+            <button class="primary" id="generateBtn" style="width:100%;margin-top:8px;background:linear-gradient(135deg,#14b8a6,#0891b2);">&#9889; Generate Fiber Config</button>
         </section>
         <section class="card">
             <h2>Generated Config</h2>
@@ -1166,6 +1170,151 @@ interface Vlan10
 do wr`.trim();
 }
 
+function buildDefaultConfig(bx,by,branchNameEn,provinceAbbr){
+    const hostname=provinceAbbr&&branchNameEn?`${provinceAbbr}-${branchNameEn}`:`BKI-${bx}-${by}`;
+    let cfg=`!
+! ===== Base Config (تنظیمات پایه) =====
+!
+service timestamps debug datetime msec localtime
+service timestamps log datetime msec localtime
+service password-encryption
+!
+hostname ${hostname}
+!
+enable secret 5 $1$1kQA$TOB1eE4SmnYjXXjtxUXus0
+!
+aaa new-model
+aaa authentication login CACS group tacacs+ local
+aaa authentication enable default group tacacs+ enable
+aaa authorization console
+aaa authorization config-commands
+aaa authorization exec CACS group tacacs+ local
+aaa authorization commands 0 CACS group tacacs+ local
+aaa authorization commands 1 CACS group tacacs+ local
+aaa authorization commands 2 CACS group tacacs+ local
+aaa authorization commands 3 CACS group tacacs+ local
+aaa authorization commands 15 CACS group tacacs+ local
+aaa accounting exec CACS start-stop group tacacs+
+aaa accounting commands 0 CACS start-stop group tacacs+
+aaa accounting commands 1 CACS start-stop group tacacs+
+aaa accounting commands 2 CACS start-stop group tacacs+
+aaa accounting commands 3 CACS start-stop group tacacs+
+aaa accounting commands 15 CACS start-stop group tacacs+
+!
+clock timezone Tehran 3 30
+ip cef
+no ip domain lookup
+ip domain name agri-bank.com
+!
+username bkiadmin privilege 15 secret 0 BKI@dmin#2024
+username wanuser privilege 3 secret 0 W@nUs3r#2024
+!
+ip ssh authentication-retries 2
+ip ssh version 2
+!
+track 5 ip route 10.0.0.0 255.255.0.0 reachability
+!
+ip access-list standard SNMP-READ
+ permit 10.0.50.0 0.0.1.255
+ip access-list standard SNMP-WRITE
+ permit host 10.0.51.48
+ permit host 10.0.51.49
+ip access-list standard TELNET_ACCESS
+ permit 10.${bx}.254.1
+ permit 10.${bx}.251.1
+ permit 10.0.50.0 0.0.1.255
+ permit 10.30.42.0 0.0.0.255
+!
+logging 10.0.51.63
+access-list 199 permit icmp any any echo
+access-list 199 permit icmp any any echo-reply
+snmp-server group NMS v3 priv access SNMP-READ
+snmp-server user nms-net NMS v3 auth md5 auth-agrinms2011 priv des priv-agrinms1390 access SNMP-READ
+!
+snmp-server group LMS v3 priv read myview write myview access SNMP-WRITE
+snmp-server user lms-net LMS v3 auth md5 Auth-P@S$-2011 priv des PriV-p@$S-1390 access SNMP-WRITE
+!
+snmp-server view myview mib-2 included
+snmp-server view myview cisco included
+snmp-server view myview system included
+snmp-server ifindex persist
+!
+route-map nachi-worm permit 10
+ match ip address 199
+ match length 92 92
+ set interface Null0
+!
+tacacs-server host 10.0.51.56
+tacacs-server host 10.0.51.57
+tacacs-server directed-request
+tacacs-server key 7 08005F0046485647
+!
+banner motd ^C
+        ===
+       -+ +-
+       | | |
+    <--\\ | /-->
+   ##| ||||| |##
+  ###| |+++| |###
+ /____\\ | //____\\ ********************************************************
+   <###\\|||/###>                  Keshavarzi Bank Network
+    +====+====+     WARNING: Access is restricted to authorized users only.
+    | WAN-BKI |     Unauthorized access is a violation of state , civil and
+    +===+=+===+                       criminal laws.
+        +=+        ********************************************************
+^C
+!
+privilege interface level 3 shutdown
+privilege interface level 3 no shutdown
+privilege interface level 3 no
+privilege configure level 3 interface
+privilege exec level 3 traceroute
+privilege exec level 3 ping
+privilege exec level 3 configure terminal
+privilege exec level 3 configure
+privilege exec level 3 reload
+privilege exec level 3 terminal monitor
+privilege exec level 3 terminal
+privilege exec all level 3 show running-config
+privilege exec level 3 show
+!
+line con 0
+ authorization exec CACS
+ login authentication CACS
+line aux 0
+ no exec
+line vty 0 4
+ access-class TELNET_ACCESS in
+ privilege level 15
+ authorization exec CACS
+ login authentication CACS
+ transport input ssh
+ transport output ssh
+line vty 5 15
+ access-class TELNET_ACCESS in
+ privilege level 15
+ authorization exec CACS
+ login authentication CACS
+ transport input ssh
+ transport output ssh
+!
+`;
+    // 4331 ISR-specific command
+    if(!isFTTH()&&!is2960) cfg+=`scheduler allocate 20000 1000\n`;
+    cfg+=`ntp authentication-key 1 md5 070E265E47441B041919 7
+ntp authenticate
+ntp trusted-key 1
+ntp source Loopback0
+ntp master 5
+ntp update-calendar
+ntp server 10.0.51.27
+!
+! ===== پایان تنظیمات پایه =====
+!
+`;
+    return cfg;
+}
+
 document.getElementById('generateBtn').addEventListener('click',async function(){
     if(!selectedBranchData){showStatus('Please select a branch first!',true);return;}
     const bx=selectedBranchData.x,by=selectedBranchData.y;
@@ -1240,6 +1389,9 @@ document.getElementById('generateBtn').addEventListener('click',async function()
     }else{
         routerCfg=generateSFP4331Config(params);
         document.getElementById('routerConfigTitle').textContent='ACCESS SFP + 4331 Router Config';
+    }
+    if(document.getElementById('includeBaseConfig').checked){
+        routerCfg=buildDefaultConfig(bx,by,branchNameEn,provinceAbbr)+'\n'+routerCfg;
     }
     document.getElementById('routerConfig').value=routerCfg;
     showStatus('\u2713 Config generated successfully!');
