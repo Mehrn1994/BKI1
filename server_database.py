@@ -1897,7 +1897,8 @@ def delete_service():
                 ip = row['ip_address'] or ''
                 cursor.execute("""
                     UPDATE intranet_tunnels SET status = 'Free', reserved_by = NULL, reserved_at = NULL,
-                    tunnel_name = NULL, description = NULL, ip_lan = NULL, ip_intranet = NULL
+                    tunnel_name = NULL, description = NULL, ip_lan = NULL, ip_intranet = NULL,
+                    branch_name = NULL, province = NULL
                     WHERE id = ?
                 """, (record_id,))
                 log_activity('warning', 'حذف سرویس Intranet', f'{name}: {ip}', username)
@@ -1908,7 +1909,7 @@ def delete_service():
                 cursor.execute("""
                     UPDATE vpls_tunnels SET status = 'Free', username = NULL, branch_name = NULL,
                     tunnel_name = NULL, description = NULL, wan_ip = NULL, tunnel_dest = NULL,
-                    reservation_date = NULL
+                    lan_ip = NULL, reservation_date = NULL
                     WHERE id = ?
                 """, (record_id,))
                 log_activity('warning', 'حذف سرویس MPLS/VPLS', f'{branch}: {ip}', username)
@@ -2550,13 +2551,35 @@ def get_vpls_tunnels():
         province = request.args.get('province', '').strip()
 
         if province:
-            cursor.execute("""
+            # Map supports both English and Persian province names so freed tunnels
+            # (stored with either form) are returned correctly after delete+re-search
+            FA_TO_EN = {
+                'اردبیل': 'Ardabil', 'آذربایجان شرقی': 'East Azerbaijan',
+                'آذربایجان غربی': 'West Azerbaijan', 'البرز': 'Alborz',
+                'اصفهان': 'Isfahan', 'ایلام': 'Ilam', 'بوشهر': 'Bushehr',
+                'تهران': 'Tehran', 'چهارمحال و بختیاری': 'Chaharmahal and Bakhtiari',
+                'خراسان جنوبی': 'South Khorasan', 'خراسان رضوی': 'Razavi Khorasan',
+                'خراسان شمالی': 'North Khorasan', 'خوزستان': 'Khuzestan',
+                'زنجان': 'Zanjan', 'سمنان': 'Semnan',
+                'سیستان و بلوچستان': 'Sistan and Baluchestan',
+                'فارس': 'Fars', 'قزوین': 'Qazvin', 'قم': 'Qom',
+                'کرمان': 'Kerman', 'کرمانشاه': 'Kermanshah',
+                'کهگیلویه و بویراحمد': 'Kohgiluyeh and Boyer-Ahmad',
+                'گلستان': 'Golestan', 'گیلان': 'Gilan', 'لرستان': 'Lorestan',
+                'مازندران': 'Mazandaran', 'مرکزی': 'Markazi',
+                'هرمزگان': 'Hormozgan', 'همدان': 'Hamadan', 'یزد': 'Yazd',
+            }
+            EN_TO_FA = {v: k for k, v in FA_TO_EN.items()}
+            alt = FA_TO_EN.get(province) or EN_TO_FA.get(province) or province
+            province_variants = list(set([province, alt]))
+            placeholders = ','.join(['?'] * len(province_variants))
+            cursor.execute(f"""
                 SELECT id, ip_address, hub_ip, branch_ip, tunnel_name, description,
                        province, status
                 FROM vpls_tunnels
-                WHERE LOWER(status) = 'free' AND province = ?
+                WHERE LOWER(status) = 'free' AND province IN ({placeholders})
                 ORDER BY id
-            """, (province,))
+            """, province_variants)
         else:
             cursor.execute("""
                 SELECT id, ip_address, hub_ip, branch_ip, tunnel_name, description,
