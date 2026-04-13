@@ -1361,15 +1361,18 @@ document.getElementById('generateBtn').addEventListener('click',async function()
     if(isMali&&vplsTunnelId){
         try{
             const yPad=by.length<2?'0'+by:by;
-            const r=await fetch('/api/reserve-vpls-tunnel',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:vplsTunnelId,tunnel_name:`Tunnel${bx}${yPad}`,description:branchNameEn?`Fiber-VPLS-${branchNameEn}`:'Fiber-VPLS',province:document.getElementById('province').value||'',branch_name:branchNameEn||'',username:currentUsername})});
+            const persianProv=selectedBranchData.provincePersian||'';
+            const r=await fetch('/api/reserve-vpls-tunnel',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:vplsTunnelId,tunnel_name:`Tunnel${bx}${yPad}`,description:branchNameEn?`Fiber-VPLS-${branchNameEn}`:'Fiber-VPLS',province:persianProv,branch_name:branchNameEn||'',username:currentUsername,wan_ip:vplsWanIp,tunnel_dest:vplsHubIp})});
             const res=await r.json();
             if(res.status!=='ok'){showStatus('VPLS reserve failed: '+(res.error||''),true);btn.disabled=false;btn.textContent='\u26a1 Generate Fiber Config';return;}
-            loadVplsTunnels(document.getElementById('province').value);
+            loadVplsTunnels(persianProv);
         }catch(e){showStatus('Error: '+e.message,true);btn.disabled=false;btn.textContent='\u26a1 Generate Fiber Config';return;}
     }
     if(!isFTTH()&&isIntranet&&intranetTunnelIp){
         try{
-            const r=await fetch('/reserve',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({ip_address:intranetTunnelIp,description:branchNameEn?`Fiber-${branchNameEn}`:'Fiber',province:document.getElementById('province').value||'',ip_intranet:intranetWanIp,ip_lan:`10.${bx}.${by}.5`,username:currentUsername})});
+            const persianProv=selectedBranchData.provincePersian||'';
+            const tunnelLabel=`Tunnel${bx}${by.length<2?'0'+by:by}`;
+            const r=await fetch('/reserve',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({'IP Address':intranetTunnelIp,'Tunnel Name':tunnelLabel,'Description':branchNameEn?`Fiber-${branchNameEn}`:'Fiber','Province':persianProv,'IP Intranet':intranetWanIp,'IP LAN':`10.${bx}.${by}.0`,'by':currentUsername})});
             const res=await r.json();
             if(res.status!=='ok'){showStatus('Intranet reserve failed: '+(res.error||''),true);btn.disabled=false;btn.textContent='\u26a1 Generate Fiber Config';return;}
             loadIntranetTunnels();
