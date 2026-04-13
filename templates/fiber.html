@@ -1362,7 +1362,7 @@ document.getElementById('generateBtn').addEventListener('click',async function()
         try{
             const yPad=by.length<2?'0'+by:by;
             const persianProv=selectedBranchData.provincePersian||'';
-            const r=await fetch('/api/reserve-vpls-tunnel',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:vplsTunnelId,tunnel_name:`Tunnel${bx}${yPad}`,description:branchNameEn?`Fiber-VPLS-${branchNameEn}`:'Fiber-VPLS',province:persianProv,branch_name:branchNameEn||'',username:currentUsername,wan_ip:vplsWanIp,tunnel_dest:vplsHubIp})});
+            const r=await fetch('/api/reserve-vpls-tunnel',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:vplsTunnelId,tunnel_name:`Tunnel${bx}${yPad}`,description:branchNameEn?`Fiber-VPLS-${branchNameEn}`:'Fiber-VPLS',province:persianProv,branch_name:branchNameEn||'',username:currentUsername,wan_ip:vplsWanIp,tunnel_dest:vplsHubIp,lan_ip:`10.${bx}.${by}.0`})});
             const res=await r.json();
             if(res.status!=='ok'){showStatus('VPLS reserve failed: '+(res.error||''),true);btn.disabled=false;btn.textContent='\u26a1 Generate Fiber Config';return;}
             loadVplsTunnels(persianProv);

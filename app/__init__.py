@@ -134,6 +134,17 @@ def create_app():
     # Auto-import PTMP on first run
     _check_ptmp_import()
 
+    # Ensure vpls_tunnels.lan_ip column exists (idempotent)
+    try:
+        from app.database import get_db
+        _conn = get_db()
+        _conn.execute("ALTER TABLE vpls_tunnels ADD COLUMN lan_ip TEXT")
+        _conn.commit()
+        _conn.close()
+        print("Added lan_ip column to vpls_tunnels")
+    except Exception:
+        pass  # Column already exists
+
     # Run FA column migration (idempotent - adds _fa columns and translates existing data)
     try:
         from app.utils.db_fa_migrate import run_migration

@@ -2570,9 +2570,18 @@ def reserve_vpls_tunnel():
         username = data.get('username', '')
         wan_ip = data.get('wan_ip', '')
         tunnel_dest = data.get('tunnel_dest', '')
+        lan_ip = data.get('lan_ip', '')
 
         conn = get_db()
         cursor = conn.cursor()
+
+        # Ensure lan_ip column exists (idempotent migration)
+        try:
+            cursor.execute("ALTER TABLE vpls_tunnels ADD COLUMN lan_ip TEXT")
+            conn.commit()
+        except Exception:
+            pass  # Column already exists
+
         now = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 
         cursor.execute("""
@@ -2584,11 +2593,12 @@ def reserve_vpls_tunnel():
                 branch_name = ?,
                 wan_ip = ?,
                 tunnel_dest = ?,
+                lan_ip = ?,
                 username = ?,
                 reservation_date = ?
             WHERE id = ? AND LOWER(status) = 'free'
         """, (tunnel_name, description, province, branch_name,
-              wan_ip, tunnel_dest, username, now, tunnel_id))
+              wan_ip, tunnel_dest, lan_ip, username, now, tunnel_id))
 
         if cursor.rowcount == 0:
             conn.close()
