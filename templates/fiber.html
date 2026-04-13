@@ -852,17 +852,14 @@ interface Vlan40
  area ${bx} stub
  network 10.${bx}.254.${by} 0.0.0.0 area ${bx}
  network 10.${bx}.${by}.0 0.0.0.255 area ${bx}`;
-    if(isMali&&vplsBranchIp) cfg+=`\n network ${vplsBranchIp} 0.0.0.0 area 0`;
+    if(isMali&&vplsWanIp) cfg+=`\n network ${vplsWanIp} 0.0.0.0 area 0`;
     cfg+='\n!\n';
     if(isIntranet&&intranetWanIp){
         const gw=intranetGW(intranetWanIp);
-        cfg+=`ip access-list extended natlist
+        cfg+=`ip access-list extended intnat
  permit ip 10.${bx}.${by}.0 0.0.0.255 10.0.0.0 0.255.255.255
- permit ip 10.${bx}.${by}.0 0.0.0.255 10.30.42.0 0.0.0.255
- permit ip 10.${bx}.${by}.0 0.0.0.255 host 91.240.180.40
- permit ip 10.${bx}.${by}.0 0.0.0.255 host 91.240.181.1
 !
-ip nat inside source list natlist interface FastEthernet0/0 overload
+ip nat inside source list intnat interface FastEthernet0/0 overload
 ip route 0.0.0.0 0.0.0.0 ${gw} name Internet
 ip route 10.0.0.0 255.255.0.0 FastEthernet0/0 name BKI-INT
 ip route 10.30.42.0 255.255.255.0 ${gw} name SSL-VPN
@@ -974,7 +971,7 @@ interface GigabitEthernet0/0/2
  area ${bx} stub
  network 10.${bx}.254.${by} 0.0.0.0 area ${bx}
  network 10.${bx}.${by}.0 0.0.0.255 area ${bx}`;
-    if(isMali) cfg+=`\n network 10.${bx}.251.${by} 0.0.0.0 area 0`;
+    if(isMali&&vplsWanIp) cfg+=`\n network ${vplsWanIp} 0.0.0.0 area 0`;
     cfg+='\n!\n';
     if(isIntranet&&intranetWanIp&&t200br){
         const gw=intranetGW(intranetWanIp);
@@ -1105,7 +1102,7 @@ interface FastEthernet0/1.10
  area ${bx} stub
  network 10.${bx}.254.${by} 0.0.0.0 area ${bx}
  network 10.${bx}.${by}.0 0.0.0.255 area ${bx}`;
-    if(isMali) cfg+=`\n network 10.${bx}.252.${by} 0.0.0.0 area 0`;
+    if(isMali&&vplsWanIp) cfg+=`\n network ${vplsWanIp} 0.0.0.0 area 0`;
     cfg+='\n!\n';
     if(isIntranet&&intranetWanIp&&t200br){
         const gw=intranetGW(intranetWanIp);
@@ -1363,8 +1360,9 @@ document.getElementById('generateBtn').addEventListener('click',async function()
     if(isMali&&vplsTunnelId){
         try{
             const yPad=by.length<2?'0'+by:by;
+            const persianProv=selectedBranchData.provincePersian||'';
             const provinceEn=selectedBranchData.provinceEn||'';
-            const r=await fetch('/api/reserve-vpls-tunnel',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:vplsTunnelId,tunnel_name:`Tunnel${bx}${yPad}`,description:branchNameFa||branchNameEn?`Fiber-VPLS-${branchNameFa||branchNameEn}`:'Fiber-VPLS',province:provinceEn,branch_name:branchNameFa||branchNameEn||'',username:currentUsername,wan_ip:vplsWanIp,tunnel_dest:vplsHubIp,lan_ip:`10.${bx}.${by}.0`})});
+            const r=await fetch('/api/reserve-vpls-tunnel',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:vplsTunnelId,tunnel_name:`Tunnel${bx}${yPad}`,description:branchNameFa||branchNameEn?`Fiber-VPLS-${branchNameFa||branchNameEn}`:'Fiber-VPLS',province:persianProv,branch_name:branchNameFa||branchNameEn||'',username:currentUsername,wan_ip:vplsWanIp,tunnel_dest:vplsHubIp,lan_ip:`10.${bx}.${by}.0`})});
             const res=await r.json();
             if(res.status!=='ok'){showStatus('VPLS reserve failed: '+(res.error||''),true);btn.disabled=false;btn.textContent='\u26a1 Generate Fiber Config';return;}
             loadVplsTunnels(provinceEn);
