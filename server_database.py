@@ -1800,8 +1800,14 @@ def get_persian_search_variants(query):
 
 @app.route('/api/search-services', methods=['GET'])
 def search_services():
-    """Search all services for a branch/IP across ALL tables including lan_ips"""
+    """Search services using a two-phase approach:
+    Phase 1 – resolve canonical branch(es) from lan_ips (the source of truth).
+    Phase 2 – collect ALL service records for each branch across all 8 tables
+               using both name matching AND LAN IP matching with reverse-LIKE.
+    This guarantees that if a branch has any service in any table it will appear.
+    """
     try:
+        import re as _re_ss
         query = request.args.get('q', '').strip()
         search_type = request.args.get('type', 'branch_name')
 
@@ -1811,262 +1817,277 @@ def search_services():
         conn = get_db()
         cursor = conn.cursor()
         results = []
+        _seen = set()   # (table, id) deduplication
 
         like_q = f'%{query}%'
 
-        def add_result(row_tuple, table, service, branch_name_fa=''):
+        def add_result(row_tuple, table, service):
+            key = (table, row_tuple[0])
+            if key in _seen:
+                return
+            _seen.add(key)
             name = row_tuple[1] or ''
-            # Try to translate English names for ALL tables
-            fa_name = branch_name_fa or ''
-            if not fa_name and name:
-                import re as _re2
-                # Check if name has English characters (not already Persian)
-                if _re2.search(r'[A-Za-z]', name):
-                    fa_name = translate_finglish(name)
+            fa_name = ''
+            if name and _re_ss.search(r'[A-Za-z]', name):
+                fa_name = translate_finglish(name)
             results.append({
-                'id': row_tuple[0],
-                'table': table,
-                'service': service,
-                'branch_name': name,
-                'branch_name_fa': fa_name,
-                'province': row_tuple[2] or '',
-                'ip': row_tuple[3] or '',
-                'lan_ip': row_tuple[4] or '',
-                'username': row_tuple[5] or '',
+                'id': row_tuple[0], 'table': table, 'service': service,
+                'branch_name': name, 'branch_name_fa': fa_name,
+                'province': row_tuple[2] or '', 'ip': row_tuple[3] or '',
+                'lan_ip': row_tuple[4] or '', 'username': row_tuple[5] or '',
                 'date': row_tuple[6] or ''
             })
 
-        if search_type == 'branch_name':
-            # 1. LAN IPs (main branch table) - search by branch_name where active/reserved
-            cursor.execute("""
-                SELECT id, branch_name, province,
-                       '10.' || octet2 || '.' || octet3 || '.0/24' as lan_ip_full,
-                       wan_ip, username, reservation_date
-                FROM lan_ips
-                WHERE branch_name LIKE ?
-                AND branch_name IS NOT NULL AND branch_name != ''
-                AND status != 'Free'
-            """, (like_q,))
-            for r in cursor.fetchall():
-                add_result(r, 'lan_ips', 'IP LAN')
+        def collect_all_for_branch(canonical, lan_base, province):
+            """Collect every service record for a canonical branch.
 
-            # 2. APN Mali - search by branch_name (any record with branch_name set)
-            cursor.execute("""
-                SELECT id, branch_name, province, ip_wan, lan_ip, username, reservation_date
-                FROM apn_mali WHERE branch_name LIKE ?
-                AND branch_name IS NOT NULL AND branch_name != ''
-            """, (like_q,))
-            for r in cursor.fetchall():
-                add_result(r, 'apn_mali', 'APN مالی')
+            Uses three matching strategies per table:
+              1. Exact branch_name match
+              2. Substring branch_name match (covers super-/sub-name variants)
+              3. LAN IP match on the table's own lan_ip / ip_lan column
+            For PTMP specifically, also uses reverse-LIKE so a stored partial
+            name like 'انقلاب' matches canonical 'خیابان انقلاب سنندج' via:
+              canonical LIKE '%' || ptmp.branch_name || '%'
+            """
+            blike  = f'%{canonical}%'
+            llike  = f'%{lan_base}%' if lan_base else None
 
-            # 3. APN Int
-            cursor.execute("""
-                SELECT id, branch_name, province, ip_wan_apn, lan_ip, username, reservation_date
-                FROM apn_ips WHERE branch_name LIKE ?
-                AND branch_name IS NOT NULL AND branch_name != ''
-            """, (like_q,))
-            for r in cursor.fetchall():
-                add_result(r, 'apn_ips', 'APN غیرمالی')
+            def _p(*extras):
+                p = [canonical, blike]
+                p.extend(extras)
+                return p
 
-            # Pre-build English variant params for bidirectional search
-            persian_variants = get_persian_search_variants(query)
-
-            # 4. Intranet tunnels (bidirectional: also search English variants in description/tunnel_name)
-            intranet_params = [like_q, like_q, like_q]
-            intranet_extra = ""
-            for v in persian_variants[:10]:
-                intranet_extra += " OR description LIKE ? OR tunnel_name LIKE ?"
-                intranet_params.extend([f'%{v}%', f'%{v}%'])
+            # ── APN Mali ──────────────────────────────────────────────────
+            p = _p(llike) if llike else _p()
+            cond = "branch_name = ? OR branch_name LIKE ?"
+            if llike:
+                cond += " OR lan_ip LIKE ?"
             cursor.execute(f"""
-                SELECT id, COALESCE(branch_name, description, tunnel_name), province, ip_address, ip_lan, reserved_by, reserved_at
+                SELECT id, branch_name, province, ip_wan, lan_ip, username, reservation_date
+                FROM apn_mali WHERE ({cond})
+                AND branch_name IS NOT NULL AND branch_name != ''
+            """, p)
+            for r in cursor.fetchall(): add_result(r, 'apn_mali', 'APN مالی')
+
+            # ── APN غیرمالی ───────────────────────────────────────────────
+            p = _p(llike) if llike else _p()
+            cond = "branch_name = ? OR branch_name LIKE ?"
+            if llike:
+                cond += " OR lan_ip LIKE ?"
+            cursor.execute(f"""
+                SELECT id, branch_name, province, ip_wan_apn, lan_ip, username, reservation_date
+                FROM apn_ips WHERE ({cond})
+                AND branch_name IS NOT NULL AND branch_name != ''
+            """, p)
+            for r in cursor.fetchall(): add_result(r, 'apn_ips', 'APN غیرمالی')
+
+            # ── Intranet tunnels ───────────────────────────────────────────
+            p = _p(llike) if llike else _p()
+            cond = "branch_name = ? OR branch_name LIKE ?"
+            if llike:
+                cond += " OR ip_lan LIKE ?"
+            cursor.execute(f"""
+                SELECT id, COALESCE(branch_name, description, tunnel_name),
+                       province, ip_address, ip_lan, reserved_by, reserved_at
                 FROM intranet_tunnels
-                WHERE (branch_name LIKE ? OR tunnel_name LIKE ? OR description LIKE ? {intranet_extra})
-                AND LOWER(status) = 'reserved'
-            """, intranet_params)
-            for r in cursor.fetchall():
-                add_result(r, 'intranet_tunnels', 'Intranet')
+                WHERE ({cond}) AND LOWER(status) = 'reserved'
+            """, p)
+            for r in cursor.fetchall(): add_result(r, 'intranet_tunnels', 'Intranet')
 
-            # 5. VPLS/MPLS tunnels (bidirectional: also search English variants in description/tunnel_name)
-            vpls_params = [like_q, like_q, like_q]
-            vpls_extra = ""
-            for v in persian_variants[:10]:
-                vpls_extra += " OR description LIKE ? OR tunnel_name LIKE ?"
-                vpls_params.extend([f'%{v}%', f'%{v}%'])
-            cursor.execute(f"""
-                SELECT id, COALESCE(branch_name, description, tunnel_name), province, ip_address, wan_ip, username, reservation_date
-                FROM vpls_tunnels
-                WHERE (branch_name LIKE ? OR description LIKE ? OR tunnel_name LIKE ? {vpls_extra})
-                AND LOWER(status) = 'reserved'
-            """, vpls_params)
-            for r in cursor.fetchall():
-                add_result(r, 'vpls_tunnels', 'MPLS/VPLS')
-
-            # 6. Tunnel Mali
-            cursor.execute("""
-                SELECT id, branch_name, '', hub_ip, branch_ip, username, reservation_date
-                FROM tunnel_mali WHERE branch_name LIKE ?
-                AND branch_name IS NOT NULL AND branch_name != ''
-            """, (like_q,))
-            for r in cursor.fetchall():
-                add_result(r, 'tunnel_mali', 'Tunnel مالی')
-
-            # 7. Tunnel200
-            cursor.execute("""
-                SELECT id, branch_name, '', hub_ip, branch_ip, username, reservation_date
-                FROM tunnel200_ips WHERE branch_name LIKE ?
-                AND branch_name IS NOT NULL AND branch_name != ''
-            """, (like_q,))
-            for r in cursor.fetchall():
-                add_result(r, 'tunnel200_ips', 'Tunnel200')
-
-            # 8. PTMP Serial connections (search both Persian and English names + bidirectional)
+            # ── VPLS/MPLS tunnels ──────────────────────────────────────────
             try:
-                search_params = [like_q, like_q, like_q]
-                extra_conditions = ""
-                for v in persian_variants[:10]:
-                    extra_conditions += " OR branch_name_en LIKE ? OR description LIKE ?"
-                    search_params.extend([f'%{v}%', f'%{v}%'])
-
+                p = _p(llike) if llike else _p()
+                cond = "branch_name = ? OR branch_name LIKE ?"
+                if llike:
+                    cond += " OR lan_ip LIKE ?"
                 cursor.execute(f"""
-                    SELECT id, COALESCE(branch_name, branch_name_en), province,
-                           interface_name, lan_ip, username, reservation_date
-                    FROM ptmp_connections
-                    WHERE (branch_name LIKE ? OR branch_name_en LIKE ? OR description LIKE ? {extra_conditions})
-                    AND (branch_name IS NOT NULL OR branch_name_en IS NOT NULL)
-                """, search_params)
-                for r in cursor.fetchall():
-                    add_result(r, 'ptmp_connections', 'PTMP سریال')
-            except Exception as e:
-                print(f"PTMP search error: {e}")
+                    SELECT id, COALESCE(branch_name, description, tunnel_name),
+                           province, ip_address, lan_ip, username, reservation_date
+                    FROM vpls_tunnels
+                    WHERE ({cond}) AND LOWER(status) IN ('reserved', 'used')
+                """, p)
+                for r in cursor.fetchall(): add_result(r, 'vpls_tunnels', 'MPLS/VPLS')
+            except Exception: pass
 
-        elif search_type == 'ip_apn_mali':
+            # ── Tunnel Mali ────────────────────────────────────────────────
             cursor.execute("""
-                SELECT id, branch_name, province, ip_wan, lan_ip, username, reservation_date
-                FROM apn_mali WHERE ip_wan LIKE ?
+                SELECT id, branch_name, '' as province, hub_ip, branch_ip, username, reservation_date
+                FROM tunnel_mali
+                WHERE (branch_name = ? OR branch_name LIKE ?)
                 AND branch_name IS NOT NULL AND branch_name != ''
-            """, (like_q,))
-            for r in cursor.fetchall():
-                add_result(r, 'apn_mali', 'APN مالی')
+            """, [canonical, blike])
+            for r in cursor.fetchall(): add_result(r, 'tunnel_mali', 'Tunnel مالی')
 
-        elif search_type == 'ip_apn_int':
+            # ── Tunnel200 ──────────────────────────────────────────────────
             cursor.execute("""
-                SELECT id, branch_name, province, ip_wan_apn, lan_ip, username, reservation_date
-                FROM apn_ips WHERE ip_wan_apn LIKE ?
+                SELECT id, branch_name, '' as province, hub_ip, branch_ip, username, reservation_date
+                FROM tunnel200_ips
+                WHERE (branch_name = ? OR branch_name LIKE ?)
                 AND branch_name IS NOT NULL AND branch_name != ''
-            """, (like_q,))
-            for r in cursor.fetchall():
-                add_result(r, 'apn_ips', 'APN غیرمالی')
+            """, [canonical, blike])
+            for r in cursor.fetchall(): add_result(r, 'tunnel200_ips', 'Tunnel200')
 
-        elif search_type == 'ip_lan':
-            # Search by LAN IP in lan_ips table and all service tables
-            cursor.execute("""
-                SELECT id, branch_name, province,
-                       '10.' || octet2 || '.' || octet3 || '.0/24' as lan_ip_full,
-                       wan_ip, username, reservation_date
-                FROM lan_ips
-                WHERE ('10.' || octet2 || '.' || octet3 || '.0/24') LIKE ?
-                AND branch_name IS NOT NULL AND branch_name != ''
-                AND status != 'Free'
-            """, (like_q,))
-            for r in cursor.fetchall():
-                add_result(r, 'lan_ips', 'IP LAN')
-
-            cursor.execute("""
-                SELECT id, branch_name, province, ip_wan, lan_ip, username, reservation_date
-                FROM apn_mali WHERE lan_ip LIKE ?
-                AND branch_name IS NOT NULL AND branch_name != ''
-            """, (like_q,))
-            for r in cursor.fetchall():
-                add_result(r, 'apn_mali', 'APN مالی')
-
-            cursor.execute("""
-                SELECT id, branch_name, province, ip_wan_apn, lan_ip, username, reservation_date
-                FROM apn_ips WHERE lan_ip LIKE ?
-                AND branch_name IS NOT NULL AND branch_name != ''
-            """, (like_q,))
-            for r in cursor.fetchall():
-                add_result(r, 'apn_ips', 'APN غیرمالی')
-
-            cursor.execute("""
-                SELECT id, COALESCE(branch_name, description, tunnel_name), province, ip_address, ip_lan, reserved_by, reserved_at
-                FROM intranet_tunnels WHERE ip_lan LIKE ?
-                AND LOWER(status) = 'reserved'
-            """, (like_q,))
-            for r in cursor.fetchall():
-                add_result(r, 'intranet_tunnels', 'Intranet')
-
-            # VPLS/MPLS by LAN IP
+            # ── PTMP connections ───────────────────────────────────────────
+            # Critical: use reverse-LIKE so a stored partial name like 'انقلاب'
+            # is found when the canonical name is 'خیابان انقلاب سنندج':
+            #   'خیابان انقلاب سنندج' LIKE '%انقلاب%'  → TRUE
             try:
-                cursor.execute("""
-                    SELECT id, COALESCE(branch_name, description, tunnel_name), province,
-                           ip_address, lan_ip, username, reservation_date
-                    FROM vpls_tunnels WHERE lan_ip LIKE ?
-                    AND LOWER(status) IN ('reserved', 'used')
-                """, (like_q,))
-                for r in cursor.fetchall():
-                    add_result(r, 'vpls_tunnels', 'MPLS/VPLS')
-            except Exception:
-                pass
-
-            # PTMP by LAN IP — direct + via lan_ips JOIN (handles NULL lan_ip rows)
-            try:
-                seen_ptmp_ids = set()
-                # 1. Direct: lan_ip column on ptmp_connections
-                cursor.execute("""
-                    SELECT id, COALESCE(branch_name, branch_name_en), province,
-                           interface_name, lan_ip, username, reservation_date
-                    FROM ptmp_connections WHERE lan_ip LIKE ?
-                    AND (branch_name IS NOT NULL OR branch_name_en IS NOT NULL)
-                """, (like_q,))
-                for r in cursor.fetchall():
-                    seen_ptmp_ids.add(r[0])
-                    add_result(r, 'ptmp_connections', 'PTMP سریال')
-                # 2. Via lan_ips JOIN: find branches whose LAN matches, then find their PTMP
-                #    Uses substring matching so 'انقلاب' in branch_name matches 'خیابان انقلاب سنندج'
-                cursor.execute("""
+                ptmp_p = [canonical, blike, canonical]
+                ptmp_cond = """
+                    pc.branch_name = ?
+                    OR pc.branch_name LIKE ?
+                    OR (pc.branch_name IS NOT NULL AND pc.branch_name != ''
+                        AND ? LIKE '%' || pc.branch_name || '%')
+                """
+                if llike:
+                    ptmp_cond += " OR pc.lan_ip LIKE ?"
+                    ptmp_p.append(llike)
+                prov_filter = "AND pc.province = ?" if province else ""
+                if province:
+                    ptmp_p.append(province)
+                cursor.execute(f"""
                     SELECT DISTINCT pc.id,
                            COALESCE(pc.branch_name, pc.branch_name_en),
                            pc.province, pc.interface_name,
-                           '10.' || li.octet2 || '.' || li.octet3 || '.0' as computed_lan,
+                           COALESCE(pc.lan_ip, '{lan_base or ''}'),
                            pc.username, pc.reservation_date
                     FROM ptmp_connections pc
-                    JOIN lan_ips li ON (
-                        pc.branch_name = li.branch_name
-                        OR (pc.branch_name IS NOT NULL AND pc.branch_name != ''
-                            AND (li.branch_name LIKE '%' || pc.branch_name || '%'
-                                 OR pc.branch_name LIKE '%' || li.branch_name || '%'))
-                        OR (pc.branch_name_en IS NOT NULL AND pc.branch_name_en != ''
-                            AND li.branch_name LIKE '%' || pc.branch_name_en || '%')
-                    )
-                    WHERE ('10.' || li.octet2 || '.' || li.octet3 || '.0') LIKE ?
+                    WHERE ({ptmp_cond})
+                    {prov_filter}
                     AND (pc.branch_name IS NOT NULL OR pc.branch_name_en IS NOT NULL)
-                """, (like_q,))
-                for r in cursor.fetchall():
-                    if r[0] not in seen_ptmp_ids:
-                        seen_ptmp_ids.add(r[0])
-                        add_result(r, 'ptmp_connections', 'PTMP سریال')
-            except Exception as _pe:
-                print(f"PTMP lan_ip search error: {_pe}")
+                """, ptmp_p)
+                for r in cursor.fetchall(): add_result(r, 'ptmp_connections', 'PTMP سریال')
+            except Exception as _e:
+                print(f"[PTMP collect] {_e}")
+
+        def resolve_from_lan_ips_and_collect(cond_sql, cond_params, add_lan_entry=True):
+            """Find matching rows in lan_ips, add them, then collect all services."""
+            cursor.execute(f"""
+                SELECT id, branch_name, province, octet2, octet3
+                FROM lan_ips WHERE ({cond_sql})
+                AND branch_name IS NOT NULL AND branch_name != ''
+            """, cond_params)
+            branches = cursor.fetchall()
+            for lb in branches:
+                lan_base = f"10.{lb['octet2']}.{lb['octet3']}.0"
+                if add_lan_entry:
+                    add_result(
+                        (lb['id'], lb['branch_name'], lb['province'],
+                         f"{lan_base}/24", '', None, None),
+                        'lan_ips', 'IP LAN'
+                    )
+                collect_all_for_branch(lb['branch_name'], lan_base, lb['province'])
+            return branches
+
+        # ── BUILD ENGLISH VARIANTS (for bidirectional Persian↔English search) ──
+        persian_variants = get_persian_search_variants(query)
+        var_cond = ""
+        var_p_extra = []
+        for v in persian_variants[:12]:
+            var_cond += " OR branch_name LIKE ?"
+            var_p_extra.append(f'%{v}%')
+
+        # ── ROUTING BY SEARCH TYPE ──────────────────────────────────────────
+
+        if search_type == 'branch_name':
+            # Phase 1: resolve canonical branches from lan_ips using name + variants
+            branches = resolve_from_lan_ips_and_collect(
+                f"branch_name LIKE ? {var_cond}",
+                [like_q] + var_p_extra
+            )
+
+            # Fallback: direct search in service tables for branches not in lan_ips
+            # (covers PTMP with no lan_ips entry, or stand-alone service tables)
+            if not branches:
+                # PTMP bidirectional (English names from router configs)
+                try:
+                    pv_cond = ""
+                    pv_p = [like_q, like_q, like_q]
+                    for v in persian_variants[:10]:
+                        pv_cond += " OR branch_name_en LIKE ? OR description LIKE ?"
+                        pv_p.extend([f'%{v}%', f'%{v}%'])
+                    cursor.execute(f"""
+                        SELECT id, COALESCE(branch_name, branch_name_en), province,
+                               interface_name, lan_ip, username, reservation_date
+                        FROM ptmp_connections
+                        WHERE (branch_name LIKE ? OR branch_name_en LIKE ? OR description LIKE ? {pv_cond})
+                        AND (branch_name IS NOT NULL OR branch_name_en IS NOT NULL)
+                    """, pv_p)
+                    for r in cursor.fetchall(): add_result(r, 'ptmp_connections', 'PTMP سریال')
+                except Exception as _e:
+                    print(f"[PTMP fallback] {_e}")
+                # Intranet direct
+                try:
+                    cursor.execute(f"""
+                        SELECT id, COALESCE(branch_name, description, tunnel_name), province,
+                               ip_address, ip_lan, reserved_by, reserved_at
+                        FROM intranet_tunnels
+                        WHERE (branch_name LIKE ? {var_cond})
+                        AND LOWER(status) = 'reserved'
+                    """, [like_q] + var_p_extra)
+                    for r in cursor.fetchall(): add_result(r, 'intranet_tunnels', 'Intranet')
+                except Exception: pass
+
+        elif search_type == 'ip_lan':
+            # Phase 1: find branch from lan_ips by LAN subnet, then collect all services
+            resolve_from_lan_ips_and_collect(
+                "('10.' || octet2 || '.' || octet3 || '.0') LIKE ? OR ('10.' || octet2 || '.' || octet3 || '.0/24') LIKE ?",
+                [like_q, like_q]
+            )
+            # Also direct ip_lan hits on service tables (for branches missing from lan_ips)
+            cursor.execute("SELECT id, branch_name, province, ip_wan, lan_ip, username, reservation_date FROM apn_mali WHERE lan_ip LIKE ? AND branch_name IS NOT NULL AND branch_name != ''", (like_q,))
+            for r in cursor.fetchall(): add_result(r, 'apn_mali', 'APN مالی')
+            cursor.execute("SELECT id, branch_name, province, ip_wan_apn, lan_ip, username, reservation_date FROM apn_ips WHERE lan_ip LIKE ? AND branch_name IS NOT NULL AND branch_name != ''", (like_q,))
+            for r in cursor.fetchall(): add_result(r, 'apn_ips', 'APN غیرمالی')
+            cursor.execute("SELECT id, COALESCE(branch_name,description,tunnel_name), province, ip_address, ip_lan, reserved_by, reserved_at FROM intranet_tunnels WHERE ip_lan LIKE ? AND LOWER(status)='reserved'", (like_q,))
+            for r in cursor.fetchall(): add_result(r, 'intranet_tunnels', 'Intranet')
+            try:
+                cursor.execute("SELECT id, COALESCE(branch_name,description,tunnel_name), province, ip_address, lan_ip, username, reservation_date FROM vpls_tunnels WHERE lan_ip LIKE ? AND LOWER(status) IN ('reserved','used')", (like_q,))
+                for r in cursor.fetchall(): add_result(r, 'vpls_tunnels', 'MPLS/VPLS')
+            except Exception: pass
+
+        elif search_type == 'ip_apn_mali':
+            cursor.execute("SELECT id, branch_name, province, ip_wan, lan_ip, username, reservation_date FROM apn_mali WHERE ip_wan LIKE ? AND branch_name IS NOT NULL AND branch_name != ''", (like_q,))
+            for r in cursor.fetchall():
+                add_result(r, 'apn_mali', 'APN مالی')
+                if r['branch_name']:
+                    resolve_from_lan_ips_and_collect("branch_name = ?", [r['branch_name']], add_lan_entry=False)
+                    collect_all_for_branch(r['branch_name'], r['lan_ip'] or '', r['province'] or '')
+
+        elif search_type == 'ip_apn_int':
+            cursor.execute("SELECT id, branch_name, province, ip_wan_apn, lan_ip, username, reservation_date FROM apn_ips WHERE ip_wan_apn LIKE ? AND branch_name IS NOT NULL AND branch_name != ''", (like_q,))
+            for r in cursor.fetchall():
+                add_result(r, 'apn_ips', 'APN غیرمالی')
+                if r['branch_name']:
+                    resolve_from_lan_ips_and_collect("branch_name = ?", [r['branch_name']], add_lan_entry=False)
+                    collect_all_for_branch(r['branch_name'], r['lan_ip'] or '', r['province'] or '')
 
         elif search_type == 'ip_intranet':
-            cursor.execute("""
-                SELECT id, COALESCE(branch_name, description, tunnel_name), province, ip_address, ip_lan, reserved_by, reserved_at
-                FROM intranet_tunnels
-                WHERE (ip_address LIKE ? OR ip_intranet LIKE ?)
-                AND LOWER(status) = 'reserved'
-            """, (like_q, like_q))
-            for r in cursor.fetchall():
-                add_result(r, 'intranet_tunnels', 'Intranet')
+            cursor.execute("SELECT id, COALESCE(branch_name,description,tunnel_name), province, ip_address, ip_lan, reserved_by, reserved_at FROM intranet_tunnels WHERE (ip_address LIKE ? OR ip_intranet LIKE ?) AND LOWER(status)='reserved'", (like_q, like_q))
+            rows = cursor.fetchall()
+            for r in rows: add_result(r, 'intranet_tunnels', 'Intranet')
+            # Expand to all services for the same branch via its lan_ips entry
+            for r in rows:
+                ip_lan_val = r[4] or ''
+                m = _re_ss.match(r'(10\.\d+\.\d+)\.', ip_lan_val)
+                if m:
+                    resolve_from_lan_ips_and_collect(
+                        "('10.' || octet2 || '.' || octet3 || '.0') = ?",
+                        [f"{m.group(1)}.0"]
+                    )
 
         elif search_type == 'ip_vpls':
-            cursor.execute("""
-                SELECT id, COALESCE(branch_name, description, tunnel_name), province, ip_address, wan_ip, username, reservation_date
-                FROM vpls_tunnels
-                WHERE (ip_address LIKE ? OR wan_ip LIKE ?)
-                AND LOWER(status) = 'reserved'
-            """, (like_q, like_q))
-            for r in cursor.fetchall():
-                add_result(r, 'vpls_tunnels', 'MPLS/VPLS')
+            cursor.execute("SELECT id, COALESCE(branch_name,description,tunnel_name), province, ip_address, wan_ip, username, reservation_date FROM vpls_tunnels WHERE (ip_address LIKE ? OR wan_ip LIKE ?) AND LOWER(status)='reserved'", (like_q, like_q))
+            rows = cursor.fetchall()
+            for r in rows: add_result(r, 'vpls_tunnels', 'MPLS/VPLS')
+            for r in rows:
+                lan_val = r[4] or ''
+                m = _re_ss.match(r'(10\.\d+\.\d+)\.', lan_val)
+                if m:
+                    resolve_from_lan_ips_and_collect(
+                        "('10.' || octet2 || '.' || octet3 || '.0') = ?",
+                        [f"{m.group(1)}.0"]
+                    )
 
         elif search_type == 'ip_ptmp':
             try:
@@ -2078,41 +2099,36 @@ def search_services():
                            OR branch_name LIKE ? OR branch_name_en LIKE ?)
                     AND (branch_name IS NOT NULL OR branch_name_en IS NOT NULL)
                 """, (like_q, like_q, like_q, like_q))
-                for r in cursor.fetchall():
-                    add_result(r, 'ptmp_connections', 'PTMP سریال')
-            except Exception:
-                pass
+                rows = cursor.fetchall()
+                for r in rows: add_result(r, 'ptmp_connections', 'PTMP سریال')
+                for r in rows:
+                    bn = r['branch_name'] or r['branch_name_en'] if hasattr(r, 'keys') else (r[1] or '')
+                    if bn:
+                        resolve_from_lan_ips_and_collect(
+                            "branch_name = ? OR branch_name LIKE ?",
+                            [bn, f'%{bn}%'],
+                            add_lan_entry=False
+                        )
+            except Exception as _e:
+                print(f"[ip_ptmp] {_e}")
 
         elif search_type == 'ip_tunnel_mali':
             try:
-                cursor.execute("""
-                    SELECT id, branch_name, '' as province, hub_ip, branch_ip, username, reservation_date
-                    FROM tunnel_mali
-                    WHERE (hub_ip LIKE ? OR branch_ip LIKE ? OR destination_ip LIKE ?)
-                    AND LOWER(status) = 'reserved'
-                """, (like_q, like_q, like_q))
-                for r in cursor.fetchall():
-                    add_result(r, 'tunnel_mali', 'Tunnel مالی')
-            except Exception:
-                pass
+                cursor.execute("SELECT id, branch_name, '' as province, hub_ip, branch_ip, username, reservation_date FROM tunnel_mali WHERE (hub_ip LIKE ? OR branch_ip LIKE ? OR destination_ip LIKE ?) AND LOWER(status)='reserved'", (like_q, like_q, like_q))
+                for r in cursor.fetchall(): add_result(r, 'tunnel_mali', 'Tunnel مالی')
+            except Exception: pass
 
         elif search_type == 'ip_tunnel200':
             try:
-                cursor.execute("""
-                    SELECT id, branch_name, '' as province, hub_ip, branch_ip, username, reservation_date
-                    FROM tunnel200_ips
-                    WHERE (hub_ip LIKE ? OR branch_ip LIKE ?)
-                    AND LOWER(status) = 'reserved'
-                """, (like_q, like_q))
-                for r in cursor.fetchall():
-                    add_result(r, 'tunnel200_ips', 'Tunnel200')
-            except Exception:
-                pass
+                cursor.execute("SELECT id, branch_name, '' as province, hub_ip, branch_ip, username, reservation_date FROM tunnel200_ips WHERE (hub_ip LIKE ? OR branch_ip LIKE ?) AND LOWER(status)='reserved'", (like_q, like_q))
+                for r in cursor.fetchall(): add_result(r, 'tunnel200_ips', 'Tunnel200')
+            except Exception: pass
 
         conn.close()
         return jsonify(results)
     except Exception as e:
         print(f"Search services error: {e}")
+        import traceback; traceback.print_exc()
         return jsonify([])
 
 
