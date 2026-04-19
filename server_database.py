@@ -1858,10 +1858,13 @@ def search_services():
                 return p
 
             # ── APN Mali ──────────────────────────────────────────────────
-            p = _p(llike) if llike else _p()
-            cond = "branch_name = ? OR branch_name LIKE ?"
+            # Use EXACT branch_name match + LAN IP — never substring LIKE,
+            # which would cause false positives (e.g. 'مریوان' matching 'سرو آباد مریوان').
+            p = [canonical]
+            cond = "branch_name = ?"
             if llike:
                 cond += " OR lan_ip LIKE ?"
+                p.append(llike)
             cursor.execute(f"""
                 SELECT id, branch_name, province, ip_wan, lan_ip, username, reservation_date
                 FROM apn_mali WHERE ({cond})
@@ -1870,10 +1873,11 @@ def search_services():
             for r in cursor.fetchall(): add_result(r, 'apn_mali', 'APN مالی')
 
             # ── APN غیرمالی ───────────────────────────────────────────────
-            p = _p(llike) if llike else _p()
-            cond = "branch_name = ? OR branch_name LIKE ?"
+            p = [canonical]
+            cond = "branch_name = ?"
             if llike:
                 cond += " OR lan_ip LIKE ?"
+                p.append(llike)
             cursor.execute(f"""
                 SELECT id, branch_name, province, ip_wan_apn, lan_ip, username, reservation_date
                 FROM apn_ips WHERE ({cond})
@@ -1882,10 +1886,11 @@ def search_services():
             for r in cursor.fetchall(): add_result(r, 'apn_ips', 'APN غیرمالی')
 
             # ── Intranet tunnels ───────────────────────────────────────────
-            p = _p(llike) if llike else _p()
-            cond = "branch_name = ? OR branch_name LIKE ?"
+            p = [canonical]
+            cond = "branch_name = ?"
             if llike:
                 cond += " OR ip_lan LIKE ?"
+                p.append(llike)
             cursor.execute(f"""
                 SELECT id, COALESCE(branch_name, description, tunnel_name),
                        province, ip_address, ip_lan, reserved_by, reserved_at
@@ -1896,10 +1901,11 @@ def search_services():
 
             # ── VPLS/MPLS tunnels ──────────────────────────────────────────
             try:
-                p = _p(llike) if llike else _p()
-                cond = "branch_name = ? OR branch_name LIKE ?"
+                p = [canonical]
+                cond = "branch_name = ?"
                 if llike:
                     cond += " OR lan_ip LIKE ?"
+                    p.append(llike)
                 cursor.execute(f"""
                     SELECT id, COALESCE(branch_name, description, tunnel_name),
                            province, ip_address, lan_ip, username, reservation_date
@@ -1913,29 +1919,31 @@ def search_services():
             cursor.execute("""
                 SELECT id, branch_name, '' as province, hub_ip, branch_ip, username, reservation_date
                 FROM tunnel_mali
-                WHERE (branch_name = ? OR branch_name LIKE ?)
+                WHERE branch_name = ?
                 AND branch_name IS NOT NULL AND branch_name != ''
-            """, [canonical, blike])
+            """, [canonical])
             for r in cursor.fetchall(): add_result(r, 'tunnel_mali', 'Tunnel مالی')
 
             # ── Tunnel200 ──────────────────────────────────────────────────
             cursor.execute("""
                 SELECT id, branch_name, '' as province, hub_ip, branch_ip, username, reservation_date
                 FROM tunnel200_ips
-                WHERE (branch_name = ? OR branch_name LIKE ?)
+                WHERE branch_name = ?
                 AND branch_name IS NOT NULL AND branch_name != ''
-            """, [canonical, blike])
+            """, [canonical])
             for r in cursor.fetchall(): add_result(r, 'tunnel200_ips', 'Tunnel200')
 
             # ── PTMP connections ───────────────────────────────────────────
-            # Critical: use reverse-LIKE so a stored partial name like 'انقلاب'
-            # is found when the canonical name is 'خیابان انقلاب سنندج':
-            #   'خیابان انقلاب سنندج' LIKE '%انقلاب%'  → TRUE
+            # Special case: PTMP from router configs may store PARTIAL names
+            # (e.g. 'انقلاب') when canonical is 'خیابان انقلاب سنندج'.
+            # Use reverse-LIKE: canonical LIKE '%' || pc.branch_name || '%'
+            # → 'خیابان انقلاب سنندج' LIKE '%انقلاب%' = TRUE
+            # Do NOT use forward LIKE (branch_name LIKE '%canonical%') as that
+            # causes false positives ('مریوان' matching 'سرو آباد مریوان').
             try:
-                ptmp_p = [canonical, blike, canonical]
+                ptmp_p = [canonical, canonical]
                 ptmp_cond = """
                     pc.branch_name = ?
-                    OR pc.branch_name LIKE ?
                     OR (pc.branch_name IS NOT NULL AND pc.branch_name != ''
                         AND ? LIKE '%' || pc.branch_name || '%')
                 """
