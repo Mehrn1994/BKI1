@@ -604,6 +604,187 @@ def init_tables():
 
 init_tables()
 
+
+def _backfill_branch_names():
+    """One-time backfill: populate branch_name for intranet/vpls/ptmp records
+    using three strategies in priority order:
+      1. FINGLISH_DICT lookup (strip ** markers, bandwidth suffixes, etc.)
+      2. IP LAN match against lan_ips (e.g. '10.42.5.0' or '10.42.5.0/24')
+      3. Fuzzy transliteration matching against lan_ips for same province
+    Idempotent: only touches rows where branch_name is NULL/empty.
+    """
+    try:
+        import re as _re_bf
+        conn = get_db()
+        cursor = conn.cursor()
+
+        # Build lan_ips index: CIDR → (branch_name, province)
+        lan_by_cidr = {}
+        lan_by_province = {}
+        try:
+            cursor.execute("""
+                SELECT branch_name, province, octet2, octet3
+                FROM lan_ips
+                WHERE branch_name IS NOT NULL AND branch_name != ''
+            """)
+            for r in cursor.fetchall():
+                cidr = f"10.{r['octet2']}.{r['octet3']}.0"
+                lan_by_cidr[cidr] = (r['branch_name'], r['province'])
+                lan_by_cidr[f"{cidr}/24"] = (r['branch_name'], r['province'])
+                prov = r['province'] or ''
+                lan_by_province.setdefault(prov, []).append(r['branch_name'])
+        except Exception as e:
+            print(f"[Backfill] lan_ips index error: {e}")
+
+        def _strip_markers(text):
+            if not text:
+                return ''
+            clean = _re_bf.sub(r'\*+\s*(.+?)\s*\*+', r'\1', str(text)).strip()
+            clean = _re_bf.sub(r'[-\s_]+\d+[kKmM]?\s*$', '', clean).strip()
+            return clean
+
+        def _lookup_fa_dict(text):
+            """Try FINGLISH_DICT lookup with spelling variants."""
+            clean = _strip_markers(text)
+            if not clean:
+                return None
+            for candidate in (clean, clean.replace(' ', ''), clean.replace('-', ''),
+                              clean.replace('_', ''), clean.lower()):
+                fa = FINGLISH_DICT.get(candidate)
+                if fa:
+                    return fa
+            return None
+
+        def _lookup_fa_by_lan(ip_lan):
+            """Match IP LAN (10.x.y.z or CIDR) to lan_ips branch_name."""
+            if not ip_lan:
+                return None
+            s = str(ip_lan).strip()
+            # Try full form first, then normalize to /24 base
+            if s in lan_by_cidr:
+                return lan_by_cidr[s][0]
+            # Extract base 10.x.y.0 pattern
+            m = _re_bf.match(r'(10\.\d+\.\d+)\.', s)
+            if m:
+                key = f"{m.group(1)}.0"
+                if key in lan_by_cidr:
+                    return lan_by_cidr[key][0]
+            return None
+
+        def _fuzzy_match_province(en_text, province):
+            """Fuzzy-match English transliteration to lan_ips branch names for a province."""
+            if not en_text or not province:
+                return None
+            clean = _strip_markers(en_text).lower()
+            if len(clean) < 3:
+                return None
+            candidates = lan_by_province.get(province, [])
+            if not candidates:
+                return None
+            try:
+                import difflib
+                # Transliterate each Persian candidate to Latin for comparison
+                best = None
+                best_score = 0.75
+                for fa_name in candidates:
+                    # Simple check: does any translated token match the English text?
+                    latin = _persian_to_latin(fa_name).lower()
+                    if not latin:
+                        continue
+                    score = difflib.SequenceMatcher(None, clean.replace(' ', ''), latin).ratio()
+                    if score > best_score:
+                        best_score = score
+                        best = fa_name
+                    # Also check containment
+                    if clean in latin or latin in clean:
+                        if 0.85 > best_score:
+                            best_score = 0.85
+                            best = fa_name
+                return best
+            except Exception:
+                return None
+
+        def _persian_to_latin(text):
+            """Quick Persian-to-Latin transliteration (consonant-preserving)."""
+            if not text:
+                return ''
+            m = {'ا':'a','آ':'a','ب':'b','پ':'p','ت':'t','ث':'s','ج':'j','چ':'ch',
+                 'ح':'h','خ':'kh','د':'d','ذ':'z','ر':'r','ز':'z','ژ':'zh','س':'s',
+                 'ش':'sh','ص':'s','ض':'z','ط':'t','ظ':'z','ع':'a','غ':'gh','ف':'f',
+                 'ق':'gh','ک':'k','ك':'k','گ':'g','ل':'l','م':'m','ن':'n','و':'v',
+                 'ه':'h','ی':'i','ي':'i'}
+            return ''.join(m.get(c, '' if ord(c) > 127 else c) for c in text)
+
+        # ---- Intranet tunnels ----
+        try:
+            cursor.execute("""
+                SELECT id, description, tunnel_name, ip_lan, province FROM intranet_tunnels
+                WHERE (branch_name IS NULL OR branch_name = '')
+                AND LOWER(status) = 'reserved'
+            """)
+            updated = 0
+            for row in cursor.fetchall():
+                fa = (_lookup_fa_dict(row['description'])
+                      or _lookup_fa_dict(row['tunnel_name'])
+                      or _lookup_fa_by_lan(row['ip_lan'])
+                      or _fuzzy_match_province(row['description'], row['province'])
+                      or _fuzzy_match_province(row['tunnel_name'], row['province']))
+                if fa:
+                    cursor.execute("UPDATE intranet_tunnels SET branch_name = ? WHERE id = ?", (fa, row['id']))
+                    updated += 1
+            if updated:
+                print(f"[Backfill] intranet_tunnels branch_name: {updated} rows populated")
+        except Exception as e:
+            print(f"[Backfill] intranet error: {e}")
+
+        # ---- VPLS tunnels ----
+        try:
+            cursor.execute("""
+                SELECT id, description, tunnel_name, lan_ip, province FROM vpls_tunnels
+                WHERE (branch_name IS NULL OR branch_name = '')
+                AND LOWER(status) IN ('reserved', 'used')
+            """)
+            updated = 0
+            for row in cursor.fetchall():
+                fa = (_lookup_fa_dict(row['description'])
+                      or _lookup_fa_dict(row['tunnel_name'])
+                      or _lookup_fa_by_lan(row['lan_ip'])
+                      or _fuzzy_match_province(row['description'], row['province'])
+                      or _fuzzy_match_province(row['tunnel_name'], row['province']))
+                if fa:
+                    cursor.execute("UPDATE vpls_tunnels SET branch_name = ? WHERE id = ?", (fa, row['id']))
+                    updated += 1
+            if updated:
+                print(f"[Backfill] vpls_tunnels branch_name: {updated} rows populated")
+        except Exception as e:
+            print(f"[Backfill] vpls error: {e}")
+
+        # ---- PTMP connections ----
+        try:
+            cursor.execute("""
+                SELECT id, branch_name_en, description, lan_ip, province FROM ptmp_connections
+                WHERE (branch_name IS NULL OR branch_name = '')
+                AND branch_name_en IS NOT NULL AND branch_name_en != ''
+            """)
+            updated = 0
+            for row in cursor.fetchall():
+                fa = (_lookup_fa_dict(row['branch_name_en'])
+                      or _lookup_fa_dict(row['description'])
+                      or _lookup_fa_by_lan(row['lan_ip'])
+                      or _fuzzy_match_province(row['branch_name_en'], row['province']))
+                if fa:
+                    cursor.execute("UPDATE ptmp_connections SET branch_name = ? WHERE id = ?", (fa, row['id']))
+                    updated += 1
+            if updated:
+                print(f"[Backfill] ptmp_connections branch_name: {updated} rows populated")
+        except Exception as e:
+            print(f"[Backfill] ptmp error: {e}")
+
+        conn.commit()
+        conn.close()
+    except Exception as e:
+        print(f"[Backfill] Fatal error: {e}")
+
 # ==================== SESSION MANAGEMENT ====================
 SESSION_LIFETIME_HOURS = 8
 
@@ -1408,6 +1589,14 @@ for en, fa in FINGLISH_DICT.items():
         PERSIAN_TO_FINGLISH[fa] = []
     PERSIAN_TO_FINGLISH[fa].append(en)
 
+# Run branch_name backfill now that FINGLISH_DICT is fully built.
+# This populates branch_name for legacy records imported from Excel/configs
+# that only have description/tunnel_name/branch_name_en set.
+try:
+    _backfill_branch_names()
+except Exception as _e:
+    print(f"[Backfill] Startup call failed: {_e}")
+
 import difflib as _difflib
 
 # Thread lock for all FINGLISH_DICT / PERSIAN_TO_FINGLISH mutations
@@ -1628,29 +1817,42 @@ def search_services():
             for r in cursor.fetchall():
                 add_result(r, 'apn_ips', 'APN غیرمالی')
 
-            # 4. Intranet tunnels
-            cursor.execute("""
+            # Pre-build English variant params for bidirectional search
+            persian_variants = get_persian_search_variants(query)
+
+            # 4. Intranet tunnels (bidirectional: also search English variants in description/tunnel_name)
+            intranet_params = [like_q, like_q, like_q]
+            intranet_extra = ""
+            for v in persian_variants[:10]:
+                intranet_extra += " OR description LIKE ? OR tunnel_name LIKE ?"
+                intranet_params.extend([f'%{v}%', f'%{v}%'])
+            cursor.execute(f"""
                 SELECT id, COALESCE(branch_name, description, tunnel_name), province, ip_address, ip_lan, reserved_by, reserved_at
                 FROM intranet_tunnels
-                WHERE (branch_name LIKE ? OR tunnel_name LIKE ? OR description LIKE ?)
+                WHERE (branch_name LIKE ? OR tunnel_name LIKE ? OR description LIKE ? {intranet_extra})
                 AND LOWER(status) = 'reserved'
-            """, (like_q, like_q, like_q))
+            """, intranet_params)
             for r in cursor.fetchall():
                 add_result(r, 'intranet_tunnels', 'Intranet')
 
-            # 5. VPLS/MPLS tunnels
-            cursor.execute("""
+            # 5. VPLS/MPLS tunnels (bidirectional: also search English variants in description/tunnel_name)
+            vpls_params = [like_q, like_q, like_q]
+            vpls_extra = ""
+            for v in persian_variants[:10]:
+                vpls_extra += " OR description LIKE ? OR tunnel_name LIKE ?"
+                vpls_params.extend([f'%{v}%', f'%{v}%'])
+            cursor.execute(f"""
                 SELECT id, COALESCE(branch_name, description, tunnel_name), province, ip_address, wan_ip, username, reservation_date
                 FROM vpls_tunnels
-                WHERE (branch_name LIKE ? OR description LIKE ? OR tunnel_name LIKE ?)
+                WHERE (branch_name LIKE ? OR description LIKE ? OR tunnel_name LIKE ? {vpls_extra})
                 AND LOWER(status) = 'reserved'
-            """, (like_q, like_q, like_q))
+            """, vpls_params)
             for r in cursor.fetchall():
                 add_result(r, 'vpls_tunnels', 'MPLS/VPLS')
 
             # 6. Tunnel Mali
             cursor.execute("""
-                SELECT id, branch_name, '', ip_address, '', username, reservation_date
+                SELECT id, branch_name, '', hub_ip, branch_ip, username, reservation_date
                 FROM tunnel_mali WHERE branch_name LIKE ?
                 AND branch_name IS NOT NULL AND branch_name != ''
             """, (like_q,))
@@ -1659,7 +1861,7 @@ def search_services():
 
             # 7. Tunnel200
             cursor.execute("""
-                SELECT id, branch_name, '', ip_address, '', username, reservation_date
+                SELECT id, branch_name, '', hub_ip, branch_ip, username, reservation_date
                 FROM tunnel200_ips WHERE branch_name LIKE ?
                 AND branch_name IS NOT NULL AND branch_name != ''
             """, (like_q,))
@@ -1668,20 +1870,17 @@ def search_services():
 
             # 8. PTMP Serial connections (search both Persian and English names + bidirectional)
             try:
-                # Build search conditions - include Finglish variants of Persian query
-                search_params = [like_q, like_q]
+                search_params = [like_q, like_q, like_q]
                 extra_conditions = ""
-                persian_variants = get_persian_search_variants(query)
-                if persian_variants:
-                    for v in persian_variants[:10]:  # Limit to 10 variants
-                        extra_conditions += " OR branch_name_en LIKE ?"
-                        search_params.append(f'%{v}%')
+                for v in persian_variants[:10]:
+                    extra_conditions += " OR branch_name_en LIKE ? OR description LIKE ?"
+                    search_params.extend([f'%{v}%', f'%{v}%'])
 
                 cursor.execute(f"""
                     SELECT id, COALESCE(branch_name, branch_name_en), province,
                            interface_name, lan_ip, username, reservation_date
                     FROM ptmp_connections
-                    WHERE (branch_name LIKE ? OR branch_name_en LIKE ? {extra_conditions})
+                    WHERE (branch_name LIKE ? OR branch_name_en LIKE ? OR description LIKE ? {extra_conditions})
                     AND (branch_name IS NOT NULL OR branch_name_en IS NOT NULL)
                 """, search_params)
                 for r in cursor.fetchall():
@@ -1803,6 +2002,32 @@ def search_services():
                 """, (like_q, like_q, like_q, like_q))
                 for r in cursor.fetchall():
                     add_result(r, 'ptmp_connections', 'PTMP سریال')
+            except Exception:
+                pass
+
+        elif search_type == 'ip_tunnel_mali':
+            try:
+                cursor.execute("""
+                    SELECT id, branch_name, '' as province, hub_ip, branch_ip, username, reservation_date
+                    FROM tunnel_mali
+                    WHERE (hub_ip LIKE ? OR branch_ip LIKE ? OR destination_ip LIKE ?)
+                    AND LOWER(status) = 'reserved'
+                """, (like_q, like_q, like_q))
+                for r in cursor.fetchall():
+                    add_result(r, 'tunnel_mali', 'Tunnel مالی')
+            except Exception:
+                pass
+
+        elif search_type == 'ip_tunnel200':
+            try:
+                cursor.execute("""
+                    SELECT id, branch_name, '' as province, hub_ip, branch_ip, username, reservation_date
+                    FROM tunnel200_ips
+                    WHERE (hub_ip LIKE ? OR branch_ip LIKE ?)
+                    AND LOWER(status) = 'reserved'
+                """, (like_q, like_q))
+                for r in cursor.fetchall():
+                    add_result(r, 'tunnel200_ips', 'Tunnel200')
             except Exception:
                 pass
 
@@ -5050,6 +5275,32 @@ def report_query():
                 pt = _detect_point_type(name)
                 if point_type and pt != point_type: continue
                 results.append({'service':'PTMP','branch_name':name,'province':r[2] or '','point_type':pt,'ip':r[3] or '','wan_ip':r[4] or '','tunnel_dest':'','tunnel_name':r[5] or '','username':r[6] or '','date':r[7] or '','status':r[8] or ''})
+
+        if service_type in ('', 'all', 'Tunnel مالی', 'Tunnel Mali'):
+            try:
+                sql = "SELECT branch_name, description, '' as province, hub_ip, branch_ip, destination_ip, interface_name, username, reservation_date, status FROM tunnel_mali WHERE branch_name IS NOT NULL AND branch_name != '' AND LOWER(status) = 'reserved'"
+                params = []
+                cursor.execute(sql, params)
+                for r in cursor.fetchall():
+                    name = (r[0] or (r[1] or '').strip())
+                    pt = _detect_point_type(name)
+                    if point_type and pt != point_type: continue
+                    results.append({'service':'Tunnel مالی','branch_name':name,'province':r[2] or '','point_type':pt,'ip':r[3] or '','wan_ip':r[4] or '','tunnel_dest':r[5] or '','tunnel_name':r[6] or '','username':r[7] or '','date':r[8] or '','status':r[9] or ''})
+            except Exception as e:
+                print(f"Tunnel Mali report error: {e}")
+
+        if service_type in ('', 'all', 'Tunnel200'):
+            try:
+                sql = "SELECT branch_name, description, '' as province, hub_ip, branch_ip, '' as dest, COALESCE(interface_name, tunnel_number), username, reservation_date, status FROM tunnel200_ips WHERE branch_name IS NOT NULL AND branch_name != '' AND LOWER(status) = 'reserved'"
+                params = []
+                cursor.execute(sql, params)
+                for r in cursor.fetchall():
+                    name = (r[0] or (r[1] or '').strip())
+                    pt = _detect_point_type(name)
+                    if point_type and pt != point_type: continue
+                    results.append({'service':'Tunnel200','branch_name':name,'province':r[2] or '','point_type':pt,'ip':r[3] or '','wan_ip':r[4] or '','tunnel_dest':r[5] or '','tunnel_name':r[6] or '','username':r[7] or '','date':r[8] or '','status':r[9] or ''})
+            except Exception as e:
+                print(f"Tunnel200 report error: {e}")
 
         conn.close()
         return jsonify({'status':'ok','count':len(results),'results':results})
