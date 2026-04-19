@@ -129,6 +129,8 @@ body {
                     <option value="Intranet">Intranet</option>
                     <option value="APN">APN (مالی + غیرمالی)</option>
                     <option value="PTMP">PTMP Serial</option>
+                    <option value="Tunnel مالی">Tunnel مالی</option>
+                    <option value="Tunnel200">Tunnel200</option>
                 </select>
             </div>
             <div class="filter-group">
@@ -248,6 +250,7 @@ function svcBadgeClass(svc) {
     if (svc.includes('Intranet')) return 'svc-intranet';
     if (svc.includes('APN')) return 'svc-apn';
     if (svc.includes('PTMP')) return 'svc-ptmp';
+    if (svc.includes('Tunnel')) return 'svc-intranet';
     return '';
 }
 
