@@ -715,6 +715,42 @@ def _backfill_branch_names():
                  'ه':'h','ی':'i','ي':'i'}
             return ''.join(m.get(c, '' if ord(c) > 127 else c) for c in text)
 
+        def _full_branch_from_lan(fa_partial, province):
+            """Given a partial Persian name, find the full branch_name and its LAN IP
+            in lan_ips by substring containment within the same province.
+            Returns (full_name, lan_ip_str) or (fa_partial, None)."""
+            if not fa_partial:
+                return fa_partial, None
+            c2 = conn.cursor()
+            # 1) Exact match
+            c2.execute("""
+                SELECT branch_name, octet2, octet3 FROM lan_ips
+                WHERE branch_name = ? AND (province = ? OR ? = '')
+                LIMIT 1
+            """, (fa_partial, province, province))
+            r = c2.fetchone()
+            if r:
+                return r['branch_name'], f"10.{r['octet2']}.{r['octet3']}.0"
+            # 2) fa_partial is substring of lan_ips.branch_name
+            c2.execute("""
+                SELECT branch_name, octet2, octet3 FROM lan_ips
+                WHERE branch_name LIKE ? AND (province = ? OR ? = '')
+                LIMIT 1
+            """, (f'%{fa_partial}%', province, province))
+            r = c2.fetchone()
+            if r:
+                return r['branch_name'], f"10.{r['octet2']}.{r['octet3']}.0"
+            # 3) lan_ips.branch_name is substring of fa_partial
+            c2.execute("""
+                SELECT branch_name, octet2, octet3 FROM lan_ips
+                WHERE ? LIKE '%' || branch_name || '%' AND (province = ? OR ? = '')
+                LIMIT 1
+            """, (fa_partial, province, province))
+            r = c2.fetchone()
+            if r:
+                return r['branch_name'], f"10.{r['octet2']}.{r['octet3']}.0"
+            return fa_partial, None
+
         # ---- Intranet tunnels ----
         try:
             cursor.execute("""
@@ -722,14 +758,16 @@ def _backfill_branch_names():
                 WHERE (branch_name IS NULL OR branch_name = '')
                 AND LOWER(status) = 'reserved'
             """)
+            rows = cursor.fetchall()
             updated = 0
-            for row in cursor.fetchall():
+            for row in rows:
                 fa = (_lookup_fa_dict(row['description'])
                       or _lookup_fa_dict(row['tunnel_name'])
                       or _lookup_fa_by_lan(row['ip_lan'])
                       or _fuzzy_match_province(row['description'], row['province'])
                       or _fuzzy_match_province(row['tunnel_name'], row['province']))
                 if fa:
+                    fa, _lan_ip = _full_branch_from_lan(fa, row['province'] or '')
                     cursor.execute("UPDATE intranet_tunnels SET branch_name = ? WHERE id = ?", (fa, row['id']))
                     updated += 1
             if updated:
@@ -744,14 +782,16 @@ def _backfill_branch_names():
                 WHERE (branch_name IS NULL OR branch_name = '')
                 AND LOWER(status) IN ('reserved', 'used')
             """)
+            rows = cursor.fetchall()
             updated = 0
-            for row in cursor.fetchall():
+            for row in rows:
                 fa = (_lookup_fa_dict(row['description'])
                       or _lookup_fa_dict(row['tunnel_name'])
                       or _lookup_fa_by_lan(row['lan_ip'])
                       or _fuzzy_match_province(row['description'], row['province'])
                       or _fuzzy_match_province(row['tunnel_name'], row['province']))
                 if fa:
+                    fa, _lan_ip = _full_branch_from_lan(fa, row['province'] or '')
                     cursor.execute("UPDATE vpls_tunnels SET branch_name = ? WHERE id = ?", (fa, row['id']))
                     updated += 1
             if updated:
@@ -766,14 +806,25 @@ def _backfill_branch_names():
                 WHERE (branch_name IS NULL OR branch_name = '')
                 AND branch_name_en IS NOT NULL AND branch_name_en != ''
             """)
+            rows = cursor.fetchall()
             updated = 0
-            for row in cursor.fetchall():
+            for row in rows:
                 fa = (_lookup_fa_dict(row['branch_name_en'])
                       or _lookup_fa_dict(row['description'])
                       or _lookup_fa_by_lan(row['lan_ip'])
                       or _fuzzy_match_province(row['branch_name_en'], row['province']))
                 if fa:
-                    cursor.execute("UPDATE ptmp_connections SET branch_name = ? WHERE id = ?", (fa, row['id']))
+                    # Get the full matching branch_name and its lan_ip from lan_ips
+                    fa, lan_ip_found = _full_branch_from_lan(fa, row['province'] or '')
+                    # Populate both branch_name and lan_ip (only if lan_ip was NULL)
+                    if lan_ip_found and not row['lan_ip']:
+                        cursor.execute("""
+                            UPDATE ptmp_connections SET branch_name = ?, lan_ip = ?
+                            WHERE id = ?
+                        """, (fa, lan_ip_found, row['id']))
+                    else:
+                        cursor.execute("UPDATE ptmp_connections SET branch_name = ? WHERE id = ?",
+                                       (fa, row['id']))
                     updated += 1
             if updated:
                 print(f"[Backfill] ptmp_connections branch_name: {updated} rows populated")
@@ -1957,8 +2008,10 @@ def search_services():
             except Exception:
                 pass
 
-            # PTMP by LAN IP
+            # PTMP by LAN IP — direct + via lan_ips JOIN (handles NULL lan_ip rows)
             try:
+                seen_ptmp_ids = set()
+                # 1. Direct: lan_ip column on ptmp_connections
                 cursor.execute("""
                     SELECT id, COALESCE(branch_name, branch_name_en), province,
                            interface_name, lan_ip, username, reservation_date
@@ -1966,9 +2019,34 @@ def search_services():
                     AND (branch_name IS NOT NULL OR branch_name_en IS NOT NULL)
                 """, (like_q,))
                 for r in cursor.fetchall():
+                    seen_ptmp_ids.add(r[0])
                     add_result(r, 'ptmp_connections', 'PTMP سریال')
-            except Exception:
-                pass
+                # 2. Via lan_ips JOIN: find branches whose LAN matches, then find their PTMP
+                #    Uses substring matching so 'انقلاب' in branch_name matches 'خیابان انقلاب سنندج'
+                cursor.execute("""
+                    SELECT DISTINCT pc.id,
+                           COALESCE(pc.branch_name, pc.branch_name_en),
+                           pc.province, pc.interface_name,
+                           '10.' || li.octet2 || '.' || li.octet3 || '.0' as computed_lan,
+                           pc.username, pc.reservation_date
+                    FROM ptmp_connections pc
+                    JOIN lan_ips li ON (
+                        pc.branch_name = li.branch_name
+                        OR (pc.branch_name IS NOT NULL AND pc.branch_name != ''
+                            AND (li.branch_name LIKE '%' || pc.branch_name || '%'
+                                 OR pc.branch_name LIKE '%' || li.branch_name || '%'))
+                        OR (pc.branch_name_en IS NOT NULL AND pc.branch_name_en != ''
+                            AND li.branch_name LIKE '%' || pc.branch_name_en || '%')
+                    )
+                    WHERE ('10.' || li.octet2 || '.' || li.octet3 || '.0') LIKE ?
+                    AND (pc.branch_name IS NOT NULL OR pc.branch_name_en IS NOT NULL)
+                """, (like_q,))
+                for r in cursor.fetchall():
+                    if r[0] not in seen_ptmp_ids:
+                        seen_ptmp_ids.add(r[0])
+                        add_result(r, 'ptmp_connections', 'PTMP سریال')
+            except Exception as _pe:
+                print(f"PTMP lan_ip search error: {_pe}")
 
         elif search_type == 'ip_intranet':
             cursor.execute("""
