@@ -1630,20 +1630,21 @@ def search_services():
 
             # 4. Intranet tunnels
             cursor.execute("""
-                SELECT id, tunnel_name, province, ip_address, ip_lan, reserved_by, reserved_at
+                SELECT id, COALESCE(branch_name, description, tunnel_name), province, ip_address, ip_lan, reserved_by, reserved_at
                 FROM intranet_tunnels
-                WHERE (tunnel_name LIKE ? OR description LIKE ?)
+                WHERE (branch_name LIKE ? OR tunnel_name LIKE ? OR description LIKE ?)
                 AND LOWER(status) = 'reserved'
-            """, (like_q, like_q))
+            """, (like_q, like_q, like_q))
             for r in cursor.fetchall():
                 add_result(r, 'intranet_tunnels', 'Intranet')
 
             # 5. VPLS/MPLS tunnels
             cursor.execute("""
-                SELECT id, branch_name, province, ip_address, wan_ip, username, reservation_date
-                FROM vpls_tunnels WHERE branch_name LIKE ?
+                SELECT id, COALESCE(branch_name, description, tunnel_name), province, ip_address, wan_ip, username, reservation_date
+                FROM vpls_tunnels
+                WHERE (branch_name LIKE ? OR description LIKE ? OR tunnel_name LIKE ?)
                 AND LOWER(status) = 'reserved'
-            """, (like_q,))
+            """, (like_q, like_q, like_q))
             for r in cursor.fetchall():
                 add_result(r, 'vpls_tunnels', 'MPLS/VPLS')
 
@@ -1772,7 +1773,7 @@ def search_services():
 
         elif search_type == 'ip_intranet':
             cursor.execute("""
-                SELECT id, tunnel_name, province, ip_address, ip_lan, reserved_by, reserved_at
+                SELECT id, COALESCE(branch_name, description, tunnel_name), province, ip_address, ip_lan, reserved_by, reserved_at
                 FROM intranet_tunnels
                 WHERE (ip_address LIKE ? OR ip_intranet LIKE ?)
                 AND LOWER(status) = 'reserved'
@@ -1782,7 +1783,7 @@ def search_services():
 
         elif search_type == 'ip_vpls':
             cursor.execute("""
-                SELECT id, branch_name, province, ip_address, wan_ip, username, reservation_date
+                SELECT id, COALESCE(branch_name, description, tunnel_name), province, ip_address, wan_ip, username, reservation_date
                 FROM vpls_tunnels
                 WHERE (ip_address LIKE ? OR wan_ip LIKE ?)
                 AND LOWER(status) = 'reserved'
@@ -4560,14 +4561,15 @@ def smart_search():
 
     # Search Tunnels
     cursor.execute("""
-        SELECT 'tunnel' as type, tunnel_name, ip_address, description, province, status
-        FROM intranet_tunnels WHERE tunnel_name LIKE ? OR ip_address LIKE ? OR description LIKE ? OR province LIKE ? LIMIT 10
-    """, (like, like, like, like))
+        SELECT 'tunnel' as type, tunnel_name, ip_address, description, province, status, branch_name
+        FROM intranet_tunnels WHERE branch_name LIKE ? OR tunnel_name LIKE ? OR ip_address LIKE ? OR description LIKE ? OR province LIKE ? LIMIT 10
+    """, (like, like, like, like, like))
     for r in cursor.fetchall():
+        display_name = r['branch_name'] or r['description'] or r['tunnel_name'] or r['ip_address']
         results.append({
             'type': 'tunnel', 'icon': '🔗',
-            'title': r['tunnel_name'] or r['ip_address'],
-            'subtitle': r['description'] or r['province'] or '',
+            'title': display_name,
+            'subtitle': r['province'] or '',
             'extra': r['ip_address'] or '',
             'status': r['status'] or 'Free',
             'link': '/intranet'
@@ -5002,14 +5004,14 @@ def report_query():
                 results.append({'service':'MPLS/VPLS','branch_name':name,'province':PROVINCE_EN_TO_FA.get(r[2],r[2] or ''),'point_type':pt,'ip':r[3] or '','wan_ip':r[4] or '','tunnel_dest':r[5] or '','tunnel_name':r[6] or '','username':r[7] or '','date':r[8] or '','status':r[9] or ''})
 
         if service_type in ('', 'all', 'Intranet'):
-            sql = "SELECT tunnel_name, description, province, ip_address, ip_lan, reserved_by, reserved_at, status FROM intranet_tunnels WHERE LOWER(status) = 'reserved'"
+            sql = "SELECT tunnel_name, description, province, ip_address, ip_lan, reserved_by, reserved_at, status, branch_name FROM intranet_tunnels WHERE LOWER(status) = 'reserved'"
             params = []
             if province:
                 sql += " AND (province = ? OR province = ?)"
                 params.extend([province, province_en])
             cursor.execute(sql, params)
             for r in cursor.fetchall():
-                name = (r[1] or r[0] or '').replace('** ','').replace(' **','').strip()
+                name = (r[8] or r[1] or r[0] or '').replace('** ','').replace(' **','').strip()
                 pt = _detect_point_type(name)
                 if point_type and pt != point_type: continue
                 results.append({'service':'Intranet','branch_name':name,'province':r[2] or '','point_type':pt,'ip':r[3] or '','wan_ip':r[4] or '','tunnel_dest':'','tunnel_name':r[0] or '','username':r[5] or '','date':r[6] or '','status':r[7] or ''})
