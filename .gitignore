@@ -8,8 +8,10 @@ venv/
 # Database backups
 data/backups/*.db
 
-# Live mirror DB (runtime file — never commit)
+# Live/operational DBs (runtime files — never commit)
 data/live.db
+live.db
+network_ipam.db
 
 # Backup files
 *.bak
